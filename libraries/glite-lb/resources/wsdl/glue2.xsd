@@ -1,0 +1,1371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 	OGF GLUE 2.0 draft 41 - XML Schema mapping  
+	Last edited: 14 May 2008
+	
+	Copyright 2008 Istituto Nazionale di Fisica Nucleare http://www.infn.it
+	Authors: Sergio Andreozzi, Michele Carpene', Marco Canaparo
+	{sergio.andreozzi,marco.canaparo,michele.carpene}@cnaf.infn.it
+	Institution: INFN - Italy
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.              
+-->
+
+<schema targetNamespace="http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  xmlns:glue="http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01">
+
+  <!-- BEGIN MAIN ENTITIES -->
+  <complexType name="Entity">
+    <attribute name="CreationTime" type="dateTime"/>
+    <attribute name="Validity" type="unsignedLong"/>
+  </complexType>
+
+  <complexType name="Extension_t">
+    <simpleContent>
+      <extension base="string">
+        <attribute name="Key" type="string"/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType name="Extensions_t">
+    <sequence>
+      <element name="Extension" type="glue:Extension_t" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+  </complexType>
+
+  <element name="Domains" type="glue:Domains_t"/>
+
+  <complexType name="Domains_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="AdminDomain" type="glue:AdminDomain_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="UserDomain" type="glue:UserDomain_t" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="Location_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="glue:LocalID_t"/>
+          <element name="Name" type="string"/>
+          <element name="Address" type="string" minOccurs="0"/>
+          <element name="Place" type="string" minOccurs="0"/>
+          <element name="Country" type="string" minOccurs="0"/>
+          <element name="PostCode" type="string" minOccurs="0"/>
+          <element name="Latitude" type="glue:Latitude_t" minOccurs="0"/>
+          <element name="Longitude" type="glue:Longitude_t" minOccurs="0"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="Contact_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="glue:LocalID_t"/>
+          <element name="URL" type="anyURI"/>
+          <element name="Type" type="string">
+            <annotation>
+              <appinfo>general</appinfo>
+              <appinfo>usersupport</appinfo>
+              <appinfo>sysadmin</appinfo>
+            </annotation>
+          </element>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType abstract="true" name="Domain_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="ID" type="glue:ID_t"/>
+          <element name="Name" type="string" minOccurs="0"/>
+          <element name="Description" type="string" minOccurs="0"/>
+          <element name="WWW" type="anyURI" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Domain" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="AdminDomain_t">
+    <complexContent>
+      <extension base="glue:Domain_t">
+        <sequence>
+          <element name="Distributed" type="boolean" minOccurs="0"/>
+          <element name="Owner" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Location" type="glue:Location_t" minOccurs="0"/>
+          <element name="Contact" type="glue:Contact_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Services" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="Service" type="glue:Service_t" minOccurs="0" maxOccurs="unbounded"/>
+                <element name="ComputingService" type="glue:ComputingService_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="StorageService" type="glue:StorageService_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="AdminDomainID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="UserDomain_t">
+    <complexContent>
+      <extension base="glue:Domain_t">
+        <sequence>
+          <element name="Level" type="unsignedInt" minOccurs="0"/>
+          <element name="UserManager" type="anyURI" minOccurs="0"/>
+          <element name="Member" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="UserDomainID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="ServiceProperties_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="ID" type="glue:ID_t"/>
+          <element name="Name" type="string" minOccurs="0"/>
+          <element name="Capability" type="glue:Capability_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Type" type="glue:ServiceType_t"/>
+          <element name="QualityLevel" type="glue:QualityLevel_t"/>
+          <element name="StatusPage" type="anyURI" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Complexity" type="string" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Service" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="Service_t">
+    <complexContent>
+      <extension base="glue:ServiceProperties_t">
+        <sequence>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Location" type="glue:Location_t" minOccurs="0"/>
+          <element name="Contact" type="glue:Contact_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Endpoint" type="glue:Endpoint_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Activities" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="Activity" type="glue:Activity_t" minOccurs="0" maxOccurs="unbounded"
+                />
+              </sequence>
+            </complexType>
+          </element>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ServiceID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="EndpointProperties_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="ID" type="glue:ID_t"/>
+          <element name="Name" type="string" minOccurs="0"/>
+          <element name="URL" type="anyURI"/>
+          <element name="Capability" type="glue:Capability_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Technology" type="glue:EndpointTechnology_t"/>
+          <element name="Interface" type="anyURI" minOccurs="0"/>
+          <element name="InterfaceExtension" type="anyURI" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="WSDL" type="anyURI" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="SupportedProfile" type="anyURI" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Semantics" type="anyURI" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Implementor" type="string" minOccurs="0"/>
+          <element name="ImplementationName" type="string" minOccurs="0"/>
+          <element name="ImplementationVersion" type="string" minOccurs="0"/>
+          <element name="QualityLevel" type="glue:QualityLevel_t"/>
+          <element name="HealthState" type="glue:EndpointHealthState_t"/>
+          <element name="HealthStateInfo" type="string" minOccurs="0"/>
+          <element name="ServingState" type="glue:ServingState_t"/>
+          <element name="StartTime" type="dateTime" minOccurs="0"/>
+          <element name="IssuerCA" type="glue:DN_t" minOccurs="0"/>
+          <element name="TrustedCA" type="glue:DN_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="DowntimeAnnounce" type="dateTime" minOccurs="0"/>
+          <element name="DowntimeStart" type="dateTime" minOccurs="0"/>
+          <element name="DowntimeEnd" type="dateTime" minOccurs="0"/>
+          <element name="DowntimeInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Endpoint" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="Endpoint_t">
+    <complexContent>
+      <extension base="glue:EndpointProperties_t">
+        <sequence>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="AccessPolicy" type="glue:AccessPolicy_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ActivityID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType abstract="true" name="Share_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="glue:LocalID_t"/>
+          <element name="Name" type="string" minOccurs="0"/>
+          <element name="Description" type="string" minOccurs="0"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Share" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType abstract="true" name="Manager_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="ID" type="glue:ID_t"/>
+          <element name="Name" type="string" minOccurs="0"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Manager" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType abstract="true" name="Resource_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="ID" type="glue:ID_t"/>
+          <element name="Name" type="string" minOccurs="0"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Resource" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="ActivityProperties_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="ID" type="glue:ID_t"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Activity" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="Activity_t">
+    <complexContent>
+      <extension base="glue:ActivityProperties_t">
+        <sequence>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="EndpointID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+                <element name="UserDomainID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+                <element name="ActivityID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType abstract="true" name="Policy_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="glue:LocalID_t"/>
+          <element name="Scheme" type="glue:PolicyScheme_t"/>
+          <element name="Rule" type="glue:PolicyRule_t" minOccurs="1" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="BaseType" fixed="Policy" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="AccessPolicy_t">
+    <complexContent>
+      <extension base="glue:Policy_t"/>
+    </complexContent>
+  </complexType>
+
+  <complexType name="MappingPolicy_t">
+    <complexContent>
+      <extension base="glue:Policy_t"> </extension>
+    </complexContent>
+  </complexType>
+  <!--  END MAIN ENTITIES  -->
+
+  <!--  BEGIN COMPUTING ENTITIES  -->
+  <complexType name="ComputingService_t">
+    <complexContent>
+      <extension base="glue:ServiceProperties_t">
+        <sequence>
+          <element name="TotalJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="RunningJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="WaitingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="StagingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="SuspendedJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="PreLRMSWaitingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Location" type="glue:Location_t" minOccurs="0"/>
+          <element name="Contact" type="glue:Contact_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="ComputingEndpoint" type="glue:ComputingEndpoint_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="ComputingShares" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ComputingShare" type="glue:ComputingShare_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+          <element name="ComputingManager" type="glue:ComputingManager_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="ToStorageService" type="glue:ToStorageService_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="ComputingActivitites" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ComputingActivitiy" type="glue:ComputingActivity_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ServiceID" type="glue:ID_t" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+
+        </sequence>
+
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="ComputingEndpoint_t">
+    <complexContent>
+      <extension base="glue:EndpointProperties_t">
+        <sequence>
+          <element name="Staging" type="glue:Staging_t" minOccurs="0"/>
+          <element name="JobDescription" type="glue:JobDescription_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="AccessPolicy" type="glue:AccessPolicy_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ComputingShareLocalID" type="string" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="ComputingActivityID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="ComputingShare_t">
+    <complexContent>
+      <extension base="glue:Share_t">
+        <sequence>
+          <element name="MappingQueue" type="string" minOccurs="0"/>
+          <element name="MaxWallTime" type="unsignedLong" minOccurs="0"/>
+          <element name="MaxTotalWallTime" type="unsignedLong" minOccurs="0"/>
+          <element name="MinWallTime" type="unsignedLong" minOccurs="0"/>
+          <element name="DefaultWallTime" type="unsignedLong" minOccurs="0"/>
+          <element name="MaxCPUTime" type="unsignedLong" minOccurs="0"/>
+          <element name="MaxTotalCPUTime" type="unsignedLong" minOccurs="0"/>
+          <element name="MaxCPUsTime" type="unsignedLong" minOccurs="0"/>
+          <element name="MinCPUTime" type="unsignedLong" minOccurs="0"/>
+          <element name="DefaultCPUTime" type="unsignedLong" minOccurs="0"/>
+          <element name="MaxTotalJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxRunningJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxWaitingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxPreLRMSWaitingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxUserRunningJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxSlotsPerJob" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxStateInStreams" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxStageOutStreams" type="unsignedInt" minOccurs="0"/>
+          <element name="SchedulingPolicy" type="glue:SchedulingPolicy_t" minOccurs="0"/>
+          <element name="MaxMemory" type="unsignedLong" minOccurs="0"/>
+          <element name="MaxDiskSpace" type="unsignedLong" minOccurs="0"/>
+          <element name="DefaultStorageService" type="anyURI" minOccurs="0"/>
+          <element name="Preemption" type="boolean" minOccurs="0"/>
+          <element name="ServingState" type="glue:ServingState_t"/>
+          <element name="TotalJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="RunningJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="LocalRunningJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="WaitingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="LocalWaitingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="StagingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="SuspendedJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="PreLRMSWaitingJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="EstimatedAverageWaitingTime" type="unsignedLong" minOccurs="0"/>
+          <element name="EstimatedWorstWaitingTime" type="unsignedLong" minOccurs="0"/>
+          <element name="FreeSlots" type="unsignedInt" minOccurs="0"/>
+          <element name="FreeSlotsWithDuration" type="string" minOccurs="0"/>
+          <element name="UsedSlots" type="unsignedInt" minOccurs="0"/>
+          <element name="RequestedSlots" type="unsignedInt" minOccurs="0"/>
+          <element name="ReservationPolicy" type="glue:ReservationPolicy_t" minOccurs="0"/>
+          <element name="Tag" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="MappingPolicy" type="glue:MappingPolicy_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ComputingEndpointID" type="string" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="ExecutionEnvironmentLocalID" type="string" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="ComputingActivityID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="ComputingManager_t">
+    <complexContent>
+      <extension base="glue:Manager_t">
+        <sequence>
+          <element name="Type" type="glue:ComputingManagerType_t" minOccurs="0"/>
+          <element name="Version" type="string" minOccurs="0"/>
+          <element name="Reservation" type="boolean" minOccurs="0"/>
+          <element name="BulkSubmission" type="boolean" minOccurs="0"/>
+          <element name="TotalPhysicalCPUs" type="unsignedInt" minOccurs="0"/>
+          <element name="TotalLogicalCPUs" type="unsignedInt" minOccurs="0"/>
+          <element name="TotalSlots" type="unsignedInt" minOccurs="0"/>
+          <element name="SlotsUsedByLocalJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="SlotsUsedByGridJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="Homogeneity" type="boolean" minOccurs="0"/>
+          <element name="NetworkInfo" type="glue:NetworkInfo_t" minOccurs="0"/>
+          <element name="LogicalCPUDistribution" type="string" minOccurs="0"/>
+          <element name="WorkingAreaShared" type="boolean" minOccurs="0"/>
+          <element name="WorkingAreaTotal" type="unsignedLong" minOccurs="0"/>
+          <element name="WorkingAreaFree" type="unsignedLong" minOccurs="0"/>
+          <element name="WorkingAreaLifeTime" type="unsignedLong" minOccurs="0"/>
+          <element name="CacheTotal" type="unsignedLong" minOccurs="0"/>
+          <element name="CacheFree" type="unsignedLong" minOccurs="0"/>
+          <element name="TmpDir" type="string" minOccurs="0"/>
+          <element name="ScratchDir" type="string" minOccurs="0"/>
+          <element name="ApplicationDir" type="string" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Benchmark" type="glue:Benchmark_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="ExecutionEnvironment" type="glue:ExecutionEnvironment_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="ApplicationEnvironments" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ApplicationEnvironment" type="glue:ApplicationEnvironment_t"
+                  minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="Benchmark_t">
+    <sequence>
+      <element name="LocalID" type="glue:LocalID_t"/>
+      <element name="Type" type="glue:BenchmarkType_t"/>
+      <element name="Value" type="int"/>
+    </sequence>
+  </complexType>
+
+  <complexType name="ExecutionEnvironment_t">
+    <complexContent>
+      <extension base="glue:Resource_t">
+        <sequence>
+          <element name="Platform" type="glue:Platform_t"/>
+          <element name="VirtualMachine" type="boolean" minOccurs="0"/>
+          <element name="TotalInstances" type="unsignedInt" minOccurs="0"/>
+          <element name="UsedInstances" type="unsignedInt" minOccurs="0"/>
+          <element name="UnavailableInstances" type="unsignedInt" minOccurs="0"/>
+          <element name="PhysicalCPUs" type="unsignedInt" minOccurs="0"/>
+          <element name="LogicalCPUs" type="unsignedInt" minOccurs="0"/>
+          <element name="CPUMultiplicity" type="glue:CPUMultiplicity_t" minOccurs="0"/>
+          <element name="CPUVendor" type="string" minOccurs="0"/>
+          <element name="CPUModel" type="string" minOccurs="0"/>
+          <element name="CPUVersion" type="string" minOccurs="0"/>
+          <element name="CPUClockSpeed" type="unsignedInt" minOccurs="0"/>
+          <element name="CPUTimeScalingFactor" type="float" minOccurs="0"/>
+          <element name="WallTimeScalingFactor" type="float" minOccurs="0"/>
+          <element name="MainMemorySize" type="unsignedLong" minOccurs="0"/>
+          <element name="VirtualMemorySize" type="unsignedLong" minOccurs="0"/>
+          <element name="OSFamily" type="glue:OSFamily_t" minOccurs="0"/>
+          <element name="OSName" type="glue:OSName_t" minOccurs="0"/>
+          <element name="OSVersion" type="string" minOccurs="0"/>
+          <element name="ConnectivityIn" type="boolean" minOccurs="0"/>
+          <element name="ConnectivityOut" type="boolean" minOccurs="0"/>
+          <element name="NetworkInfo" type="glue:NetworkInfo_t" minOccurs="0"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Benchmark" type="glue:Benchmark_t" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ComputingShareLocalID" type="string" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="ApplicationEnvironmentLocalID" type="string" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="ComputingActivityID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="ApplicationEnvironment_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="glue:LocalID_t"/>
+          <element name="Name" type="string"/>
+          <element name="Version" type="string" minOccurs="0"/>
+          <element name="Repository" type="anyURI" minOccurs="0"/>
+          <element name="State" type="glue:AppEnvState_t" minOccurs="0"/>
+          <element name="RemovalDate" type="dateTime" minOccurs="0"/>
+          <element name="License" type="glue:License_t" minOccurs="0"/>
+          <element name="Description" type="string" minOccurs="0"/>
+          <element name="BestBenchmark" type="glue:BenchmarkType_t" minOccurs="0"/>
+          <element name="ParallelSupport" type="glue:ParallelSupport_t" minOccurs="0"/>
+          <element name="MaxSlots" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="MaxUserSeats" type="unsignedInt" minOccurs="0"/>
+          <element name="FreeSlots" type="unsignedInt" minOccurs="0"/>
+          <element name="FreeJobs" type="unsignedInt" minOccurs="0"/>
+          <element name="FreeUserSeats" type="unsignedInt" minOccurs="0"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="ApplicationHandle" type="glue:ApplicationHandle_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ExecutionEnvironmentLocalID" type="string" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+
+  <complexType name="ApplicationHandle_t">
+    <sequence>
+      <element name="LocalID" type="string"/>
+      <element name="Type" type="glue:ApplicationHandleType_t"/>
+      <element name="Value" type="string"/>
+      <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+    </sequence>
+  </complexType>
+
+  <complexType name="ComputingActivity_t">
+    <complexContent>
+      <extension base="glue:ActivityProperties_t">
+        <sequence>
+          <element name="Name" type="string" minOccurs="0"/>
+          <element name="Type" type="glue:ComputingActivityType_t" minOccurs="0"/>
+          <element name="IDFromEndpoint" type="anyURI"/>
+          <element name="LocalIDFromManager" type="string" minOccurs="0"/>
+          <element name="JobDescription" type="glue:JobDescription_t"/>
+          <element name="State" type="glue:ComputingActivityState_t"/>
+          <element name="RestartState" type="glue:ComputingActivityState_t" minOccurs="0"/>
+          <element name="ExitCode" type="int" minOccurs="0"/>
+          <element name="ComputingManagerExitCode" type="string" minOccurs="0"/>
+          <element name="Error" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="WaitingPosition" type="unsignedInt" minOccurs="0"/>
+          <element name="UserDomain" type="string" minOccurs="0"/>
+          <element name="Owner" type="string"/>
+          <element name="LocalOwner" type="string" minOccurs="0"/>
+          <element name="RequestedTotalWallTime" type="unsignedLong" minOccurs="0"/>
+          <element name="RequestedTotalCPUTime" type="unsignedLong" minOccurs="0"/>
+          <element name="RequestedSlots" type="unsignedInt" minOccurs="0"/>
+          <element name="RequestedApplicationEnvironment" type="string" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="StdIn" type="string" minOccurs="0"/>
+          <element name="StdOut" type="string" minOccurs="0"/>
+          <element name="StdErr" type="string" minOccurs="0"/>
+          <element name="LogDir" type="string" minOccurs="0"/>
+          <element name="ExecutionNode" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Queue" type="string" minOccurs="0"/>
+          <element name="UsedTotalWallTime" type="unsignedLong" minOccurs="0"/>
+          <element name="UsedTotalCPUTime" type="unsignedLong" minOccurs="0"/>
+          <element name="UsedMainMemory" type="unsignedLong" minOccurs="0"/>
+          <element name="SubmissionTime" type="dateTime" minOccurs="0"/>
+          <element name="ComputingManagerSubmissionTime" type="dateTime" minOccurs="0"/>
+          <element name="StartTime" type="dateTime" minOccurs="0"/>
+          <element name="ComputingManagerEndTime" type="dateTime" minOccurs="0"/>
+          <element name="EndTime" type="dateTime" minOccurs="0"/>
+          <element name="WorkingAreaEraseTime" type="dateTime" minOccurs="0"/>
+          <element name="ProxyExpirationTime" type="dateTime" minOccurs="0"/>
+          <element name="SubmissionHost" type="string" minOccurs="0"/>
+          <element name="SubmissionClientName" type="string" minOccurs="0"/>
+          <element name="OtherMessages" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ComputingEndpointID" type="anyURI" minOccurs="0"/>
+                <element name="ComputingShareLocalID" type="string" minOccurs="0"/>
+                <element name="ExecutionEnvironmentLocalID" type="string" minOccurs="0"/>
+                <element name="UserDomainID" type="anyURI" minOccurs="0"/>
+                <element name="ActivityID" type="anyURI" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="ToStorageService_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="string"/>
+          <element name="LocalPath" type="string"/>
+          <element name="RemotePath" type="string"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="ComputingServiceID" type="anyURI"/>
+                <element name="StorageServiceID" type="anyURI"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+
+
+  <!--  END COMPUTING ENTITIES  -->
+
+  <!--  BEGIN STORAGE ENTITIES  -->
+  <complexType name="StorageService_t">
+    <complexContent>
+      <extension base="glue:ServiceProperties_t">
+        <sequence>
+          <element name="StorageServiceCapacity" type="glue:StorageServiceCapacity_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="StorageAccessProtocol" type="glue:StorageAccessProtocol_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="StorageEndpoint" type="glue:StorageEndpoint_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="StorageShares" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="StorageShare" type="glue:StorageShare_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+          <element name="StorageManager" type="glue:StorageManager_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="ToComputingService" type="glue:ToComputingService_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="StorageServiceCapacity_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="string"/>
+          <element name="Type" type="string"/>
+          <element name="TotalSize" type="unsignedLong" minOccurs="0"/>
+          <element name="FreeSize" type="unsignedLong" minOccurs="0"/>
+          <element name="UsedSize" type="unsignedLong" minOccurs="0"/>
+          <element name="ReservedSize" type="unsignedLong" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="StorageAccessProtocol_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="string"/>
+          <element name="Type" type="glue:StorageAccessProtocolType_t" minOccurs="0"/>
+          <element name="Version" type="string"/>
+          <element name="MaxStreams" type="int" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="StorageEndpoint_t">
+    <complexContent>
+      <extension base="glue:EndpointProperties_t">
+        <sequence>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="AccessPolicy" type="glue:AccessPolicy_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="StorageShareLocalID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="StorageShare_t">
+    <complexContent>
+      <extension base="glue:Share_t">
+        <sequence>
+          <element name="ServingState" type="glue:ServingState_t"/>
+          <element name="Path" type="string"/>
+          <element name="SharingID" type="glue:LocalID_t"/>
+          <element name="AccessLatency" type="glue:AccessLatency_t"/>
+          <element name="RetentionPolicy" type="glue:RetentionPolicy_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="ExpirationMode" type="glue:ExpirationMode_t" minOccurs="0" maxOccurs="3"/>
+          <element name="DefaultLifeTime" type="unsignedInt" minOccurs="0"/>
+          <element name="MaximumLifeTime" type="unsignedInt" minOccurs="0"/>
+          <element name="Tag" type="string" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="MappingPolicy" type="glue:MappingPolicy_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="StorageShareCapacity" type="glue:StorageShareCapacity_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="StorageEndpointID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="StorageResourceID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="StorageShareCapacity_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="glue:LocalID_t"/>
+          <element name="Type" type="glue:StorageCapacity_t"/>
+          <element name="TotalSize" type="unsignedLong" minOccurs="0"/>
+          <element name="FreeSize" type="unsignedLong" minOccurs="0"/>
+          <element name="UsedSize" type="unsignedLong" minOccurs="0"/>
+          <element name="ReservedSize" type="unsignedLong" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <complexType name="StorageManager_t">
+    <complexContent>
+      <extension base="glue:Manager_t">
+        <sequence>
+          <element name="Type" type="glue:StorageManagerType_t"/>
+          <element name="Version" type="string" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="StorageResource" type="glue:StorageResource_t" minOccurs="0"
+            maxOccurs="unbounded"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+
+  <complexType name="StorageResource_t">
+    <complexContent>
+      <extension base="glue:Resource_t">
+        <sequence>
+          <element name="Type" type="glue:StorageResourceType_t"/>
+          <element name="Latency" type="glue:AccessLatency_t"/>
+          <element name="TotalSize" type="unsignedLong" minOccurs="0"/>
+          <element name="FreeSize" type="unsignedLong" minOccurs="0"/>
+          <element name="UsedSize" type="unsignedLong" minOccurs="0"/>
+          <element name="ReservedSize" type="unsignedLong" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="StorageShareLocalID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+
+
+  <complexType name="ToComputingService_t">
+    <complexContent>
+      <extension base="glue:Entity">
+        <sequence>
+          <element name="LocalID" type="glue:LocalID_t"/>
+          <element name="NetworkInfo" type="glue:NetworkInfo_t" minOccurs="0"/>
+          <element name="Bandwidth" type="unsignedInt" minOccurs="0"/>
+          <element name="OtherInfo" type="string" minOccurs="0" maxOccurs="unbounded"/>
+          <element name="Extensions" type="glue:Extensions_t" minOccurs="0"/>
+          <element name="Associations" minOccurs="0">
+            <complexType>
+              <sequence>
+                <element name="StorageAccessProtocolLocalID" type="glue:ID_t" minOccurs="0"
+                  maxOccurs="unbounded"/>
+                <element name="ComputingServiceID" type="anyURI"/>
+                <element name="StorageServiceID" type="anyURI"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+  <!--  END STORAGE ENTITIES  -->
+
+  <!-- BEGIN DATA TYPES -->
+  <simpleType name="Latitude_t">
+    <restriction base="float">
+      <minInclusive value="-90"/>
+      <maxInclusive value="90"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="Longitude_t">
+    <restriction base="float">
+      <minInclusive value="-180"/>
+      <maxInclusive value="180"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ActivityType_t">
+    <restriction base="string"/>
+  </simpleType>
+
+  <simpleType name="PolicyScheme_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>basic</appinfo>
+        <appinfo>gacl</appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="PolicyRule_t">
+    <restriction base="string"/>
+  </simpleType>
+
+  <simpleType name="EndpointTechnology_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>webservice</appinfo>
+        <appinfo>jndi</appinfo>
+        <appinfo>legacy</appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="EndpointHealthState_t">
+    <restriction base="string">
+      <enumeration value="ok"/>
+      <enumeration value="warning"/>
+      <enumeration value="critical"/>
+      <enumeration value="unknown"/>
+      <enumeration value="other"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="QualityLevel_t">
+    <restriction base="string">
+      <enumeration value="production"/>
+      <enumeration value="pre-production"/>
+      <enumeration value="testing"/>
+      <enumeration value="development"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ServiceType_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="org.glite.wms"/>
+          <enumeration value="org.glite.lb"/>
+          <enumeration value="org.glite.lb"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="Capability_t">
+    <restriction base="string">
+      <enumeration value="security.authentication"/>
+      <enumeration value="security.credentialstorage"/>
+      <enumeration value="security.delegation"/>
+      <enumeration value="security.authorization"/>
+      <enumeration value="security.identymapping"/>
+      <enumeration value="security.attributeauthority"/>
+      <enumeration value="security.accounting"/>
+      <enumeration value="data.transfer"/>
+      <enumeration value="data.management.transfer"/>
+      <enumeration value="data.management.replica"/>
+      <enumeration value="data.management.storage"/>
+      <enumeration value="data.naming.resolver"/>
+      <enumeration value="data.naming.scheme"/>
+      <enumeration value="data.access.relational"/>
+      <enumeration value="data.access.xml"/>
+      <enumeration value="data.access.flatfiles"/>
+      <enumeration value="information.model"/>
+      <enumeration value="information.discovery"/>
+      <enumeration value="information.logging"/>
+      <enumeration value="information.monitoring"/>
+      <enumeration value="information.provenance"/>
+      <enumeration value="executionmanagement.jobexecution"/>
+      <enumeration value="executionmanagement.jobdescription"/>
+      <enumeration value="executionmanagement.jobmanager"/>
+      <enumeration value="executionmanagement.executionandplanning"/>
+      <enumeration value="executionmanagement.candidatesetgenerator"/>
+      <enumeration value="executionmanagement.reservation"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ServingState_t">
+    <restriction base="string">
+      <enumeration value="production"/>
+      <enumeration value="draining"/>
+      <enumeration value="queuing"/>
+      <enumeration value="closed"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="DN_t">
+    <restriction base="string"/>
+  </simpleType>
+
+  <simpleType name="ID_t">
+    <restriction base="anyURI"/>
+  </simpleType>
+
+  <simpleType name="LocalID_t">
+    <restriction base="string"/>
+  </simpleType>
+
+  <simpleType name="Staging_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="none"/>
+          <enumeration value="stagingin"/>
+          <enumeration value="stagingout"/>
+          <enumeration value="staginginout"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="JobDescription_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="ogf:jsdl:1.0"/>
+          <enumeration value="egee:jdl"/>
+          <enumeration value="nordugrid:xrsi"/>
+          <enumeration value="globus:rsl"/>
+          <enumeration value="condor"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="SchedulingPolicy_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="fairshare"/>
+          <enumeration value="fifo"/>
+          <enumeration value="random"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ReservationPolicy_t">
+    <restriction base="string">
+      <enumeration value="none"/>
+      <enumeration value="mandatory"/>
+      <enumeration value="optional"/>
+    </restriction>
+  </simpleType>
+
+
+  <simpleType name="BenchmarkType_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="specint2000"/>
+          <enumeration value="specfp2000"/>
+          <enumeration value="cint2006"/>
+          <enumeration value="cfp2006"/>
+          <enumeration value="bogomips"/>
+          <enumeration value="linpack"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="Platform_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="i386"/>
+          <enumeration value="amd64"/>
+          <enumeration value="itanium"/>
+          <enumeration value="powerpc"/>
+          <enumeration value="sparc"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="CPUMultiplicity_t">
+    <restriction base="string">
+      <enumeration value="singlecpu-singlecore"/>
+      <enumeration value="singlecpu-multicore"/>
+      <enumeration value="multicpu-singlecore"/>
+      <enumeration value="multicpu-multicore"/>
+    </restriction>
+  </simpleType>
+
+
+  <simpleType name="OSFamily_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="linux"/>
+          <enumeration value="macosx"/>
+          <enumeration value="windows"/>
+          <enumeration value="solaris"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="OSName_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="scientificlinux"/>
+          <enumeration value="scientificlinuxcern"/>
+          <enumeration value="ubuntu"/>
+          <enumeration value="debian"/>
+          <enumeration value="centos"/>
+          <enumeration value="fedora"/>
+          <enumeration value="rhes"/>
+          <enumeration value="mandrake"/>
+          <enumeration value="suse"/>
+          <enumeration value="leopard"/>
+          <enumeration value="windowsxp"/>
+          <enumeration value="windowsvista"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ApplicationHandleType_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="module"/>
+          <enumeration value="softenv"/>
+          <enumeration value="path"/>
+          <enumeration value="executable"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="License_t">
+    <restriction base="string">
+      <enumeration value="opensource"/>
+      <enumeration value="commercial"/>
+      <enumeration value="unknown"/>
+    </restriction>
+  </simpleType>
+
+
+  <simpleType name="ComputingManagerType_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="lsf"/>
+          <enumeration value="sungridengine"/>
+          <enumeration value="openpbs"/>
+          <enumeration value="torque"/>
+          <enumeration value="torquemaui"/>
+          <enumeration value="bqs"/>
+          <enumeration value="condor"/>
+          <enumeration value="loadleveler"/>
+          <enumeration value="forkl"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="NetworkInfo_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="100megabitethernet"/>
+          <enumeration value="gigabitethernet"/>
+          <enumeration value="myrinet"/>
+          <enumeration value="infiniband"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ExecEnv_t">
+    <restriction base="string"> </restriction>
+  </simpleType>
+
+
+  <simpleType name="AppEnvState_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="notinstallable"/>
+          <enumeration value="installable"/>
+          <enumeration value="installingmanually"/>
+          <enumeration value="installingautomatically"/>
+          <enumeration value="installationfailed"/>
+          <enumeration value="installednotverified"/>
+          <enumeration value="installedverified"/>
+          <enumeration value="installedbroken"/>
+          <enumeration value="pendingremoval"/>
+          <enumeration value="removing"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ParallelSupport_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="mpi"/>
+          <enumeration value="opennmp"/>
+          <enumeration value="none"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ComputingActivityType_t">
+    <restriction base="string">
+      <enumeration value="single"/>
+      <enumeration value="collectionelement"/>
+      <enumeration value="parallelelement"/>
+      <enumeration value="workflownode"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ComputingActivityState_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="bes:pending"/>
+          <enumeration value="bes:running"/>
+          <enumeration value="bes:finished"/>
+          <enumeration value="bes:failed"/>
+          <enumeration value="bes:terminated"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="StorageCapacity_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="online"/>
+          <enumeration value="nearline"/>
+          <enumeration value="offline"/>
+          <enumeration value="cache"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="StorageAccessProtocolType_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="gsiftp"/>
+          <enumeration value="file"/>
+          <enumeration value="nfs"/>
+          <enumeration value="afs"/>
+          <enumeration value="rfio"/>
+          <enumeration value="gsirfio"/>
+          <enumeration value="dcap"/>
+          <enumeration value="gsidcap"/>
+          <enumeration value="root"/>
+          <enumeration value="https"/>
+          <enumeration value="http"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="AccessLatency_t">
+    <restriction base="string">
+      <enumeration value="online"/>
+      <enumeration value="nearline"/>
+      <enumeration value="offline"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="RetentionPolicy_t">
+    <restriction base="string">
+      <enumeration value="custodial"/>
+      <enumeration value="output"/>
+      <enumeration value="replica"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="ExpirationMode_t">
+    <restriction base="string">
+      <enumeration value="neverexpire"/>
+      <enumeration value="warnwhenexpired"/>
+      <enumeration value="releasewhenexpired"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="StorageManagerType_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="castor"/>
+          <enumeration value="gpfs"/>
+          <enumeration value="dcache"/>
+          <enumeration value="tsm"/>
+          <enumeration value="sse"/>
+          <enumeration value="enstore"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+
+
+  <simpleType name="StorageResourceType_t">
+    <restriction base="string">
+      <annotation>
+        <appinfo>
+          <enumeration value="disk"/>
+          <enumeration value="tape"/>
+          <enumeration value="optical"/>
+        </appinfo>
+      </annotation>
+    </restriction>
+  </simpleType>
+
+
+
+  <!-- END DATA TYPES -->
+
+</schema>

@@ -1,0 +1,2294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions
+	xmlns:glitens="http://glite.org/wms/wmproxy"
+	xmlns:glitenstypes="http://glite.org/wms/wmproxy"
+	xmlns:glitejsdlns="http://schemas.ggf.org/jsdl/2005/11/jsdl"
+	xmlns:glitedelegns="http://www.gridsite.org/namespaces/delegation-1"
+	xmlns:glitedelegns2="http://www.gridsite.org/namespaces/delegation-2"
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	targetNamespace="http://glite.org/wms/wmproxy" name="WMProxy">
+
+	<!-- ==== Import wsdl file for delegation services (client version 1.5 or greater) ==== -->
+	<wsdl:import
+		namespace="http://www.gridsite.org/namespaces/delegation-2"
+		location="www.gridsite.org-delegation-2.0.0.wsdl"/>
+	<wsdl:import
+		namespace="http://www.gridsite.org/namespaces/delegation-1"
+		location="www.gridsite.org-delegation-1.0.0.wsdl"/>
+
+	<!-- ==== Types definition ==== -->
+	<wsdl:types>
+		<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://glite.org/wms/wmproxy">
+		<!--schema targetNamespace="http://glite.org/wms/wmproxy" xmlns="http://www.w3.org/2001/XMLSchema"
+								xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" elementFormDefault="qualified"-->
+			<!-- ==== List of supported requests types ==== -->
+			<xsd:simpleType name="ObjectType">
+				<xsd:restriction base="xsd:string">
+					<enumeration value="JOB"/>
+					<enumeration value="DAG"/>
+					<enumeration value="COLLECTION"/>
+				</xsd:restriction>
+			</xsd:simpleType>
+			<!-- ==== List of supported job types ==== -->
+			<xsd:simpleType name="JobType">
+				<xsd:restriction base="xsd:string">
+					<enumeration value="NORMAL"/>
+					<enumeration value="PARAMETRIC"/>
+					<enumeration value="INTERACTIVE"/>
+					<enumeration value="MPI"/>
+					<enumeration value="PARTITIONABLE"/>
+					<enumeration value="CHECKPOINTABLE"/>
+				</xsd:restriction>
+			</xsd:simpleType>
+			<!-- ==== List of jdl types ==== -->
+			<xsd:simpleType name="JdlType">
+				<xsd:restriction base="xsd:string">
+					<enumeration value="ORIGINAL"/>
+					<enumeration value="REGISTERED"/>
+				</xsd:restriction>
+			</xsd:simpleType>
+			<xsd:complexType name="JobTypeList">
+				<xsd:sequence>
+					<element name="jobType" type="glitenstypes:JobType" minOccurs="0" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<xsd:complexType name="StringList">
+				<xsd:sequence>
+					<xsd:element name="Item" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<!-- ==== Definition of the structure containing destination URIs ==== -->
+			<xsd:complexType name="DestURIStructType">
+				<xsd:sequence>
+					<xsd:element name="id" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<xsd:element name="Item" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<xsd:complexType name="DestURIsStructType">
+				<xsd:sequence>
+					<xsd:element name="Item" type="glitenstypes:DestURIStructType" minOccurs="1" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<xsd:complexType name="StringAndLongType">
+				<xsd:sequence>
+					<xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<xsd:element name="size" type="xsd:long" minOccurs="1" maxOccurs="1"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<xsd:complexType name="StringAndLongList">
+				<xsd:sequence>
+					<element name="file" type="glitenstypes:StringAndLongType" minOccurs="0" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<!-- ==== Definition of the structure containing job identifiers for complex job types ==== -->
+
+
+
+			<xsd:complexType name="JobStatusStructType">
+			<!-- ==== TODO Definition To be completed ==== -->
+				<xsd:sequence>
+					<xsd:element name="jobid" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="status" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="childrenJob" type="glitenstypes:JobStatusStructType" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+				</xsd:sequence>
+			</xsd:complexType>
+
+
+
+
+
+			<xsd:complexType name="JobIdStructType">
+				<xsd:sequence>
+					<xsd:element name="id" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="true"/>
+					<xsd:element name="path" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="true"/>
+					<xsd:element name="childrenJob" type="glitenstypes:JobIdStructType" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<xsd:complexType name="GraphStructType">
+				<xsd:sequence>
+					<xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="true"/>
+					<xsd:element name="childrenJob" type="glitenstypes:GraphStructType" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<!-- ==== Definition of the structure containing VO Proxy Info ==== -->
+			<xsd:complexType name="VOProxyInfoStructType">
+				<xsd:sequence>
+					<xsd:element name="User" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="UserCA" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="Server" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="ServerCA" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="VOName" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="URI" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="StartTime" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="EndTime" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="Attribute" type="xsd:string" minOccurs="1" maxOccurs="unbounded" nillable="false"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<!-- ==== Definition of the structure containing Proxy Info ==== -->
+			<xsd:complexType name="ProxyInfoStructType">
+				<xsd:sequence>
+					<xsd:element name="Subject" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="Issuer" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="Identity" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="Type" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="Strength" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="StartTime" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="EndTime" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+					<xsd:element name="VOsInfo" type="glitenstypes:VOProxyInfoStructType" minOccurs="0" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<!-- ==== Common fault information to carry in all fault messages ==== -->
+			<xsd:complexType name="BaseFaultType">
+				<xsd:sequence>
+					<xsd:element name="methodName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<xsd:element name="Timestamp" type="xsd:dateTime" minOccurs="1" maxOccurs="1"/>
+					<xsd:element name="ErrorCode" minOccurs="0" maxOccurs="1" type="xsd:string"/>
+					<xsd:element name="Description" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+					<xsd:element name="FaultCause" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:complexType>
+			<xsd:complexType name="GenericFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="AuthenticationFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="AuthorizationFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="InvalidArgumentFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="GetQuotaManagementFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="NoSuitableResourcesFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="JobUnknownFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="OperationNotAllowedFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:complexType name="ServerOverloadedFaultType">
+				<xsd:complexContent>
+					<xsd:extension base="glitenstypes:BaseFaultType"/>
+				</xsd:complexContent>
+			</xsd:complexType>
+			<xsd:element name="AuthenticationFault" type="glitenstypes:AuthenticationFaultType"/>
+			<xsd:element name="AuthorizationFault" type="glitenstypes:AuthorizationFaultType"/>
+			<xsd:element name="InvalidArgumentFault" type="glitenstypes:InvalidArgumentFaultType"/>
+			<xsd:element name="GetQuotaManagementFault" type="glitenstypes:GetQuotaManagementFaultType"/>
+			<xsd:element name="NoSuitableResourcesFault" type="glitenstypes:NoSuitableResourcesFaultType"/>
+			<xsd:element name="GenericFault" type="glitenstypes:GenericFaultType"/>
+			<xsd:element name="JobUnknownFault" type="glitenstypes:JobUnknownFaultType"/>
+			<xsd:element name="OperationNotAllowedFault" type="glitenstypes:OperationNotAllowedFaultType"/>
+			<xsd:element name="ServerOverloadedFault" type="glitenstypes:ServerOverloadedFaultType"/>
+		</schema>
+		
+		<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://schemas.ggf.org/jsdl/2005/11/jsdl">
+			<xsd:include schemaLocation="jsdl.xsd-18.xsd"/>
+		</schema>
+
+		<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://schemas.ggf.org/jsdl/2005/11/jsdl-posix">
+			<xsd:include schemaLocation="jsdl-posix.xsd-6.xsd"/>
+		</schema>
+
+		<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://schemas.ggf.org/jsdl/2005/11/jsdl-posix">
+			<xsd:import namespace="http://schemas.ggf.org/jsdl/2005/11/jsdl-posix" schemaLocation="jsdl-posix.xsd-6.xsd"/>
+	        </schema>
+
+	</wsdl:types>
+
+	<!-- ==== Messages: Requests Responses definition ==== -->
+	<wsdl:message name="getProxyReqRequest">
+		<wsdl:part name="delegationID" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getProxyReqResponse">
+		<wsdl:part name="request" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="putProxyRequest">
+		<wsdl:part name="delegationID" type="xsd:string"/>
+		<wsdl:part name="proxy" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="putProxyResponse">
+	</wsdl:message>
+	<wsdl:message name="getVersionRequest">
+	</wsdl:message>
+	<wsdl:message name="getVersionResponse">
+		<wsdl:part name="version" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getJDLRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+		<wsdl:part name="type" type="glitenstypes:JdlType"/>
+	</wsdl:message>
+	<wsdl:message name="getJDLResponse">
+		<wsdl:part name="jdl" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobRegisterRequest">
+		<wsdl:part name="jdl" type="xsd:string"/>
+		<wsdl:part name="delegationId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobRegisterResponse">
+		<wsdl:part name="jobIdStruct" type="glitenstypes:JobIdStructType"/>
+	</wsdl:message>
+	<wsdl:message name="jobRegisterJSDLRequest">
+		<wsdl:part name="jsdl" type="glitejsdlns:JobDefinition_Type"/>
+		<wsdl:part name="delegationId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobRegisterJSDLResponse">
+		<wsdl:part name="jobIdStruct" type="glitenstypes:JobIdStructType"/>
+	</wsdl:message>
+	<wsdl:message name="jobStartRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobStartResponse">
+	</wsdl:message>
+	<wsdl:message name="jobSubmitRequest">
+		<wsdl:part name="jdl" type="xsd:string"/>
+		<wsdl:part name="delegationId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobSubmitResponse">
+		<wsdl:part name="jobIdStruct" type="glitenstypes:JobIdStructType"/>
+	</wsdl:message>
+	<wsdl:message name="jobSubmitJSDLRequest">
+		<wsdl:part name="delegationId" type="xsd:string"/>
+		<wsdl:part name="jsdl" type="glitejsdlns:JobDefinition_Type"/>
+	</wsdl:message>
+        <wsdl:message name="jobSubmitJSDLResponse">
+                <wsdl:part name="jobIdStruct" type="glitenstypes:JobIdStructType"/>
+	</wsdl:message>
+	<wsdl:message name="jobCancelRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobCancelResponse">
+	</wsdl:message>
+	<wsdl:message name="getMaxInputSandboxSizeRequest">
+	</wsdl:message>
+	<wsdl:message name="getMaxInputSandboxSizeResponse">
+		<wsdl:part name="size" type="xsd:long"/>
+	</wsdl:message>
+	<wsdl:message name="getSandboxDestURIRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+		<wsdl:part name="protocol" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getSandboxDestURIResponse">
+		<wsdl:part name="path" type="glitenstypes:StringList"/>
+	</wsdl:message>
+	<wsdl:message name="getSandboxBulkDestURIRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+		<wsdl:part name="protocol" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getSandboxBulkDestURIResponse">
+		<wsdl:part name="DestURIsStructType" type="glitenstypes:DestURIsStructType"/>
+	</wsdl:message>
+	<wsdl:message name="getTotalQuotaRequest">
+	</wsdl:message>
+	<wsdl:message name="getTotalQuotaResponse">
+		<wsdl:part name="softLimit" type="xsd:long"/>
+		<wsdl:part name="hardLimit" type="xsd:long"/>
+	</wsdl:message>
+	<wsdl:message name="getFreeQuotaRequest">
+	</wsdl:message>
+	<wsdl:message name="getFreeQuotaResponse">
+		<wsdl:part name="softLimit" type="xsd:long"/>
+		<wsdl:part name="hardLimit" type="xsd:long"/>
+	</wsdl:message>
+	<wsdl:message name="jobPurgeRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobPurgeResponse">
+	</wsdl:message>
+	<wsdl:message name="getOutputFileListRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+		<wsdl:part name="protocol" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getOutputFileListResponse">
+		<wsdl:part name="OutputFileAndSizeList" type="glitenstypes:StringAndLongList"/>
+	</wsdl:message>
+	<wsdl:message name="jobListMatchRequest">
+		<wsdl:part name="jdl" type="xsd:string"/>
+		<wsdl:part name="delegationId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobListMatchResponse">
+		<wsdl:part name="CEIdAndRankList" type="glitenstypes:StringAndLongList"/>
+	</wsdl:message>
+	<wsdl:message name="jobListMatchJSDLRequest">
+		<wsdl:part name="jsdl" type="glitejsdlns:JobDefinition_Type"/>
+		<wsdl:part name="delegationId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="jobListMatchJSDLResponse">
+		<wsdl:part name="CEIdAndRankList" type="glitenstypes:StringAndLongList"/>
+	</wsdl:message>
+	<wsdl:message name="getJobTemplateRequest">
+		<wsdl:part name="jobType" type="glitenstypes:JobTypeList"/>
+		<wsdl:part name="executable" type="xsd:string"/>
+		<wsdl:part name="arguments" type="xsd:string"/>
+		<wsdl:part name="requirements" type="xsd:string"/>
+		<wsdl:part name="rank" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getJobTemplateResponse">
+		<wsdl:part name="jdl" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getDAGTemplateRequest">
+		<wsdl:part name="dependencies" type="glitenstypes:GraphStructType"/>
+		<wsdl:part name="requirements" type="xsd:string"/>
+		<wsdl:part name="rank" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getDAGTemplateResponse">
+		<wsdl:part name="jdl" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getCollectionTemplateRequest">
+		<wsdl:part name="jobNumber" type="xsd:int"/>
+		<wsdl:part name="requirements" type="xsd:string"/>
+		<wsdl:part name="rank" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getCollectionTemplateResponse">
+		<wsdl:part name="jdl" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getJobStatusRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getJobStatusResponse">
+		<wsdl:part name="JobStatusStruct" type="glitenstypes:JobStatusStructType"/>
+	</wsdl:message>
+	<wsdl:message name="getIntParametricJobTemplateRequest">
+		<wsdl:part name="attributes" type="glitenstypes:StringList"/>
+		<wsdl:part name="param" type="xsd:int"/>
+		<wsdl:part name="parameterStart" type="xsd:int"/>
+		<wsdl:part name="parameterStep" type="xsd:int"/>
+		<wsdl:part name="requirements" type="xsd:string"/>
+		<wsdl:part name="rank" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getIntParametricJobTemplateResponse">
+		<wsdl:part name="jdl" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getStringParametricJobTemplateRequest">
+		<wsdl:part name="attributes" type="glitenstypes:StringList"/>
+		<wsdl:part name="param" type="glitenstypes:StringList"/>
+		<wsdl:part name="requirements" type="xsd:string"/>
+		<wsdl:part name="rank" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getStringParametricJobTemplateResponse">
+		<wsdl:part name="jdl" type="xsd:string"/>
+	</wsdl:message>
+    <wsdl:message name="getACLItemsRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getACLItemsResponse">
+		<wsdl:part name="items" type="glitenstypes:StringList"/>
+	</wsdl:message>
+    <wsdl:message name="addACLItemsRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+        <wsdl:part name="items" type="glitenstypes:StringList"/>
+	</wsdl:message>
+	<wsdl:message name="addACLItemsResponse">
+	</wsdl:message>
+	<wsdl:message name="removeACLItemRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+        <wsdl:part name="item" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="removeACLItemResponse">
+	</wsdl:message>
+	<wsdl:message name="getDelegatedProxyInfoRequest">
+		<wsdl:part name="delegationID" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getDelegatedProxyInfoResponse">
+		<wsdl:part name="items" type="glitenstypes:ProxyInfoStructType"/>
+	</wsdl:message>
+	<wsdl:message name="getJobProxyInfoRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getJobProxyInfoResponse">
+		<wsdl:part name="items" type="glitenstypes:ProxyInfoStructType"/>
+	</wsdl:message>
+	<wsdl:message name="enableFilePerusalRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+		<wsdl:part name="fileList" type="glitenstypes:StringList"/>
+	</wsdl:message>
+	<wsdl:message name="enableFilePerusalResponse">
+	</wsdl:message>
+	<wsdl:message name="getPerusalFilesRequest">
+		<wsdl:part name="jobId" type="xsd:string"/>
+		<wsdl:part name="file" type="xsd:string"/>
+		<wsdl:part name="allChunks" type="xsd:boolean"/>
+		<wsdl:part name="protocol" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:message name="getPerusalFilesResponse">
+		<wsdl:part name="fileList" type="glitenstypes:StringList"/>
+	</wsdl:message>
+	<wsdl:message name="getTransferProtocolsRequest">
+	</wsdl:message>
+	<wsdl:message name="getTransferProtocolsResponse">
+		<wsdl:part name="items" type="glitenstypes:StringList"/>
+	</wsdl:message>
+
+	<!-- ==== Messages: Fault definition ==== -->
+	<wsdl:message name="AuthenticationFault">
+		<wsdl:part name="fault" element="glitenstypes:AuthenticationFault"/>
+	</wsdl:message>
+	<wsdl:message name="AuthorizationFault">
+		<wsdl:part name="fault" element="glitenstypes:AuthorizationFault"/>
+	</wsdl:message>
+	<wsdl:message name="InvalidArgumentFault">
+		<wsdl:part name="fault" element="glitenstypes:InvalidArgumentFault"/>
+	</wsdl:message>
+	<wsdl:message name="GenericFault">
+		<wsdl:part name="GenericFault" element="glitenstypes:GenericFault"/>
+	</wsdl:message>
+	<wsdl:message name="GetQuotaManagementFault">
+		<wsdl:part name="fault" element="glitenstypes:GetQuotaManagementFault"/>
+	</wsdl:message>
+	<wsdl:message name="NoSuitableResourcesFault">
+		<wsdl:part name="fault" element="glitenstypes:NoSuitableResourcesFault"/>
+	</wsdl:message>
+	<wsdl:message name="JobUnknownFault">
+		<wsdl:part name="fault" element="glitenstypes:JobUnknownFault"/>
+	</wsdl:message>
+	<wsdl:message name="OperationNotAllowedFault">
+		<wsdl:part name="fault" element="glitenstypes:OperationNotAllowedFault"/>
+	</wsdl:message>
+	<wsdl:message name="ServerOverloadedFault">
+		<wsdl:part name="fault" element="glitenstypes:ServerOverloadedFault"/>
+	</wsdl:message>
+
+	<!-- ==== Port type definition ==== -->
+	<wsdl:portType name="WMProxy_PortType">
+		<wsdl:operation name="getProxyReq" parameterOrder="delegationID">
+			<wsdl:documentation>
+				<!-- ==== Delegation operation mantained for backward compatibility
+							client version less than 1.5 ==== -->
+				
+				This operation starts the delegation procedure by asking for a certificate
+     			signing request from the server. The server answers with a
+     			certificate signing request which includes the public key
+     			for the new delegated credentials.
+     
+				Input: string containing the delegationID (i.e. the id used to identify 
+					the delegation process and the resulting delegated credentials 
+					in the server).
+     
+				Output: string containing the certificate signing request for the client 
+					to sign using the user's credentials.
+
+				Faults:
+				AuthenticationFault: 	a generic authentication problem occured.
+				GenericFault: 		another problem occured.
+				AuthorizationFault: 	client is not authorized to perform this operation.
+
+			</wsdl:documentation>
+
+			<wsdl:input name="getProxyReqRequest" message="glitens:getProxyReqRequest"/>
+			<wsdl:output name="getProxyReqResponse" message="glitens:getProxyReqResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="putProxy" parameterOrder="delegationID proxy">
+			<wsdl:documentation>
+				<!-- ==== Delegation operation mantained for backward compatibility
+							client version less than 1.5 ==== -->
+
+     			This operation finishes the delegation procedure by sending the signed
+     			proxy certificate to the server.
+
+				Input: string containing the delegationID (i.e. the id used to identify the
+					delegation process and the resulting delegated credentials
+					in the server).
+				Input: string containing the signed proxy certificate.
+
+				Output: no output.
+
+				Faults:
+				AuthenticationFault: 	a generic authentication problem occured.
+				GenericFault: 		another problem occured.
+				AuthorizationFault: 	client is not authorized to perform this operation.
+
+			</wsdl:documentation>
+			<wsdl:input name="putProxyRequest" message="glitens:putProxyRequest"/>
+			<wsdl:output name="putProxyResponse" message="glitens:putProxyResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getVersion">
+			<wsdl:documentation>
+					This operation gets the version of the service.
+					Format of the version string is "major.minor.patch".
+					
+					Input: no input.
+					
+					Output: string containing the version.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					GenericFault: 					another problem occured.
+					
+             </wsdl:documentation>
+			<wsdl:input name="getVersionRequest" message="glitens:getVersionRequest"/>
+			<wsdl:output name="getVersionResponse" message="glitens:getVersionResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getJDL" parameterOrder="jobId type">
+			<wsdl:documentation>
+					This operation gets the jdl.
+					
+					Input: string containing the JobId.
+					Input: the jdl type to get.
+					
+					Output: string containing the jdl.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 	client is not authorized to perform this operation.
+					JobUnknownFault:		the provided job has not been registered to the system.
+					GenericFault: 					another problem occured.
+					
+             </wsdl:documentation>
+			<wsdl:input name="getJDLRequest" message="glitens:getJDLRequest"/>
+			<wsdl:output name="getJDLResponse" message="glitens:getJDLResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="jobRegister" parameterOrder="jdl delegationId">
+			<wsdl:documentation>
+					This operation registers a job for submission. The JDL description of the job provided by the client is first validated by the service and then registered to the LB.
+					The unique identifier assigned to the job is returned to the client. Note that this operation only registers the job and assign it with an identifier.
+					The actual submission of the job has to be triggered by a call to the jobStart operation after all preparation activities, such as the Input sandbox files upload, have been completed.
+					The service supports registration of simple jobs, parametric jobs, partitionable jobs, DAGs and collections of jobs;
+					the description is always provided through a single JDL description (see "GLite JDL Attributes" document for details).
+					When a clients requests for registration of a complex object, i.e. parametric and partitionable jobs, DAGs and collections of jobs (all those requests represent in fact a set of jobs),
+					the operations returns a structure containing the main identifier of the complex object and the identifiers of all related sub jobs.
+					 
+					Input: string containing the job jdl representation.
+					Input: string containing the Id of the delegated proxy associated to the job.
+
+					Output: string containing the unique jobId assigned to the job.
+		
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job JDL expression is not valid.
+					GenericFault: 			another problem occured. 
+					
+			</wsdl:documentation>
+			<wsdl:input name="jobRegisterRequest" message="glitens:jobRegisterRequest"/>
+			<wsdl:output name="jobRegisterResponse" message="glitens:jobRegisterResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+
+		<wsdl:operation name="jobRegisterJSDL" parameterOrder="jsdl delegationId">
+			<wsdl:documentation>
+					This operation registers a job for submission. The JDL description of the job provided by the client is first validated by the service and then registered to the LB.
+					The unique identifier assigned to the job is returned to the client. Note that this operation only registers the job and assign it with an identifier.
+					The actual submission of the job has to be triggered by a call to the jobStart operation after all preparation activities, such as the Input sandbox files upload, have been completed.
+					The service supports registration of simple jobs, parametric jobs, partitionable jobs, DAGs and collections of jobs;
+					the description is always provided through a single JDL description (see "GLite JDL Attributes" document for details). 
+					When a clients requests for registration of a complex object, i.e. parametric and partitionable jobs, DAGs and collections of jobs (all those requests represent in fact a set of jobs),
+					the operations returns a structure containing the main identifier of the complex object and the identifiers of all related sub jobs.
+					 
+					Input: string containing the job jsdl representation.
+					Input: string containing the Id of the delegated proxy associated to the job.
+
+					Output: string containing the unique jobId assigned to the job.
+		
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job JDL expression is not valid.
+					GenericFault: 			another problem occured. 
+					
+			</wsdl:documentation>
+			<wsdl:input name="jobRegisterJSDLRequest" message="glitens:jobRegisterJSDLRequest"/>
+			<wsdl:output name="jobRegisterJSDLResponse" message="glitens:jobRegisterJSDLResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		
+		<wsdl:operation name="jobStart" parameterOrder="jobId">
+			<wsdl:documentation>
+					This operation triggers the submission a previously registered job. It starts the actual processing of the registered job within the Workload Manager.
+					It is assumed that when this operation is called, all the work preparatory to the job (e.g. input sandbox upload, registration of input data to the Data Management service etc.) has been completed by the client.
+					To better clarify, an example of the correct sequence of operations for submitting a job could be:
+						1.  jobId = jobRegist(JDL)
+						2.  destURI = getSandboxDestURI(jobID)
+						3.  transfer InputSandbox file to destURI (e.g. using GridFTP)
+						4.  jobStart(jobId)
+
+					Note that the jobStart operation is not allowed on subjobs of a complex object, i.e. the input parameter must be either the id of a simple job or the main id of a complex object.
+					
+					Input: string containing the jobId.
+
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job Id expression is not valid.
+					JobUnknownFault:		the provided job has not been registered to the system.
+					OperationNotAllowedFault: current job status does not allow requested operation.
+					GenericFault: 			another problem occured. 
+					
+			</wsdl:documentation>
+			<wsdl:input name="jobStartRequest" message="glitens:jobStartRequest"/>
+			<wsdl:output name="jobStartResponse" message="glitens:jobStartResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		
+		<wsdl:operation name="jobSubmit" parameterOrder="jdl delegationId">
+			<wsdl:documentation>
+					This operation submits a job. The JDL description of the job provided by the client is validated by the service, registered to the LB and finally passed to the Workload Manager.
+					The unique identifier assigned to the job is returned to the client.
+					This operation assumes that all the work preparatory to the job (e.g. input sandbox upload, registration of input data to the Data Management service etc.) has been completed by the client.
+					Usage of this operation (instead of jobRegister + jobStart) is indeed recommended when the job identifier is not needed prior to its submission
+					(e.g. jobs without input sandbox or with a sandbox entirely available on a GridFTP server managed by the client).
+					The service supports submission of simple jobs, parametric jobs, partitionable jobs, DAGs and collections of jobs; the description is always provided through a single JDL description (see "GLite JDL Attributes" document for details).
+					When a clients requests for submission of a complex object, i.e. parametric and partitionable jobs, DAGs and collections of jobs (all those requests represent in fact a set of jobs),
+					the operations returns a structure containing the main identifier of the complex object and the identifiers of all related sub jobs.
+					
+					Input: string containing the job jdl representation.
+					Input: string containing the Id of the delegated proxy associated to the job.
+					
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job JDL expression is not valid.
+					GenericFault: 			another problem occured. 
+					
+			</wsdl:documentation>
+			<wsdl:input name="jobSubmitRequest" message="glitens:jobSubmitRequest"/>
+			<wsdl:output name="jobSubmitResponse" message="glitens:jobSubmitResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+
+		<wsdl:operation name="jobSubmitJSDL" parameterOrder="jsdl delegationId">
+			<wsdl:documentation>
+					This operation submits a job. The JSDL description of the job provided by the client is validated by the service, registered to the LB and finally passed to the Workload Manager.
+					The unique identifier assigned to the job is returned to the client.
+					This operation assumes that all the work preparatory to the job (e.g. input sandbox upload, registration of input data to the Data Management service etc.) has been completed by the client.
+					Usage of this operation (instead of jobRegister + jobStart) is indeed recommended when the job identifier is not needed prior to its submission
+					(e.g. jobs without input sandbox or with a sandbox entirely available on a GridFTP server managed by the client).
+					The service supports submission of simple jobs, parametric jobs, partitionable jobs, DAGs and collections of jobs; the description is always provided through a single JDL description (see "GLite JDL Attributes" document for details).
+					When a clients requests for submission of a complex object, i.e. parametric and partitionable jobs, DAGs and collections of jobs (all those requests represent in fact a set of jobs),
+					the operations returns a structure containing the main identifier of the complex object and the identifiers of all related sub jobs.
+					
+					Input: string containing the job jdl representation.
+					Input: string containing the Id of the delegated proxy associated to the job.
+					
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job JDL expression is not valid.
+					GenericFault: 			another problem occured. 
+					
+			</wsdl:documentation>
+			<wsdl:input name="jobSubmitJSDLRequest" message="glitens:jobSubmitJSDLRequest"/>
+			<wsdl:output name="jobSubmitJSDLResponse" message="glitens:jobSubmitJSDLResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		
+		<wsdl:operation name="jobCancel" parameterOrder="jobId">
+			<wsdl:documentation>
+					This operation cancels a previously submitted job identified by its JobId.
+					If the job is still maaged by the WM then it is removed from the WM tasks queue. If the job has been already sent to the CE, the WM simply forwards the request to the CE.
+					For suspending/eleasing and sending signals to a submitted job the user has to chek that the job has been scheduled to a CE and access directly the corresponding operations made avalable by the CE service.
+					
+					Input: string containing the JobId.
+					
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job Id is not valid.
+					JobUnknownFault:			the provided job has not been registerd to the system.
+					OperationNotAllowedFault: current job status does not allow requested operation.
+					GenericFault: 					another problem occured. 
+					
+            </wsdl:documentation>
+			<wsdl:input name="jobCancelRequest" message="glitens:jobCancelRequest"/>
+			<wsdl:output name="jobCancelResponse" message="glitens:jobCancelResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getMaxInputSandboxSize">
+			<wsdl:documentation>
+					This operation returns the maximum Input sandbox size (in bytes) a user can count-on for a job submission if using the space managed by the WM.
+					This is a static value in the WM configuration (on a job-basis) set by the VO administrator.
+					No assumption should be made on the input sandboxes space managed by the WM. It is managed  transparently to the user; it can be either local to the WM or remote.
+
+					Input: no input.
+
+					Output: long containing the size in bytes.
+
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					GenericFault: 					another problem occured.
+
+            </wsdl:documentation>
+			<wsdl:input name="getMaxInputSandboxSizeRequest" message="glitens:getMaxInputSandboxSizeRequest"/>
+			<wsdl:output name="getMaxInputSandboxSizeResponse" message="glitens:getMaxInputSandboxSizeResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getSandboxDestURI" parameterOrder="jobId protocol">
+			<wsdl:documentation>
+					This operation returns a destination URI associated to the job, identified by the jobId provided as input, where the job input sandbox files can be uploaded by the client on the WMS node.
+					The location is created in the storage managed by the WM and the corresponding URI is returned to the operation caller if no problems has been arised during creation.
+					Files of the job input sandbox that have been referenced in the JDL as relative or absolute paths are expected to be found in the returned location when the job lands on the CE.
+					Note that the WM service only provides a the URI of a location where the job input sandbox files can be stored but does not perform any file transfer.
+					File upload is indeed responsibility of the client (through the GridFTP service available on the WMS node). 
+					The user can also specify in the JDL the complete URI of files that are stored on a GridFTP server (e.g. managed by her organisation);
+					those files will be directly downloaded (by the JobWrapper) on the WN where the job will run without transiting on the WM machine.
+					The same applies to the output sandbox files list, i.e. the user can specify in the JDL the complete URIs for the files of the output sandbox;
+					those files will be directly uploaded (by the JobWrapper) from the WN to the specified GridFTP servers without transiting on the WMS machine.
+					
+					Input: string containing the JobId.
+					Input: string containing the protocol to use in the returned URIs.
+					       Server available protocols are those returned by getAvailableProtocols operation.
+					       Possible standard values are:
+					       - "all" to get URIs with all available protocols
+					       - "default" to get URIs with the server default protocol
+					       not mandatory, default value is "all".
+					
+					Output: a vector containing the string representation of the Destination 
+							URI in the requested protocol.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job Id is not valid or the provided protocol is not available.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the provided job has not been registered to the system.
+					OperationNotAllowedFault: current job status does not allow requested operation.
+
+            </wsdl:documentation>
+			<wsdl:input name="getSandboxDestURIRequest" message="glitens:getSandboxDestURIRequest"/>
+			<wsdl:output name="getSandboxDestURIResponse" message="glitens:getSandboxDestURIResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getSandboxBulkDestURI" parameterOrder="jobId protocol">
+			<wsdl:documentation>
+					This operation returns the list of destination URIs associated to a compound job (i.e. a DAG a Collection or a parametric jobs) and all of its sub-jobs in a vector of structures each one containing:
+					- the job id
+					- the corresponding list of destination URIs (can be more than one if different transfer protocols are supported, e.g. gsiftp, https etc.)
+
+					The vector contains an element (structure above) for the compound job id provided (at first position) and one further element for any sub nodes. It contains only one element if the job id provided as imnput is the identifier of a simple job.
+					
+					The location is created in the storage managed by the WMS and the corresponding URI is returned to the operation caller if no problems has been arised during creation.
+					Files of the job input sandbox that have been referenced in the JDL as relative or absolute paths are expected to be found in the returned location when the job lands on the CE.
+					Note that the WMS service only provides a the URI of a location where the job input sandbox files can be stored but does not perform any file transfer.
+					File upload is indeed responsibility of the client (through the GridFTP/HTTPS server available on the WMS node).
+					The user can also specify in the JDL the complete URI of files that are stored on a GridFTP/HTTPS server (e.g. managed by her organisation);
+					those files will be directly downloaded (by the JobWrapper) on the WN where the job will run without transiting on the WMS machine.
+					The same applies to the output sandbox files list, i.e. the user can specify in the JDL the complete URIs for the files of the output sandbox;
+					those files will be directly uploaded (by the JobWrapper) from the WN to the specified GridFTP/HTTPS servers without transiting on the WMS machine.
+					
+					Input: string containing the JobId.
+					Input: string containing the protocol to use in the returned URIs.
+					       Server available protocols are those returned by getAvailableProtocols operation.
+					       Possible standard values are:
+					       - "all" to get URIs with all available protocols
+					       - "default" to get URIs with the server default protocol
+					       not mandatory, default value is "all".
+					
+					Output: a structure containing the JobIds provided as input and the string representation
+							of the Destination URI in the requested protocol
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job Id  is not valid or the provided protocol is not available.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the provided job has not been registered to the system.
+					OperationNotAllowedFault: current job status does not allow requested operation.
+
+            </wsdl:documentation>
+			<wsdl:input name="getSandboxBulkDestURIRequest" message="glitens:getSandboxBulkDestURIRequest"/>
+			<wsdl:output name="getSandboxBulkDestURIResponse" message="glitens:getSandboxBulkDestURIResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getTotalQuota">
+			<wsdl:documentation>
+					This operation returns the available user space quota on the storage managed by the WM. 
+					The fault GetQuotaManagementFault is returned if the quota management is not active on the WM.
+					
+					Input: no input.
+					
+					Output: long containing soft limit quota (in bytes) i.e. the limit that the user is expected to remain below.
+					Output: long containing hard limit quota (in bytes) i.e. the real quota limit that cannot be exceeded.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					GenericFault: 					another problem occured. 
+					GetQuotaManagementFault: quota management is not active on the WM.
+					
+            </wsdl:documentation>
+			<wsdl:input name="getQuotaRequest" message="glitens:getTotalQuotaRequest"/>
+			<wsdl:output name="getQuotaResponse" message="glitens:getTotalQuotaResponse"/>
+			<wsdl:fault name="GetQuotaManagementFault" message="glitens:GetQuotaManagementFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getFreeQuota">
+			<wsdl:documentation>
+					This operation returns the remaining free part of available user disk quota (in bytes).
+					The fault GetQuotaManagementFault is returned if the quota management is not active.
+					
+					Input: no input.
+					
+					Output: long containing soft limit free quota i.e. the difference between quota soft limit and user's disk usage.
+					Output: long containing hard limit free quota i.e. total free available disk space.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					GenericFault: 					another problem occured. 
+					GetQuotaManagementFault: quota management is not active on the WM.
+					
+	            </wsdl:documentation>
+			<wsdl:input name="getFreeQuotaRequest" message="glitens:getFreeQuotaRequest"/>
+			<wsdl:output name="getFreeQuotaResponse" message="glitens:getFreeQuotaResponse"/>
+			<wsdl:fault name="GetQuotaManagementFault" message="glitens:GetQuotaManagementFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="jobPurge" parameterOrder="jobId">
+			<wsdl:documentation>
+					This operation removes from the WM managed space all files related to the  job identified by the jobId provided as input.
+					This only applies to job related files that are managed by the WM. E.g. Input/Output sandbox files that have been specified in the JDL
+					through a URI will be not subjected to this management.
+					
+					Input: string containing the JobId.
+					
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job Id is not valid.
+					JobUnknownFault:			the provided job has not been registered to the system.
+					OperationNotAllowedFault: current job status does not allow requested operation.
+					GenericFault: 					another problem occured. 
+					
+            </wsdl:documentation>
+			<wsdl:input name="jobPurgeRequest" message="glitens:jobPurgeRequest"/>
+			<wsdl:output name="jobPurgeResponse" message="glitens:jobPurgeResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getOutputFileList" parameterOrder="jobId protocol">
+			<wsdl:documentation>
+					This operation returns the list of URIs where the output files created during job execution have been stored in the WM managed space and the corresponding sizes in bytes.
+					This only applies for files of the Output Sandbox that are managed by the WM (i.e. not specified as URI in the JDL).
+					
+					Input: string containing the JobId.
+					Input: string containing the protocol to use in the returned URIs.
+					       Server available protocols are those returned by getAvailableProtocols operation.
+					       Possible standard values are:
+					       - "all" to get URIs with all available protocols
+					       - "default" to get URIs with the server default protocol
+					       not mandatory, default value is "all".
+					
+					Output: List of objects containing the file URI in the requested protocol,
+							and the corresponding size in bytes.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job Id is not valid.
+					JobUnknowFault:		the provided job has not been registered to the system.
+					OperationNotAllowedFault: current job status does not allow the requested operation.
+					GenericFault: 			another problem occured. 
+					
+            </wsdl:documentation>
+			<wsdl:input name="getOutputFileListRequest" message="glitens:getOutputFileListRequest"/>
+			<wsdl:output name="getOutputFileListResponse" message="glitens:getOutputFileListResponse"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="jobListMatch" parameterOrder="jdl delegationId">
+			<wsdl:documentation>
+					This operation returns the list of CE Ids satisfying the job Requirements specified in the JDL, ordered according to the decreasing Rank.
+					The fault NoSuitableResourcesFault is returned if ther are no resources matching job constraints.
+					
+					Input: string representing the job description (JDL).
+					Input: string representing the delegation ID.
+					
+					Output: list of strings representing matching CEId.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job JDL expression is not valid.
+					GenericFault: 					another problem occured. 
+					NoSuitableResourcesFault: no resources matching job requirements have been found.
+					
+            </wsdl:documentation>
+			<wsdl:input name="jobListMatchRequest" message="glitens:jobListMatchRequest"/>
+			<wsdl:output name="jobListMatchResponse" message="glitens:jobListMatchResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="NoSuitableResourcesFault" message="glitens:NoSuitableResourcesFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="jobListMatchJSDL" parameterOrder="jsdl delegationId">
+			<wsdl:documentation>
+					This operation returns the list of CE Ids satisfying the job Requirements specified in the JDL, ordered according to the decreasing Rank.
+					The fault NoSuitableResourcesFault is returned if ther are no resources matching job constraints.
+					
+					Input: string representing the job description (JDL).
+					Input: string representing the delegation ID.
+					
+					Output: list of strings representing matching CEId.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the provided job JDL expression is not valid.
+					GenericFault: 					another problem occured. 
+					NoSuitableResourcesFault: no resources matching job requirements have been found.
+					
+          		  </wsdl:documentation>
+			<wsdl:input name="jobListMatchJSDLRequest" message="glitens:jobListMatchJSDLRequest"/>
+			<wsdl:output name="jobListMatchJSDLResponse" message="glitens:jobListMatchJSDLResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="NoSuitableResourcesFault" message="glitens:NoSuitableResourcesFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+
+		<wsdl:operation name="getJobTemplate" parameterOrder="jobType executable arguments requirements rank">
+			<wsdl:documentation>
+					This operation returns a JDL template for the requested job type.					
+									
+					Input: list of strings representing the job type
+					Input: string representing the job(s) executable
+					Input: string representing the executable command line arguments
+					Input: string representing the job(s) constraints (JDL requirements expression)
+					Input: string representing the job(s) preferences (JDL rank expression)
+					
+					Output: string representing the JDL template.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	one or more of the provided input parameters is not valid.
+					GenericFault: 			another problem occured. 					
+					
+            </wsdl:documentation>
+			<wsdl:input message="glitens:getJobTemplateRequest"/>
+			<wsdl:output message="glitens:getJobTemplateResponse"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getDAGTemplate" parameterOrder="dependencies requirements rank">
+			<wsdl:documentation>
+					This operation returns a JDL template for a DAG.					
+										
+
+					Input: struct representing the topology of the jobs graph (jobs are identified by a name).
+					Input: string representing the constraints to be inherited by all DAG nodes 
+					Input: string representing the preferences to be inherited by all DAG nodes 
+					
+					Output: string representing DAG JDL template.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	one or more of the provided input parameters is not valid.
+					GenericFault: 			another problem occured. 
+				
+					
+            </wsdl:documentation>
+			<wsdl:input message="glitens:getDAGTemplateRequest"/>
+			<wsdl:output message="glitens:getDAGTemplateResponse"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getCollectionTemplate" parameterOrder="jobNumber requirements rank">
+			<wsdl:documentation>
+					This operation returns a JDL template for a collection of jobs, that is a set of independent jobs that can be submitted, controlled and monitored as a single entity.
+										
+
+					Input: int representing the number of jobs of the collection.
+					Input: string representing the constraints to be inherited by all the jobs of the collection.
+					Input: string representing the preferences to be inherited by all the jobs of the collection.
+					
+					Output: string representing the Collection JDL template.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	one or more of the provided input parameters is not valid.
+					GenericFault: 			another problem occured. 
+				
+            </wsdl:documentation>
+			<wsdl:input message="glitens:getCollectionTemplateRequest"/>
+			<wsdl:output message="glitens:getCollectionTemplateResponse"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getIntParametricJobTemplate" parameterOrder="attributes param parameterStart parameterStep requirements rank">
+			<wsdl:documentation>
+					This operation returns a JDL template for a parametric of job, which is a job having one or more parametric attributes in the JDL.
+					The parametric attributes vary their values according to the "Parameter" attribute specified in the JDL itself (in this case the parametere has to be an integer).
+					The submission of a Parametric job results in the submission  of a set of jobs having the same descritpion apart from the parametrised attribute.
+					They can be however controlled and monitored as a single entity.
+										
+					Input: list of strings representing the parametric JDL attributes
+					Input: int representing the value of the Parameter attribute
+					Input: int representing the start value for varying the parametric attributes
+					Input: int representing the step of each variation
+					Input: string representing the constraints to be inherited by all the jobs of the collection.
+					Input: string representing the preferences to be inherited by all the jobs of the collection.
+					
+					Output: string representing the Parametric Job  JDL template.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	one or more of the provided input parameters is not valid.
+					GenericFault: 			another problem occured. 
+				
+            		</wsdl:documentation>
+			<wsdl:input message="glitens:getIntParametricJobTemplateRequest"/>
+			<wsdl:output message="glitens:getIntParametricJobTemplateResponse"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getStringParametricJobTemplate" parameterOrder="attributes param requirements rank">
+			<wsdl:documentation>
+					This operation returns a JDL template for a parametric of job, which is a job having one or more parametric attributes in the JDL.
+					The parametric attributes vary their values according to the "Parameter" attribute specified in the JDL itself (in this case the parametere has to be a list of strings).
+					The submission of a Parametric job results in the submission  of a set of jobs having the same descritpion apart from the value of the parametric attributes.
+					They can be however controlled and monitored as a single entity.
+										
+					Input: list of strings representing the parametric JDL attributes
+					Input: list of strings representing the values of the Parameter attribute
+					Input: string representing the constraints to be inherited by all the jobs of the collection.
+					Input: string representing the preferences to be inherited by all the jobs of the collection.
+					
+					Output: string representing the Parametric Job  JDL template.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 		client is not authorized to perform this operation.
+					InvalidArgumentFault: 	one or more of the provided input parameters is not valid.
+					GenericFault: 			another problem occured. 
+				
+            </wsdl:documentation>
+			<wsdl:input message="glitens:getStringParametricJobTemplateRequest"/>
+			<wsdl:output message="glitens:getStringParametricJobTemplateResponse"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getACLItems" parameterOrder="jobId">
+			<wsdl:documentation>
+					This operation returns the list of the Items contained in the job Access Control List present
+					inside the Gacl authorization file specific fo the job.
+					
+					Input: string containing the JobId.
+					
+					Output: a vector of string containing the ACL Items set.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the given job Id  is not valid.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the given job has not been registered to the system.
+					
+            </wsdl:documentation>
+			<wsdl:input name="getACLItemsRequest" message="glitens:getACLItemsRequest"/>
+			<wsdl:output name="getACLItemsResponse" message="glitens:getACLItemsResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+        	<wsdl:operation name="addACLItems" parameterOrder="jobId items">
+			<wsdl:documentation>
+					This operations adds a list of items to the job Access Control List. Items Already present
+					will be ignored.
+					
+					Input: string containing the JobId.
+					Input: a vector of string containing the ACL Items to add.
+					
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the given job Id  is not valid.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the given job has not been registered to the system.
+					
+            </wsdl:documentation>
+			<wsdl:input name="addACLItemsRequest" message="glitens:addACLItemsRequest"/>
+			<wsdl:output name="addACLItemsResponse" message="glitens:addACLItemsResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="removeACLItem" parameterOrder="jobId item">
+			<wsdl:documentation>
+					This operation remove an item from the job Access Control List. Removal of the item
+					representing the user that has registered the job are not allowed (a fault will be
+					returned to the caller). 
+				
+					Input: string containing the JobId.
+					Input: string containing the item to remove from ACL.
+					
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the given job Id is not valid or the item is not present in the list.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the given job has not been registered to the system.
+					OperationNotAllowedFault: the item represent the user that has registered the job.
+	
+            </wsdl:documentation>
+			<wsdl:input name="removeACLItemRequest" message="glitens:removeACLItemRequest"/>
+			<wsdl:output name="removeACLItemResponse" message="glitens:removeACLItemResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getDelegatedProxyInfo" parameterOrder="delegationID">
+			<wsdl:documentation>
+					This operation returns the Delegated Proxy information
+					
+					Input: string containing the delegation identifier.
+					
+					Output: a vector of strings containing Delegated Proxy information
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the given delegation id is not valid.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the given job has not been registered to the system.
+					
+            </wsdl:documentation>
+			<wsdl:input name="getDelegatedProxyInfoRequest" message="glitens:getDelegatedProxyInfoRequest"/>
+			<wsdl:output name="getDelegatedProxyInfoResponse" message="glitens:getDelegatedProxyInfoResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getJobProxyInfo" parameterOrder="jobId">
+			<wsdl:documentation>
+					This operation returns the job Proxy information
+					
+					Input: string containing the job identifier.
+					
+					Output: a vector of strings containing job Proxy information
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the given delegation id is not valid.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the given job has not been registered to the system.
+					
+            </wsdl:documentation>
+			<wsdl:input name="getJobProxyInfoRequest" message="glitens:getJobProxyInfoRequest"/>
+			<wsdl:output name="getJobProxyInfoResponse" message="glitens:getJobProxyInfoResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="enableFilePerusal" parameterOrder="jobId fileList">
+			<wsdl:documentation>
+					This operation enables file perusal functionalities if not disabled with the specific jdl attribute during job 
+					register operation.
+					Calling this operation, the user enables perusal for job identified by jobId, for files specified with fileList.
+					An empty fileList disables perusal.
+					
+					Input: string containing the JobId.
+					Input: a vector of strings containing the files for which perusal should be enabled.
+					
+					Output: no output.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the given job Id is not valid.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the given job has not been registered to the system.
+					OperationNotAllowedFault: perusal was disabled with the specific jdl attribute.
+            </wsdl:documentation>
+			<wsdl:input name="enableFilePerusalRequest" message="glitens:enableFilePerusalRequest"/>
+			<wsdl:output name="enableFilePerusalResponse" message="glitens:enableFilePerusalResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getPerusalFiles" parameterOrder="jobId file allChunks protocol">
+			<wsdl:documentation>
+					This operation gets the URIs of perusal files generated during job execution for the specified file file.
+					If allChunks is set to true all perusal URIs will be returned; also the URIs already requested with a
+					previous getPerusalFiles operation. Default value is false.
+					
+					Input: string containing the JobId.
+					Input: the name of the file to get.
+					Input: boolean value to specify when to get all chuncks
+					Input: string containing the protocol to use in the returned URIs.
+					       Server available protocols are those returned by getAvailableProtocols operation.
+					       Possible standard values are:
+					       - "all" to get URIs with all available protocols
+					       - "default" to get URIs with the server default protocol
+					       not mandatory, default value is "all".
+					
+					Output: a list of strings representing the URIs of the files
+							in the requested protocol.
+					
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					InvalidArgumentFault: 	the given job Id is not valid.
+					GenericFault: 					another problem occured. 
+					JobUnknownFault:			the given job has not been registered to the system.
+					OperationNotAllowedFault: perusal was disabled with the specific jdl attribute.
+            </wsdl:documentation>
+			<wsdl:input name="getPerusalFilesRequest" message="glitens:getPerusalFilesRequest"/>
+			<wsdl:output name="getPerusalFilesResponse" message="glitens:getPerusalFilesResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="InvalidArgumentFault" message="glitens:InvalidArgumentFault"/>
+			<wsdl:fault name="JobUnknownFault" message="glitens:JobUnknownFault"/>
+			<wsdl:fault name="OperationNotAllowedFault" message="glitens:OperationNotAllowedFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+		<wsdl:operation name="getTransferProtocols">
+			<wsdl:documentation>
+					This operation returns the server available transfer protocols.
+
+					Input: no input.
+
+					Output: a vector of string containing the protocols.
+
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					GenericFault: 					another problem occured.
+            </wsdl:documentation>
+			<wsdl:input name="getTransferProtocolsRequest" message="glitens:getTransferProtocolsRequest"/>
+			<wsdl:output name="getTransferProtocolsResponse" message="glitens:getTransferProtocolsResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+
+
+		<wsdl:operation name="getJobStatus">
+			<wsdl:documentation>
+					This operation returns the current status for the desired JobId
+
+					Input: desired JobId
+
+					Output: a structure containing status information for requested JobId
+
+					Faults:
+					AuthenticationFault: 		a generic authentication problem occured.
+					AuthorizationFault: 			client is not authorized to perform this operation.
+					GenericFault: 					another problem occured.
+			</wsdl:documentation>
+			<wsdl:input name="getJobStatusRequest" message="glitens:getJobStatusRequest"/>
+			<wsdl:output name="getJobStatusResponse" message="glitens:getJobStatusResponse"/>
+			<wsdl:fault name="AuthenticationFault" message="glitens:AuthenticationFault"/>
+			<wsdl:fault name="GenericFault" message="glitens:GenericFault"/>
+			<wsdl:fault name="AuthorizationFault" message="glitens:AuthorizationFault"/>
+			<wsdl:fault name="ServerOverloadedFault" message="glitens:ServerOverloadedFault"/>
+		</wsdl:operation>
+
+
+
+	</wsdl:portType>
+	<!-- ==== Binding definition ==== -->
+	<wsdl:binding name="WMProxy" type="glitens:WMProxy_PortType">
+		<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="getProxyReq">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="putProxy">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getVersion">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getJDL">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+                               <soap:fault name="JobUnknownFault" use="literal"/>
+                        </wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobRegister">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobRegisterJSDL">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobStart">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobSubmit">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobSubmitJSDL">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobCancel">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getMaxInputSandboxSize">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getSandboxDestURI">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getSandboxBulkDestURI">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getTotalQuota">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GetQuotaManagementFault">
+				<soap:fault name="GetQuotaManagementFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getFreeQuota">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GetQuotaManagementFault">
+				<soap:fault name="GetQuotaManagementFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobPurge">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getOutputFileList">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobListMatch">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="NoSuitableResourcesFault">
+				<soap:fault name="NoSuitableResourcesFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="jobListMatchJSDL">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="NoSuitableResourcesFault">
+				<soap:fault name="NoSuitableResourcesFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getJobTemplate">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getDAGTemplate">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getCollectionTemplate">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getIntParametricJobTemplate">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getStringParametricJobTemplate">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getACLItems">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="addACLItems">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="removeACLItem">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getDelegatedProxyInfo">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getJobProxyInfo">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="enableFilePerusal">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getPerusalFiles">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="InvalidArgumentFault">
+				<soap:fault name="InvalidArgumentFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="OperationNotAllowedFault">
+				<soap:fault name="OperationNotAllowedFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="JobUnknownFault">
+				<soap:fault name="JobUnknownFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getTransferProtocols">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="getJobStatus">
+			<wsdl:input>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" namespace="http://glite.org/wms/wmproxy"/>
+			</wsdl:output>
+			<wsdl:fault name="AuthenticationFault">
+				<soap:fault name="AuthenticationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="AuthorizationFault">
+				<soap:fault name="AuthorizationFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="GenericFault">
+				<soap:fault name="GenericFault" use="literal"/>
+			</wsdl:fault>
+			<wsdl:fault name="ServerOverloadedFault">
+				<soap:fault name="ServerOverloadedFault" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+
+
+
+
+
+    </wsdl:binding>
+	
+	<!-- ==== Service definition ==== -->
+	<wsdl:service name="WMProxy">
+		<wsdl:port name="WMProxy_PortType" binding="glitens:WMProxy">
+			<wsdl:documentation>
+					Workload Manager Proxy service
+					This is the service that allows accessing the submission and control functionalities of the WMS
+			</wsdl:documentation>
+		<!-- Default WMProxy Endpoint -->
+		<soap:address location="https://my.default.wmproxy.endpoint:7443/glite_wms_wmproxy_server"/>
+		</wsdl:port>
+
+		<!-- ==== Delegation service (client version 1.5 or greater) ==== -->
+		<wsdl:port name="WMProxyDelegation_PortType" binding="glitedelegns:DelegationSoapBinding">
+			<wsdl:documentation>
+				Workload Manager Proxy delegation service
+				This is the service that allows delegation funcionalities
+			</wsdl:documentation>
+			<!-- generic service endpoint -->
+			<soap:address location="https://my.default.wmproxy.endpoint:7443/glite_wms_wmproxy_server"/>
+		</wsdl:port>
+
+
+		<!-- ==== Delegation service (client version 3.2 or greater) ==== -->
+		<wsdl:port name="WMProxyDelegation2_PortType" binding="glitedelegns2:DelegationSoapBinding">
+			<wsdl:documentation>
+				Workload Manager Proxy delegation service
+				This is the service that allows delegation funcionalities
+			</wsdl:documentation>
+                        <!-- generic service endpoint -->
+                        <soap:address location="https://my.default.wmproxy.endpoint:7443/glite_wms_wmproxy_server"/>
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>

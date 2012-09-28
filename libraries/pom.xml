@@ -1,0 +1,37 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+       <groupId>fr.iscpif.gridscale</groupId>
+       <artifactId>parent</artifactId>
+       <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>libraries</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <modules>
+	<module>srmstub</module>
+	<module>axis-patched</module>
+	<module>cog-axis</module>
+	<module>cog-url</module>
+	<module>addressing</module>
+        <module>glite-security-voms</module>
+	<module>glite-security-util</module>
+	<module>glite-security-trustmanager</module>
+	<module>glite-security-trustmanager-axis</module>
+	<module>glite-security-delegation</module>
+	<module>glite-wms-wmproxy</module>
+	<module>glite-lb</module>
+	<module>ganymed-ssh-2</module>
+    </modules>
+
+</project>
+
+
+
+
+

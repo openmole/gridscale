@@ -1,0 +1,88 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>fr.iscpif.gridscale</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <packaging>jar</packaging>
+    <artifactId>gridscale</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${lib.org.scala-lang.scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fr.iscpif.gridscale</groupId>
+            <artifactId>srmstub</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fr.iscpif.gridscale</groupId>
+            <artifactId>ganymed-ssh-2</artifactId>
+            <version>${project.version}</version>
+        </dependency> 
+        <dependency>
+            <groupId>org.jglobus</groupId>
+            <artifactId>myproxy</artifactId>
+            <version>2.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jglobus</groupId>
+            <artifactId>io</artifactId>
+            <version>2.0-SNAPSHOT</version>
+        </dependency>  
+        <dependency>
+            <groupId>fr.iscpif.gridscale</groupId>
+            <artifactId>cog-axis</artifactId>
+            <version>${project.version}</version>
+        </dependency>   
+        <dependency>
+            <groupId>fr.iscpif.gridscale</groupId>
+            <artifactId>cog-url</artifactId>
+            <version>${project.version}</version>
+        </dependency>  
+        <dependency>
+            <groupId>fr.iscpif.gridscale</groupId>
+            <artifactId>glite-wms-wmproxy</artifactId>
+            <version>${project.version}</version>
+        </dependency>        
+        <dependency>
+            <groupId>fr.iscpif.gridscale</groupId>
+            <artifactId>glite-lb</artifactId>
+            <version>${project.version}</version>
+        </dependency>   
+        <dependency>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.xml</groupId>
+            <artifactId>jaxrpc-api</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-discovery</groupId>
+            <artifactId>commons-discovery</artifactId>
+            <version>0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.htmlparser</groupId>
+            <artifactId>htmlparser</artifactId>
+            <version>2.1</version>
+        </dependency>
+    </dependencies>
+</project>
+
+
+
+

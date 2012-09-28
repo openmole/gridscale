@@ -1,0 +1,188 @@
+<?xml version="1.0"?>
+<definitions
+	xmlns="http://schemas.xmlsoap.org/wsdl/" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+	xmlns:lb="http://glite.org/wsdl/services/lb" 
+	xmlns:lbe="http://glite.org/wsdl/elements/lb" 
+	xmlns:lb4ague="http://glite.org/wsdl/elements/lb4agu" 
+	xmlns:lb4agu="http://glite.org/wsdl/services/lb4agu" 
+	xmlns:glue="http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01"
+	name="LoggingAndBookkeeping" 
+	targetNamespace="http://glite.org/wsdl/services/lb4agu">
+<documentation>CVS revision: $Header: /cvs/glite/org.glite.lb.ws-interface/src/lb4agu.wsdl,v 1.5 2010/02/19 14:58:31 akrenek Exp $</documentation>
+
+<wsdl:types>
+	<xsd:schema targetNamespace="http://glite.org/wsdl/elements/lb4agu" 
+		elementFormDefault="unqualified" 
+		attributeFormDefault="unqualified">
+
+	<xsd:import namespace="http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01" schemaLocation="glue2.xsd"/>
+	
+	<xsd:element name="GetActivityStatusRequest">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="id" type="glue:ID_t" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="GetActivityStatusResponse">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="status" type="glue:ComputingActivityState_t" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="GetActivityInfoRequest">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="id" type="glue:ID_t" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="GetActivityInfoResponse">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="status" type="glue:ComputingActivity_t" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	
+	</xsd:schema>
+</wsdl:types>
+
+<!-- Messages -->
+<wsdl:message name="GetActivityStatusRequest">
+	<wsdl:part name="input" element="lb4ague:GetActivityStatusRequest">
+		<wsdl:documentation>List of jobIDs</wsdl:documentation>
+	</wsdl:part>
+</wsdl:message>
+<wsdl:message name="GetActivityStatusResponse">
+	<wsdl:part name="output" element="lb4ague:GetActivityStatusResponse">
+		<wsdl:documentation>List of job states</wsdl:documentation>
+	</wsdl:part>
+</wsdl:message>
+
+<wsdl:message name="GetActivityInfoRequest">
+	<wsdl:part name="input" element="lb4ague:GetActivityInfoRequest">
+		<wsdl:documentation>List of jobIDs</wsdl:documentation>
+	</wsdl:part>
+</wsdl:message>
+
+<wsdl:message name="GetActivityInfoResponse">
+	<wsdl:part name="output" element="lb4ague:GetActivityInfoResponse">
+		<wsdl:documentation>List of complete job states (incl. history?)</wsdl:documentation>
+	</wsdl:part>
+</wsdl:message>
+
+<!--
+<wsdl:message name="QueryActivityInfoRequest">
+	<wsdl:part name="input" element="glue:Activity_t">
+		<wsdl:documentation>Some desctiption of jobs to retrieve???</wsdl:documentation>
+	</wsdl:part>
+</wsdl:message>
+<wsdl:message name="QueryActivityInfoResponse">
+	<wsdl:part name="output" element="glue:???">
+		<wsdl:documentation>List of complete job states (incl. history?)???</wsdl:documentation>
+	</wsdl:part>
+</wsdl:message>
+-->
+
+
+<wsdl:message name="genericFault">
+    <wsdl:part name="genericFault" element="lbe:genericFault" />
+</wsdl:message>
+
+
+
+<!-- Execution Port-Type -->
+<wsdl:portType name="LoggingAndBookkeepingExecutionPortType">
+	<wsdl:operation name="GetActivityStatus">
+		<wsdl:documentation>Return states of given jobs.</wsdl:documentation>
+		<wsdl:input name="i" message="lb4agu:GetActivityStatusRequest" />
+		<wsdl:output name="o" message="lb4agu:GetActivityStatusResponse" />
+		<wsdl:fault name="f" message="lb4agu:genericFault" />
+	</wsdl:operation>
+
+	<wsdl:operation name="GetActivityInfo">
+		<wsdl:documentation>Return complete state information (history?) of given jobs.</wsdl:documentation>
+		<wsdl:input name="i" message="lb4agu:GetActivityInfoRequest" />
+		<wsdl:output name="o" message="lb4agu:GetActivityInfoResponse" />
+		<wsdl:fault name="f" message="lb4agu:genericFault" />
+	</wsdl:operation>
+</wsdl:portType>
+
+<binding name="LoggingAndBookkeepingExecution" type="lb4agu:LoggingAndBookkeepingExecutionPortType">
+<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+<wsdl:operation name="GetActivityStatus">
+	<soap:operation style="document" />
+	<wsdl:input name="i">
+	<soap:body use="literal" />
+	</wsdl:input>
+	<wsdl:output name="o">
+	<soap:body use="literal" />
+	</wsdl:output>
+	<wsdl:fault name="f">
+	<soap:fault name="f" use="literal" />
+	</wsdl:fault>
+</wsdl:operation>
+
+<wsdl:operation name="GetActivityInfo">
+<soap:operation style="document" />
+	<wsdl:input name="i">
+	<soap:body use="literal" />
+	</wsdl:input>
+	<wsdl:output name="o">
+	<soap:body use="literal" />
+	</wsdl:output>
+	<wsdl:fault name="f">
+	<soap:fault name="f" use="literal" />
+	</wsdl:fault>
+</wsdl:operation>
+</binding>
+
+
+<!-- Information Port-Type -->
+<!--
+<wsdl:portType name="LoggingAndBookkeepingInformationPortType">
+	<wsdl:operation name="QueryActivityInfo">
+		<wsdl:documentation>Query all (user?) jobs.</wsdl:documentation>
+		<wsdl:input name="i" message="lb:QueryActivityInfoRequest" />
+		<wsdl:output name="o" message="lb:QueryActivityInfoResponse" />
+		<wsdl:fault name="f" message="lb:genericFault" />
+	</wsdl:operation>
+</wsdl:portType>
+<binding name="LoggingAndBookkeepingInformation" type="lb:LoggingAndBookkeepingInformationPortType">
+	<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+	<wsdl:operation name="QueryActivityInfo">
+      <soap:operation style="document" />
+      <wsdl:input name="i">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="o">
+        <soap:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="f">
+        <soap:fault name="f" use="literal" />
+      </wsdl:fault>
+    </wsdl:operation>
+</binding>
+-->
+
+<!-- Service -->
+<!--
+<service name="LoggingAndBookkeeping4AGU">
+	<port name="LoggingAndBookkeepingExecution" binding="lb:LoggingAndBookkeepingExecution">
+		<soap:address location="http://test.glite.org/lb:8080"/>
+	</port>
+	<port name="LoggingAndBookkeepingInformation" binding="lb:LoggingAndBookkeepingInformation">
+		<soap:address location="http://test.glite.org/lb:8080"/>
+	</port>
+</service>
+-->
+
+</definitions>

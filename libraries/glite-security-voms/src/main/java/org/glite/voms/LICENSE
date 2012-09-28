@@ -1,0 +1,69 @@
+LICENSE file for EGEE Middleware
+================================
+
+Copyright (c) 2004 on behalf of the EU EGEE Project: 
+The European Organization for Nuclear Research (CERN), 
+Istituto Nazionale di Fisica Nucleare (INFN), Italy
+Datamat Spa, Italy
+Centre National de la Recherche Scientifique (CNRS), France
+CS Systeme d'Information (CSSI), France
+Royal Institute of Technology, Center for Parallel Computers (KTH-PDC), Sweden
+Universiteit van Amsterdam (UvA), Netherlands
+University of Helsinki (UH.HIP), Finlan
+University of Bergen (UiB), Norway
+Council for the Central Laboratory of the Research Councils (CCLRC), United Kingdom
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met: 
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. The end-user documentation included with the redistribution, if
+any, must include the following acknowledgment: "This product includes
+software developed by The EU EGEE Project (http://cern.ch/eu-egee/)."
+Alternatively, this acknowledgment may appear in the software itself, if
+and wherever such third-party acknowledgments normally appear.
+
+4. The names EGEE and the EU EGEE Project must not be
+used to endorse or promote products derived from this software without
+prior written permission. For written permission, please contact
+<email address>.
+
+5. You are under no obligation whatsoever to provide anyone with any
+bug fixes, patches, or upgrades to the features, functionality or
+performance of the Software ("Enhancements") that you may develop over
+time; however, if you choose to provide your Enhancements to The EU
+EGEE Project, or if you choose to otherwise publish or distribute your
+Enhancements, in source code form without contemporaneously requiring
+end users of The EU EGEE Proejct to enter into a separate written license
+agreement for such Enhancements, then you hereby grant The EU EGEE Project
+a non-exclusive, royalty-free perpetual license to install, use, copy,
+modify, prepare derivative works, incorporate into the EGEE Middleware
+or any other computer software, distribute, and sublicense your
+Enhancements or derivative works thereof, in binary and source code
+form (if any), whether developed by The EU EGEE Project or third parties.
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL PROJECT OR ITS CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+This software consists of voluntary contributions made by many
+individuals on behalf of the EU EGEE Prject. For more information on The
+EU EGEE Project, please see http://cern.ch/eu-egee/. For more information on
+EGEE Middleware, please see http://egee-jra1.web.cern.ch/egee-jra1/
+
+
