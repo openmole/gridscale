@@ -15,6 +15,11 @@ Documentation
 The scaladoc of GridScale is available here: [scaladoc](http://romainreuillon.github.com/gridscale/scaladoc).
 
 
+Compiling
+---------
+
+Clone, init/update submodules, mvn install.
+
 Imports
 -------
 In order to use gridscale you should import the folowing namespaces:
