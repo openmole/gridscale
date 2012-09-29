@@ -27,6 +27,7 @@
 	<module>glite-wms-wmproxy</module>
 	<module>glite-lb</module>
 	<module>ganymed-ssh-2</module>
+	<module>jglobus</module>
     </modules>
 
 </project>
