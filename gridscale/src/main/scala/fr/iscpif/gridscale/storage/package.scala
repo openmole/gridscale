@@ -24,6 +24,6 @@ package object storage {
   case object FileType extends FileType
   case object LinkType extends FileType
   
-  implicit val unitImplicit: Unit = Unit
+  implicit val nothingImplicit: Unit = Unit
   
 }

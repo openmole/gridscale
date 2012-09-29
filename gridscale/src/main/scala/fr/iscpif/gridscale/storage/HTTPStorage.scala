@@ -39,7 +39,7 @@ trait HTTPStorage extends Storage {
   def bufferSize = 64000
   
   def list(path: String)(implicit authentication: A): Seq[(String, FileType)] = {
-    val is = openInputStream(path)
+    val is = openInputStream(path)(authentication)
     try {     
       val parser = new Parser
       parser.setInputHTML(new String(getBytes(is, 64000, timeout)))

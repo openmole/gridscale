@@ -92,7 +92,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js =>
       
       translateState(new String(content.slice(0, read)).replaceAll("[\\r\\n]", "").toInt)
     } catch {
-      case e => 
+      case e: Throwable => 
         if(!exists(endCodeFile(job))) Running
         else throw e
     } 
