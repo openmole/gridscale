@@ -148,7 +148,7 @@ To acces a storage of the biomed VO of the EGI grid:
       def certificate = new File("/home/reuillon/.globus/certificate.p12")
     }
   
-    implicit val proxy = auth.init("")
+    implicit val proxy = auth.init("password")
     
     val srmStorage = new SRMStorage {
       def url = srm
