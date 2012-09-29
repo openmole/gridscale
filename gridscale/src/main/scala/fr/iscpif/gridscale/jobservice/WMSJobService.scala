@@ -61,7 +61,7 @@ trait WMSJobService {
   type D = WMSJobDescription
   
   def url: URI
-  def timeout: Int = 120 * 1000
+  def timeout: Int = 120
   val delegationId = UUID.randomUUID.toString
   def copyBufferSize = 64 * 1000  
   
@@ -136,7 +136,7 @@ trait WMSJobService {
     val locator = new LoggingAndBookkeepingLocator(provider)
     val lbService = locator.getLoggingAndBookkeeping(url)
     lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
-    lbService.asInstanceOf[Stub].setTimeout(timeout)
+    lbService.asInstanceOf[Stub].setTimeout(timeout * 1000)
     lbService
   }
   
@@ -152,14 +152,14 @@ trait WMSJobService {
   private def serviceStub(implicit credential: GlobusGSSCredentialImpl) = {
     val serviceStub = serviceLocator.getWMProxy_PortType(url.toURL)
     serviceStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
-    serviceStub.asInstanceOf[Stub].setTimeout(timeout) 
+    serviceStub.asInstanceOf[Stub].setTimeout(timeout * 1000) 
     serviceStub
   }
   
   private def grstStub(implicit credential: GlobusGSSCredentialImpl) = {
     val grstStub = serviceLocator.getWMProxyDelegation2_PortType(url.toURL)
     grstStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
-    grstStub.asInstanceOf[Stub].setTimeout(timeout)
+    grstStub.asInstanceOf[Stub].setTimeout(timeout * 1000)
     grstStub
   }
   

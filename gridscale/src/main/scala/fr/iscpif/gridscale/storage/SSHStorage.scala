@@ -39,14 +39,14 @@ trait SSHStorage extends Storage with SSHHost { storage =>
     _.canonicalPath(".")
   }
   
-  def makeDirs(parent: String, child: String)(implicit authentication: A) = {
-    (parent + "/" + child).split("/").tail.filter(_.isEmpty).foldLeft("") {
-      (c, r) => 
-      val dir = c + "/" + r
-      if(!exists(dir)) makeDir(dir)
-      dir
-    }
-  }
+//  def makeDirs(parent: String, child: String)(implicit authentication: A) = {
+//    (parent + "/" + child).split("/").tail.filter(_.isEmpty).foldLeft("") {
+//      (c, r) => 
+//      val dir = c + "/" + r
+//      if(!exists(dir)) makeDir(dir)
+//      dir
+//    }
+//  }
   
   override def exists(path: String)(implicit authentication: A) = withSftpClient {  c =>
      try {

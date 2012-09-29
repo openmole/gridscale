@@ -25,8 +25,29 @@ import jobservice._
 import tools._
 
 object GridScale extends App {
+//  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+//  val srm = bdii.querySRMURIs("biomed", 120).head
+//  
+//  VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
+//  
+//  val auth = new P12VOMSAuthentication {
+//    def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
+//    def voName = "biomed"
+//    def proxyFile = new File("/tmp/proxy.x509")
+//    def fquan = None
+//    def lifeTime = 3600
+//    def certificate = new File("/home/reuillon/.globus/certificate.p12")
+//  }
+//
+//  implicit val proxy = auth.init("")
+//  
+//  val srmStorage = new SRMStorage {
+//    def url = srm
+//  }
+//  
+//  srmStorage.listNames("/").foreach(println)
   
-
+  
 //  VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
 //  
 //  val auth = new P12VOMSAuthentication {
@@ -40,8 +61,6 @@ object GridScale extends App {
 //  
 //  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
 //  val wms = bdii.queryWMSURIs("biomed", 120).head
-//   
-//  val wmsServerUrl = "https://" + wms.getHost + ":" + wms.getPort + wms.getPath
 //  
 //  val jobDesc = new WMSJobDescription {
 //    def executable = "/bin/cat"
@@ -115,4 +134,20 @@ object GridScale extends App {
 //  httpStorage.list("/").foreach(println)
 //  copy(httpStorage.openInputStream("ca_UTN-USERFirst-Hardware-1.50.tar.gz"), new File("/tmp/test.tgz"), 64000, 120 * 1000)
   
+//  implicit val pbsService = new PBSJobService with SSHPrivateKeyAuthentication {
+//    def host: String = "avakas.mcia.univ-bordeaux.fr"
+//    def user = "rreuillo"
+//    def password = ""
+//    def privateKey = new File("/home/reuillon/.ssh/id_dsa")
+//  }
+//  
+//  val description = new PBSJobDescription {
+//    def executable = "/bin/echo"
+//    def arguments = "success >test_success.txt"
+//    def workDirectory = "/home/rreuillo"
+//  }
+//  
+//  val j = pbsService.submit(description)
+//  val s = untilFinished{Thread.sleep(5000); val s = pbsService.state(j); println(s); s}
+//  pbsService.purge(j)
 }

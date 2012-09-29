@@ -48,6 +48,8 @@ object SRMStorage {
   
   Call.setTransportForProtocol("httpg", classOf[GSIHTTPTransport])
   
+  def init = Unit
+  
   def gridFtpPort(p: Int) = 
     if(p == -1) 2811 else p
  
@@ -65,10 +67,12 @@ import SRMStorage._
 
 trait SRMStorage extends Storage {
   
-  type A <: GlobusGSSCredentialImpl
+  SRMStorage.init
+  
+  type A = GlobusGSSCredentialImpl
   
   def url: URI
-  def timeout = 120 * 1000
+  def timeout = 120
   def sleepTime = 10000
   def lsSizeMax = 1000
   def SERVICE_PROTOCOL = "httpg"
@@ -250,7 +254,7 @@ trait SRMStorage extends Storage {
     r.getReturnStatus.getStatusCode == SRM_REQUEST_QUEUED || r.getReturnStatus.getStatusCode == SRM_REQUEST_INPROGRESS
   
   
-  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout): R = {
+  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout * 1000): R = {
     val request = f
     if(request.getReturnStatus.getStatusCode == SRM_SUCCESS) request
     else if(waiting(request)) {
@@ -263,7 +267,7 @@ trait SRMStorage extends Storage {
   private def throwError[ R <: RequestStatus ](r: R) = throw new RuntimeException("Error interrogating the SRM server " + url + ", response was " + r.getReturnStatus.getStatusCode + " " + r.getReturnStatus.getExplanation)
   
   private def toSrmURI(absolutePath: String) =
-    new org.apache.axis.types.URI("srm", null, url.getHost, url.getPort, SERVICE_PATH, "SFN="+ absolutePath, null)
+    new org.apache.axis.types.URI("srm", null, url.getHost, url.getPort, SERVICE_PATH, "SFN="+ url.getPath + absolutePath, null)
 
   
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, url.getHost, url.getPort, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler) 
@@ -271,7 +275,7 @@ trait SRMStorage extends Storage {
   private def stub(implicit credential: GlobusGSSCredentialImpl) = {
     val stub = locator.getsrm(serviceUrl)
     stub.asInstanceOf[Stub]._setProperty(GSIConstants.GSI_CREDENTIALS, credential)
-    stub.asInstanceOf[Stub].setTimeout(timeout)
+    stub.asInstanceOf[Stub].setTimeout(timeout * 1000)
     stub
   }
   

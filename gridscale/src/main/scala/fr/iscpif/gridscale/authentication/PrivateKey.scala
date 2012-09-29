@@ -21,6 +21,6 @@ import java.io.File
 
 trait PrivateKey {
   def privateKey: File
-  def passphrase: String
+  def password: String
   def user: String
 }

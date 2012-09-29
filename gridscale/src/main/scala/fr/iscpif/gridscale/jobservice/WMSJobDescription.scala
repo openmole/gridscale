@@ -1,9 +1,23 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (C) 2012 Romain Reuillon
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package fr.iscpif.gridscale.jobservice
+
+import fr.iscpif.gridscale.tools._
 
 trait WMSJobDescription extends JobDescription {
   def inputSandbox: Iterable[String]
@@ -15,46 +29,23 @@ trait WMSJobDescription extends JobDescription {
   def stdError = ""
   
   def toJDL = {
-    val sb = new StringBuilder
-    sb.append("Executable = \"")
-    sb.append(executable)
-    sb.append("\";\n")
-    sb.append("Arguments = \"")
-    sb.append(arguments)
-    sb.append("\";\n")
+    val script = new ScriptBuffer
     
-    if(!inputSandbox.isEmpty) {
-      sb.append("InputSandbox = ")
-      sb.append(sandboxTxt(inputSandbox))
-    }
-    sb.append(";\n")
+    script += "Executable = \"" + executable + "\";"
+    script += "Arguments = \"" + arguments + "\";"
     
-    if(!outputSandbox.isEmpty) {
-      sb.append("OutputSandbox = ")
-      sb.append(sandboxTxt(outputSandbox.unzip._1))
-    }
-    sb.append(";\n")
+    if(!inputSandbox.isEmpty) script += "InputSandbox = " + sandboxTxt(inputSandbox) + ";"
+    if(!outputSandbox.isEmpty) script += "OutputSandbox = " + sandboxTxt(outputSandbox.unzip._1) + ";"
     
-    if(!stdOutput.isEmpty) {
-      sb.append("StdOutput = \"")
-      sb.append(stdOutput)
-      sb.append("\";\n")
-    }
-        
-    if(!stdError.isEmpty) {
-      sb.append("StdError = \"")
-      sb.append(stdError)
-      sb.append("\";\n")
-    }
+    if(!stdOutput.isEmpty) script += "StdOutput = \"" + stdOutput + "\";"
+    if(!stdError.isEmpty) script += "StdError = \"" + stdError + "\";"
     
-    sb.append("Requirements = ")
-    sb.append(requirements)
-    sb.append(";\n")
-    sb.append("Rank = ")
-    sb.append(rank)
-    sb.append(";\n")
-    if(fuzzy) sb.append("FuzzyRank = true;\n")
-    sb.toString
+    script += "Requirements = " + requirements + ";"
+    script += "Rank = " + rank + ";"
+    
+    if(fuzzy) script += "FuzzyRank = true;"
+    
+    script.toString
   }
   
   private def sandboxTxt(sandbox: Iterable[String]) = 

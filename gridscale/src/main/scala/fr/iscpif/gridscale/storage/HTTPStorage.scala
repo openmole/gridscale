@@ -35,7 +35,7 @@ trait HTTPStorage extends Storage {
   type A = Unit
   def url: String
   
-  def timeout = 120 * 1000
+  def timeout = 120
   def bufferSize = 64000
   
   def list(path: String)(implicit authentication: A): Seq[(String, FileType)] = {
@@ -80,7 +80,8 @@ trait HTTPStorage extends Storage {
   private def withConnection[T](path: String)(f: HttpURLConnection => T): T = {
     val relativeURL =  new URI(url + "/" + path).toURL
     val cnx = relativeURL.openConnection.asInstanceOf[HttpURLConnection]
-    cnx.setReadTimeout(timeout)
+    cnx.setConnectTimeout(timeout * 1000)
+    cnx.setReadTimeout(timeout * 1000)
     if(cnx.getHeaderField(null) == null) throw new RuntimeException("Failed to connect to url: "+ relativeURL)
     else f(cnx)
   }

@@ -20,6 +20,7 @@ package fr.iscpif.gridscale.jobservice
 import fr.iscpif.gridscale.tools._
 import ch.ethz.ssh2.ChannelCondition
 import ch.ethz.ssh2.Connection
+import ch.ethz.ssh2.Session
 import fr.iscpif.gridscale.storage.SSHStorage
 import java.io.ByteArrayOutputStream
 import java.util.UUID
@@ -37,24 +38,19 @@ object SSHJobService {
   val PROCESS_CANCELED = 143
   val COMMAND_NOT_FOUND = 127
   
-  def exec (connection: Connection, cde: String) = {
+  def exec (connection: Connection, cde: String): Unit = {
     val session = connection.openSession
     try {
-      session.execCommand(cde)
-      session.waitForCondition(ChannelCondition.EXIT_STATUS, 0)
+      exec(session, cde) 
       if(session.getExitStatus != 0) throw new RuntimeException("Return code was no 0 but " + session.getExitStatus)
     } finally session.close
   }
   
-  private class ShellScriptBuffer  {
-    var script = ""
-    val EOL = "\n"
-    
-    def +=(s: String) {  script += s + EOL }
-    
-    override def toString = script
+  def exec(session: Session, cde: String): Int = {
+    session.execCommand(cde)
+    session.waitForCondition(ChannelCondition.EXIT_STATUS, 0)
+    session.getExitStatus
   }
-  
 }
 
 import SSHJobService._
@@ -65,7 +61,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js =>
   
   def submit(description: D)(implicit credential: A): J = {
     val jobId = UUID.randomUUID.toString
-    val command = new ShellScriptBuffer
+    val command = new ScriptBuffer
       
     def absolute(path: String) = "$HOME/" + path
     
