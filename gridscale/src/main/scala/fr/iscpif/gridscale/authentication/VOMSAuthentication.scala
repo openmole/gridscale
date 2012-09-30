@@ -61,7 +61,7 @@ trait VOMSAuthentication {
     server.setHostDn(uri.getPath)
     server.setVoName(voName)
   
-    val proxy = proxyInit(if(password.isEmpty) null else password)
+    val proxy = proxyInit(password)
     proxy.addVomsServer(server)
     proxy.setProxyOutputFile(proxyFile.getAbsolutePath)
   

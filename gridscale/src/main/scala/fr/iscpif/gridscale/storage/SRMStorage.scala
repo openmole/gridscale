@@ -71,7 +71,10 @@ trait SRMStorage extends Storage {
   
   type A = GlobusGSSCredentialImpl
   
-  def url: URI
+  def host: String
+  def port: Int
+  def basePath: String
+  
   def timeout = 120
   def sleepTime = 10000
   def lsSizeMax = 1000
@@ -239,7 +242,7 @@ trait SRMStorage extends Storage {
       
     if(request.getReturnStatus.getStatusCode == SRM_SUCCESS) Left(request)
     else if(request.getReturnStatus.getStatusCode == SRM_REQUEST_QUEUED || request.getReturnStatus.getStatusCode == SRM_REQUEST_INPROGRESS) Right(request.getRequestToken) 
-    else throw new RuntimeException("Error interrogating the SRM server " + url + ", response was " + request.getReturnStatus.getStatusCode)
+    else throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + request.getReturnStatus.getStatusCode)
   } 
   
   private def complete[ R <: RequestStatus ](request: R with RequestStatusWithToken)(requestRequest: String => R) = 
@@ -264,13 +267,13 @@ trait SRMStorage extends Storage {
     } else throwError(request)
   }
   
-  private def throwError[ R <: RequestStatus ](r: R) = throw new RuntimeException("Error interrogating the SRM server " + url + ", response was " + r.getReturnStatus.getStatusCode + " " + r.getReturnStatus.getExplanation)
+  private def throwError[ R <: RequestStatus ](r: R) = throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.getReturnStatus.getStatusCode + " " + r.getReturnStatus.getExplanation)
   
   private def toSrmURI(absolutePath: String) =
-    new org.apache.axis.types.URI("srm", null, url.getHost, url.getPort, SERVICE_PATH, "SFN="+ url.getPath + absolutePath, null)
+    new org.apache.axis.types.URI("srm", null, host, port, SERVICE_PATH, "SFN="+ basePath + absolutePath, null)
 
   
-  @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, url.getHost, url.getPort, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler) 
+  @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler) 
 
   private def stub(implicit credential: GlobusGSSCredentialImpl) = {
     val stub = locator.getsrm(serviceUrl)

@@ -99,6 +99,9 @@ To submit a job on a PBS cluster:
 
 To submit a job on the biomed VO of the EGI grid:
 
+    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+    val wms = bdii.queryWMS("biomed", 120).head
+
     VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
     
     val auth = new P12VOMSAuthentication {
@@ -111,9 +114,6 @@ To submit a job on the biomed VO of the EGI grid:
     }
     
     implicit val cred = auth.init("pasword")
-  
-    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-    val wms = bdii.queryWMSURIs("biomed", 120).head
      
     val jobDesc = new WMSJobDescription {
       def executable = "/bin/cat"
@@ -125,22 +125,18 @@ To submit a job on the biomed VO of the EGI grid:
       override def fuzzy = true
     }
     
-    val wmsJobService = new WMSJobService {
-      def url = wms
-    }
-    
-    wmsJobService.delegateProxy(auth.proxyFile)
-    val j = wmsJobService.submit(jobDesc)
+    wms.delegateProxy(auth.proxyFile)
+    val j = wms.submit(jobDesc)
       
-    val s = untilFinished{Thread.sleep(5000); val s = wmsJobService.state(j); println(s); s}
+    val s = untilFinished{Thread.sleep(5000); val s = wms.state(j); println(s); s}
     
-    if(s == Done) wmsJobService.downloadOutputSandbox(jobDesc, j)
-    wmsJobService.purge(j)
+    if(s == Done) wms.downloadOutputSandbox(jobDesc, j)
+    wms.purge(j)
 
 To acces a storage of the biomed VO of the EGI grid:
 
     val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-    val srm = bdii.querySRMURIs("biomed", 120).head
+    val srm = bdii.querySRM("biomed", 120).head
     
     VOMSAuthentication.setCARepository(new File( "/path/to/authority/certificates/directory"))
     
@@ -155,10 +151,6 @@ To acces a storage of the biomed VO of the EGI grid:
   
     implicit val proxy = auth.init("password")
     
-    val srmStorage = new SRMStorage {
-      def url = srm
-    }
-    
-    srmStorage.listNames("/").foreach(println)
+    srm.listNames("/").foreach(println)
 
 
