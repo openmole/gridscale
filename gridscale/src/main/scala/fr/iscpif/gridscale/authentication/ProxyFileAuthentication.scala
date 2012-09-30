@@ -17,6 +17,30 @@
 
 package fr.iscpif.gridscale.authentication
 
-trait ProxyFileGlobusAuthentication {
+import java.io.File
+import java.io.FileInputStream
+import org.glite.voms.contact.VOMSProxyInit
+import org.gridforum.jgss.ExtendedGSSManager
+import org.gridforum.jgss.ExtendedGSSCredential
+import org.ietf.jgss.GSSCredential
+
+trait ProxyFileAuthentication {
+  
+  def proxy: File
+  
+  def init = {
+    val proxyBytes = Array.ofDim[Byte](proxy.length.toInt)
+    val in = new FileInputStream(proxy)
+    try in.read(proxyBytes)
+    finally in.close
+
+    ExtendedGSSManager.getInstance.asInstanceOf[ExtendedGSSManager].createCredential(
+      proxyBytes,
+      ExtendedGSSCredential.IMPEXP_OPAQUE,
+      GSSCredential.DEFAULT_LIFETIME,
+      null, // use default mechanism: GSI
+      GSSCredential.INITIATE_AND_ACCEPT)
+  }
 
 }
+
