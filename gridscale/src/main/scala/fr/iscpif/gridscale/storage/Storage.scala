@@ -35,7 +35,7 @@ trait Storage {
   def list(path: String)(implicit authentication: A): Seq[(String, FileType)]
   def makeDir(path: String)(implicit authentication: A)
   def rmDir(path: String)(implicit authentication: A)
-  def rmFile(patg: String)(implicit authentication: A)
+  def rmFile(path: String)(implicit authentication: A)
   def openInputStream(path: String)(implicit authentication: A): InputStream
   def openOutputStream(path: String)(implicit authentication: A): OutputStream
 }
