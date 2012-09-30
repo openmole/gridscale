@@ -27,6 +27,9 @@ import java.nio.file.Files
 trait LocalStorage extends Storage {
   type A = Unit
   
+  override def child(parent: String, child: String) = 
+    new File(new File(parent), child).getAbsolutePath
+  
   override def exists(path: String)(implicit authentication: A) = 
     new File(path).exists
     

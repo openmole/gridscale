@@ -31,6 +31,8 @@ trait Storage {
       case e: Throwable => false
     }
     
+  def child(parent: String, child: String) = if(parent.endsWith("/")) parent + child else parent + '/' + child
+    
   def listNames(path: String)(implicit authentication: A) = list(path).unzip._1
   def list(path: String)(implicit authentication: A): Seq[(String, FileType)]
   def makeDir(path: String)(implicit authentication: A)
