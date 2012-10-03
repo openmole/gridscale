@@ -35,7 +35,10 @@ trait PBSJobDescription extends JobDescription {
     }
     
     cpuTime match {
-      case Some(t) => buffer += "#PBS -lwalltime=" + t + ":00"
+      case Some(t) => 
+        val df = new java.text.SimpleDateFormat("HH:mm:ss")
+        df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
+        buffer += "#PBS -lwalltime=" + df.format(t * 1000)
       case None => 
     }
     

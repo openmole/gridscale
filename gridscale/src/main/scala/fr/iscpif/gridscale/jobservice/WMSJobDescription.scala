@@ -22,15 +22,26 @@ import fr.iscpif.gridscale.tools._
 trait WMSJobDescription extends JobDescription {
   def inputSandbox: Iterable[String]
   def outputSandbox: Iterable[(String, String)]
-  def requirements = "other.GlueCEStateStatus == \"Production\""
+  
   def rank = "(-other.GlueCEStateEstimatedResponseTime)"
   def fuzzy: Boolean = false
   def stdOutput = ""
   def stdError = ""
+  def memory: Option[Int] = None
+  def cpuTime: Option[Int] = None
+  def cpuNumber: Option[Int] = None
+  def jobType: Option[String] = None
+  def smpGranularity: Option[Int] = None
+  
+  def requirements = 
+    "other.GlueCEStateStatus == \"Production\"" + 
+    memory.map(" && other.GlueHostMainMemoryRAMSize>" + _) +
+    cpuTime.map(" && other.GlueCEPolicyMaxCPUTime>" + _)
   
   def toJDL = {
     val script = new ScriptBuffer
     
+    jobType.foreach(script += "JobType = \"" + _ + "\";")
     script += "Executable = \"" + executable + "\";"
     script += "Arguments = \"" + arguments + "\";"
     
@@ -39,6 +50,9 @@ trait WMSJobDescription extends JobDescription {
     
     if(!stdOutput.isEmpty) script += "StdOutput = \"" + stdOutput + "\";"
     if(!stdError.isEmpty) script += "StdError = \"" + stdError + "\";"
+    
+    cpuNumber.foreach(script += "CpuNumber = " + _ + ";")
+    smpGranularity.foreach(script += "SMPGranularity = " + _ + ";")
     
     script += "Requirements = " + requirements + ";"
     script += "Rank = " + rank + ";"

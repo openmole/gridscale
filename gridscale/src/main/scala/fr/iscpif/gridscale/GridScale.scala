@@ -71,7 +71,7 @@ object GridScale extends App {
   println(jobDesc.toJDL)
 
   implicit val cred = auth.init("")
-  
+
   wms.delegateProxy(auth.proxyFile)
   val j = wms.submit(jobDesc)
     
