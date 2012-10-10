@@ -47,7 +47,7 @@ trait VOMSAuthentication {
   def voName: String
   def proxyInit(passphrase: String): VOMSProxyInit
   def proxyFile: File
-  def fquan: Option[String]
+  def fqan: Option[String] = None
   def lifeTime: Int
   
   def init(password: String) = {
@@ -68,7 +68,7 @@ trait VOMSAuthentication {
     val requestOption = new VOMSRequestOptions
     requestOption.setVoName(voName)
 
-    fquan match {
+    fqan match {
       case Some(s) => requestOption.addFQAN(s)
       case None =>
     }

@@ -23,6 +23,7 @@ import org.glite.voms.contact.VOMSProxyInit
 import org.gridforum.jgss.ExtendedGSSManager
 import org.gridforum.jgss.ExtendedGSSCredential
 import org.ietf.jgss.GSSCredential
+import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 
 trait ProxyFileAuthentication {
   
@@ -39,7 +40,7 @@ trait ProxyFileAuthentication {
       ExtendedGSSCredential.IMPEXP_OPAQUE,
       GSSCredential.DEFAULT_LIFETIME,
       null, // use default mechanism: GSI
-      GSSCredential.INITIATE_AND_ACCEPT)
+      GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
   }
 
 }

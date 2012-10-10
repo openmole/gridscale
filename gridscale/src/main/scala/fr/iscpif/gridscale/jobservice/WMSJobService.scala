@@ -55,8 +55,8 @@ object WMSJobService {
 
 import WMSJobService._
 
-trait WMSJobService {
-  type J = String
+trait WMSJobService extends JobService {
+  type J = WMSJobId
   type A = GlobusGSSCredentialImpl
   type D = WMSJobDescription
   
@@ -74,25 +74,27 @@ trait WMSJobService {
     val j = register(desc.toJDL)
     fillInputSandbox (desc, j.getId)
     serviceStub.jobStart(j.getId)
-    j.getId
+    new WMSJobId {
+      val id = j.getId
+    }
   }
   
-  def cancel(jobId: String)(implicit credential: GlobusGSSCredentialImpl) = serviceStub.jobCancel(jobId)
+  def cancel(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = serviceStub.jobCancel(jobId.id)
   
-  def purge(jobId: String)(implicit credential: GlobusGSSCredentialImpl) = serviceStub.jobPurge(jobId)
+  def purge(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = serviceStub.jobPurge(jobId.id)
     
-  def state(id: String)(implicit credential: GlobusGSSCredentialImpl) = translateState(rawState(id))
+  def state(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = translateState(rawState(jobId))
   
-  def rawState(id: String)(implicit credential: GlobusGSSCredentialImpl) = {
-    val jobUrl = new URL(id)
+  def rawState(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = {
+    val jobUrl = new URL(jobId.id)
     val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
-    lbService(lbServiceURL).jobStatus(id, flags).getState
+    lbService(lbServiceURL).jobStatus(jobId.id, flags).getState
   }
   
-  def downloadOutputSandbox(desc: WMSJobDescription, jobId: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  def downloadOutputSandbox(desc: WMSJobDescription, jobId: J)(implicit credential: GlobusGSSCredentialImpl) = {
     val indexed = desc.outputSandbox.groupBy(_._1).map{case(k, v) => k -> v.head}
     
-    serviceStub.getOutputFileList(jobId, "gsiftp").getFile.foreach{
+    serviceStub.getOutputFileList(jobId.id, "gsiftp").getFile.foreach{
       from =>
         val url = new URI(from.getName)
         val to = indexed(new File(url.getPath).getName)._2
@@ -119,8 +121,8 @@ trait WMSJobService {
       case StatName._WAITING => Submitted
     }
   
-  private def fillInputSandbox(desc: WMSJobDescription, id: String)(implicit credential: GlobusGSSCredentialImpl) = {
-    val inputSandboxURL = new URI(serviceStub.getSandboxDestURI(id, "gsiftp").getItem(0))
+  private def fillInputSandbox(desc: WMSJobDescription, jobId: String)(implicit credential: GlobusGSSCredentialImpl) = {
+    val inputSandboxURL = new URI(serviceStub.getSandboxDestURI(jobId, "gsiftp").getItem(0))
     desc.inputSandbox.foreach {
       path => 
       val file = new File(path)
