@@ -27,6 +27,9 @@ import java.util.UUID
 
 object SSHJobService {
   
+  val bufferSize = 65535
+  val timeout = 120
+  
   val rootDir = ".gridscale/ssh"
   
   def file(jobId: String, suffix: String) = rootDir + "/" + jobId + "." + suffix
@@ -84,13 +87,12 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js =>
   
   def state(job: J)(implicit credential: A): JobState = { 
     try {
-      val content = Array.ofDim[Byte](256)
       val is = openInputStream(endCodeFile(job))
-      val read = 
-        try is.read(content)
+      val content = 
+        try getBytes(is, bufferSize, SSHJobService.timeout)
         finally is.close
       
-      translateState(new String(content.slice(0, read)).replaceAll("[\\r\\n]", "").toInt)
+      translateState(new String(content).takeWhile(_.isDigit).toInt)
     } catch {
       case e: Throwable => 
         if(!exists(endCodeFile(job))) Running
