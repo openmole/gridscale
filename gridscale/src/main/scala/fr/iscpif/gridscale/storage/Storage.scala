@@ -17,8 +17,7 @@
 
 package fr.iscpif.gridscale.storage
 
-import java.io.InputStream
-import java.io.OutputStream
+import java.io._
 
 trait Storage {
   type A
@@ -38,6 +37,8 @@ trait Storage {
   def makeDir(path: String)(implicit authentication: A)
   def rmDir(path: String)(implicit authentication: A)
   def rmFile(path: String)(implicit authentication: A)
-  def openInputStream(path: String)(implicit authentication: A): InputStream
-  def openOutputStream(path: String)(implicit authentication: A): OutputStream
+  def openInputStream(path: String)(implicit authentication: A): InputStream = new BufferedInputStream(_openInputStream(path))
+  def openOutputStream(path: String)(implicit authentication: A): OutputStream = new BufferedOutputStream(_openOutputStream(path))
+  protected def _openInputStream(path: String)(implicit authentication: A): InputStream 
+  protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream
 }

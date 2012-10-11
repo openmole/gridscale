@@ -151,7 +151,7 @@ trait SRMStorage extends Storage {
     if(requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
   
-  def openInputStream(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  protected def _openInputStream(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
     val (token, url) = prepareToGet(path)
 
     new GridFTPInputStream(credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
@@ -162,7 +162,7 @@ trait SRMStorage extends Storage {
     }
   }
   
-  def openOutputStream(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  protected def _openOutputStream(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
     val (token, url) = prepareToPut(path)
         
     new GridFTPOutputStream(credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {

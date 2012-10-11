@@ -56,6 +56,18 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <repository>
+            <id>maven.openmole.org</id>
+            <url>http://maven.openmole.org/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>maven.openmole.org</id>
+            <url>http://maven.openmole.org/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+
 </project>
 
 

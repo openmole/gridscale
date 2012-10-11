@@ -104,7 +104,7 @@ trait SSHStorage extends Storage with SSHHost { storage =>
     c.rm(path)
   }
   
-  def openInputStream(path: String)(implicit authentication: A): InputStream = {
+  protected def _openInputStream(path: String)(implicit authentication: A): InputStream = {
     val connection = connectionCache.cached(this)
     val sftpClient = new SFTPv3Client(connection)
     
@@ -132,7 +132,7 @@ trait SSHStorage extends Storage with SSHHost { storage =>
   }
     
     
-  def openOutputStream(path: String)(implicit authentication: A): OutputStream = {
+  protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream = {
     val connection = connectionCache.cached(this)
     val sftpClient = new SFTPv3Client(connection)
     

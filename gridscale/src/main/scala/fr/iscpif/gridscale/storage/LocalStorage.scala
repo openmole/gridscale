@@ -61,10 +61,10 @@ trait LocalStorage extends Storage {
   def rmFile(path: String)(implicit authentication: A) = 
     new File(path).delete
   
-  def openInputStream(path: String)(implicit authentication: A): InputStream = 
-    new BufferedInputStream(new FileInputStream(new File(path)))
+  protected def _openInputStream(path: String)(implicit authentication: A): InputStream = 
+    new FileInputStream(new File(path))
   
-  def openOutputStream(path: String)(implicit authentication: A): OutputStream =
-    new BufferedOutputStream(new FileOutputStream(new File(path)))
+  protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream =
+    new FileOutputStream(new File(path))
   
 }
