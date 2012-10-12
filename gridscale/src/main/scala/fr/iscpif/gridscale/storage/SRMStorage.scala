@@ -120,7 +120,7 @@ trait SRMStorage extends Storage {
             case TFileType.FILE => FileType
             case TFileType.LINK => LinkType
           }
-          pd.getPath -> t
+          new File(pd.getPath).getName -> t
       }
     ).flatten.toSeq
   }
