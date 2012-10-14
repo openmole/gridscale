@@ -16,7 +16,7 @@
 
     <properties>
         <!-- default configuration for the bundles -->
-        <lib.org.scala-lang.scala.version>2.10.0-RC1</lib.org.scala-lang.scala.version>
+        <lib.org.scala-lang.scala.version>2.10.0-M7</lib.org.scala-lang.scala.version>
         <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
     </properties>
 
