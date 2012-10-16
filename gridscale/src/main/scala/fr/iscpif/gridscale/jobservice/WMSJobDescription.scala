@@ -32,6 +32,8 @@ trait WMSJobDescription extends JobDescription {
   def cpuNumber: Option[Int] = None
   def jobType: Option[String] = None
   def smpGranularity: Option[Int] = None
+  def retryCount: Option[Int] = None
+  def myProxyServer: Option[String] = None
   
   def requirements = 
     "other.GlueCEStateStatus == \"Production\"" + 
@@ -58,6 +60,10 @@ trait WMSJobDescription extends JobDescription {
     script += "Rank = " + rank + ";"
     
     if(fuzzy) script += "FuzzyRank = true;"
+    
+    retryCount.foreach(script += "RetryCount = " + _)
+    
+    myProxyServer.foreach(script += "MyProxyServer = \"" + _ + "\"")
     
     script.toString
   }
