@@ -138,7 +138,7 @@ trait SRMStorage extends Storage {
     val uri = this.toSrmURI(path)
     val request = new SrmRmdirRequest
     request.setSURL(uri)
-    request.setRecursive(true)
+    request.setRecursive(java.lang.Boolean.TRUE)
     val requestStatus = stub.srmRmdir(request)
     if(requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
