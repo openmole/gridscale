@@ -44,48 +44,49 @@ object GridScale extends App {
 //  srmStorage.listNames("/").foreach(println)
   
   
-  VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
-  
-  val auth = new P12VOMSAuthentication {
-    def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
-    def voName = "biomed"
-    def proxyFile = new File("/tmp/proxy.x509")
-    def fquan = None
-    def lifeTime = 3600
-    def certificate = new File("/home/reuillon/.globus/certificate.p12")
-  }
-  
-  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-  val wms = bdii.queryWMS("biomed", 120).head
-  
-  val jobDesc = new WMSJobDescription {
-    def executable = "/bin/cat"
-    def arguments = "testis"
-    override def stdOutput = "out.txt"
-    override def stdError = "error.txt"
-    def inputSandbox = List("/tmp/testis")
-    def outputSandbox = List("out.txt" -> "/tmp/out.txt", "error.txt" -> "/tmp/error.txt")
-    override def fuzzy = true
-  }
-  
-  println(jobDesc.toJDL)
-
-  implicit val cred = auth.init("")
-
-  wms.delegateProxy(auth.proxyFile)
-  val j = wms.submit(jobDesc)
-    
-  val s = untilFinished{Thread.sleep(5000); val s = wms.state(j); println(s); s}
-  
-  if(s == Done) wms.downloadOutputSandbox(jobDesc, j)
-  wms.purge(j)
-
+//  VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
+//  
+//  val auth = new P12VOMSAuthentication {
+//    def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
+//    def voName = "biomed"
+//    def proxyFile = new File("/tmp/proxy.x509")
+//    def fquan = None
+//    def lifeTime = 3600
+//    def certificate = new File("/home/reuillon/.globus/certificate.p12")
+//  }
+//  
+//  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+//  val wms = bdii.queryWMS("biomed", 120).head
+//  
+//  val jobDesc = new WMSJobDescription {
+//    def executable = "/bin/cat"
+//    def arguments = "testis"
+//    override def stdOutput = "out.txt"
+//    override def stdError = "error.txt"
+//    def inputSandbox = List("/tmp/testis")
+//    def outputSandbox = List("out.txt" -> "/tmp/out.txt", "error.txt" -> "/tmp/error.txt")
+//    override def fuzzy = true
+//  }
+//  
+//  println(jobDesc.toJDL)
+//
+//  implicit val cred = auth.init("")
+//
+//  wms.delegateProxy(auth.proxyFile)
+//  val j = wms.submit(jobDesc)
 //    
+//  val s = untilFinished{Thread.sleep(5000); val s = wms.state(j); println(s); s}
+//  
+//  if(s == Done) wms.downloadOutputSandbox(jobDesc, j)
+//  wms.purge(j)
+
+    
 //  implicit val sshStorage = new SSHStorage with SSHUserPasswordAuthentication {
 //    def host: String = "zebulon.iscpif.fr"
 //    def user = "reuillon"
 //    def password = ""
 //  }
+  
 //  
 //  sshStorage.list(".").foreach(println)
 //  sshStorage.makeDir("/tmp/testdir")
