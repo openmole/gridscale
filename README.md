@@ -153,4 +153,30 @@ To acces a storage of the biomed VO of the EGI grid:
     
     srm.listNames("/").foreach(println)
 
+Submit a long running job with my proxy:
+
+    VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
+    
+    val auth = new P12VOMSAuthentication {
+      def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
+      def voName = "biomed"
+      def proxyFile = new File("/tmp/proxy.x509")
+      def fquan = None
+      def lifeTime = 3600
+      def certificate = new File("/home/reuillon/.globus/certificate.p12")
+    }
+  
+    implicit val proxy = auth.init("password")
+    
+    val myProxy = new MyProxy {
+      def host = "myproxy.cern.ch"
+    }
+    
+    myProxy.delegate(proxy, 6000)
+     
+    val jobDesc = new WMSJobDescription {
+      ...
+      def myProxyServer = Some("myproxy.cern.ch")
+    }
+
 

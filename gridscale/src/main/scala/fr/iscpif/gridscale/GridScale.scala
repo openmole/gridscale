@@ -168,4 +168,5 @@ object GridScale extends App {
 //  val j = pbsService.submit(description)
 //  val s = untilFinished{Thread.sleep(5000); val s = pbsService.state(j); println(s); s}
 //  pbsService.purge(j)
+//  
 }
