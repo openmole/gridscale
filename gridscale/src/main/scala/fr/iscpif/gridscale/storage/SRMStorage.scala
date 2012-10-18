@@ -140,7 +140,6 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   }
   
   def rmEmptyDir(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
-    println(path)
     val uri = this.toSrmURI(path)
     val request = new SrmRmdirRequest
     request.setSURL(uri)
@@ -151,7 +150,6 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   }
   
   def rmFile(path: String)(implicit credential: GlobusGSSCredentialImpl)  = {
-    println(path)
     val uri = this.toSrmURI(path)
     val request = new SrmRmRequest
     request.setArrayOfSURLs(new ArrayOfAnyURI(Array(uri)))
