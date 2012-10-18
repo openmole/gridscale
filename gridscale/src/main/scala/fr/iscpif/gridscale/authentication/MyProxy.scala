@@ -23,9 +23,9 @@ import org.ietf.jgss.GSSCredential
 trait MyProxy {
 
   def host: String
-  def port: Int = GMyProxy.DEFAULT_PORT
+  def port: Option[Int] = None
   
-  def myProxy = new GMyProxy(host, port)
+  def myProxy = new GMyProxy(host, port.getOrElse(GMyProxy.DEFAULT_PORT))
 
   def delegate(credential: GSSCredential, time: Int) = {
     val proxyParameters = new InitParams
