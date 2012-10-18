@@ -116,18 +116,17 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     }.getDetails.getPathDetailArray
     
     (for {
-      child <- childs
-      if(child.getArrayOfSubPaths != null)
-      pd <- child.getArrayOfSubPaths.getPathDetailArray 
-    } yield {
-          val t = pd.getType match {
-            case TFileType.DIRECTORY => DirectoryType
-            case TFileType.FILE => FileType
-            case TFileType.LINK => LinkType
-          }
-          new File(pd.getPath).getName -> t
-      
-    }).toSeq
+        child <- childs
+        if(child.getArrayOfSubPaths != null && child.getArrayOfSubPaths.getPathDetailArray != null)
+          pd <- child.getArrayOfSubPaths.getPathDetailArray 
+      } yield {
+        val t = pd.getType match {
+          case TFileType.DIRECTORY => DirectoryType
+          case TFileType.FILE => FileType
+          case TFileType.LINK => LinkType
+        }
+        new File(pd.getPath).getName -> t
+      }).toSeq
   }
   
   
