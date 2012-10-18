@@ -25,6 +25,27 @@ import jobservice._
 import tools._
 
 object GridScale extends App {
+  
+//  VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
+//  
+//  val auth = new P12VOMSAuthentication {
+//    def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
+//    def voName = "biomed"
+//    def proxyFile = new File("/tmp/proxy.x509")
+//    def fquan = None
+//    def lifeTime = 3600
+//    def certificate = new File("/home/reuillon/.globus/certificate.p12")
+//  }
+//
+//  implicit val proxy = auth.init("")
+//  
+//  val myProxy = new MyProxy {
+//    def host = "myproxy.cern.ch"
+//  }
+//  
+//  myProxy.delegate(proxy, 6000)
+//  println(myProxy.info(proxy).mkString)
+  
 //  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
 //  val srmStorage = bdii.querySRM("biomed", 120)(5)
 //  
