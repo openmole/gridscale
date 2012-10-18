@@ -41,8 +41,12 @@ object GridScale extends App {
 //
 //  implicit val proxy = auth.init("")
 //  
-//  srmStorage.listNames("/").foreach(println)
-  
+//  val srmStorage = new SRMStorage {
+//    def host = "gridsrv3-4.dir.garr.it"
+//    def port = 8446
+//    def basePath = ""
+//  }
+//   
   
 //  VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
 //  

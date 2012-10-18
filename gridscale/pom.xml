@@ -59,7 +59,7 @@
             <groupId>fr.iscpif.gridscale</groupId>
             <artifactId>glite-lb</artifactId>
             <version>${project.version}</version>
-        </dependency>   
+        </dependency> 
         <dependency>
             <groupId>wsdl4j</groupId>
             <artifactId>wsdl4j</artifactId>

@@ -65,7 +65,7 @@ object SRMStorage {
 
 import SRMStorage._
 
-trait SRMStorage extends Storage {
+trait SRMStorage extends Storage with RecursiveRmDir {
   
   SRMStorage.init
   
@@ -108,21 +108,26 @@ trait SRMStorage extends Storage {
     
     def requestStatus(implicit credential: GlobusGSSCredentialImpl) = stub.srmLs(request)
     
-    complete[SRMLsRS](requestStatus) { 
+    val childs = complete[SRMLsRS](requestStatus) { 
       token => 
       val status = new SrmStatusOfLsRequestRequest
       status.setRequestToken(token)
       stub.srmStatusOfLsRequest(status)
-    }.getDetails.getPathDetailArray.map(_.getArrayOfSubPaths.getPathDetailArray.map{
-        pd => 
+    }.getDetails.getPathDetailArray
+    
+    (for {
+      child <- childs
+      if(child.getArrayOfSubPaths != null)
+      pd <- child.getArrayOfSubPaths.getPathDetailArray 
+    } yield {
           val t = pd.getType match {
             case TFileType.DIRECTORY => DirectoryType
             case TFileType.FILE => FileType
             case TFileType.LINK => LinkType
           }
           new File(pd.getPath).getName -> t
-      }
-    ).flatten.toSeq
+      
+    }).toSeq
   }
   
   
@@ -134,16 +139,19 @@ trait SRMStorage extends Storage {
     if(requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
   
-  def rmDir(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  def rmEmptyDir(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+    println(path)
     val uri = this.toSrmURI(path)
     val request = new SrmRmdirRequest
     request.setSURL(uri)
-    request.setRecursive(java.lang.Boolean.TRUE)
+    //Doesn't work
+    //request.setRecursive(java.lang.Boolean.TRUE)
     val requestStatus = stub.srmRmdir(request)
     if(requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
   
   def rmFile(path: String)(implicit credential: GlobusGSSCredentialImpl)  = {
+    println(path)
     val uri = this.toSrmURI(path)
     val request = new SrmRmRequest
     request.setArrayOfSURLs(new ArrayOfAnyURI(Array(uri)))

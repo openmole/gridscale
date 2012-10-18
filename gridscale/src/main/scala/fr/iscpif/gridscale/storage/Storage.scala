@@ -23,14 +23,14 @@ trait Storage {
   type A
   
   def exists(path: String)(implicit authentication: A) = 
-    try {
-      list(path)
-      true
-    } catch {
-      case e: Throwable => false
-    }
+    if(isRoot(path)) true
+    else listNames(parent(path)).toSet.contains(name(path))
     
   def child(parent: String, child: String) = if(parent.endsWith("/")) parent + child else parent + '/' + child  
+  
+  def parent(path: String) = new File(path).getParent
+  def name(path: String) = new File(path).getName
+  def isRoot(path: String) = parent(path) == path
   
   def listNames(path: String)(implicit authentication: A) = list(path).unzip._1
   def list(path: String)(implicit authentication: A): Seq[(String, FileType)]
