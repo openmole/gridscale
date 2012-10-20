@@ -12,7 +12,12 @@ Support is planned for SGE and DIRAC job pilot system.
 Documentation
 -------------
 
-The scaladoc of GridScale is available here: [scaladoc](http://romainreuillon.github.com/gridscale/scaladoc).
+The scaladoc of GridScale will be available here: [scaladoc](http://romainreuillon.github.com/gridscale/scaladoc).
+
+Licence
+-------
+
+GridScale is licenced under the GNU Affero GPLv3 software licence. 
 
 
 Compiling
