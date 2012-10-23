@@ -3,13 +3,13 @@
     <parent>
         <groupId>fr.iscpif.gridscale</groupId>
         <artifactId>libraries</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>cog-url</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <build>
             <plugins>
@@ -25,9 +25,7 @@
                             </goals>
                             <configuration>
                                 <tasks>
-                                    <copy  verbose="yes" overwrite="true"
-                                          file="${project.artifactId}.jar"
-                                          tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar"/>
+                                    <copy verbose="yes" overwrite="true" file="${project.artifactId}.jar" tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar" />
                                 </tasks>
                             </configuration>
                         </execution>
