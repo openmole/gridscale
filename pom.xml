@@ -15,7 +15,7 @@
     </modules>
 
     <properties>
-        <!-- default configuration for the bundles -->
+	<lib.org.jglobus.version>2.0-20121023</lib.org.jglobus.version>
         <lib.org.scala-lang.scala.version>2.10.0-RC1</lib.org.scala-lang.scala.version>
         <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
     </properties>
