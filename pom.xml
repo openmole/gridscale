@@ -42,6 +42,11 @@
     
     <name>${project.artifactId} ${project.version}</name>
 
+    <scm>
+        <connection>scm:git:git://git.openmole.org:gridscale</connection>
+        <developerConnection>scm:git:gitosis@git.openmole.org:gridscale</developerConnection>
+        <url>git://git.openmole.org:gridscale</url>
+    </scm>
 
     <repositories>
         <repository>
