@@ -76,7 +76,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   def basePath: String
   
   def timeout = 120
-  def sleepTime = 10000
+  def sleepTime = 1000
   def lsSizeMax = 1000
   def SERVICE_PROTOCOL = "httpg"
   def SERVICE_PATH = "/srm/managerv2" 
@@ -262,13 +262,13 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     r.getReturnStatus.getStatusCode == SRM_REQUEST_QUEUED || r.getReturnStatus.getStatusCode == SRM_REQUEST_INPROGRESS
   
   
-  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout * 1000): R = {
+  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime): R = {
     val request = f
     if(request.getReturnStatus.getStatusCode == SRM_SUCCESS) request
     else if(waiting(request)) {
       if(System.currentTimeMillis > deadLine) throw new TimeoutException("Waiting for request to complete")
       Thread.sleep(sleepTime)
-      waitSuccess(f, deadLine)
+      waitSuccess(f, deadLine, sleepTime * 2)
     } else throwError(request)
   }
   
