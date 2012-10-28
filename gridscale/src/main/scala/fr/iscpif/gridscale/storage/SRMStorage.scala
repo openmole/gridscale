@@ -75,9 +75,9 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   def port: Int
   def basePath: String
   
-  def timeout = 120
-  def sleepTime = 1000
-  def lsSizeMax = 1000
+  def timeout = 60
+  def sleepTime = 1
+  def lsSizeMax = 500
   def SERVICE_PROTOCOL = "httpg"
   def SERVICE_PATH = "/srm/managerv2" 
   def transferProtocols = Array("gsiftp")
@@ -234,9 +234,9 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     
     val url = complete[SRMPrepareToGetRS](requestStatus) { 
       token => 
-      val status = new SrmStatusOfGetRequestRequest
-      status.setRequestToken(token)
-      stub.srmStatusOfGetRequest(status)
+        val status = new SrmStatusOfGetRequestRequest
+        status.setRequestToken(token)
+        stub.srmStatusOfGetRequest(status)
     }.getArrayOfFileStatuses.getStatusArray.head.getTransferURL
     (requestStatus.getRequestToken, url)
   }
@@ -250,26 +250,38 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     else throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + request.getReturnStatus.getStatusCode)
   } 
   
-  private def complete[ R <: RequestStatus ](request: R with RequestStatusWithToken)(requestRequest: String => R) = 
+  private def complete[ R <: RequestStatus ](request: R with RequestStatusWithToken)(requestRequest: String => R)(implicit credential: GlobusGSSCredentialImpl) = 
     status(request) match {
       case Left(r) => r
       case Right(token) => 
         val rr = requestRequest(token)
-        waitSuccess(rr)
+        try waitSuccess(rr)
+        catch {
+          case t: Throwable =>
+            abortRequest(token)
+            throw t
+        }
     }
   
   private def waiting[ R <: RequestStatus ](r: R) =
     r.getReturnStatus.getStatusCode == SRM_REQUEST_QUEUED || r.getReturnStatus.getStatusCode == SRM_REQUEST_INPROGRESS
   
   
-  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime): R = {
+  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime * 1000): R = {
     val request = f
     if(request.getReturnStatus.getStatusCode == SRM_SUCCESS) request
     else if(waiting(request)) {
       if(System.currentTimeMillis > deadLine) throw new TimeoutException("Waiting for request to complete")
       Thread.sleep(sleepTime)
-      waitSuccess(f, deadLine, sleepTime * 2)
+      val newSleepTime = if(System.currentTimeMillis + sleepTime * 2 < deadLine) sleepTime * 2 else deadLine - System.currentTimeMillis
+      waitSuccess(f, deadLine, newSleepTime)
     } else throwError(request)
+  }
+  
+  private def abortRequest(token: String)(implicit credential: GlobusGSSCredentialImpl) = {
+    val r = new SrmAbortRequestRequest
+    r.setRequestToken(token)
+    stub.srmAbortRequest(r)
   }
   
   private def throwError[ R <: RequestStatus ](r: R) = throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.getReturnStatus.getStatusCode + " " + r.getReturnStatus.getExplanation)
