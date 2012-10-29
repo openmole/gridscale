@@ -34,11 +34,13 @@ trait WMSJobDescription extends JobDescription {
   def smpGranularity: Option[Int] = None
   def retryCount: Option[Int] = None
   def myProxyServer: Option[String] = None
+  def architecture: Option[String] = None 
   
   def requirements = 
     "other.GlueCEStateStatus == \"Production\"" + 
     memory.map(" && other.GlueHostMainMemoryRAMSize >= " + _).mkString +
-    cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _).mkString
+    cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _).mkString +
+    architecture.map(" && GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString
   
   def toJDL = {
     val script = new ScriptBuffer
