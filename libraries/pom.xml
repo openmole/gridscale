@@ -17,7 +17,6 @@
 	<module>axis-patched</module>
 	<module>cog-axis</module>
 	<module>cog-url</module>
-	<module>addressing</module>
         <module>glite-security-voms</module>
 	<module>glite-security-util</module>
 	<module>glite-security-trustmanager</module>
