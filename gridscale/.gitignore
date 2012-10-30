@@ -17,3 +17,5 @@ release/*
 .idea
 .idea/*
 src/main/scala/fr/iscpif/gridscale/GridScale.scala
+.project
+.classpath
