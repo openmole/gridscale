@@ -5,12 +5,12 @@
     <parent>
         <groupId>fr.iscpif.gridscale</groupId>
         <artifactId>parent</artifactId>
-        <version>1.6</version>
+        <version>1.7-SNAPSHOT</version>
     </parent>
 
     <packaging>jar</packaging>
     <artifactId>gridscale</artifactId>
-    <version>1.6</version>
+    <version>1.7-SNAPSHOT</version>
 
 
     <dependencies>
