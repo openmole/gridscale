@@ -1,0 +1,76 @@
+/*
+This file is licensed under the terms of the Globus Toolkit Public
+License, found at http://www.globus.org/toolkit/download/license.html.
+*/
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.axis.MessageContext;
+import org.apache.axis.transport.http.HTTPConstants;
+
+import org.globus.axis.util.Util;
+import org.globus.axis.gsi.GSIConstants;
+import org.globus.axis.handler.CredentialHandler;
+
+import org.ietf.jgss.GSSCredential;
+
+public class MyService {
+    
+    public String serviceMethod(String arg) {
+	MessageContext ctx = MessageContext.getCurrentContext();
+	setUpEnv(ctx);
+
+        GSSCredential cred  = 
+		(GSSCredential)ctx.getProperty(GSIConstants.GSI_CREDENTIALS);
+
+	System.out.println("MyService called with arg : " + arg);
+	System.out.println("Delegated credentials : " + cred);
+
+        StringBuffer buf = new StringBuffer();
+        buf.append("User '").append(ctx.getProperty(GSIConstants.GSI_USER_DN));
+	buf.append("' authorized locally as '");
+	buf.append(ctx.getProperty(GSIConstants.GSI_AUTH_USERNAME));
+	buf.append("' sent the following message: ");
+        buf.append(arg);
+
+	return buf.toString();
+    }
+
+    /**
+     * This is just for testing purposes. These properties are set automatically
+     * if CredentialHandler is deployed in server-config.wsdd file.
+     */
+    private void setUpEnv(MessageContext msgContext) {
+        Object tmp = msgContext.getProperty(HTTPConstants.MC_HTTP_SERVLETREQUEST);
+
+	if ((tmp == null) || !(tmp instanceof HttpServletRequest)) {
+	    return;
+	}
+
+	HttpServletRequest req = (HttpServletRequest)tmp;
+	
+	// if httpg is access protocol in servlet engine, axis
+	// will not set the TRANS_URL property correctly.
+	// this is a workaround for that problem
+	String url = req.getRequestURL().toString();
+	tmp = msgContext.getProperty(MessageContext.TRANS_URL);
+	if (tmp == null && url != null) {
+	    msgContext.setProperty(MessageContext.TRANS_URL, url);
+	}
+
+	tmp = req.getAttribute(GSIConstants.GSI_CREDENTIALS);
+
+	if (tmp != null) {
+	    msgContext.setProperty(GSIConstants.GSI_CREDENTIALS, tmp);
+	}
+	
+	tmp = req.getAttribute(GSIConstants.GSI_AUTH_USERNAME);
+	if (tmp != null) {
+	    msgContext.setProperty(GSIConstants.GSI_AUTH_USERNAME, tmp);
+	}
+	
+	tmp = req.getAttribute(GSIConstants.GSI_USER_DN);
+	if (tmp != null) {
+	    msgContext.setProperty(GSIConstants.GSI_USER_DN, tmp);
+	}
+   }
+}
