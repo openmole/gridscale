@@ -74,7 +74,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
               prop => 
               val splited = prop.split('=')
               splited(0).trim.toUpperCase -> splited(1).trim
-            }.toMap.getOrElse(jobStateAttribute, throw throw new RuntimeException("State not found in qstat output."))
+            }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output."))
             translateStatus(ret, state)
           } finally br.close 
         }
