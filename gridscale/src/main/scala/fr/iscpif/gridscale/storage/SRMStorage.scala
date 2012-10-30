@@ -270,8 +270,8 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     r.getReturnStatus.getStatusCode == SRM_REQUEST_QUEUED || r.getReturnStatus.getStatusCode == SRM_REQUEST_INPROGRESS
   
   
-  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime * 1000): R = {
-    val request = f
+  private def waitSuccess[ R <: RequestStatus ](f: () => R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime * 1000): R = {
+    val request = f()
     if(request.getReturnStatus.getStatusCode == SRM_SUCCESS) request
     else if(waiting(request)) {
       if(System.currentTimeMillis > deadLine) throw new TimeoutException("Waiting for request to complete, status is " + request.getReturnStatus.getStatusCode)
