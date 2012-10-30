@@ -44,11 +44,11 @@
             <artifactId>cog-axis</artifactId>
             <version>${project.version}</version>
         </dependency>   
-        <dependency>
+        <!--<dependency>
             <groupId>fr.iscpif.gridscale</groupId>
             <artifactId>cog-url</artifactId>
             <version>${project.version}</version>
-        </dependency>  
+        </dependency>-->  
         <dependency>
             <groupId>fr.iscpif.gridscale</groupId>
             <artifactId>glite-wms-wmproxy</artifactId>

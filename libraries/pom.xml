@@ -16,7 +16,6 @@
 	<module>srmstub</module>
 	<module>axis-patched</module>
 	<module>cog-axis</module>
-	<module>cog-url</module>
         <module>glite-security-voms</module>
 	<module>glite-security-util</module>
 	<module>glite-security-trustmanager</module>
