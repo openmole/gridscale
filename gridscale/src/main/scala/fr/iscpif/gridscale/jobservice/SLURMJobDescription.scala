@@ -23,7 +23,7 @@ import fr.iscpif.gridscale.tools._
 
 trait SLURMJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
-  def workDirectory: String
+  def workDirectory: Option[String] = None
   def queue: Option[String] = None
   def cpuTime: Option[Int] = None
   def memory: Option[Int] = None

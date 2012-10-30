@@ -28,8 +28,6 @@ import java.io.InputStreamReader
 
 object SLURMJobService {
   class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
-  
-  val jobStateAttribute = "JOB_STATE"
 }
 
 import SLURMJobService._
@@ -67,17 +65,18 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
       
         val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
         try {
-          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
+          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim).drop(1)
 
-          val state = lines.tail.map {
-            prop => 
-            val splited = prop.split(' ')
-            splited(4)
+          val state = lines.hasNext match {
+            case true => 
+            	val splitted = lines.next.split(' ')
+            	splitted(4)
+            case false => throw new RuntimeException("State not found in squeue output.")
           }
           translateStatus(ret, state)
         } finally br.close 
-      }
-    } finally session.close
+      } finally session.close
+    } 
   }
   
   def cancel(job: J)(implicit credential: A) = withConnection { c => 
