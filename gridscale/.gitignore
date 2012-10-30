@@ -19,3 +19,4 @@ release/*
 src/main/scala/fr/iscpif/gridscale/GridScale.scala
 .project
 .classpath
+nbactions.xml
