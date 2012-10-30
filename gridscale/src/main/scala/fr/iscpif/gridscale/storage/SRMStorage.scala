@@ -112,6 +112,8 @@ trait SRMStorage extends Storage with RecursiveRmDir {
       token => 
       val status = new SrmStatusOfLsRequestRequest
       status.setRequestToken(token)
+      status.setOffset(offset)
+      status.setCount(size)
       stub.srmStatusOfLsRequest(status)
     }.getDetails.getPathDetailArray
     
@@ -212,6 +214,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
       token => 
       val status = new SrmStatusOfPutRequestRequest
       status.setRequestToken(token)
+      status.setArrayOfTargetSURLs(new ArrayOfAnyURI(Array(logicalUri)))
       stub.srmStatusOfPutRequest(status)
     }.getArrayOfFileStatuses.getStatusArray.head.getTransferURL
     
@@ -236,7 +239,8 @@ trait SRMStorage extends Storage with RecursiveRmDir {
       token => 
         val status = new SrmStatusOfGetRequestRequest
         status.setRequestToken(token)
-        stub.srmStatusOfGetRequest(status)
+        status.setArrayOfSourceSURLs(new ArrayOfAnyURI(Array(logicalUri)))
+      stub.srmStatusOfGetRequest(status)
     }.getArrayOfFileStatuses.getStatusArray.head.getTransferURL
     (requestStatus.getRequestToken, url)
   }
