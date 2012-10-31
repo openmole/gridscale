@@ -110,11 +110,11 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     
     val childs = complete[SRMLsRS](requestStatus) { 
       token => 
-      val status = new SrmStatusOfLsRequestRequest
-      status.setRequestToken(token)
-      status.setOffset(offset)
-      status.setCount(size)
-      stub.srmStatusOfLsRequest(status)
+        val status = new SrmStatusOfLsRequestRequest
+        status.setRequestToken(token)
+        status.setOffset(offset)
+        status.setCount(size)
+        stub.srmStatusOfLsRequest(status)
     }.getDetails.getPathDetailArray
     
     (for {
@@ -193,7 +193,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   private def freeOutputStream(token: String, absolutePath: String)(implicit credential: GlobusGSSCredentialImpl) = {
     val logicalUri = toSrmURI(absolutePath)
     val request = new SrmPutDoneRequest
-    request.setRequestToken(token);
+    request.setRequestToken(token)
     request.setArrayOfSURLs(new ArrayOfAnyURI(Array(logicalUri)))
     val requestStatus = stub.srmPutDone(request)
     if(requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
@@ -212,10 +212,10 @@ trait SRMStorage extends Storage with RecursiveRmDir {
           
     val url = complete[SRMPrepareToPutRS](requestStatus) { 
       token => 
-      val status = new SrmStatusOfPutRequestRequest
-      status.setRequestToken(token)
-      status.setArrayOfTargetSURLs(new ArrayOfAnyURI(Array(logicalUri)))
-      stub.srmStatusOfPutRequest(status)
+        val status = new SrmStatusOfPutRequestRequest
+        status.setRequestToken(token)
+        status.setArrayOfTargetSURLs(new ArrayOfAnyURI(Array(logicalUri)))
+        stub.srmStatusOfPutRequest(status)
     }.getArrayOfFileStatuses.getStatusArray.head.getTransferURL
     
     (requestStatus.getRequestToken, url)
@@ -240,7 +240,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
         val status = new SrmStatusOfGetRequestRequest
         status.setRequestToken(token)
         status.setArrayOfSourceSURLs(new ArrayOfAnyURI(Array(logicalUri)))
-      stub.srmStatusOfGetRequest(status)
+        stub.srmStatusOfGetRequest(status)
     }.getArrayOfFileStatuses.getStatusArray.head.getTransferURL
     (requestStatus.getRequestToken, url)
   }
@@ -254,12 +254,11 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     else throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + request.getReturnStatus.getStatusCode)
   } 
   
-  private def complete[ R <: RequestStatus ](request: R with RequestStatusWithToken)(requestRequest: String => R)(implicit credential: GlobusGSSCredentialImpl) = 
+  private def complete[ R <: RequestStatus ](request: R with RequestStatusWithToken)(requestRequest: String => R)(implicit credential: GlobusGSSCredentialImpl) =
     status(request) match {
       case Left(r) => r
-      case Right(token) => 
-        val rr = requestRequest(token)
-        try waitSuccess(rr)
+      case Right(token) =>
+        try waitSuccess(() => requestRequest(token))
         catch {
           case t: Throwable =>
             abortRequest(token)
@@ -271,11 +270,11 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     r.getReturnStatus.getStatusCode == SRM_REQUEST_QUEUED || r.getReturnStatus.getStatusCode == SRM_REQUEST_INPROGRESS
   
   
-  private def waitSuccess[ R <: RequestStatus ](f: => R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime * 1000): R = {
-    val request = f
+  private def waitSuccess[ R <: RequestStatus ](f: () => R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime * 1000): R = {
+    val request = f()
     if(request.getReturnStatus.getStatusCode == SRM_SUCCESS) request
     else if(waiting(request)) {
-      if(System.currentTimeMillis > deadLine) throw new TimeoutException("Waiting for request to complete")
+      if(System.currentTimeMillis > deadLine) throw new TimeoutException("Waiting for request to complete, status is " + request.getReturnStatus.getStatusCode)
       Thread.sleep(sleepTime)
       val newSleepTime = if(System.currentTimeMillis + sleepTime * 2 < deadLine) sleepTime * 2 else deadLine - System.currentTimeMillis
       waitSuccess(f, deadLine, newSleepTime)
