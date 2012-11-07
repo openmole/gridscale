@@ -51,14 +51,12 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
       val jobId = try br.readLine finally br.close
       if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
       
-      println (description.toSLURM.toString)
-      
       new SLURMJob(description, jobId)
     } finally session.close
   }
   
   def state(job: J)(implicit credential: A): JobState = {
-    val command = "squeue --jobs " + job.slurmId
+    val command = "squeue -t all --jobs " + job.slurmId
 
     withConnection { 
       c =>

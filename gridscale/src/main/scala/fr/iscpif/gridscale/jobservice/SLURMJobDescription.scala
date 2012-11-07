@@ -23,7 +23,7 @@ import fr.iscpif.gridscale.tools._
 
 trait SLURMJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
-  def workDirectory: Option[String] = None
+  def workDirectory: String
   def queue: Option[String] = None
   def cpuTime: Option[Int] = None
   def memory: Option[Int] = None
@@ -52,11 +52,7 @@ trait SLURMJobDescription extends JobDescription {
       case None => 
     }
 
-    workDirectory match {
-      case Some(w) => buffer += "#SBATCH -D " + workDirectory
-      case None =>
-    }
-    
+    buffer += "#SBATCH -D " + workDirectory + "\n"    
     buffer += "srun " + executable +  " " + arguments
     buffer.toString
   }
