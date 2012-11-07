@@ -50,6 +50,9 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
       val br = new BufferedReader(new InputStreamReader(stdout))
       val jobId = try br.readLine finally br.close
       if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
+      
+      println (description.toSLURM.toString)
+      
       new SLURMJob(description, jobId)
     } finally session.close
   }

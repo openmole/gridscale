@@ -20,7 +20,6 @@ package fr.iscpif.gridscale.information
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +32,7 @@ import javax.naming.NamingException;
 
 import javax.naming.directory.SearchResult;
 
+import collection.mutable
 import collection.JavaConversions._
 import fr.iscpif.gridscale.storage.SRMStorage
 import fr.iscpif.gridscale.jobservice.WMSJobService
@@ -52,12 +52,12 @@ class BDII(location: String) {
     for (r ← res) {
 
       try {
-        var id = r.getAttributes().get("GlueChunkKey").get().toString(); //$NON-NLS-1$;
-        id = id.substring(id.indexOf('=') + 1);
-        val resForPath = q.query("(&(GlueChunkKey=GlueSEUniqueID=" + id + ")(GlueVOInfoAccessControlBaseRule=VO:" + vo + "))", timeOut);
-        if (!resForPath.isEmpty()) {
-          val path = resForPath.get(0).getAttributes().get("GlueVOInfoPath").get().toString();
-          basePaths.put(id, path);
+        var id = r.getAttributes().get("GlueChunkKey").get().toString
+        id = id.substring(id.indexOf('=') + 1)
+        val resForPath = q.query("(&(GlueChunkKey=GlueSEUniqueID=" + id + ")(GlueVOInfoAccessControlBaseRule=VO:" + vo + "))", timeOut)
+        if (!resForPath.isEmpty) {
+          val path = resForPath.get(0).getAttributes().get("GlueVOInfoPath").get().toString
+          basePaths.put(id, path)
         }
       } catch {
         case ex: NamingException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error when quering BDII", ex);
@@ -66,17 +66,17 @@ class BDII(location: String) {
     }
 
     var searchPhrase =
-      "(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=" + vo + ")"; //$NON-NLS-1$
+      "(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=" + vo + ")"
 
-    searchPhrase += "(|"; //$NON-NLS-1$
+    searchPhrase += "(|"
     for (t ← srmServiceType) {
-      searchPhrase += "(GlueServiceType=" + t + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+      searchPhrase += "(GlueServiceType=" + t + ")"
     }
-    searchPhrase += "))";
+    searchPhrase += "))"
     
-    res = q.query(searchPhrase, timeOut);
+    res = q.query(searchPhrase, timeOut)
     
-    val srms = new HashSet[SRMStorage]
+    val srms = new mutable.HashMap[(String, Int), SRMStorage]
     
     for (r ← res) {
 
@@ -90,7 +90,7 @@ class BDII(location: String) {
           val bport = httpgURI.getPort
           val bbasePath = basePaths.get(bhost)
           
-          srms.add(
+          srms += ((bhost, bport) ->
             new SRMStorage {
               val host = bhost
               val port = bport
@@ -126,36 +126,36 @@ class BDII(location: String) {
       }
     }
 
-    srms.toSeq
+    srms.values.toSeq
   }
 
   def queryWMS(vo: String, timeOut: Int) = {
-    val q = new BDIIQuery(location.toString())
+    val q = new BDIIQuery(location.toString)
 
     var searchPhrase =
-      "(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=" + vo + ")";
-    searchPhrase += "(|"; //$NON-NLS-1$
+      "(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=" + vo + ")"
+    searchPhrase += "(|"
     for (t ← wmsServiceType) {
-      searchPhrase += "(GlueServiceType=" + t + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+      searchPhrase += "(GlueServiceType=" + t + ")"
     }
-    searchPhrase += "))";
+    searchPhrase += "))"
 
     val res = q.query(searchPhrase, timeOut)
 
-    val wmsURIs = new LinkedList[URI]
+    val wmsURIs = new mutable.HashSet[URI]
 
     for (r ← res) {
 
       try {
-        val wmsURI = new URI(r.getAttributes().get("GlueServiceEndpoint").get().toString());
-        wmsURIs.add(wmsURI)
+        val wmsURI = new URI(r.getAttributes.get("GlueServiceEndpoint").get().toString)
+        wmsURIs += wmsURI
       } catch {
         case ex: NamingException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", ex);
         case e: URISyntaxException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", e);
       }
     }
 
-    wmsURIs.map{ 
+    wmsURIs.toSeq.map{
       u => 
       new WMSJobService {
         val url = u
