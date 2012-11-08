@@ -28,6 +28,8 @@ import java.io.InputStreamReader
 
 object SLURMJobService {
   class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
+  
+  val jobStateAttribute = "JobState"
 }
 
 import SLURMJobService._
@@ -48,7 +50,13 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
       exec(session, "cd " +  description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
       val stdout = new StreamGobbler(session.getStdout)
       val br = new BufferedReader(new InputStreamReader(stdout))
-      val jobId = try br.readLine finally br.close
+      val jobId = try {
+        val r = ".* ([0-9]+)".r
+        br.readLine match {
+          case r(id) => id
+          case _ => null 
+        }
+      } finally br.close
       if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
       
       new SLURMJob(description, jobId)
@@ -56,8 +64,8 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
   }
   
   def state(job: J)(implicit credential: A): JobState = {
-    val command = "squeue -t all --jobs " + job.slurmId
-
+    val command = "scontrol show job " + job.slurmId
+    println ("command: " + command)
     withConnection { 
       c =>
       val session = c.openSession
@@ -66,15 +74,15 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
       
         val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
         try {
-          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim).drop(1)
-
-          val state = lines.hasNext match {
-            case true => 
-            	val splitted = lines.next.split(' ')
-            	splitted(4)
-            case false => throw new RuntimeException("State not found in squeue output.")
-          }
-          translateStatus(ret, state)
+          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
+          println ("lines: " + lines)
+          val state = lines.filter(_.matches(".*JobState=.*")).map {
+              prop =>
+              val splited = prop.split('=')
+              println ("line: " + prop + " / " + splited(0).trim + " -> " + splited(1).trim.split(' ')(0))
+              splited(0).trim -> splited(1).trim.split(' ')(0)
+            }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output."))
+            translateStatus(ret, state)
         } finally br.close 
       } finally session.close
     } 
@@ -86,6 +94,10 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
   
   //Purge output error job script
   def purge(job: J)(implicit credential: A) = {
+    println(slurmScriptPath(job.description))
+    println(job.description.workDirectory + "/" + job.description.output)
+    println(job.description.workDirectory + "/" + job.description.error)
+    
     rmFile(slurmScriptPath(job.description))
     rmFile(job.description.workDirectory + "/" + job.description.output)
     rmFile(job.description.workDirectory + "/" + job.description.error)
@@ -93,14 +105,13 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
   
   def slurmScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".slurm"
   
-  
   def translateStatus(retCode: Int, status: String) =
     status match {
-      case "CA" | "CO" => Done
-      case "R" | "CG"  => Running
-      case "CF" | "PD" | "SU" => Submitted
-      case "F" | "NF" | "PR" | "TO" => Failed
-      case _ => throw new RuntimeException("Unreconized state "+ status)
+      case "CANCELLED" | "COMPLETED" => Done
+      case "RUNNING" | "COMPLETING"  => Running
+      case "CONFIGURING" | "PENDING" | "SUSPENDED" => Submitted
+      case "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" => Failed
+      case _ => throw new RuntimeException("Unrecognized state "+ status)
     }
 
 }
