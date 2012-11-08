@@ -108,7 +108,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
 //        }
       case "R" | "E" | "H" | "S" => Running
       case "Q" | "W" | "T" => Submitted
-      case _ => throw new RuntimeException("Unreconized state "+ status)
+      case _ => throw new RuntimeException("Unrecognized state "+ status)
     }
 
 }
