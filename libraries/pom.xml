@@ -5,11 +5,11 @@
     <parent>
        <groupId>fr.iscpif.gridscale</groupId>
        <artifactId>parent</artifactId>
-       <version>1.11-SNAPSHOT</version>
+       <version>1.11</version>
     </parent>
 
     <artifactId>libraries</artifactId>
-    <version>1.11-SNAPSHOT</version>
+    <version>1.11</version>
     <packaging>pom</packaging>
 
     <modules>
