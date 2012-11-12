@@ -1,3 +1,0 @@
-[submodule "libraries/jglobus"]
-	path = libraries/jglobus
-	url = git@github.com:romainreuillon/JGlobus.git
