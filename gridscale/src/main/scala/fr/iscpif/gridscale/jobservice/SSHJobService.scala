@@ -85,20 +85,16 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js =>
     jobId
   }
   
-  def state(job: J)(implicit credential: A): JobState = { 
-    try {
+  def state(job: J)(implicit credential: A): JobState =
+    if(exists(endCodeFile(job))) {
       val is = openInputStream(endCodeFile(job))
       val content = 
         try getBytes(is, bufferSize, SSHJobService.timeout)
         finally is.close
       
       translateState(new String(content).takeWhile(_.isDigit).toInt)
-    } catch {
-      case e: Throwable => 
-        if(!exists(endCodeFile(job))) Running
-        else throw e
-    } 
-  }
+    } else Running
+
   
   def cancel(jobId: J)(implicit credential: A) = withConnection {
     c =>
