@@ -27,7 +27,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 object SLURMJobService {
-  class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
+  class SLURMJob(val description: SLURMJobDescription, val slurmId: String, val nodeList: List[String])
   
   val jobStateAttribute = "JobState"
 }
@@ -59,13 +59,13 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
       } finally br.close
       if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
       
-      new SLURMJob(description, jobId)
+      new SLURMJob(description, jobId, getNodeList(jobId))
     } finally session.close
   }
   
   def state(job: J)(implicit credential: A): JobState = {
     val command = "scontrol show job " + job.slurmId
-    println ("command: " + command)
+
     withConnection { 
       c =>
       val session = c.openSession
@@ -75,12 +75,10 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
         val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
         try {
           val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
-          println ("lines: " + lines)
           val state = lines.filter(_.matches(".*JobState=.*")).map {
               prop =>
-              val splited = prop.split('=')
-              println ("line: " + prop + " / " + splited(0).trim + " -> " + splited(1).trim.split(' ')(0))
-              splited(0).trim -> splited(1).trim.split(' ')(0)
+              val splits = prop.split('=')
+              splits(0).trim -> splits(1).trim.split(' ')(0)
             }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output."))
             translateStatus(ret, state)
         } finally br.close 
@@ -103,9 +101,54 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     rmFile(job.description.workDirectory + "/" + job.description.error)
   }
   
-  def slurmScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".slurm"
+  private def slurmScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".slurm"
   
-  def translateStatus(retCode: Int, status: String) =
+  /** Get node list by performing call to scontrol just after job 
+   * has been successfully submitted.
+   * In scontrol output, nodes are comma-separated.
+   * @param jobId Integer identifying the job in SLURM.
+   * @return The list of nodes allocated to the job
+   */
+  private def getNodeList(jobId: String)(implicit credential: A): List[String] = {
+    val command = "scontrol show job " + jobId
+    
+    val nodeList = withConnection { 
+      c =>
+      val session = c.openSession
+      try {
+        val ret = exec(session, command)
+      
+        val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
+        try {
+          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
+          val nodeList: List[String] = lines.filter(_.matches("^NodeList=.*")).map {
+              prop => 
+                prop.split('=')(1).split(',') map (
+            		  splitX => splitX
+              ) toList
+          }.toList.flatten
+          nodeList
+        } finally br.close 
+      } finally session.close
+    }
+    
+    // now that we have the list of nodes, still need
+    // ot transform it since contiguous node names are factored
+    // by SLURM (i.e. List(node[0-2]) -> List(node0, node1, node2)
+    val r = """(.*)(\d+)-(\d+)""".r
+    nodeList map (
+        node =>
+          	node match {
+          		case  r(nodeName, lBound, uBound) => 
+          			for {
+          				iNode <- java.lang.Integer.parseInt(lBound) to java.lang.Integer.parseInt(uBound)
+          			} yield nodeName + iNode
+          		case _ => List(node)
+          	}
+    ) flatten
+  }
+  
+  private def translateStatus(retCode: Int, status: String) =
     status match {
       case "CANCELLED" | "COMPLETED" => Done
       case "RUNNING" | "COMPLETING"  => Running
@@ -113,5 +156,5 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
       case "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" => Failed
       case _ => throw new RuntimeException("Unrecognized state "+ status)
     }
-
+  
 }
