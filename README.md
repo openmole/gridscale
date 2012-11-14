@@ -5,6 +5,7 @@ GridScale is a scala library for accessing various file and batch system. For th
 * Glite / EMI, the European grid middleware,
 * Remote SSH server,
 * PBS clusters,
+* SLURM clusters,
 * HTTP file lists.
 
 Support is planned for SGE and DIRAC job pilot system.
@@ -101,6 +102,26 @@ To submit a job on a PBS cluster:
     val j = pbsService.submit(description)
     val s = untilFinished{Thread.sleep(5000); val s = pbsService.state(j); println(s); s}
     pbsService.purge(j)
+
+To submit a job on a SLURM cluster:
+
+   implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+      def host: String = "server.domain"
+      def user = "user"
+      def password = "password"
+      def privateKey = new File("/path/to/key/file")
+   }
+
+   val description = new SLURMJobDescription {
+      def executable = "/bin/echo"
+      def arguments = "success > test_success.txt"
+      def workDirectory = "/home/user"
+   }
+
+   val j = slurmService.submit(description)
+   val s = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
+
+   slurmService.purge(j)
 
 To submit a job on the biomed VO of the EGI grid:
 
