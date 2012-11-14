@@ -92,10 +92,6 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
   
   //Purge output error job script
   def purge(job: J)(implicit credential: A) = {
-    println(slurmScriptPath(job.description))
-    println(job.description.workDirectory + "/" + job.description.output)
-    println(job.description.workDirectory + "/" + job.description.error)
-    
     rmFile(slurmScriptPath(job.description))
     rmFile(job.description.workDirectory + "/" + job.description.output)
     rmFile(job.description.workDirectory + "/" + job.description.error)
