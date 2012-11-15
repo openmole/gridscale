@@ -15,7 +15,7 @@
 
     <properties>
 	<lib.org.jglobus.version>2.0-20121114</lib.org.jglobus.version>
-        <lib.org.scala-lang.scala.version>2.9.0</lib.org.scala-lang.scala.version>
+        <lib.org.scala-lang.scala.version>2.10.0-RC2</lib.org.scala-lang.scala.version>
         <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
     </properties>
 
