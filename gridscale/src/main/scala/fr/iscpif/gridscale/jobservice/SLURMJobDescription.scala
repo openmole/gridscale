@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2012 Jonathan Passerat-Palmbach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +21,7 @@ package fr.iscpif.gridscale.jobservice
 import java.util.UUID
 import fr.iscpif.gridscale.tools._
 
-trait PBSJobDescription extends JobDescription {
+trait SLURMJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
   def workDirectory: String
   def queue: Option[String] = None
@@ -29,34 +30,30 @@ trait PBSJobDescription extends JobDescription {
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
   
-  def toPBS =  {
+  def toSLURM =  {
     val buffer = new ScriptBuffer
     buffer += "#!/bin/bash"
     
-    buffer += "#PBS -o " + output
-    buffer += "#PBS -e " + error
+    buffer += "#SBATCH -o " + output
+    buffer += "#SBATCH -e " + error
 
     queue match {
-      case Some(q) => buffer += "#PBS -q " + q
+      case Some(p) => buffer += "#SBATCH -p " + p
       case None =>
     }
     
     memory match {
-      case Some(m) => buffer += "#PBS -lmem=" + m + "mb"
+      case Some(m) => buffer += "#SBATCH --mem-per-cpu=" + m
       case None =>
     }
     
     cpuTime match {
-      case Some(t) => 
-        val df = new java.text.SimpleDateFormat("HH:mm:ss")
-        df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-        buffer += "#PBS -lwalltime=" + df.format(t * 60 * 1000)
+      case Some(t) => buffer += "#SBATCH --time=" + t * 60 
       case None => 
     }
-    
-    buffer += "cd " + workDirectory
-    
-    buffer += executable +  " " + arguments
+
+    buffer += "#SBATCH -D " + workDirectory + "\n"    
+    buffer += "srun " + executable +  " " + arguments
     buffer.toString
   }
 }
