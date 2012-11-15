@@ -21,15 +21,15 @@ trait RecursiveRmDir extends Storage {
 
   def rmDir(path: String)(implicit authentication: A) = {
     val subfiles = list(path)
-    if(subfiles.isEmpty) rmEmptyDir(path)
+    if (subfiles.isEmpty) rmEmptyDir(path)
     else subfiles.foreach {
-      case(name, t) =>
+      case (name, t) ⇒
         t match {
-          case DirectoryType => rmDir(child(path, name))
-          case _ => rmFile(child(path, name))
+          case DirectoryType ⇒ rmDir(child(path, name))
+          case _ ⇒ rmFile(child(path, name))
         }
     }
   }
-  
+
   def rmEmptyDir(path: String)(implicit authentication: A)
 }

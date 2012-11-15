@@ -34,61 +34,59 @@ class BDIIQuery(val bdii: String, attributeList: List[String] = List.empty) {
   /**
    * @param bdii the end poing of the bdii to query
    */
-   //  public BDIIQuery(final String bdii)
-   //  {
-   //    this.bdii = bdii;
-   //  }
+  //  public BDIIQuery(final String bdii)
+  //  {
+  //    this.bdii = bdii;
+  //  }
 
-   /**
-    * Sets the specific attributes of the element that we want to return
-    * @param attribute a valid
-    */
-   //  public void setAttribute(final String attribute)
-   //  {
-   //    if (attribute!=null && attribute.length() > 0 )
-   //    {
-   //      this.attributeList.add( attribute );
-   //    }
-   //  }
+  /**
+   * Sets the specific attributes of the element that we want to return
+   * @param attribute a valid
+   */
+  //  public void setAttribute(final String attribute)
+  //  {
+  //    if (attribute!=null && attribute.length() > 0 )
+  //    {
+  //      this.attributeList.add( attribute );
+  //    }
+  //  }
 
-   //  private ArrayList<String> getAttributes()
-   //  {
-   //    return this.attributeList;
-   //  }
-   /**
-    * This method queries the bdii set in the constructor
-    * @param searchPhrase the search phrase
-    * @return an array list of SearchResult objects.
-    * @throws InternalProcessingError
-    */
-   def query(searchPhrase: String, timeOut: Int) = {
-      //boolean hasError= false;
-      var resultsList = new ArrayList[SearchResult]
-      val bindDN = "o=grid"
-      val env = new Hashtable[String, String]
+  //  private ArrayList<String> getAttributes()
+  //  {
+  //    return this.attributeList;
+  //  }
+  /**
+   * This method queries the bdii set in the constructor
+   * @param searchPhrase the search phrase
+   * @return an array list of SearchResult objects.
+   * @throws InternalProcessingError
+   */
+  def query(searchPhrase: String, timeOut: Int) = {
+    //boolean hasError= false;
+    var resultsList = new ArrayList[SearchResult]
+    val bindDN = "o=grid"
+    val env = new Hashtable[String, String]
 
-      env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
-      env.put(Context.PROVIDER_URL, this.bdii)
+    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+    env.put(Context.PROVIDER_URL, this.bdii)
 
-  
-      /* get a handle to an Initial DirContext */
-      val dirContext = new InitialDirContext(env)
+    /* get a handle to an Initial DirContext */
+    val dirContext = new InitialDirContext(env)
 
-      /* specify search constraints to search subtree */
-      val constraints = new SearchControls
-      constraints.setTimeLimit(timeOut)
-      constraints.setSearchScope(SearchControls.SUBTREE_SCOPE)
+    /* specify search constraints to search subtree */
+    val constraints = new SearchControls
+    constraints.setTimeLimit(timeOut)
+    constraints.setSearchScope(SearchControls.SUBTREE_SCOPE)
 
-      // specify the elements to return
-      if (attributeList.size > 0)
-        constraints.setReturningAttributes(attributeList.toArray)
+    // specify the elements to return
+    if (attributeList.size > 0)
+      constraints.setReturningAttributes(attributeList.toArray)
 
-      // Perform the search
-      val results = dirContext.search(bindDN,
-                                      searchPhrase,
-                                      constraints)
-      java.util.Collections.list(results)
+    // Perform the search
+    val results = dirContext.search(bindDN,
+      searchPhrase,
+      constraints)
+    java.util.Collections.list(results)
 
-
-    }
-   }
+  }
+}

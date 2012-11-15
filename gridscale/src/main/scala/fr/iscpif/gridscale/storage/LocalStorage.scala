@@ -26,45 +26,45 @@ import java.nio.file.Files
 
 trait LocalStorage extends Storage {
   type A = Unit
-  
-  override def child(parent: String, child: String) = 
+
+  override def child(parent: String, child: String) =
     new File(new File(parent), child).getAbsolutePath
-  
-  override def exists(path: String)(implicit authentication: A) = 
+
+  override def exists(path: String)(implicit authentication: A) =
     new File(path).exists
-    
-  def list(path: String)(implicit authentication: A): Seq[(String, FileType)] = 
-    new File(path).listFiles.map{ 
-      f => 
+
+  def list(path: String)(implicit authentication: A): Seq[(String, FileType)] =
+    new File(path).listFiles.map {
+      f ⇒
         val fs = FileSystems.getDefault
         val p = fs.getPath(f.getAbsolutePath)
-      
-        val ftype = 
-          if(Files.isSymbolicLink(p)) LinkType
-          else if(f.isDirectory) DirectoryType
+
+        val ftype =
+          if (Files.isSymbolicLink(p)) LinkType
+          else if (f.isDirectory) DirectoryType
           else FileType
-          
+
         f.getName -> ftype
-      }
-  
-  def makeDir(path: String)(implicit authentication: A) = 
+    }
+
+  def makeDir(path: String)(implicit authentication: A) =
     new File(path).mkdirs
-  
+
   def rmDir(path: String)(implicit authentication: A) = {
     def delete(f: File): Unit = {
-      if(f.isDirectory) f.listFiles.foreach(delete)
+      if (f.isDirectory) f.listFiles.foreach(delete)
       f.delete
     }
     delete(new File(path))
   }
-  
-  def rmFile(path: String)(implicit authentication: A) = 
+
+  def rmFile(path: String)(implicit authentication: A) =
     new File(path).delete
-  
-  protected def _openInputStream(path: String)(implicit authentication: A): InputStream = 
+
+  protected def _openInputStream(path: String)(implicit authentication: A): InputStream =
     new FileInputStream(new File(path))
-  
+
   protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream =
     new FileOutputStream(new File(path))
-  
+
 }

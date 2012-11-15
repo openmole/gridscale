@@ -28,35 +28,35 @@ trait PBSJobDescription extends JobDescription {
   def memory: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
-  
-  def toPBS =  {
+
+  def toPBS = {
     val buffer = new ScriptBuffer
     buffer += "#!/bin/bash"
-    
+
     buffer += "#PBS -o " + output
     buffer += "#PBS -e " + error
 
     queue match {
-      case Some(q) => buffer += "#PBS -q " + q
-      case None =>
+      case Some(q) ⇒ buffer += "#PBS -q " + q
+      case None ⇒
     }
-    
+
     memory match {
-      case Some(m) => buffer += "#PBS -lmem=" + m + "mb"
-      case None =>
+      case Some(m) ⇒ buffer += "#PBS -lmem=" + m + "mb"
+      case None ⇒
     }
-    
+
     cpuTime match {
-      case Some(t) => 
+      case Some(t) ⇒
         val df = new java.text.SimpleDateFormat("HH:mm:ss")
         df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
         buffer += "#PBS -lwalltime=" + df.format(t * 60 * 1000)
-      case None => 
+      case None ⇒
     }
-    
+
     buffer += "cd " + workDirectory
-    
-    buffer += executable +  " " + arguments
+
+    buffer += executable + " " + arguments
     buffer.toString
   }
 }

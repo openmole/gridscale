@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit
 
 package object tools {
-  
+
   val daemonThreadFactory = new ThreadFactory {
     override def newThread(r: Runnable): Thread = {
       val t = new Thread(r)
@@ -42,7 +42,7 @@ package object tools {
       t
     }
   }
-  
+
   val defaultExecutor = Executors.newCachedThreadPool(daemonThreadFactory)
 
   def timeout[F](f: ⇒ F)(duration: Long)(implicit executor: ExecutorService = defaultExecutor): F = {
@@ -52,41 +52,41 @@ package object tools {
       case e: TimeoutException ⇒ r.cancel(true); throw e
     }
   }
-  
+
   def copy(from: File, to: OutputStream, buffSize: Int, timeout: Long) = {
     val inputStream = new BufferedInputStream(new FileInputStream(from))
-    
+
     try Iterator.continually {
       val b = Array.ofDim[Byte](buffSize)
       val r = inputStream.read(b, 0, buffSize)
       (b, r)
-    }.takeWhile{case(_, r) => r != -1}.foreach {
-      case(b, r) => this.timeout(to.write(b, 0, r))(timeout)
+    }.takeWhile { case (_, r) ⇒ r != -1 }.foreach {
+      case (b, r) ⇒ this.timeout(to.write(b, 0, r))(timeout)
     } finally inputStream.close
   }
-  
-   def copy(from: InputStream, to: File, buffSize: Int, timeout: Long) = {
+
+  def copy(from: InputStream, to: File, buffSize: Int, timeout: Long) = {
     val outputStream = new BufferedOutputStream(new FileOutputStream(to))
-    
+
     try Iterator.continually {
       val b = Array.ofDim[Byte](buffSize)
       val r = this.timeout(from.read(b, 0, buffSize))(timeout)
       (b, r)
-    }.takeWhile{case(_, r) => r != -1}.foreach {
-      case(b, r) => outputStream.write(b, 0, r)
+    }.takeWhile { case (_, r) ⇒ r != -1 }.foreach {
+      case (b, r) ⇒ outputStream.write(b, 0, r)
     } finally outputStream.close
   }
-  
+
   def getBytes(from: InputStream, buffSize: Int, timeout: Long) = {
     val os = new ByteArrayOutputStream
     Iterator.continually {
       val b = Array.ofDim[Byte](buffSize)
       val r = this.timeout(from.read(b, 0, buffSize))(timeout)
       (b, r)
-    }.takeWhile{case(_, r) => r != -1}.foreach {
-      case(b, r) => os.write(b, 0, r)
+    }.takeWhile { case (_, r) ⇒ r != -1 }.foreach {
+      case (b, r) ⇒ os.write(b, 0, r)
     }
     os.toByteArray
   }
-  
+
 }

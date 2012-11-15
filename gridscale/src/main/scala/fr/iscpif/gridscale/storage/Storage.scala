@@ -21,17 +21,17 @@ import java.io._
 
 trait Storage {
   type A
-  
-  def exists(path: String)(implicit authentication: A) = 
-    if(isRoot(path)) true
+
+  def exists(path: String)(implicit authentication: A) =
+    if (isRoot(path)) true
     else listNames(parent(path)).toSet.contains(name(path))
-    
-  def child(parent: String, child: String) = if(parent.endsWith("/")) parent + child else parent + '/' + child  
-  
+
+  def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
+
   def parent(path: String) = new File(path).getParent
   def name(path: String) = new File(path).getName
   def isRoot(path: String) = parent(path) == path
-  
+
   def listNames(path: String)(implicit authentication: A) = list(path).unzip._1
   def list(path: String)(implicit authentication: A): Seq[(String, FileType)]
   def makeDir(path: String)(implicit authentication: A)
@@ -39,6 +39,6 @@ trait Storage {
   def rmFile(path: String)(implicit authentication: A)
   def openInputStream(path: String)(implicit authentication: A): InputStream = new BufferedInputStream(_openInputStream(path))
   def openOutputStream(path: String)(implicit authentication: A): OutputStream = new BufferedOutputStream(_openOutputStream(path))
-  protected def _openInputStream(path: String)(implicit authentication: A): InputStream 
+  protected def _openInputStream(path: String)(implicit authentication: A): InputStream
   protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream
 }

@@ -29,31 +29,31 @@ trait SLURMJobDescription extends JobDescription {
   def memory: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
-  
-  def toSLURM =  {
+
+  def toSLURM = {
     val buffer = new ScriptBuffer
     buffer += "#!/bin/bash"
-    
+
     buffer += "#SBATCH -o " + output
     buffer += "#SBATCH -e " + error
 
     queue match {
-      case Some(p) => buffer += "#SBATCH -p " + p
-      case None =>
-    }
-    
-    memory match {
-      case Some(m) => buffer += "#SBATCH --mem-per-cpu=" + m
-      case None =>
-    }
-    
-    cpuTime match {
-      case Some(t) => buffer += "#SBATCH --time=" + t * 60 
-      case None => 
+      case Some(p) ⇒ buffer += "#SBATCH -p " + p
+      case None ⇒
     }
 
-    buffer += "#SBATCH -D " + workDirectory + "\n"    
-    buffer += "srun " + executable +  " " + arguments
+    memory match {
+      case Some(m) ⇒ buffer += "#SBATCH --mem-per-cpu=" + m
+      case None ⇒
+    }
+
+    cpuTime match {
+      case Some(t) ⇒ buffer += "#SBATCH --time=" + t * 60
+      case None ⇒
+    }
+
+    buffer += "#SBATCH -D " + workDirectory + "\n"
+    buffer += "srun " + executable + " " + arguments
     buffer.toString
   }
 }

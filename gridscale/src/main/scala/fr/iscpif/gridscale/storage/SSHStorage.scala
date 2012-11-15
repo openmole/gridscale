@@ -33,133 +33,129 @@ import ch.ethz.ssh2.sftp.AttribPermissions
 import ch.ethz.ssh2.sftp.ErrorCodes
 import collection.JavaConversions._
 
-trait SSHStorage extends Storage with SSHHost { storage =>
+trait SSHStorage extends Storage with SSHHost { storage ⇒
 
   def home(implicit authentication: A) = withSftpClient {
     _.canonicalPath(".")
   }
-  
-//  def makeDirs(parent: String, child: String)(implicit authentication: A) = {
-//    (parent + "/" + child).split("/").tail.filter(_.isEmpty).foldLeft("") {
-//      (c, r) => 
-//      val dir = c + "/" + r
-//      if(!exists(dir)) makeDir(dir)
-//      dir
-//    }
-//  }
-  
-  override def exists(path: String)(implicit authentication: A) = withSftpClient {  c =>
-     try {
+
+  //  def makeDirs(parent: String, child: String)(implicit authentication: A) = {
+  //    (parent + "/" + child).split("/").tail.filter(_.isEmpty).foldLeft("") {
+  //      (c, r) => 
+  //      val dir = c + "/" + r
+  //      if(!exists(dir)) makeDir(dir)
+  //      dir
+  //    }
+  //  }
+
+  override def exists(path: String)(implicit authentication: A) = withSftpClient { c ⇒
+    try {
       c.stat(path)
       true
     } catch {
-      case e: SFTPException => 
-        if(e.getServerErrorCode == ErrorCodes.SSH_FX_NO_SUCH_FILE) false
+      case e: SFTPException ⇒
+        if (e.getServerErrorCode == ErrorCodes.SSH_FX_NO_SUCH_FILE) false
         else throw e
     }
   }
-  
+
   def list(path: String)(implicit authentication: A) = withSftpClient {
     listWithClient(path) _
   }
-  
+
   private def listWithClient(path: String)(c: SFTPv3Client) = {
-    c.ls(path).filterNot(e => {e.filename == "." || e.filename == ".."}).map {
-      e =>
-      val t = 
-        if(e.attributes.isDirectory) DirectoryType 
-      else if(e.attributes.isRegularFile) FileType
-      else LinkType
-      e.filename -> t
+    c.ls(path).filterNot(e ⇒ { e.filename == "." || e.filename == ".." }).map {
+      e ⇒
+        val t =
+          if (e.attributes.isDirectory) DirectoryType
+          else if (e.attributes.isRegularFile) FileType
+          else LinkType
+        e.filename -> t
     }
   }
-  
+
   def makeDir(path: String)(implicit authentication: A) = withSftpClient {
     import AttribPermissions._
     _.mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR)
   }
-  
+
   def rmDir(path: String)(implicit authentication: A) = withSftpClient {
     rmDirWithClient(path) _
   }
-  
+
   private def rmDirWithClient(path: String)(c: SFTPv3Client): Unit = {
     listWithClient(path)(c).foreach {
-      case(p, t) => 
+      case (p, t) ⇒
         val child = path + "/" + p
         t match {
-          case FileType => rmFileWithClient(child)(c)
-          case LinkType => rmFileWithClient(child)(c)
-          case DirectoryType => rmDirWithClient(child)(c)
+          case FileType ⇒ rmFileWithClient(child)(c)
+          case LinkType ⇒ rmFileWithClient(child)(c)
+          case DirectoryType ⇒ rmDirWithClient(child)(c)
         }
     }
     c.rmdir(path)
   }
-  
+
   def rmFile(path: String)(implicit authentication: A) = withSftpClient {
     rmFileWithClient(path) _
   }
-  
-  private def rmFileWithClient(path: String)(c: SFTPv3Client) = {
+
+  protected def rmFileWithClient(path: String)(c: SFTPv3Client) = {
     c.rm(path)
   }
-  
+
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream = {
     val connection = connectionCache.cached(this)
     val sftpClient = new SFTPv3Client(connection)
-    
-    val fileHandle = 
+
+    val fileHandle =
       try sftpClient.createFile(path)
-    catch {
-      case e: Throwable => 
-        try sftpClient.close
-        finally connectionCache.release(this)
-        throw e
-    }
-    
+      catch {
+        case e: Throwable ⇒
+          try sftpClient.close
+          finally connectionCache.release(this)
+          throw e
+      }
+
     def closeAll = {
       try sftpClient.closeFile(fileHandle)
       finally try sftpClient.close
       finally connectionCache.release(this)
     }
-    
+
     new SFTPInputStream(fileHandle) {
       override def close = {
         try closeAll
         finally super.close
       }
-    }                       
+    }
   }
-    
-    
+
   protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream = {
     val connection = connectionCache.cached(this)
     val sftpClient = new SFTPv3Client(connection)
-    
-    val fileHandle = 
+
+    val fileHandle =
       try sftpClient.createFileTruncate(path)
-    catch {
-      case e: Throwable => 
-        try sftpClient.close
-        finally connectionCache.release(this)
-        throw e
-    }
-    
+      catch {
+        case e: Throwable ⇒
+          try sftpClient.close
+          finally connectionCache.release(this)
+          throw e
+      }
+
     def closeAll = {
       try sftpClient.closeFile(fileHandle)
       finally try sftpClient.close
       finally connectionCache.release(this)
     }
-    
+
     new SFTPOutputStream(fileHandle) {
       override def close = {
         try closeAll
         finally super.close
       }
-    }                       
+    }
   }
-  
 
-  
-  
 }

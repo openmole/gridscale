@@ -26,93 +26,97 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 object SSHJobService {
-  
+
   val bufferSize = 65535
   val timeout = 120
-  
+
   val rootDir = ".gridscale/ssh"
-  
+
   def file(jobId: String, suffix: String) = rootDir + "/" + jobId + "." + suffix
   def pidFile(jobId: String) = file(jobId, "pid")
   def endCodeFile(jobId: String) = file(jobId, "end")
   def outFile(jobId: String) = file(jobId, "out")
   def errFile(jobId: String) = file(jobId, "err")
-  
+
   val PROCESS_CANCELED = 143
   val COMMAND_NOT_FOUND = 127
-  
-  def exec (connection: Connection, cde: String): Unit = {
+
+  /*def exec (connection: Connection, cde: String): Unit = {
     val session = connection.openSession
     try {
       exec(session, cde) 
       if(session.getExitStatus != 0) throw new RuntimeException("Return code was no 0 but " + session.getExitStatus)
     } finally session.close
-  }
-  
-  def exec(session: Session, cde: String): Int = {
+  } */
+
+  def execReturnCode(session: Session, cde: String) = {
     session.execCommand(cde)
     session.waitForCondition(ChannelCondition.EXIT_STATUS, 0)
     session.getExitStatus
+  }
+
+  def exec(session: Session, cde: String) = {
+    val retCode = execReturnCode(session, cde)
+    if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode)
   }
 }
 
 import SSHJobService._
 
-trait SSHJobService extends JobService with SSHHost with SSHStorage { js =>
+trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
   type J = String
   type D = SSHJobDescription
-  
+
   def submit(description: D)(implicit credential: A): J = {
     val jobId = UUID.randomUUID.toString
     val command = new ScriptBuffer
-      
+
     def absolute(path: String) = "$HOME/" + path
-    
+
     command += "mkdir -p " + absolute(rootDir)
     command += "mkdir -p " + description.workDirectory
     command += "cd " + description.workDirectory
-      
-    val executable =  description.executable + " " + description.arguments
-      
-    val jobDir = 
+
+    val executable = description.executable + " " + description.arguments
+
+    val jobDir =
       command += "((" +
-    executable +
-    " > " + absolute(outFile(jobId)) + " 2> " + absolute(errFile(jobId)) +" ; " +
-    " echo $? > " + absolute(endCodeFile(jobId)) + ") & " +
-    "echo $! > " + absolute(pidFile(jobId)) + " )"
-      
-    withConnection { c => exec(c, "bash -c '" + command.toString + "'") }
+        executable +
+        " > " + absolute(outFile(jobId)) + " 2> " + absolute(errFile(jobId)) + " ; " +
+        " echo $? > " + absolute(endCodeFile(jobId)) + ") & " +
+        "echo $! > " + absolute(pidFile(jobId)) + " )"
+
+    withSession { exec(_, "bash -c '" + command.toString + "'") }
     jobId
   }
-  
+
   def state(job: J)(implicit credential: A): JobState =
-    if(exists(endCodeFile(job))) {
+    if (exists(endCodeFile(job))) {
       val is = openInputStream(endCodeFile(job))
-      val content = 
+      val content =
         try getBytes(is, bufferSize, SSHJobService.timeout)
         finally is.close
-      
+
       translateState(new String(content).takeWhile(_.isDigit).toInt)
     } else Running
 
-  
-  def cancel(jobId: J)(implicit credential: A) = withConnection {
-    c =>
-    val cde = "kill `cat " + pidFile(jobId) + "`;"
-    exec(c, cde)
+  def cancel(jobId: J)(implicit credential: A) = withSession {
+    s ⇒
+      val cde = "kill `cat " + pidFile(jobId) + "`;"
+      exec(s, cde)
   }
 
-  def purge(jobId: String)(implicit credential: A) = withConnection {
-    c =>
-    val cde = "rm -rf " + rootDir + "/" + jobId + "*"
-    exec(c, cde)
+  def purge(jobId: String)(implicit credential: A) = withSession {
+    s ⇒
+      val cde = "rm -rf " + rootDir + "/" + jobId + "*"
+      exec(s, cde)
   }
-  
-  private def translateState(retCode: Int) =  
-    if(retCode >= 0)
-      if(retCode == PROCESS_CANCELED) Failed
-      else if(retCode == COMMAND_NOT_FOUND) Failed
-           else Done
+
+  private def translateState(retCode: Int) =
+    if (retCode >= 0)
+      if (retCode == PROCESS_CANCELED) Failed
+      else if (retCode == COMMAND_NOT_FOUND) Failed
+      else Done
     else Failed
-  
+
 }

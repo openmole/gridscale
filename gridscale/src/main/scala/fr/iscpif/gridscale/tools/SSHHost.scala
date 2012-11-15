@@ -19,18 +19,24 @@ package fr.iscpif.gridscale.tools
 
 import ch.ethz.ssh2.SFTPv3Client
 import fr.iscpif.gridscale.authentication._
-import ch.ethz.ssh2.Connection
+import ch.ethz.ssh2.{ Connection, Session }
 
 trait SSHHost {
   type A = SSHAuthentication
-  
+
   def user: String
   def host: String
   def port: Int = 22
-  
+
   def connectionCache = ConnectionCache.default
-  
-  def withConnection[T](f: Connection => T)(implicit authentication: SSHAuthentication) = {
+
+  def withSession[T](f: Session ⇒ T)(implicit authentication: SSHAuthentication) = withConnection { c ⇒
+    val s = c.openSession
+    try f(s)
+    finally s.close
+  }
+
+  def withConnection[T](f: Connection ⇒ T)(implicit authentication: SSHAuthentication) = {
     val connection = connectionCache.cached(this)
     try f(connection)
     finally connectionCache.release(this)
@@ -42,10 +48,10 @@ trait SSHHost {
     authentication.authenticate(c)
     c
   }
-  
-  def withSftpClient[T](f: SFTPv3Client => T)(implicit authentication: SSHAuthentication): T = withConnection {
-    connection =>
-    val sftpClient = new SFTPv3Client(connection)
-    try f(sftpClient) finally sftpClient.close
+
+  def withSftpClient[T](f: SFTPv3Client ⇒ T)(implicit authentication: SSHAuthentication): T = withConnection {
+    connection ⇒
+      val sftpClient = new SFTPv3Client(connection)
+      try f(sftpClient) finally sftpClient.close
   }
 }

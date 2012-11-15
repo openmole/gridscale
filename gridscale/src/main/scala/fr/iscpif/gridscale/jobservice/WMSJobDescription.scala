@@ -22,7 +22,7 @@ import fr.iscpif.gridscale.tools._
 trait WMSJobDescription extends JobDescription {
   def inputSandbox: Iterable[String]
   def outputSandbox: Iterable[(String, String)]
-  
+
   def rank = "(-other.GlueCEStateEstimatedResponseTime)"
   def fuzzy: Boolean = false
   def stdOutput = ""
@@ -34,44 +34,43 @@ trait WMSJobDescription extends JobDescription {
   def smpGranularity: Option[Int] = None
   def retryCount: Option[Int] = None
   def myProxyServer: Option[String] = None
-  def architecture: Option[String] = None 
-  
-  def requirements = 
-    "other.GlueCEStateStatus == \"Production\"" + 
-    memory.map(" && other.GlueHostMainMemoryRAMSize >= " + _).mkString +
-    cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _).mkString +
-    architecture.map(" && GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString
-  
+  def architecture: Option[String] = None
+
+  def requirements =
+    "other.GlueCEStateStatus == \"Production\"" +
+      memory.map(" && other.GlueHostMainMemoryRAMSize >= " + _).mkString +
+      cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _).mkString +
+      architecture.map(" && GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString
+
   def toJDL = {
     val script = new ScriptBuffer
-    
+
     jobType.foreach(script += "JobType = \"" + _ + "\";")
     script += "Executable = \"" + executable + "\";"
     script += "Arguments = \"" + arguments + "\";"
-    
-    if(!inputSandbox.isEmpty) script += "InputSandbox = " + sandboxTxt(inputSandbox) + ";"
-    if(!outputSandbox.isEmpty) script += "OutputSandbox = " + sandboxTxt(outputSandbox.unzip._1) + ";"
-    
-    if(!stdOutput.isEmpty) script += "StdOutput = \"" + stdOutput + "\";"
-    if(!stdError.isEmpty) script += "StdError = \"" + stdError + "\";"
-    
+
+    if (!inputSandbox.isEmpty) script += "InputSandbox = " + sandboxTxt(inputSandbox) + ";"
+    if (!outputSandbox.isEmpty) script += "OutputSandbox = " + sandboxTxt(outputSandbox.unzip._1) + ";"
+
+    if (!stdOutput.isEmpty) script += "StdOutput = \"" + stdOutput + "\";"
+    if (!stdError.isEmpty) script += "StdError = \"" + stdError + "\";"
+
     cpuNumber.foreach(script += "CpuNumber = " + _ + ";")
     smpGranularity.foreach(script += "SMPGranularity = " + _ + ";")
-    
+
     script += "Requirements = " + requirements + ";"
     script += "Rank = " + rank + ";"
-    
-    if(fuzzy) script += "FuzzyRank = true;"
-    
+
+    if (fuzzy) script += "FuzzyRank = true;"
+
     retryCount.foreach(script += "RetryCount = " + _)
-    
+
     myProxyServer.foreach(script += "MyProxyServer = \"" + _ + "\"")
-    
+
     script.toString
   }
-  
-  private def sandboxTxt(sandbox: Iterable[String]) = 
-    "{" + sandbox.map{"\"" + _ + "\""}.mkString(",") + "}"
-    
-  
+
+  private def sandboxTxt(sandbox: Iterable[String]) =
+    "{" + sandbox.map { "\"" + _ + "\"" }.mkString(",") + "}"
+
 }

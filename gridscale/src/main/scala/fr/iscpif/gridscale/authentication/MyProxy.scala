@@ -17,14 +17,14 @@
 
 package fr.iscpif.gridscale.authentication
 
-import org.globus.myproxy.{MyProxy => GMyProxy, InitParams, InfoParams}
+import org.globus.myproxy.{ MyProxy ⇒ GMyProxy, InitParams, InfoParams }
 import org.ietf.jgss.GSSCredential
 
 trait MyProxy {
 
   def host: String
   def port: Option[Int] = None
-  
+
   def myProxy = new GMyProxy(host, port.getOrElse(GMyProxy.DEFAULT_PORT))
 
   def delegate(credential: GSSCredential, time: Int) = {
@@ -32,10 +32,10 @@ trait MyProxy {
     proxyParameters.setLifetime(time)
     myProxy.put(credential, proxyParameters)
   }
-  
+
   def info(credential: GSSCredential) = {
     val infoParams = new InfoParams
     myProxy.info(credential, infoParams)
   }
-  
+
 }

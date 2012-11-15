@@ -73,11 +73,11 @@ class BDII(location: String) {
       searchPhrase += "(GlueServiceType=" + t + ")"
     }
     searchPhrase += "))"
-    
+
     res = q.query(searchPhrase, timeOut)
-    
+
     val srms = new mutable.HashMap[(String, Int), SRMStorage]
-    
+
     for (r ← res) {
 
       try {
@@ -89,31 +89,31 @@ class BDII(location: String) {
           val bhost = httpgURI.getHost
           val bport = httpgURI.getPort
           val bbasePath = basePaths.get(bhost)
-          
+
           srms += ((bhost, bport) ->
             new SRMStorage {
               val host = bhost
               val port = bport
               val basePath = bbasePath
-          })
-          
-//          val srmURI = new StringBuilder();
-//
-//          
-//          
-//          srmURI.append("srm");
-//          srmURI.append("://");
-//          srmURI.append(httpgURI.getHost());
-//          if (httpgURI.getPort() != -1) {
-//            srmURI.append(':');
-//            srmURI.append(httpgURI.getPort());
-//          }
-//
-//          //System.outt.println();
-//          srmURI.append(ids.get(httpgURI.getHost()));
-//
-//          val srmURIString = srmURI.toString();
-//          srmURIs.add(URI.create(srmURIString));
+            })
+
+          //          val srmURI = new StringBuilder();
+          //
+          //          
+          //          
+          //          srmURI.append("srm");
+          //          srmURI.append("://");
+          //          srmURI.append(httpgURI.getHost());
+          //          if (httpgURI.getPort() != -1) {
+          //            srmURI.append(':');
+          //            srmURI.append(httpgURI.getPort());
+          //          }
+          //
+          //          //System.outt.println();
+          //          srmURI.append(ids.get(httpgURI.getHost()));
+          //
+          //          val srmURIString = srmURI.toString();
+          //          srmURIs.add(URI.create(srmURIString));
 
           //srm  srmIds.add(httpgURI.getHost());
         } else {
@@ -155,11 +155,11 @@ class BDII(location: String) {
       }
     }
 
-    wmsURIs.toSeq.map{
-      u => 
-      new WMSJobService {
-        val url = u
-      }
+    wmsURIs.toSeq.map {
+      u ⇒
+        new WMSJobService {
+          val url = u
+        }
     }
   }
 }

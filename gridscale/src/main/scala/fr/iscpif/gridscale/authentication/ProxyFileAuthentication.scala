@@ -26,9 +26,9 @@ import org.ietf.jgss.GSSCredential
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 
 trait ProxyFileAuthentication {
-  
+
   def proxy: File
-  
+
   def init = {
     val proxyBytes = Array.ofDim[Byte](proxy.length.toInt)
     val in = new FileInputStream(proxy)

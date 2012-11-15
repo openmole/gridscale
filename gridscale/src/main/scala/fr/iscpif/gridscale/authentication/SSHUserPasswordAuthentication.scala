@@ -21,7 +21,7 @@ import ch.ethz.ssh2.Connection
 
 trait SSHUserPasswordAuthentication extends SSHAuthentication with UserPassword {
 
-  def authenticate(c: Connection) = 
-    if(!c.authenticateWithPassword(user, password)) throw new RuntimeException("Authentication failed.")
-  
+  def authenticate(c: Connection) =
+    if (!c.authenticateWithPassword(user, password)) throw new RuntimeException("Authentication failed.")
+
 }
