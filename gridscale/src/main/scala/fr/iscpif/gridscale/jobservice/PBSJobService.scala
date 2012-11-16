@@ -37,45 +37,44 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
   type J = PBSJob
   type D = PBSJobDescription
 
-  def submit(description: D)(implicit credential: A): J = withSession { session ⇒
-    exec(session, "mkdir -p " + description.workDirectory)
+  def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
+    withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
     val outputStream = openOutputStream(pbsScriptPath(description))
     try outputStream.write(description.toPBS.getBytes)
     finally outputStream.close
 
-    exec(session, "cd " + description.workDirectory + " ; qsub " + description.uniqId + ".pbs")
-    val stdout = new StreamGobbler(session.getStdout)
-    val br = new BufferedReader(new InputStreamReader(stdout))
-    val jobId = try br.readLine finally br.close
-    if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
-    new PBSJob(description, jobId)
+    withSession(c) { session ⇒
+      exec(session, "cd " + description.workDirectory + " ; qsub " + description.uniqId + ".pbs")
+      val stdout = new StreamGobbler(session.getStdout)
+      val br = new BufferedReader(new InputStreamReader(stdout))
+      val jobId = try br.readLine finally br.close
+      if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
+      new PBSJob(description, jobId)
+    }
   }
 
-  def state(job: J)(implicit credential: A): JobState = {
+  def state(job: J)(implicit credential: A): JobState = withConnection(withSession(_) { session ⇒
     val command = "qstat -f -1 " + job.pbsId
 
-    withSession { session ⇒
-      val ret = execReturnCode(session, command)
+    val ret = execReturnCode(session, command)
 
-      if (ret == 153) Done
-      else {
-        val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
-        try {
-          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
+    if (ret == 153) Done
+    else {
+      val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
+      try {
+        val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
 
-          val state = lines.filter(_.matches(".*=.*")).map {
-            prop ⇒
-              val splited = prop.split('=')
-              splited(0).trim.toUpperCase -> splited(1).trim
-          }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output."))
-          translateStatus(ret, state)
-        } finally br.close
-      }
+        val state = lines.filter(_.matches(".*=.*")).map {
+          prop ⇒
+            val splited = prop.split('=')
+            splited(0).trim.toUpperCase -> splited(1).trim
+        }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output."))
+        translateStatus(ret, state)
+      } finally br.close
     }
+  })
 
-  }
-
-  def cancel(job: J)(implicit credential: A) = withSession { exec(_, "qdel " + job.pbsId) }
+  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, "qdel " + job.pbsId) })
 
   //Purge output error job script
   def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒

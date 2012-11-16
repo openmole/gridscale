@@ -49,6 +49,12 @@ object SSHJobService {
     } finally session.close
   } */
 
+  def withSession[T](c: Connection)(f: Session ⇒ T): T = {
+    val session = c.openSession
+    try f(session)
+    finally session.close
+  }
+
   def execReturnCode(session: Session, cde: String) = {
     session.execCommand(cde)
     session.waitForCondition(ChannelCondition.EXIT_STATUS, 0)
@@ -59,6 +65,7 @@ object SSHJobService {
     val retCode = execReturnCode(session, cde)
     if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode)
   }
+
 }
 
 import SSHJobService._
@@ -86,7 +93,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
         " echo $? > " + absolute(endCodeFile(jobId)) + ") & " +
         "echo $! > " + absolute(pidFile(jobId)) + " )"
 
-    withSession { exec(_, "bash -c '" + command.toString + "'") }
+    withConnection(withSession(_) { exec(_, "bash -c '" + command.toString + "'") })
     jobId
   }
 
@@ -100,17 +107,17 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
       translateState(new String(content).takeWhile(_.isDigit).toInt)
     } else Running
 
-  def cancel(jobId: J)(implicit credential: A) = withSession {
+  def cancel(jobId: J)(implicit credential: A) = withConnection(withSession(_) {
     s ⇒
       val cde = "kill `cat " + pidFile(jobId) + "`;"
       exec(s, cde)
-  }
+  })
 
-  def purge(jobId: String)(implicit credential: A) = withSession {
+  def purge(jobId: String)(implicit credential: A) = withConnection(withSession(_) {
     s ⇒
       val cde = "rm -rf " + rootDir + "/" + jobId + "*"
       exec(s, cde)
-  }
+  })
 
   private def translateState(retCode: Int) =
     if (retCode >= 0)

@@ -38,45 +38,51 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
   type J = SLURMJob
   type D = SLURMJobDescription
 
-  def submit(description: D)(implicit credential: A): J = withSession { session ⇒
-    exec(session, "mkdir -p " + description.workDirectory)
+  def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
+    withSession(c) { s ⇒ exec(s, "mkdir -p " + description.workDirectory) }
     val outputStream = openOutputStream(slurmScriptPath(description))
     try outputStream.write(description.toSLURM.getBytes)
     finally outputStream.close
 
-    exec(session, "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
-    val stdout = new StreamGobbler(session.getStdout)
-    val br = new BufferedReader(new InputStreamReader(stdout))
-    val jobId = try {
-      val r = ".* ([0-9]+)".r
-      br.readLine match {
-        case r(id) ⇒ id
-        case _ ⇒ null
-      }
-    } finally br.close
-    if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
+    withSession(c) { s ⇒
+      exec(s, "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
 
-    new SLURMJob(description, jobId, getNodeList(jobId))
+      val stdout = new StreamGobbler(s.getStdout)
+      val br = new BufferedReader(new InputStreamReader(stdout))
+      val jobId = try {
+        val r = ".* ([0-9]+)".r
+        br.readLine match {
+          case r(id) ⇒ id
+          case _ ⇒ null
+        }
+      } finally br.close
+
+      if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
+
+      new SLURMJob(description, jobId, getNodeList(jobId))
+    }
   }
 
-  def state(job: J)(implicit credential: A): JobState = withSession { session ⇒
+  def state(job: J)(implicit credential: A): JobState = withConnection { c ⇒
     val command = "scontrol show job " + job.slurmId
 
-    val ret = execReturnCode(session, command)
+    withSession(c) { s ⇒
+      val ret = execReturnCode(s, command)
 
-    val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
-    try {
-      val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
-      val state = lines.filter(_.matches(".*JobState=.*")).map {
-        prop ⇒
-          val splits = prop.split('=')
-          splits(0).trim -> splits(1).trim.split(' ')(0)
-      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output."))
-      translateStatus(ret, state)
-    } finally br.close
+      val br = new BufferedReader(new InputStreamReader(new StreamGobbler(s.getStdout)))
+      try {
+        val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
+        val state = lines.filter(_.matches(".*JobState=.*")).map {
+          prop ⇒
+            val splits = prop.split('=')
+            splits(0).trim -> splits(1).trim.split(' ')(0)
+        }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output."))
+        translateStatus(ret, state)
+      } finally br.close
+    }
   }
 
-  def cancel(job: J)(implicit credential: A) = withSession { exec(_, "scancel " + job.slurmId) }
+  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, "scancel " + job.slurmId) })
 
   //Purge output error job script
   def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒
@@ -94,22 +100,24 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
    * @param jobId Integer identifying the job in SLURM.
    * @return The list of nodes allocated to the job
    */
-  private def getNodeList(jobId: String)(implicit credential: A): List[String] = withSession { session ⇒
+  private def getNodeList(jobId: String)(implicit credential: A): List[String] = withConnection { c ⇒
     val command = "scontrol show job " + jobId
 
     val nodeList = {
-      val ret = execReturnCode(session, command)
+      withSession(c) { s ⇒
+        val ret = execReturnCode(s, command)
 
-      val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
-      try {
-        val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
-        val nodeList: List[String] = lines.filter(_.matches("^NodeList=.*")).map {
-          prop ⇒
-            prop.split('=')(1).split(',') map (
-              splitX ⇒ splitX) toList
-        }.toList.flatten
-        nodeList
-      } finally br.close
+        val br = new BufferedReader(new InputStreamReader(new StreamGobbler(s.getStdout)))
+        try {
+          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
+          val nodeList: List[String] = lines.filter(_.matches("^NodeList=.*")).map {
+            prop ⇒
+              prop.split('=')(1).split(',') map (
+                splitX ⇒ splitX) toList
+          }.toList.flatten
+          nodeList
+        } finally br.close
+      }
     }
 
     // now that we have the list of nodes, still need

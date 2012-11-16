@@ -30,11 +30,11 @@ trait SSHHost {
 
   def connectionCache = ConnectionCache.default
 
-  def withSession[T](f: Session ⇒ T)(implicit authentication: SSHAuthentication) = withConnection { c ⇒
+  /*def withSession[T](f: Session ⇒ T)(implicit authentication: SSHAuthentication) = withConnection { c ⇒
     val s = c.openSession
     try f(s)
     finally s.close
-  }
+  }  */
 
   def withConnection[T](f: Connection ⇒ T)(implicit authentication: SSHAuthentication) = {
     val connection = connectionCache.cached(this)
