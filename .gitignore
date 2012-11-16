@@ -19,3 +19,5 @@ release/*
 .classpath
 .project
 nbactions.xml
+.settings/
+.settings/*

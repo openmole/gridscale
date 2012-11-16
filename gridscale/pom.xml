@@ -11,13 +11,11 @@
     <packaging>jar</packaging>
     <artifactId>gridscale</artifactId>
     <version>1.14-SNAPSHOT</version>
+    <properties>
+      <skipTests>true</skipTests>
+   </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${lib.org.scala-lang.scala.version}</version>
-        </dependency>
         <dependency>
             <groupId>fr.iscpif.gridscale</groupId>
             <artifactId>srmstub</artifactId>
@@ -85,6 +83,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
+	  <version>2.12</version>
 	  <configuration>
 	     <includes>
 		<include>**/*Spec.class</include>
