@@ -4,7 +4,7 @@
     <parent>
         <groupId>fr.iscpif.gridscale</groupId>
         <artifactId>libraries</artifactId>
-        <version>1.15</version>
+        <version>1.16-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -24,7 +24,7 @@
         <dependency>
             <groupId>fr.iscpif.gridscale</groupId>
             <artifactId>glite-security-util</artifactId>
-            <version>1.15</version>
+            <version>1.16-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
