@@ -61,7 +61,7 @@ trait WMSJobService extends JobService {
   type D = WMSJobDescription
 
   def url: URI
-  def timeout: Int = 120
+  def timeout: Int = 30
   val delegationId = UUID.randomUUID.toString
   def copyBufferSize = 64 * 1000
 
