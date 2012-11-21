@@ -40,7 +40,7 @@ trait WMSJobDescription extends JobDescription {
     "other.GlueCEStateStatus == \"Production\"" +
       memory.map(" && other.GlueHostMainMemoryRAMSize >= " + _).mkString +
       cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _).mkString +
-      architecture.map(" && GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString
+      architecture.map(" && other.GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString
 
   def toJDL = {
     val script = new ScriptBuffer
