@@ -50,7 +50,7 @@ object SSHJobService {
   } */
 
   def withSession[T](c: Connection)(f: Session ⇒ T): T = {
-    val session = c.openSession
+    lazy val session = c.openSession
     try f(session)
     finally session.close
   }

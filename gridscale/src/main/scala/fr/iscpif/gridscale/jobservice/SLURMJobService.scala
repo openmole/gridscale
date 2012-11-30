@@ -59,7 +59,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
 
       if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
 
-      new SLURMJob(description, jobId, getNodeList(jobId))
+      new SLURMJob(description, jobId)
     }
   }
 
