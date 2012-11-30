@@ -27,7 +27,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 object SLURMJobService {
-  class SLURMJob(val description: SLURMJobDescription, val slurmId: String, val nodeList: List[String])
+  class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
 
   val jobStateAttribute = "JobState"
 }
@@ -100,40 +100,6 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
    * @param jobId Integer identifying the job in SLURM.
    * @return The list of nodes allocated to the job
    */
-  private def getNodeList(jobId: String)(implicit credential: A): List[String] = withConnection { c ⇒
-    val command = "scontrol show job " + jobId
-
-    val nodeList = {
-      withSession(c) { s ⇒
-        val ret = execReturnCode(s, command)
-
-        val br = new BufferedReader(new InputStreamReader(new StreamGobbler(s.getStdout)))
-        try {
-          val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
-          val nodeList: List[String] = lines.filter(_.matches("^NodeList=.*")).map {
-            prop ⇒
-              prop.split('=')(1).split(',') map (
-                splitX ⇒ splitX) toList
-          }.toList.flatten
-          nodeList
-        } finally br.close
-      }
-    }
-
-    // now that we have the list of nodes, still need
-    // ot transform it since contiguous node names are factored
-    // by SLURM (i.e. List(node[0-2]) -> List(node0, node1, node2)
-    val r = """(.*)(\d+)-(\d+)""".r
-    nodeList map (
-      node ⇒
-        node match {
-          case r(nodeName, lBound, uBound) ⇒
-            for {
-              iNode ← java.lang.Integer.parseInt(lBound) to java.lang.Integer.parseInt(uBound)
-            } yield nodeName + iNode
-          case _ ⇒ List(node)
-        }) flatten
-  }
 
   private def translateStatus(retCode: Int, status: String) =
     status match {
