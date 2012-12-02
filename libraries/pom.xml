@@ -23,7 +23,6 @@
 	<module>glite-security-delegation</module>
 	<module>glite-wms-wmproxy</module>
 	<module>glite-lb</module>
-	<module>ganymed-ssh-2</module>
     </modules>
 
 </project>

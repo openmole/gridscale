@@ -17,9 +17,12 @@
 
 package fr.iscpif.gridscale.tools
 
-import ch.ethz.ssh2.SFTPv3Client
 import fr.iscpif.gridscale.authentication._
-import ch.ethz.ssh2.{ Connection, Session }
+
+import net.schmizz.sshj._
+import net.schmizz.sshj.sftp._
+import transport.verification.HostKeyVerifier
+import java.security.PublicKey
 
 trait SSHHost {
   type A = SSHAuthentication
@@ -27,8 +30,9 @@ trait SSHHost {
   def user: String
   def host: String
   def port: Int = 22
+  def timeout = 30 * 1000
 
-  def connectionCache = ConnectionCache.default
+  //def connectionCache = ConnectionCache.default
 
   /*def withSession[T](f: Session ⇒ T)(implicit authentication: SSHAuthentication) = withConnection { c ⇒
     val s = c.openSession
@@ -36,22 +40,26 @@ trait SSHHost {
     finally s.close
   }  */
 
-  def withConnection[T](f: Connection ⇒ T)(implicit authentication: SSHAuthentication) = {
-    val connection = connectionCache.cached(this)
+  def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication) = {
+    val connection = connect //connectionCache.cached(this)
     try f(connection)
-    finally connectionCache.release(this)
+    finally connection.disconnect //connectionCache.release(this)
   }
 
   def connect(implicit authentication: SSHAuthentication) = {
-    val c = new Connection(host, port)
-    c.connect
-    authentication.authenticate(c)
-    c
+    val ssh = new SSHClient
+    ssh.setConnectTimeout(timeout)
+    ssh.addHostKeyVerifier(new HostKeyVerifier {
+      def verify(p1: String, p2: Int, p3: PublicKey) = true
+    })
+    ssh.connect(host, port)
+    authentication.authenticate(ssh)
+    ssh
   }
 
-  def withSftpClient[T](f: SFTPv3Client ⇒ T)(implicit authentication: SSHAuthentication): T = withConnection {
+  def withSftpClient[T](f: SFTPClient ⇒ T)(implicit authentication: SSHAuthentication): T = withConnection {
     connection ⇒
-      val sftpClient = new SFTPv3Client(connection)
+      val sftpClient = connection.newSFTPClient
       try f(sftpClient) finally sftpClient.close
   }
 }

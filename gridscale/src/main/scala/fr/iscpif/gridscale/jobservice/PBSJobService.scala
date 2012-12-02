@@ -17,7 +17,6 @@
 
 package fr.iscpif.gridscale.jobservice
 
-import ch.ethz.ssh2.StreamGobbler
 import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.tools._
 import fr.iscpif.gridscale.storage._
@@ -44,11 +43,8 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
     finally outputStream.close
 
     withSession(c) { session ⇒
-      exec(session, "cd " + description.workDirectory + " ; qsub " + description.uniqId + ".pbs")
-      val stdout = new StreamGobbler(session.getStdout)
-      val br = new BufferedReader(new InputStreamReader(stdout))
-      val jobId = try br.readLine finally br.close
-      if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
+      val (ret, jobId) = execReturnCodeOutput(session, "cd " + description.workDirectory + " ; qsub " + description.uniqId + ".pbs")
+      if (ret != 0 || jobId == null) throw new RuntimeException("qsub did not return a JobID")
       new PBSJob(description, jobId)
     }
   }
@@ -56,21 +52,18 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
   def state(job: J)(implicit credential: A): JobState = withConnection(withSession(_) { session ⇒
     val command = "qstat -f -1 " + job.pbsId
 
-    val ret = execReturnCode(session, command)
+    val (ret, output) = execReturnCodeOutput(session, command)
 
     if (ret == 153) Done
     else {
-      val br = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout)))
-      try {
-        val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
+      val lines = output.split("\n").map(_.trim)
 
-        val state = lines.filter(_.matches(".*=.*")).map {
-          prop ⇒
-            val splited = prop.split('=')
-            splited(0).trim.toUpperCase -> splited(1).trim
-        }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output."))
-        translateStatus(ret, state)
-      } finally br.close
+      val state = lines.filter(_.matches(".*=.*")).map {
+        prop ⇒
+          val splited = prop.split('=')
+          splited(0).trim.toUpperCase -> splited(1).trim
+      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output."))
+      translateStatus(ret, state)
     }
   })
 

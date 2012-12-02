@@ -21,11 +21,11 @@
             <artifactId>srmstub</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>fr.iscpif.gridscale</groupId>
-            <artifactId>ganymed-ssh-2</artifactId>
-            <version>${project.version}</version>
-        </dependency> 
+	<dependency>
+	    <groupId>net.schmizz</groupId>
+	    <artifactId>sshj</artifactId>
+	    <version>0.8.1</version>
+        </dependency>
         <dependency>
             <groupId>org.jglobus</groupId>
             <artifactId>myproxy</artifactId>

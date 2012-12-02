@@ -17,16 +17,21 @@
 
 package fr.iscpif.gridscale.authentication
 
-import ch.ethz.ssh2.Connection
+import net.schmizz.sshj._
 
 trait SSHAuthentication {
 
-  def connect(host: String, port: Int): Connection = {
-    val c = new Connection(host, port)
-    c.connect
-    authenticate(c)
-    c
+  def connect(host: String, port: Int) = {
+    val ssh = new SSHClient
+    ssh.connect(host, port)
+    try authenticate(ssh)
+    catch {
+      case t: Throwable ⇒
+        ssh.disconnect
+        throw t
+    }
+    ssh
   }
 
-  def authenticate(c: Connection)
+  def authenticate(c: SSHClient)
 }
