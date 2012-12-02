@@ -157,6 +157,16 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
+  def mv(from: String, to: String)(implicit authentication: A) = {
+    val fromURI = this.toSrmURI(from)
+    val toURI = this.toSrmURI(to)
+    val request = new SrmMvRequest
+    request.setFromSURL(fromURI)
+    request.setToSURL(toURI)
+    val requestStatus = stub.srmMv(request)
+    if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
+  }
+
   protected def _openInputStream(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
     val (token, url) = prepareToGet(path)
 

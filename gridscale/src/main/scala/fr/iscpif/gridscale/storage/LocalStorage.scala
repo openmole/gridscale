@@ -61,6 +61,9 @@ trait LocalStorage extends Storage {
   def rmFile(path: String)(implicit authentication: A) =
     new File(path).delete
 
+  def mv(from: String, to: String)(implicit authentication: A) =
+    new File(from).renameTo(new File(to))
+
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream =
     new FileInputStream(new File(path))
 

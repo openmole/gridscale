@@ -76,6 +76,10 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     rmFileWithClient(path) _
   }
 
+  def mv(from: String, to: String)(implicit authentication: A) = withSftpClient {
+    _.rename(from, to)
+  }
+
   protected def rmFileWithClient(path: String)(c: SFTPClient) = {
     c.rm(path)
   }

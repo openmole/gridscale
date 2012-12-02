@@ -37,6 +37,7 @@ trait Storage {
   def makeDir(path: String)(implicit authentication: A)
   def rmDir(path: String)(implicit authentication: A)
   def rmFile(path: String)(implicit authentication: A)
+  def mv(from: String, to: String)(implicit authentication: A)
   def openInputStream(path: String)(implicit authentication: A): InputStream = new BufferedInputStream(_openInputStream(path))
   def openOutputStream(path: String)(implicit authentication: A): OutputStream = new BufferedOutputStream(_openOutputStream(path))
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream
