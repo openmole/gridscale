@@ -85,9 +85,9 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   }
 
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream = {
-    val connection = connect // connectionCache.cached(this)
+    val connection = connectionCache.cached(this)
 
-    def close = connection.close //           connectionCache.release(this)
+    def close = connectionCache.release(this)
 
     val sftpClient =
       try connection.newSFTPClient
@@ -121,9 +121,9 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   }
 
   protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream = {
-    val connection = connect //connectionCache.cached(this)
+    val connection = connectionCache.cached(this)
 
-    def close = connection.close // connectionCache.release(this
+    def close = connectionCache.release(this)
 
     val sftpClient =
       try connection.newSFTPClient

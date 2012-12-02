@@ -32,7 +32,7 @@ trait SSHHost {
   def port: Int = 22
   def timeout = 30 * 1000
 
-  //def connectionCache = ConnectionCache.default
+  def connectionCache = ConnectionCache.default
 
   /*def withSession[T](f: Session ⇒ T)(implicit authentication: SSHAuthentication) = withConnection { c ⇒
     val s = c.openSession
@@ -41,9 +41,9 @@ trait SSHHost {
   }  */
 
   def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication) = {
-    val connection = connect //connectionCache.cached(this)
+    val connection = connectionCache.cached(this)
     try f(connection)
-    finally connection.disconnect //connectionCache.release(this)
+    finally connectionCache.release(this)
   }
 
   def connect(implicit authentication: SSHAuthentication) = {

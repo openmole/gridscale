@@ -89,4 +89,18 @@ package object tools {
     os.toByteArray
   }
 
+  private val COPY_BUFFER_SIZE = 8192
+
+  private type Readable[T] = {
+    def close(): Unit
+    def read(b: Array[T]): Int
+  }
+
+  def copyStream(is: InputStream, os: OutputStream) = {
+    val buffer = new Array[Byte](COPY_BUFFER_SIZE)
+    Iterator continually (is read buffer) takeWhile (_ != -1) filter (_ > 0) foreach { read ⇒
+      os.write(buffer, 0, read)
+    }
+  }
+
 }
