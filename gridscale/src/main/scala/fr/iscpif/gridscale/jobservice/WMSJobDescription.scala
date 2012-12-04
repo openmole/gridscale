@@ -30,7 +30,7 @@ trait WMSJobDescription extends JobDescription {
   def memory: Option[Int] = None
   def cpuTime: Option[Int] = None
   def cpuNumber: Option[Int] = None
-  def wallClockTime: Option[Int] = None
+  def wallTime: Option[Int] = None
   def jobType: Option[String] = None
   def smpGranularity: Option[Int] = None
   def retryCount: Option[Int] = None
@@ -42,7 +42,7 @@ trait WMSJobDescription extends JobDescription {
     "other.GlueCEStateStatus == \"Production\"" +
       memory.map(" && other.GlueHostMainMemoryRAMSize >= " + _).mkString +
       cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _).mkString +
-      wallClockTime.map(" && other.GlueCEPolicyMaxWallClockTime >= " + _).mkString +
+      wallTime.map(" && other.GlueCEPolicyMaxWallClockTime >= " + _).mkString +
       architecture.map(" && other.GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString +
       ce.map(" && (" + _.map("other.GlueCEUniqueID == \"" + _ + "\"").mkString("|") + ")").mkString
 
