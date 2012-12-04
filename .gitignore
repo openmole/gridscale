@@ -21,3 +21,4 @@ release/*
 nbactions.xml
 .settings/
 .settings/*
+*.bak

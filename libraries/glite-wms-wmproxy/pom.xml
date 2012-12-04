@@ -1,75 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <parent>
-        <groupId>fr.iscpif.gridscale</groupId>
-        <artifactId>libraries</artifactId>
-        <version>1.19-SNAPSHOT</version>
-    </parent>
-
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>glite-wms-wmproxy</artifactId>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>libraries</artifactId>
+    <groupId>fr.iscpif.gridscale</groupId>
     <version>1.19-SNAPSHOT</version>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>axistools-maven-plugin</artifactId>
-                <!--<version>1.0</version>--><!-- axis 1.2.1 -->
-                <version>1.4</version><!-- axis 1.4 -->
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>wsdl2java</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>${basedir}/src/main/wsdl</sourceDirectory>
-                            <outputDirectory>${project.build.directory}/generated-sources</outputDirectory>
-                            <timestampDirectory>${project.build.directory}</timestampDirectory>
-                            <wsdlFiles>
-                                <wsdlFile>WMProxy.wsdl</wsdlFile>
-                            </wsdlFiles>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-    
-    
-    <dependencies>
-        <dependency>
-            <groupId>axis</groupId>
-            <artifactId>axis</artifactId>
-            <version>1.4-patched</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.16</version>
-        </dependency>
-        <dependency>
-            <groupId>fr.iscpif.gridscale</groupId>
-            <artifactId>glite-security-delegation</artifactId>
-            <version>1.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>fr.iscpif.gridscale</groupId>
-            <artifactId>glite-security-trustmanager</artifactId>
-            <version>1.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>fr.iscpif.gridscale</groupId>
-            <artifactId>glite-security-util</artifactId>
-            <version>1.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>fr.iscpif.gridscale</groupId>
-            <artifactId>cog-axis</artifactId>
-            <version>1.19-SNAPSHOT</version>
-        </dependency>
-
-    </dependencies>
+  </parent>
+  <artifactId>glite-wms-wmproxy</artifactId>
+  <version>1.19-SNAPSHOT</version>
+  <dependencies>
+    <dependency>
+      <groupId>axis</groupId>
+      <artifactId>axis</artifactId>
+      <version>1.4-patched</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.16</version>
+    </dependency>
+    <dependency>
+      <groupId>fr.iscpif.gridscale</groupId>
+      <artifactId>glite-security-delegation</artifactId>
+      <version>1.19-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>fr.iscpif.gridscale</groupId>
+      <artifactId>glite-security-trustmanager</artifactId>
+      <version>1.19-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>fr.iscpif.gridscale</groupId>
+      <artifactId>glite-security-util</artifactId>
+      <version>1.19-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>fr.iscpif.gridscale</groupId>
+      <artifactId>cog-axis</artifactId>
+      <version>1.19-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>axistools-maven-plugin</artifactId>
+        <!--<version>1.0</version>-->
+        <!-- axis 1.2.1 -->
+        <version>1.4</version>
+        <!-- axis 1.4 -->
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>wsdl2java</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${basedir}/src/main/wsdl</sourceDirectory>
+              <outputDirectory>${project.build.directory}/generated-sources</outputDirectory>
+              <timestampDirectory>${project.build.directory}</timestampDirectory>
+              <wsdlFiles>
+                <wsdlFile>WMProxy.wsdl</wsdlFile>
+              </wsdlFiles>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

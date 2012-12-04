@@ -1,89 +1,101 @@
-
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <groupId>fr.iscpif.gridscale</groupId>
-    <artifactId>parent</artifactId>
-    <version>1.19-SNAPSHOT</version>
-
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>libraries</module>
-        <module>gridscale</module>
-        <!--<module>examples</module>-->
-    </modules>
-
-    <properties>
-	<lib.org.jglobus.version>2.0-20121116</lib.org.jglobus.version>
-        <lib.org.scala-lang.scala.version>2.10.0-RC3</lib.org.scala-lang.scala.version>
-        <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
-	<maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
-
-	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
-     <dependencies>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${lib.org.scala-lang.scala.version}</version>
-        </dependency>
-     </dependencies>
-
-     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-		<version>${maven.scala.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-    
-    <name>${project.artifactId} ${project.version}</name>
-
-    <scm>
-        <connection>scm:git:git://git.openmole.org:gridscale</connection>
-        <developerConnection>scm:git:gitosis@git.openmole.org:gridscale</developerConnection>
-        <url>git://git.openmole.org:gridscale</url>
-    </scm>
-
-    <repositories>
-        <repository>
-            <id>iscpif</id>
-            <name>iscpif Repo</name>
-            <url>http://maven.iscpif.fr/public/</url>
-        </repository>
-        <repository>
-            <id>iscpif snapshot</id>
-            <name>iscpif snapshot Repo</name>
-            <url>http://maven.iscpif.fr/public-snapshots/</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>maven.openmole.org</id>
-            <url>http://maven.openmole.org/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>maven.openmole.org</id>
-            <url>http://maven.openmole.org/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.iscpif.gridscale</groupId>
+  <artifactId>parent</artifactId>
+  <version>1.19-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>${project.artifactId} ${project.version}</name>
+  <modules>
+    <module>libraries</module>
+    <module>gridscale</module>
+    <!--<module>examples</module>-->
+  </modules>
+  <scm>
+    <connection>scm:git:git://git.openmole.org:gridscale</connection>
+    <developerConnection>scm:git:gitosis@git.openmole.org:gridscale</developerConnection>
+    <url>git://git.openmole.org:gridscale</url>
+  </scm>
+  <distributionManagement>
+    <repository>
+      <id>maven.openmole.org</id>
+      <url>http://maven.openmole.org/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>maven.openmole.org</id>
+      <url>http://maven.openmole.org/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+  <properties>
+    <lib.org.jglobus.version>2.0-20121116</lib.org.jglobus.version>
+    <lib.org.scala-lang.scala.version>2.10.0-RC3</lib.org.scala-lang.scala.version>
+    <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
+    <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${lib.org.scala-lang.scala.version}</version>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <id>iscpif</id>
+      <name>iscpif Repo</name>
+      <url>http://maven.iscpif.fr/public/</url>
+    </repository>
+    <repository>
+      <id>iscpif snapshot</id>
+      <name>iscpif snapshot Repo</name>
+      <url>http://maven.iscpif.fr/public-snapshots/</url>
+    </repository>
+  </repositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>${maven.scala.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>scala-compile-first</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>add-source</goal>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!--<plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>-->
+      <plugin>
+        <groupId>com.google.code.sortpom</groupId>
+        <artifactId>maven-sortpom-plugin</artifactId>
+        <version>2.1.0</version>
+        <executions>
+          <execution>
+            <phase>verify</phase>
+            <goals>
+              <goal>sort</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
-
