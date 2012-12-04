@@ -17,11 +17,12 @@
 
 package fr.iscpif.gridscale.authentication
 
-import ch.ethz.ssh2.Connection
+import net.schmizz.sshj.SSHClient
 
 trait SSHPrivateKeyAuthentication extends SSHAuthentication with PrivateKey {
 
-  def authenticate(c: Connection) =
-    if (!c.authenticateWithPublicKey(user, privateKey, password)) throw new RuntimeException("Authentication failed.")
-
+  def authenticate(c: SSHClient) = {
+    val kp = c.loadKeys(privateKey.getAbsolutePath, password)
+    c.authPublickey(user, kp)
+  }
 }

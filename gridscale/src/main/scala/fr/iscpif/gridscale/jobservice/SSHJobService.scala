@@ -18,12 +18,12 @@
 package fr.iscpif.gridscale.jobservice
 
 import fr.iscpif.gridscale.tools._
-import ch.ethz.ssh2.ChannelCondition
-import ch.ethz.ssh2.Connection
-import ch.ethz.ssh2.Session
 import fr.iscpif.gridscale.storage.SSHStorage
 import java.io.ByteArrayOutputStream
 import java.util.UUID
+import net.schmizz.sshj.SSHClient
+import net.schmizz.sshj.connection.channel.direct.Session
+import net.schmizz.sshj.common.IOUtils
 
 object SSHJobService {
 
@@ -49,16 +49,26 @@ object SSHJobService {
     } finally session.close
   } */
 
-  def withSession[T](c: Connection)(f: Session ⇒ T): T = {
-    lazy val session = c.openSession
+  def withSession[T](c: SSHClient)(f: Session ⇒ T): T = {
+    val session = c.startSession
     try f(session)
     finally session.close
   }
 
   def execReturnCode(session: Session, cde: String) = {
-    session.execCommand(cde)
-    session.waitForCondition(ChannelCondition.EXIT_STATUS, 0)
-    session.getExitStatus
+    val cmd = session.exec(cde)
+    try {
+      cmd.join
+      cmd.getExitStatus
+    } finally cmd.close
+  }
+
+  def execReturnCodeOutput(session: Session, cde: String) = {
+    val cmd = session.exec(cde)
+    try {
+      cmd.join
+      (cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString)
+    } finally cmd.close
   }
 
   def exec(session: Session, cde: String) = {

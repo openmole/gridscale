@@ -17,11 +17,10 @@
 
 package fr.iscpif.gridscale.authentication
 
-import ch.ethz.ssh2.Connection
+import net.schmizz.sshj.SSHClient
 
 trait SSHUserPasswordAuthentication extends SSHAuthentication with UserPassword {
 
-  def authenticate(c: Connection) =
-    if (!c.authenticateWithPassword(user, password)) throw new RuntimeException("Authentication failed.")
+  def authenticate(c: SSHClient) = c.authPassword(user, password)
 
 }

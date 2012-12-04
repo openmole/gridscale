@@ -5,12 +5,12 @@
     <parent>
         <groupId>fr.iscpif.gridscale</groupId>
         <artifactId>parent</artifactId>
-        <version>1.16-SNAPSHOT</version>
+        <version>1.18-SNAPSHOT</version>
     </parent>
 
     <packaging>pom</packaging>
     <artifactId>examples</artifactId>
-    <version>1.16-SNAPSHOT</version>
+    <version>1.18-SNAPSHOT</version>
 
     <modules>
         <module>slurm</module>

@@ -68,6 +68,9 @@ trait HTTPStorage extends Storage {
   def rmFile(patg: String)(implicit authentication: A) =
     throw new RuntimeException("Operation not supported for http protocol")
 
+  def mv(from: String, to: String)(implicit authentication: A) =
+    throw new RuntimeException("Operation not supported for http protocol")
+
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream = withConnection(path) {
     _.getInputStream
   }

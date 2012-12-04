@@ -5,11 +5,11 @@
     <parent>
        <groupId>fr.iscpif.gridscale</groupId>
        <artifactId>parent</artifactId>
-       <version>1.16-SNAPSHOT</version>
+       <version>1.18-SNAPSHOT</version>
     </parent>
 
     <artifactId>libraries</artifactId>
-    <version>1.16-SNAPSHOT</version>
+    <version>1.18-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -23,7 +23,6 @@
 	<module>glite-security-delegation</module>
 	<module>glite-wms-wmproxy</module>
 	<module>glite-lb</module>
-	<module>ganymed-ssh-2</module>
     </modules>
 
 </project>

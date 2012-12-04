@@ -18,7 +18,6 @@
 
 package fr.iscpif.gridscale.jobservice
 
-import ch.ethz.ssh2.StreamGobbler
 import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.tools._
 import fr.iscpif.gridscale.storage._
@@ -45,20 +44,17 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     finally outputStream.close
 
     withSession(c) { s ⇒
-      exec(s, "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
+      val (ret, output) = execReturnCodeOutput(s, "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
 
-      val stdout = new StreamGobbler(s.getStdout)
-      val br = new BufferedReader(new InputStreamReader(stdout))
-      val jobId = try {
-        val r = ".* ([0-9]+)".r
-        br.readLine match {
+      val jobId = {
+        val r = ".*job ([0-9]+).*".r
+        output match {
           case r(id) ⇒ id
           case _ ⇒ null
         }
-      } finally br.close
+      }
 
-      if (jobId == null) throw new RuntimeException("sbatch did not return a JobID")
-
+      if (ret != 0 || jobId == null) throw new RuntimeException("sbatch did not return a JobID (got ret=" + ret + " jobId=" + jobId + " output=" + output + ")")
       new SLURMJob(description, jobId)
     }
   }
@@ -67,18 +63,14 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     val command = "scontrol show job " + job.slurmId
 
     withSession(c) { s ⇒
-      val ret = execReturnCode(s, command)
-
-      val br = new BufferedReader(new InputStreamReader(new StreamGobbler(s.getStdout)))
-      try {
-        val lines = Iterator.continually(br.readLine).takeWhile(_ != null).map(_.trim)
-        val state = lines.filter(_.matches(".*JobState=.*")).map {
-          prop ⇒
-            val splits = prop.split('=')
-            splits(0).trim -> splits(1).trim.split(' ')(0)
-        }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output."))
-        translateStatus(ret, state)
-      } finally br.close
+      val (ret, output) = execReturnCodeOutput(s, command)
+      val lines = output.split("\n").map(_.trim)
+      val state = lines.filter(_.matches(".*JobState=.*")).map {
+        prop ⇒
+          val splits = prop.split('=')
+          splits(0).trim -> splits(1).trim.split(' ')(0)
+      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output."))
+      translateStatus(ret, state)
     }
   }
 
@@ -92,14 +84,6 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
   }
 
   private def slurmScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".slurm"
-
-  /**
-   * Get node list by performing call to scontrol just after job
-   * has been successfully submitted.
-   * In scontrol output, nodes are comma-separated.
-   * @param jobId Integer identifying the job in SLURM.
-   * @return The list of nodes allocated to the job
-   */
 
   private def translateStatus(retCode: Int, status: String) =
     status match {

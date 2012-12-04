@@ -4,7 +4,7 @@
 
     <groupId>fr.iscpif.gridscale</groupId>
     <artifactId>parent</artifactId>
-    <version>1.16-SNAPSHOT</version>
+    <version>1.18-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -16,7 +16,7 @@
 
     <properties>
 	<lib.org.jglobus.version>2.0-20121116</lib.org.jglobus.version>
-        <lib.org.scala-lang.scala.version>2.10.0-RC2</lib.org.scala-lang.scala.version>
+        <lib.org.scala-lang.scala.version>2.10.0-RC3</lib.org.scala-lang.scala.version>
         <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
 	<maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
 
