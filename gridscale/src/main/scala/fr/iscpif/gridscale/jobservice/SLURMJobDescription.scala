@@ -25,7 +25,7 @@ trait SLURMJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
   def workDirectory: String
   def queue: Option[String] = None
-  def cpuTime: Option[Int] = None
+  def wallTime: Option[Int] = None
   def memory: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
@@ -47,7 +47,7 @@ trait SLURMJobDescription extends JobDescription {
       case None ⇒
     }
 
-    cpuTime match {
+    wallTime match {
       case Some(t) ⇒ buffer += "#SBATCH --time=" + t * 60
       case None ⇒
     }
