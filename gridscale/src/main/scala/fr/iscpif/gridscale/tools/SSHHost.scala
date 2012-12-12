@@ -34,12 +34,6 @@ trait SSHHost {
 
   def connectionCache = ConnectionCache.default
 
-  /*def withSession[T](f: Session ⇒ T)(implicit authentication: SSHAuthentication) = withConnection { c ⇒
-    val s = c.openSession
-    try f(s)
-    finally s.close
-  }  */
-
   def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication) = {
     val connection = connectionCache.cached(this)
     try f(connection)
@@ -49,6 +43,7 @@ trait SSHHost {
   def connect(implicit authentication: SSHAuthentication) = {
     val ssh = new SSHClient
     ssh.setConnectTimeout(timeout)
+    ssh.setTimeout(timeout)
     ssh.addHostKeyVerifier(new HostKeyVerifier {
       def verify(p1: String, p2: Int, p3: PublicKey) = true
     })
