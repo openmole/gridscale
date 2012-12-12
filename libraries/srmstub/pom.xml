@@ -4,10 +4,10 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.23-SNAPSHOT</version>
+    <version>1.23</version>
   </parent>
   <artifactId>srmstub</artifactId>
-  <version>1.23-SNAPSHOT</version>
+  <version>1.23</version>
   <packaging>jar</packaging>
   <dependencies>
     <dependency>
