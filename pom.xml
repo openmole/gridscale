@@ -9,7 +9,7 @@
   <modules>
     <module>libraries</module>
     <module>gridscale</module>
-    <!--<module>examples</module>-->
+    <module>examples</module>
   </modules>
   <scm>
     <connection>scm:git:git://git.openmole.org:gridscale</connection>
