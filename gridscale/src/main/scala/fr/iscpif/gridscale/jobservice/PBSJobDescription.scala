@@ -24,8 +24,10 @@ trait PBSJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
   def workDirectory: String
   def queue: Option[String] = None
-  def cpuTime: Option[Int] = None
+  def wallTime: Option[Int] = None
   def memory: Option[Int] = None
+  def nodes: Option[Int] = None
+  def coreByNode: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
 
@@ -46,11 +48,16 @@ trait PBSJobDescription extends JobDescription {
       case None ⇒
     }
 
-    cpuTime match {
+    wallTime match {
       case Some(t) ⇒
         val df = new java.text.SimpleDateFormat("HH:mm:ss")
         df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
         buffer += "#PBS -lwalltime=" + df.format(t * 60 * 1000)
+      case None ⇒
+    }
+
+    nodes match {
+      case Some(n) ⇒ buffer += "#PBS -lnodes=" + n + ":ppn=" + coreByNode.getOrElse(1)
       case None ⇒
     }
 
