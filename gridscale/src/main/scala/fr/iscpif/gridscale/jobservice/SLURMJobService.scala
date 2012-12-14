@@ -46,15 +46,9 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     withSession(c) { s ⇒
       val (ret, output) = execReturnCodeOutput(s, "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
 
-      val jobId = {
-        val r = ".*job ([0-9]+).*".r
-        output match {
-          case r(id) ⇒ id
-          case _ ⇒ null
-        }
-      }
+      val jobId = output.trim.reverse.takeWhile(_ != ' ').reverse
 
-      if (ret != 0 || jobId == null) throw new RuntimeException("sbatch did not return a JobID (got ret=" + ret + " jobId=" + jobId + " output=" + output + ")")
+      if (ret != 0 || jobId.isEmpty) throw new RuntimeException("sbatch did not return a JobID (got ret=" + ret + " jobId=" + jobId + " output=" + output + ")")
       new SLURMJob(description, jobId)
     }
   }
