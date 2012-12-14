@@ -58,7 +58,7 @@ object Main {
     val description = new SLURMJobDescription {
       def executable = "/usr/bin/find"
       def arguments = "/"
-      def workDirectory = "/tmp"
+      def workDirectory = "/home/jopasserat/toto"
     }
 
     println("then the job has been submitted")
