@@ -4,10 +4,10 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.28</version>
+    <version>1.29-SNAPSHOT</version>
   </parent>
   <artifactId>glite-security-trustmanager</artifactId>
-  <version>1.28</version>
+  <version>1.29-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>tomcat</groupId>
@@ -22,7 +22,7 @@
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-util</artifactId>
-      <version>1.28</version>
+      <version>1.29-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>
