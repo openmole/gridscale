@@ -27,7 +27,7 @@
     </snapshotRepository>
   </distributionManagement>
   <properties>
-    <lib.org.jglobus.version>2.1-20121227</lib.org.jglobus.version>
+    <lib.org.jglobus.version>2.1-20121229</lib.org.jglobus.version>
     <lib.org.scala-lang.scala.version>2.10.0</lib.org.scala-lang.scala.version>
     <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
     <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
