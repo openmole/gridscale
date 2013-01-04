@@ -13,6 +13,7 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class SLURMJobServiceFeatureSpec extends FeatureSpec with GivenWhenThen {
 
+  // TODO won't run anymore since SSH lib was changed (I think)
   feature("The user can submit jobs to a SLURM-enabled cluster") {
 
     info("As a user")

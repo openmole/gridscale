@@ -36,6 +36,7 @@ trait SLURMJobDescription extends JobDescription {
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
   def gres: List[Gres] = List()
+  def constraints: List[String] = List()
 
   def toSLURM = {
     val buffer = new ScriptBuffer
@@ -64,6 +65,10 @@ trait SLURMJobDescription extends JobDescription {
       case List() ⇒
       case _ ⇒ buffer += gres.mkString("#SBATCH --gres=", "--gres=", "")
     }
+    constraints match {
+      case List() ⇒
+      case _ ⇒ buffer += constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
+    }
 
     buffer += "#SBATCH -D " + workDirectory + "\n"
 
@@ -74,6 +79,11 @@ trait SLURMJobDescription extends JobDescription {
       case List() ⇒
       case _ ⇒ buffer += gres.mkString("--gres=", "--gres=", "")
     }
+    constraints match {
+      case List() ⇒
+      case _ ⇒ buffer += constraints.mkString("--constraint=\"", "&", "\"")
+    }
+
     buffer += executable + " " + arguments
 
     buffer.toString
