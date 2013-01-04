@@ -95,6 +95,39 @@ object Main {
     slurmService.purge(j)
   }
 
+  def submitWithGres ( inHost: String , inUsername: String, inPassword: String, inPrivateKeyPath: String ) = {
+
+    println("a CUDA job is successfully submitted, requesting a gres")
+
+    println("a slurm environment using an SSH privatekey authentication")
+    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+      def host = inHost
+      def user = inUsername
+      def password = inPassword
+      def privateKey = new File(inPrivateKeyPath)
+    }
+
+    println("an CUDA job")
+    val description = new SLURMJobDescription {
+      def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
+      def arguments = ""
+      def workDirectory = "/home/jopasserat/toto"
+      override def gres = List(new Gres("gpu", 1))
+    }
+
+    println("then the job has been submitted")
+    val j = slurmService.submit(description)
+    println(description.toSLURM)
+
+    println("it should be running on a gres")
+    println(slurmService.state(j))
+
+    println("it should appear as done")
+    val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
+
+    slurmService.purge(j)
+  }
+
   
   def main(argv: Array[String]): Unit = {
     
@@ -113,8 +146,9 @@ object Main {
     		"privateKeyPath = " + privateKeyPath + "\n"
     )
     
-    submitEchoAndDone (host, username, password, privateKeyPath)
-    submitAndCancel   (host, username, password, privateKeyPath)
+//    submitEchoAndDone (host, username, password, privateKeyPath)
+//    submitAndCancel   (host, username, password, privateKeyPath)
+    submitWithGres    (host, username, password, privateKeyPath)
   }
 
 }
