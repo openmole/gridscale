@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2012 Jonathan Passerat-Palmbach
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package fr.iscpif.gridscale.examples
 
 import fr.iscpif.gridscale.jobservice._
@@ -77,7 +95,72 @@ object Main {
     slurmService.purge(j)
   }
 
-  
+  def submitWithGres ( inHost: String , inUsername: String, inPassword: String, inPrivateKeyPath: String ) = {
+
+    println("a CUDA job is successfully submitted, requesting a gres")
+
+    println("a slurm environment using an SSH privatekey authentication")
+    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+      def host = inHost
+      def user = inUsername
+      def password = inPassword
+      def privateKey = new File(inPrivateKeyPath)
+    }
+
+    println("a CUDA job")
+    val description = new SLURMJobDescription {
+      def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
+      def arguments = ""
+      def workDirectory = "/home/jopasserat/toto"
+      override def gres = List(new Gres("gpu", 1))
+    }
+
+    println("then the job has been submitted")
+    val j = slurmService.submit(description)
+    println(description.toSLURM)
+
+    println("it should be running on a gres")
+    println(slurmService.state(j))
+
+    println("it should appear as done")
+    val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
+
+    slurmService.purge(j)
+  }
+
+  def submitWithConstraints ( inHost: String , inUsername: String, inPassword: String, inPrivateKeyPath: String ) = {
+
+    println("a job is successfully submitted, requesting a tesla&fermi node")
+
+    println("a slurm environment using an SSH privatekey authentication")
+    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+      def host = inHost
+      def user = inUsername
+      def password = inPassword
+      def privateKey = new File(inPrivateKeyPath)
+    }
+
+    println("a CUDA job")
+    val description = new SLURMJobDescription {
+      def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
+      def arguments = ""
+      def workDirectory = "/home/jopasserat/toto"
+      override def constraints = List("tesla", "fermi")
+    }
+
+    println("then the job has been submitted")
+    val j = slurmService.submit(description)
+    println(description.toSLURM)
+
+    println("it should be running on a node with the particular constraints")
+    println(slurmService.state(j))
+
+    println("it should appear as done")
+    val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
+
+    slurmService.purge(j)
+  }
+
   def main(argv: Array[String]): Unit = {
     
     val (host, username, password, privateKeyPath) = argv match {
@@ -97,6 +180,8 @@ object Main {
     
     submitEchoAndDone (host, username, password, privateKeyPath)
     submitAndCancel   (host, username, password, privateKeyPath)
+    submitWithGres           (host, username, password, privateKeyPath)
+    submitWithConstraints    (host, username, password, privateKeyPath)
   }
 
 }

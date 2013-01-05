@@ -21,7 +21,13 @@ package fr.iscpif.gridscale.jobservice
 import java.util.UUID
 import fr.iscpif.gridscale.tools._
 
+/** Represent Gres by extending Tuple2 in order to override toString */
+class Gres(val gresName: String, val gresValue: Int) extends Tuple2[String, Int](gresName, gresValue) {
+  override def toString = _1 + ":" + _2.toString
+}
+
 trait SLURMJobDescription extends JobDescription {
+
   val uniqId = UUID.randomUUID.toString
   def workDirectory: String
   def queue: Option[String] = None
@@ -29,6 +35,8 @@ trait SLURMJobDescription extends JobDescription {
   def memory: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
+  def gres: List[Gres] = List()
+  def constraints: List[String] = List()
 
   def toSLURM = {
     val buffer = new ScriptBuffer
@@ -52,8 +60,32 @@ trait SLURMJobDescription extends JobDescription {
       case None ⇒
     }
 
+    // must handle empty list separately since it is not done in mkString
+    gres match {
+      case List() ⇒
+      case _ ⇒ buffer += gres.mkString("#SBATCH --gres=", "--gres=", "")
+    }
+    constraints match {
+      case List() ⇒
+      case _ ⇒ buffer += constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
+    }
+
     buffer += "#SBATCH -D " + workDirectory + "\n"
-    buffer += "srun " + executable + " " + arguments
+
+    // TODO: handle several srun and split gres accordingly
+    buffer += "srun "
+    // must handle empty list separately since it is not done in mkString
+    gres match {
+      case List() ⇒
+      case _ ⇒ buffer += gres.mkString("--gres=", "--gres=", "")
+    }
+    constraints match {
+      case List() ⇒
+      case _ ⇒ buffer += constraints.mkString("--constraint=\"", "&", "\"")
+    }
+
+    buffer += executable + " " + arguments
+
     buffer.toString
   }
 }
