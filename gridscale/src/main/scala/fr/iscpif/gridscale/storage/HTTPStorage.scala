@@ -30,6 +30,19 @@ import collection.JavaConversions._
 import org.htmlparser.filters.NodeClassFilter
 import org.htmlparser.tags.LinkTag
 
+object HTTPStorage {
+
+  def withConnection[T](uri: URI, timeout: Int)(f: HttpURLConnection ⇒ T): T = {
+    val relativeURL = uri.toURL
+    val cnx = relativeURL.openConnection.asInstanceOf[HttpURLConnection]
+    cnx.setConnectTimeout(timeout * 1000)
+    cnx.setReadTimeout(timeout * 1000)
+    if (cnx.getHeaderField(null) == null) throw new RuntimeException("Failed to connect to url: " + relativeURL)
+    else f(cnx)
+  }
+
+}
+
 trait HTTPStorage extends Storage {
 
   type A = Unit
@@ -78,13 +91,7 @@ trait HTTPStorage extends Storage {
   protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  private def withConnection[T](path: String)(f: HttpURLConnection ⇒ T): T = {
-    val relativeURL = new URI(url + "/" + path).toURL
-    val cnx = relativeURL.openConnection.asInstanceOf[HttpURLConnection]
-    cnx.setConnectTimeout(timeout * 1000)
-    cnx.setReadTimeout(timeout * 1000)
-    if (cnx.getHeaderField(null) == null) throw new RuntimeException("Failed to connect to url: " + relativeURL)
-    else f(cnx)
-  }
+  private def withConnection[T](path: String)(f: HttpURLConnection ⇒ T): T =
+    HTTPStorage.withConnection[T](new URI(url + "/" + path), timeout)(f)
 
 }
