@@ -75,7 +75,7 @@
       </operation>
    </portType>
 
-   <binding name="DelegationSoapBinding" type="tns:Delegation">
+   <binding name="Delegation1SoapBinding" type="tns:Delegation">
       <wsdlsoap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
 
       <operation name="getProxyReq">
@@ -105,10 +105,10 @@
       </operation>
    </binding>
 
-  <!--<service name="DelegationService">
-      <port binding="tns:DelegationSoapBinding" name="gridsite-delegation">
+  <service name="DelegationService">
+      <port binding="tns:Delegation1SoapBinding" name="gridsite-delegation1">
          <wsdlsoap:address location="https://localhost:8443/glite-security-delegation"/>
       </port>
-  </service>-->
+  </service>
 
 </definitions>
