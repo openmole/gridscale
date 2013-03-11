@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:lb="http://glite.org/wsdl/services/lb" xmlns:lb4agu="http://glite.org/wsdl/services/lb4agu" xmlns:lbe="http://glite.org/wsdl/elements/lb" xmlns:lbt="http://glite.org/wsdl/types/lb" name="LoggingAndBookkeeping" targetNamespace="http://glite.org/wsdl/services/lb">
-  <documentation>CVS revision: $Header: /cvs/glite/org.glite.lb.ws-interface/src/LBTypes.xml.T,v 1.15 2011/01/14 13:49:44 akrenek Exp $</documentation>
+  <documentation>CVS revision: $Header: /cvs/glite/org.glite.lb.ws-interface/src/LBTypes.xml.T,v 1.20 2013/01/04 14:06:59 jfilipov Exp $</documentation>
   <wsdl:types>
     <xsd:schema targetNamespace="http://glite.org/wsdl/types/lb" elementFormDefault="unqualified" attributeFormDefault="unqualified">
       <xsd:simpleType name="jobFlagsValue">
@@ -44,6 +44,7 @@
           <xsd:enumeration value="CREAM" />
           <xsd:enumeration value="FILE_TRANSFER_COLLECTION" />
           <xsd:enumeration value="FILE_TRANSFER" />
+          <xsd:enumeration value="VIRTUAL_MACHINE" />
         </xsd:restriction>
       </xsd:simpleType>
       <xsd:simpleType name="doneCode">
@@ -86,6 +87,18 @@
         <xsd:restriction base="xsd:string">
           <xsd:enumeration value="INPUT" />
           <xsd:enumeration value="OUTPUT" />
+        </xsd:restriction>
+      </xsd:simpleType>
+      <xsd:simpleType name="vmState">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="VM_PENDING" />
+          <xsd:enumeration value="VM_BOOT" />
+          <xsd:enumeration value="VM_RUNNING" />
+          <xsd:enumeration value="VM_REALLY-RUNNING" />
+          <xsd:enumeration value="VM_SHUTDOWN" />
+          <xsd:enumeration value="VM_STOPPED" />
+          <xsd:enumeration value="VM_DONE" />
+          <xsd:enumeration value="VM_FAILURE" />
         </xsd:restriction>
       </xsd:simpleType>
       <xsd:complexType name="jobStatus">
@@ -144,6 +157,7 @@
           <xsd:element name="accessRights" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="history" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsState" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="pbsSubstate" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsQueue" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsOwner" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsName" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
@@ -151,7 +165,8 @@
           <xsd:element name="pbsScheduler" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsDestHost" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsPid" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="pbsResourceUsage" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="pbsResourceRequested" type="lbt:tagValue" minOccurs="0" maxOccurs="unbounded" nillable="false" />
+          <xsd:element name="pbsResourceUsage" type="lbt:tagValue" minOccurs="0" maxOccurs="unbounded" nillable="false" />
           <xsd:element name="pbsExitStatus" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsErrorDesc" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="condorStatus" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
@@ -185,6 +200,17 @@
           <xsd:element name="ftSandboxType" type="lbt:ftSandboxType" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="ftSrc" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="ftDest" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmState" type="lbt:vmState" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmImage" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmRequire" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmUsage" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmHostname" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmMachine" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmId" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmName" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmPhyHostname" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmSystemHalting" type="xsd:boolean" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="vmManager" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
       <xsd:complexType name="event">
@@ -219,13 +245,21 @@
           <xsd:element name="CollectionState" type="lbt:eventCollectionState" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="GrantPayloadOwnership" type="lbt:eventGrantPayloadOwnership" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="TakePayloadOwnership" type="lbt:eventTakePayloadOwnership" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="ConnectJob" type="lbt:eventConnectJob" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="DisconnectJob" type="lbt:eventDisconnectJob" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="PBSInternalStateChange" type="lbt:eventPBSInternalStateChange" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="PBSTransfer" type="lbt:eventPBSTransfer" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="PBSAccepted" type="lbt:eventPBSAccepted" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="PBSRefused" type="lbt:eventPBSRefused" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSQueued" type="lbt:eventPBSQueued" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="PBSDequeued" type="lbt:eventPBSDequeued" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSMatch" type="lbt:eventPBSMatch" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSPending" type="lbt:eventPBSPending" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="PBSWaiting" type="lbt:eventPBSWaiting" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSRun" type="lbt:eventPBSRun" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSRerun" type="lbt:eventPBSRerun" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="PBSAbort" type="lbt:eventPBSAbort" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSDone" type="lbt:eventPBSDone" minOccurs="1" maxOccurs="1" nillable="true" />
-          <xsd:element name="PBSDequeued" type="lbt:eventPBSDequeued" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSResourceUsage" type="lbt:eventPBSResourceUsage" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="PBSError" type="lbt:eventPBSError" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="CondorMatch" type="lbt:eventCondorMatch" minOccurs="1" maxOccurs="1" nillable="true" />
@@ -252,6 +286,14 @@
           <xsd:element name="FileTransferRegister" type="lbt:eventFileTransferRegister" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="FileTransfer" type="lbt:eventFileTransfer" minOccurs="1" maxOccurs="1" nillable="true" />
           <xsd:element name="Sandbox" type="lbt:eventSandbox" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMCreate" type="lbt:eventVMCreate" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMHost" type="lbt:eventVMHost" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMImage" type="lbt:eventVMImage" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMRunning" type="lbt:eventVMRunning" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMShutdown" type="lbt:eventVMShutdown" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMStop" type="lbt:eventVMStop" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMResume" type="lbt:eventVMResume" minOccurs="1" maxOccurs="1" nillable="true" />
+          <xsd:element name="VMDone" type="lbt:eventVMDone" minOccurs="1" maxOccurs="1" nillable="true" />
         </xsd:choice>
       </xsd:complexType>
       <xsd:simpleType name="Level">
@@ -602,6 +644,7 @@
           <xsd:enumeration value="CREAM" />
           <xsd:enumeration value="FILE_TRANSFER_COLLECTION" />
           <xsd:enumeration value="FILE_TRANSFER" />
+          <xsd:enumeration value="VIRTUAL_MACHINE" />
         </xsd:restriction>
       </xsd:simpleType>
       <xsd:complexType name="eventRegJob">
@@ -864,6 +907,131 @@
           <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
+      <xsd:simpleType name="ConnectJobJobtype">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="SIMPLE" />
+          <xsd:enumeration value="DAG" />
+          <xsd:enumeration value="PARTITIONABLE" />
+          <xsd:enumeration value="PARTITIONED" />
+          <xsd:enumeration value="COLLECTION" />
+          <xsd:enumeration value="PBS" />
+          <xsd:enumeration value="CONDOR" />
+          <xsd:enumeration value="CREAM" />
+          <xsd:enumeration value="FILE_TRANSFER_COLLECTION" />
+          <xsd:enumeration value="FILE_TRANSFER" />
+          <xsd:enumeration value="VIRTUAL_MACHINE" />
+        </xsd:restriction>
+      </xsd:simpleType>
+      <xsd:complexType name="eventConnectJob">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="destJobid" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobtype" type="lbt:ConnectJobJobtype" minOccurs="1" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventDisconnectJob">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="destJobid" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventPBSInternalStateChange">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="oldstate" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="oldsubstate" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="newstate" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="newsubstate" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:simpleType name="PBSTransferResult">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="START" />
+          <xsd:enumeration value="OK" />
+          <xsd:enumeration value="REFUSED" />
+          <xsd:enumeration value="FAIL" />
+        </xsd:restriction>
+      </xsd:simpleType>
+      <xsd:complexType name="eventPBSTransfer">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="destination" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="destInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="result" type="lbt:PBSTransferResult" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="reason" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="destJobid" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventPBSAccepted">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="from" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="fromInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="localJobid" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventPBSRefused">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="from" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="fromInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="reason" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
       <xsd:complexType name="eventPBSQueued">
         <xsd:sequence>
           <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
@@ -877,8 +1045,22 @@
           <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
           <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="queue" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="owner" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
           <xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="owner" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventPBSDequeued">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
       <xsd:complexType name="eventPBSMatch">
@@ -909,6 +1091,20 @@
           <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
           <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="reason" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventPBSWaiting">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
       <xsd:complexType name="eventPBSRun">
@@ -942,6 +1138,20 @@
           <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
+      <xsd:complexType name="eventPBSAbort">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
       <xsd:complexType name="eventPBSDone">
         <xsd:sequence>
           <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
@@ -955,20 +1165,6 @@
           <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
           <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="exitStatus" type="xsd:int" minOccurs="0" maxOccurs="1" nillable="false" />
-        </xsd:sequence>
-      </xsd:complexType>
-      <xsd:complexType name="eventPBSDequeued">
-        <xsd:sequence>
-          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
-          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
       <xsd:simpleType name="PBSResourceUsageUsage">
@@ -990,9 +1186,7 @@
           <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
           <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="usage" type="lbt:PBSResourceUsageUsage" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
-          <xsd:element name="quantity" type="xsd:double" minOccurs="0" maxOccurs="1" nillable="false" />
-          <xsd:element name="unit" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="resources" type="lbt:tagValue" minOccurs="1" maxOccurs="unbounded" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
       <xsd:complexType name="eventPBSError">
@@ -1501,6 +1695,137 @@
           <xsd:element name="computeJob" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
         </xsd:sequence>
       </xsd:complexType>
+      <xsd:complexType name="eventVMCreate">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="require" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="id" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="owner" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="hostname" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="manager" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="image" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventVMHost">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="hostname" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventVMImage">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="image" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventVMRunning">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventVMShutdown">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="usage" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventVMStop">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="eventVMResume">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:simpleType name="VMDoneStatusCode">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="OK" />
+          <xsd:enumeration value="DELETE" />
+          <xsd:enumeration value="FAILURE" />
+        </xsd:restriction>
+      </xsd:simpleType>
+      <xsd:complexType name="eventVMDone">
+        <xsd:sequence>
+          <xsd:element name="timestamp" type="lbt:timeval" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="arrived" type="lbt:timeval" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="host" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="level" type="lbt:Level" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="priority" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="jobId" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="seqcode" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="source" type="lbt:eventSource" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="srcInstance" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+          <xsd:element name="statusCode" type="lbt:VMDoneStatusCode" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="usage" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
+        </xsd:sequence>
+      </xsd:complexType>
       <xsd:simpleType name="eventSource">
         <xsd:restriction base="xsd:string">
           <xsd:enumeration value="UserInterface" />
@@ -1514,6 +1839,14 @@
           <xsd:enumeration value="LBServer" />
           <xsd:enumeration value="CREAMInterface" />
           <xsd:enumeration value="CREAMExecutor" />
+          <xsd:enumeration value="PBSClient" />
+          <xsd:enumeration value="PBSServer" />
+          <xsd:enumeration value="PBSsMom" />
+          <xsd:enumeration value="PBSMom" />
+          <xsd:enumeration value="PBSScheduler" />
+          <xsd:enumeration value="CloudManager" />
+          <xsd:enumeration value="VMManager" />
+          <xsd:enumeration value="VMSystem" />
         </xsd:restriction>
       </xsd:simpleType>
       <xsd:complexType name="stateEnterTimesItem">
@@ -1580,6 +1913,8 @@
           <xsd:enumeration value="STATEENTERTIME" />
           <xsd:enumeration value="LASTUPDATETIME" />
           <xsd:enumeration value="NETWORKSERVER" />
+          <xsd:enumeration value="JOBTYPE" />
+          <xsd:enumeration value="VM_STATUS" />
         </xsd:restriction>
       </xsd:simpleType>
       <xsd:complexType name="queryRecord">
