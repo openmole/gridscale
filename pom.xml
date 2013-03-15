@@ -95,6 +95,9 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <expandEmptyElements>false</expandEmptyElements>
+        </configuration>
       </plugin>
     </plugins>
   </build>
