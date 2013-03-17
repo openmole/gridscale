@@ -57,6 +57,7 @@ import java.util.logging.Level;
 
 import org.apache.log4j.Logger;
 
+import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.DEREncodableVector;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERObjectIdentifier;
@@ -297,7 +298,7 @@ public class VOMSProxyBuilder {
 
         Iterator i = ACs.iterator();
 
-        DEREncodableVector acVector = new DEREncodableVector();
+        ASN1EncodableVector acVector = new ASN1EncodableVector();
 
         while (i.hasNext()) {
             acVector.add((AttributeCertificate) i.next());

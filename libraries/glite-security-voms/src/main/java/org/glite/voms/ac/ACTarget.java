@@ -141,7 +141,7 @@ public class ACTarget implements DEREncodable {
             GeneralName nm = new GeneralName(new DERIA5String(iss), 6);
             ASN1Sequence seq = ASN1Sequence.getInstance(name.getDERObject());
 
-            DEREncodableVector v = new DEREncodableVector();
+            ASN1EncodableVector v = new ASN1EncodableVector();
             v.add(nm);
             v.add(seq);
             cert = new IssuerSerial(new DERSequence(v));
@@ -205,7 +205,7 @@ public class ACTarget implements DEREncodable {
      * @return the DERObject
      */
     public DERObject getDERObject() {
-        DEREncodableVector v = new DEREncodableVector();
+        ASN1EncodableVector v = new ASN1EncodableVector();
 
         if (name != null)
             v.add(new DERTaggedObject(0, name));

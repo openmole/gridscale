@@ -14,11 +14,7 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.DEREncodable;
-import org.bouncycastle.asn1.DEREncodableVector;
-import org.bouncycastle.asn1.DERObject;
-import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.*;
 import org.globus.gsi.GSIConstants;
 import org.globus.gsi.GSIConstants.CertificateType;
 import org.globus.gsi.proxy.ext.ProxyPolicy;
@@ -43,7 +39,7 @@ class MyProxyCertInfo implements DEREncodable {
     }
 
     public DERObject getDERObject() {
-        DEREncodableVector vec = new DEREncodableVector();
+        ASN1EncodableVector vec = new ASN1EncodableVector();
 
         switch(version) {
         case GSI_3_IMPERSONATION_PROXY:

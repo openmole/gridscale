@@ -23,7 +23,7 @@ import java.util.Vector;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERInputStream;
+import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.glite.voms.ac.ACTrustStore;
@@ -291,12 +291,12 @@ public class VOMSValidator {
 
             try {
                 // Strip the wrapping OCTET STRING
-                payload = ((DEROctetString) new DERInputStream(new ByteArrayInputStream(payload)).readObject()).getOctets();
+                payload = ((DEROctetString) new ASN1InputStream(new ByteArrayInputStream(payload)).readObject()).getOctets();
 
                 // VOMS extension is SEQUENCE of SET of AttributeCertificate
                 // now, SET is an ordered sequence, and an AC is a sequence as
                 // well -- thus the three nested ASN.1 sequences below...
-                ASN1Sequence seq1 = (ASN1Sequence) new DERInputStream(new ByteArrayInputStream(payload)).readObject();
+                ASN1Sequence seq1 = (ASN1Sequence) new ASN1InputStream(new ByteArrayInputStream(payload)).readObject();
 
                 for (Enumeration e1 = seq1.getObjects(); e1.hasMoreElements();) {
                     ASN1Sequence seq2 = (ASN1Sequence) e1.nextElement();
@@ -387,12 +387,12 @@ public class VOMSValidator {
 
             try {
                 // Strip the wrapping OCTET STRING
-                payload = ((DEROctetString) new DERInputStream(new ByteArrayInputStream(payload)).readObject()).getOctets();
+                payload = ((DEROctetString) new ASN1InputStream(new ByteArrayInputStream(payload)).readObject()).getOctets();
 
                 // VOMS extension is SEQUENCE of SET of AttributeCertificate
                 // now, SET is an ordered sequence, and an AC is a sequence as
                 // well -- thus the three nested ASN.1 sequences below...
-                ASN1Sequence seq1 = (ASN1Sequence) new DERInputStream(new ByteArrayInputStream(payload)).readObject();
+                ASN1Sequence seq1 = (ASN1Sequence) new ASN1InputStream(new ByteArrayInputStream(payload)).readObject();
 
                 for (Enumeration e1 = seq1.getObjects(); e1.hasMoreElements();) {
                     ASN1Sequence seq2 = (ASN1Sequence) e1.nextElement();

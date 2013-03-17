@@ -53,7 +53,7 @@ public class Holder implements DEREncodable {
     }
 
     public Holder(X500Principal issuer, BigInteger serial) {
-        DEREncodableVector v = new DEREncodableVector();
+        ASN1EncodableVector v = new ASN1EncodableVector();
         v.add(Util.x500nameToGeneralNames(issuer));
         v.add(new DERInteger(serial));
         baseCertificateID = new IssuerSerial(new DERSequence(v));

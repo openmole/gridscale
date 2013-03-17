@@ -29,10 +29,10 @@ import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERConstructedSet;
+import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.DEREncodable;
 import org.bouncycastle.asn1.DERGeneralizedTime;
-import org.bouncycastle.asn1.DERInputStream;
+import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.DERInteger;
 import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERObjectIdentifier;
@@ -77,7 +77,7 @@ public class AttributeCertificate implements DEREncodable {
      */
     public static AttributeCertificate getInstance(InputStream in)
         throws IOException {
-        DERInputStream dIn = new DERInputStream(in);
+        ASN1InputStream dIn = new ASN1InputStream(in);
         ASN1Sequence seq = (ASN1Sequence) dIn.readObject();
 
         return new AttributeCertificate(seq);
@@ -200,7 +200,7 @@ public class AttributeCertificate implements DEREncodable {
             ASN1Sequence attribute = (ASN1Sequence) e.nextElement();
 
             if (oid.equals(((DERObjectIdentifier) attribute.getObjectAt(0)).getId())) {
-                DERConstructedSet set = (DERConstructedSet) attribute.getObjectAt(1);
+                DERSet set = (DERSet) attribute.getObjectAt(1);
 
                 for (Enumeration s = set.getObjects(); s.hasMoreElements();) {
                     v.add(s.nextElement());

@@ -24,12 +24,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
 
+import org.bouncycastle.asn1.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DEREncodable;
-import org.bouncycastle.asn1.DEREncodableVector;
-import org.bouncycastle.asn1.DERObject;
-import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.X509CertificateStructure;
 import org.bouncycastle.jce.provider.X509CertificateObject;
 
@@ -136,7 +132,7 @@ public class ACCerts implements DEREncodable {
      * @return the DERObject
      */
     public DERObject getDERObject() {
-        DEREncodableVector v = new DEREncodableVector();
+        ASN1EncodableVector v = new ASN1EncodableVector();
 
         ListIterator li = l.listIterator();
         while (li.hasNext()) {

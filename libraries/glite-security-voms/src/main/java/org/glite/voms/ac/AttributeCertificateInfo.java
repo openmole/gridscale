@@ -12,23 +12,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.ASN1TaggedObject;
-import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERConstructedSet;
-import org.bouncycastle.asn1.DEREncodable;
-import org.bouncycastle.asn1.DEREncodableVector;
-import org.bouncycastle.asn1.DERGeneralizedTime;
-import org.bouncycastle.asn1.DERIA5String;
-import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.DERObject;
-import org.bouncycastle.asn1.DERObjectIdentifier;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.DERTaggedObject;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.AttCertValidityPeriod;
 import org.bouncycastle.asn1.x509.GeneralName;
@@ -85,7 +70,7 @@ public class AttributeCertificateInfo implements DEREncodable {
         if (s2.getObjectAt(0) instanceof ASN1TaggedObject) {
             badVomsEncoding = true;
 
-            DEREncodableVector v = new DEREncodableVector();
+            ASN1EncodableVector v = new ASN1EncodableVector();
 
             for (int i = 0; i < 2; i++) {
                 byte[] bb = ((DEROctetString) ((ASN1TaggedObject) s2.getObjectAt(i)).getObject()).getOctets();
@@ -117,7 +102,7 @@ public class AttributeCertificateInfo implements DEREncodable {
                 ASN1Sequence attribute = (ASN1Sequence) e.nextElement();
 
                 if (VOMS_ATTR_OID.equals(((DERObjectIdentifier) attribute.getObjectAt(0)).getId())) {
-                    DERConstructedSet set = (DERConstructedSet) attribute.getObjectAt(1);
+                    DERSet set = (DERSet) attribute.getObjectAt(1);
 
                     for (Enumeration s = set.getObjects(); s.hasMoreElements();) {
                         IetfAttrSyntax attr = new IetfAttrSyntax((ASN1Sequence)s.nextElement());
@@ -337,7 +322,7 @@ public class AttributeCertificateInfo implements DEREncodable {
         if (!badVomsEncoding) {
             v.add(attrCertValidityPeriod);
         } else {
-            DEREncodableVector v2 = new DEREncodableVector();
+            ASN1EncodableVector v2 = new ASN1EncodableVector();
             v2.add(new DERTaggedObject(false, 0,
                     new DEROctetString((attrCertValidityPeriod.getNotBeforeTime().getTime().substring(0, 14) + "Z").getBytes())));
             v2.add(new DERTaggedObject(false, 1,
