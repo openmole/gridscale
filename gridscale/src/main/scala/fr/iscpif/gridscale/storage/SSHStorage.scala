@@ -87,10 +87,10 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream = {
     val connection = connectionCache.cached(this)
 
-    def close = connectionCache.release(this)
+    def close = connectionCache.release(connection)
 
     val sftpClient =
-      try connection.newSFTPClient
+      try connection.get.newSFTPClient
       catch {
         case e: Throwable ⇒
           close
@@ -123,10 +123,10 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream = {
     val connection = connectionCache.cached(this)
 
-    def close = connectionCache.release(this)
+    def close = connectionCache.release(connection)
 
     val sftpClient =
-      try connection.newSFTPClient
+      try connection.get.newSFTPClient
       catch {
         case e: Throwable ⇒
           close

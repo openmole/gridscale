@@ -36,8 +36,8 @@ trait SSHHost {
 
   def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication) = {
     val connection = connectionCache.cached(this)
-    try f(connection)
-    finally connectionCache.release(this)
+    try f(connection.get)
+    finally connectionCache.release(connection)
   }
 
   def connect(implicit authentication: SSHAuthentication) = {
