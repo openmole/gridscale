@@ -34,6 +34,7 @@ trait WMSJobDescription extends JobDescription {
   def jobType: Option[String] = None
   def smpGranularity: Option[Int] = None
   def retryCount: Option[Int] = None
+  def shallowRetryCount: Option[Int] = None
   def myProxyServer: Option[String] = None
   def architecture: Option[String] = None
   def ce: Option[Iterable[String]] = None
@@ -67,9 +68,10 @@ trait WMSJobDescription extends JobDescription {
 
     if (fuzzy) script += "FuzzyRank = true;"
 
-    retryCount.foreach(script += "RetryCount = " + _)
+    retryCount.foreach(script += "RetryCount = " + _ + ";")
+    shallowRetryCount.foreach(script += "ShallowRetryCount = " + _ + ";")
 
-    myProxyServer.foreach(script += "MyProxyServer = \"" + _ + "\"")
+    myProxyServer.foreach(script += "MyProxyServer = \"" + _ + "\";")
 
     script.toString
   }
