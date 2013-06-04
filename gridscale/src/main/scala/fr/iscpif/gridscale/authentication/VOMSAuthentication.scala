@@ -43,12 +43,12 @@ trait VOMSAuthentication {
 
   def serverURL: String
   def voName: String
-  def proxyInit(passphrase: String): VOMSProxyInit
+  def proxyInit: VOMSProxyInit
   def proxyFile: File
   def fqan: Option[String] = None
   def lifeTime: Int
 
-  def init(password: String) = {
+  def init = {
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
@@ -59,7 +59,7 @@ trait VOMSAuthentication {
     server.setHostDn(uri.getPath)
     server.setVoName(voName)
 
-    val proxy = proxyInit(password)
+    val proxy = proxyInit
     proxy.addVomsServer(server)
     proxy.setProxyOutputFile(proxyFile.getAbsolutePath)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 04/06/13 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -9,15 +9,17 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package fr.iscpif.gridscale.authentication
 
-import org.glite.voms.contact.VOMSProxyInit
+import java.io.File
 
-trait P12VOMSAuthentication extends VOMSAuthentication with P12Authentication {
-  def proxyInit = VOMSProxyInit.instance(certificate, password)
+trait P12Authentication {
+  def certificate: File
+  def password: String
 }
