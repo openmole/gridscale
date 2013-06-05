@@ -82,9 +82,9 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   def SERVICE_PATH = "/srm/managerv2"
   def transferProtocols = Array("gsiftp")
 
-  def version(implicit credential: GlobusGSSCredentialImpl) = stub.srmPing(new SrmPingRequest).getVersionInfo
+  def version(implicit credential: A) = stub.srmPing(new SrmPingRequest).getVersionInfo
 
-  def list(absolutePath: String)(implicit credential: GlobusGSSCredentialImpl): Seq[(String, FileType)] = {
+  def list(absolutePath: String)(implicit credential: A): Seq[(String, FileType)] = {
     def recList(offset: Int, res: List[Seq[(String, FileType)]] = List.empty): Seq[(String, FileType)] = {
       val ls = list(absolutePath, offset, lsSizeMax)
       if (ls.size < lsSizeMax) (ls :: res).reverse.flatten
@@ -93,7 +93,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     recList(0)
   }
 
-  def list(absolutePath: String, offset: Int, size: Int)(implicit credential: GlobusGSSCredentialImpl) = {
+  def list(absolutePath: String, offset: Int, size: Int)(implicit credential: A) = {
     val uri = toSrmURI(absolutePath)
     val request = new SrmLsRequest
     request.setArrayOfSURLs(new ArrayOfAnyURI(Array(uri)))
@@ -106,7 +106,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
       def getDetails(): ArrayOfTMetaDataPathDetail
     }
 
-    def requestStatus(implicit credential: GlobusGSSCredentialImpl) = stub.srmLs(request)
+    def requestStatus(implicit credential: A) = stub.srmLs(request)
 
     val childs = complete[SRMLsRS](requestStatus) {
       token ⇒
@@ -131,7 +131,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     }).toSeq
   }
 
-  def makeDir(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  def makeDir(path: String)(implicit credential: A) = {
     val uri = this.toSrmURI(path)
     val request = new SrmMkdirRequest
     request.setSURL(uri)
@@ -139,7 +139,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def rmEmptyDir(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  def rmEmptyDir(path: String)(implicit credential: A) = {
     val uri = this.toSrmURI(path)
     val request = new SrmRmdirRequest
     request.setSURL(uri)
@@ -149,7 +149,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def rmFile(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  def rmFile(path: String)(implicit credential: A) = {
     val uri = this.toSrmURI(path)
     val request = new SrmRmRequest
     request.setArrayOfSURLs(new ArrayOfAnyURI(Array(uri)))
@@ -167,7 +167,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  protected def _openInputStream(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  protected def _openInputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToGet(path)
 
     new GridFTPInputStream(credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
@@ -178,7 +178,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     }
   }
 
-  protected def _openOutputStream(path: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  protected def _openOutputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToPut(path)
 
     new GridFTPOutputStream(credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
@@ -189,7 +189,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     }
   }
 
-  private def freeInputStream(token: String, absolutePath: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  private def freeInputStream(token: String, absolutePath: String)(implicit credential: A) = {
     val logicalUri = toSrmURI(absolutePath)
     val request = new SrmReleaseFilesRequest
     request.setRequestToken(token)
@@ -199,7 +199,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  private def freeOutputStream(token: String, absolutePath: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  private def freeOutputStream(token: String, absolutePath: String)(implicit credential: A) = {
     val logicalUri = toSrmURI(absolutePath)
     val request = new SrmPutDoneRequest
     request.setRequestToken(token)
@@ -208,7 +208,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  private def prepareToPut(absolutePath: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  private def prepareToPut(absolutePath: String)(implicit credential: A) = {
     val logicalUri = toSrmURI(absolutePath)
     val request = new SrmPrepareToPutRequest
     request.setArrayOfFileRequests(new ArrayOfTPutFileRequest(Array(new TPutFileRequest(logicalUri, null))))
@@ -230,7 +230,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     (requestStatus.getRequestToken, url)
   }
 
-  private def prepareToGet(absolutePath: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  private def prepareToGet(absolutePath: String)(implicit credential: A) = {
     val logicalUri = toSrmURI(absolutePath)
 
     val request = new SrmPrepareToGetRequest
@@ -288,7 +288,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     } else throwError(request)
   }
 
-  private def abortRequest(token: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  private def abortRequest(token: String)(implicit credential: A) = {
     val r = new SrmAbortRequestRequest
     r.setRequestToken(token)
     stub.srmAbortRequest(r)
@@ -301,7 +301,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler)
 
-  private def stub(implicit credential: GlobusGSSCredentialImpl) = {
+  private def stub(implicit credential: A) = {
     val stub = locator.getsrm(serviceUrl)
     stub.asInstanceOf[Stub]._setProperty(GSIConstants.GSI_CREDENTIALS, credential)
     stub.asInstanceOf[Stub].setTimeout(timeout * 1000)

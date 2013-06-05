@@ -65,12 +65,12 @@ trait WMSJobService extends JobService {
   val delegationId = UUID.randomUUID.toString
   def copyBufferSize = 64 * 1000
 
-  def delegateProxy(proxyFile: File)(implicit credential: GlobusGSSCredentialImpl) = {
+  def delegateProxy(proxyFile: File)(implicit credential: A) = {
     val req = grstStub.getProxyReq(delegationId)
     serviceStub.putProxy(delegationId, createProxyfromCertReq(req, proxyString(proxyFile)))
   }
 
-  def submit(desc: WMSJobDescription)(implicit credential: GlobusGSSCredentialImpl) = {
+  def submit(desc: WMSJobDescription)(implicit credential: A) = {
     val j = register(desc.toJDL)
     fillInputSandbox(desc, j.getId)
     serviceStub.jobStart(j.getId)
@@ -79,19 +79,19 @@ trait WMSJobService extends JobService {
     }
   }
 
-  def cancel(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = serviceStub.jobCancel(jobId.id)
+  def cancel(jobId: J)(implicit credential: A) = serviceStub.jobCancel(jobId.id)
 
-  def purge(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = serviceStub.jobPurge(jobId.id)
+  def purge(jobId: J)(implicit credential: A) = serviceStub.jobPurge(jobId.id)
 
-  def state(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = translateState(rawState(jobId))
+  def state(jobId: J)(implicit credential: A) = translateState(rawState(jobId))
 
-  def rawState(jobId: J)(implicit credential: GlobusGSSCredentialImpl) = {
+  def rawState(jobId: J)(implicit credential: A) = {
     val jobUrl = new URL(jobId.id)
     val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
     lbService(lbServiceURL).jobStatus(jobId.id, flags).getState
   }
 
-  def downloadOutputSandbox(desc: WMSJobDescription, jobId: J)(implicit credential: GlobusGSSCredentialImpl) = {
+  def downloadOutputSandbox(desc: WMSJobDescription, jobId: J)(implicit credential: A) = {
     val indexed = desc.outputSandbox.groupBy(_._1).map { case (k, v) ⇒ k -> v.head }
 
     serviceStub.getOutputFileList(jobId.id, "gsiftp").getFile.foreach {
@@ -121,7 +121,7 @@ trait WMSJobService extends JobService {
       case StatName._WAITING ⇒ Submitted
     }
 
-  private def fillInputSandbox(desc: WMSJobDescription, jobId: String)(implicit credential: GlobusGSSCredentialImpl) = {
+  private def fillInputSandbox(desc: WMSJobDescription, jobId: String)(implicit credential: A) = {
     val inputSandboxURL = new URI(serviceStub.getSandboxDestURI(jobId, "gsiftp").getItem(0))
     desc.inputSandbox.foreach {
       path ⇒
@@ -132,9 +132,9 @@ trait WMSJobService extends JobService {
     }
   }
 
-  private def register(jdl: String)(implicit credential: GlobusGSSCredentialImpl) = serviceStub.jobRegister(jdl, delegationId)
+  private def register(jdl: String)(implicit credential: A) = serviceStub.jobRegister(jdl, delegationId)
 
-  private def lbService(url: URL)(implicit credential: GlobusGSSCredentialImpl) = {
+  private def lbService(url: URL)(implicit credential: A) = {
     val locator = new LoggingAndBookkeepingLocator(provider)
     val lbService = locator.getLoggingAndBookkeeping(url)
     lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
@@ -151,14 +151,14 @@ trait WMSJobService extends JobService {
 
   @transient private lazy val serviceLocator = new WMProxyLocator(provider)
 
-  private def serviceStub(implicit credential: GlobusGSSCredentialImpl) = {
+  private def serviceStub(implicit credential: A) = {
     val serviceStub = serviceLocator.getWMProxy_PortType(url.toURL)
     serviceStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
     serviceStub.asInstanceOf[Stub].setTimeout(timeout * 1000)
     serviceStub
   }
 
-  private def grstStub(implicit credential: GlobusGSSCredentialImpl) = {
+  private def grstStub(implicit credential: A) = {
     val grstStub = serviceLocator.getWMProxyDelegation2_PortType(url.toURL)
     grstStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
     grstStub.asInstanceOf[Stub].setTimeout(timeout * 1000)
