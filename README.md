@@ -21,11 +21,6 @@ Licence
 GridScale is licenced under the GNU Affero GPLv3 software licence. 
 
 
-Compiling
----------
-
-Clone, init/update submodules, mvn install.
-
 Imports
 -------
 In order to use gridscale you should import the folowing namespaces:
