@@ -37,9 +37,11 @@ object VOMSAuthentication {
     System.setProperty("CADIR", directory.getAbsolutePath)
   }
 
+  type Proxy = (GlobusGSSCredentialImpl, File)
+
 }
 
-trait VOMSAuthentication extends (() ⇒ GlobusGSSCredentialImpl) {
+trait VOMSAuthentication extends (() ⇒ VOMSAuthentication.Proxy) {
 
   def serverURL: String
   def voName: String
@@ -79,6 +81,6 @@ trait VOMSAuthentication extends (() ⇒ GlobusGSSCredentialImpl) {
     val globusProxy = proxy.getVomsProxy(List(requestOption))
     Util.setFilePermissions(proxy.getProxyOutputFile, 600)
 
-    new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT)
+    (new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), proxyFile)
   }
 }

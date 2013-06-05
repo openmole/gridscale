@@ -43,6 +43,7 @@ import collection.JavaConversions._
 import java.util.concurrent.TimeoutException
 import org.globus.gsi.gssapi.auth.HostAuthorization
 import org.globus.io.streams._
+import fr.iscpif.gridscale.authentication.VOMSAuthentication
 
 object SRMStorage {
 
@@ -69,7 +70,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   SRMStorage.init
 
-  type A = () ⇒ GlobusGSSCredentialImpl
+  type A = () ⇒ VOMSAuthentication.Proxy
 
   def host: String
   def port: Int
@@ -170,7 +171,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   protected def _openInputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToGet(path)
 
-    new GridFTPInputStream(credential(), url.getHost, gridFtpPort(url.getPort), url.getPath) {
+    new GridFTPInputStream(credential()._1, url.getHost, gridFtpPort(url.getPort), url.getPath) {
       override def close = {
         try freeInputStream(token, path)
         finally super.close
@@ -181,7 +182,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   protected def _openOutputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToPut(path)
 
-    new GridFTPOutputStream(credential(), url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
+    new GridFTPOutputStream(credential()._1, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
       override def close = {
         try freeOutputStream(token, path)
         finally super.close

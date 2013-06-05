@@ -45,6 +45,7 @@ import org.globus.io.streams.GridFTPOutputStream
 import scala.io.Source
 import fr.iscpif.gridscale.storage.SRMStorage
 import fr.iscpif.gridscale.tools._
+import fr.iscpif.gridscale.authentication.VOMSAuthentication
 
 object WMSJobService {
 
@@ -57,7 +58,7 @@ import WMSJobService._
 
 trait WMSJobService extends JobService {
   type J = WMSJobId
-  type A = () ⇒ GlobusGSSCredentialImpl
+  type A = () ⇒ VOMSAuthentication.Proxy
   type D = WMSJobDescription
 
   def url: URI
@@ -65,9 +66,9 @@ trait WMSJobService extends JobService {
   val delegationId = UUID.randomUUID.toString
   def copyBufferSize = 64 * 1000
 
-  def delegateProxy(proxyFile: File)(implicit credential: A) = {
+  def delegateProxy(implicit credential: A) = {
     val req = grstStub.getProxyReq(delegationId)
-    serviceStub.putProxy(delegationId, createProxyfromCertReq(req, proxyString(proxyFile)))
+    serviceStub.putProxy(delegationId, createProxyfromCertReq(req, proxyString(credential()._2)))
   }
 
   def submit(desc: WMSJobDescription)(implicit credential: A) = {
@@ -100,7 +101,7 @@ trait WMSJobService extends JobService {
         val to = indexed(new File(url.getPath).getName)._2
         val file = new File(to)
 
-        val is = new GridFTPInputStream(credential(), url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
+        val is = new GridFTPInputStream(credential()._1, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
         finally is.close
     }
@@ -126,7 +127,7 @@ trait WMSJobService extends JobService {
     desc.inputSandbox.foreach {
       path ⇒
         val file = new File(path)
-        val os = new GridFTPOutputStream(credential(), inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
+        val os = new GridFTPOutputStream(credential()._1, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
         try copy(file, os, copyBufferSize, timeout)
         finally os.close
     }
