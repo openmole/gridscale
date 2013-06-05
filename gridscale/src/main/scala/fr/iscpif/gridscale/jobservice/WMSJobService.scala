@@ -57,7 +57,7 @@ import WMSJobService._
 
 trait WMSJobService extends JobService {
   type J = WMSJobId
-  type A = GlobusGSSCredentialImpl
+  type A = () ⇒ GlobusGSSCredentialImpl
   type D = WMSJobDescription
 
   def url: URI
@@ -100,7 +100,7 @@ trait WMSJobService extends JobService {
         val to = indexed(new File(url.getPath).getName)._2
         val file = new File(to)
 
-        val is = new GridFTPInputStream(credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
+        val is = new GridFTPInputStream(credential(), url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
         finally is.close
     }
@@ -126,7 +126,7 @@ trait WMSJobService extends JobService {
     desc.inputSandbox.foreach {
       path ⇒
         val file = new File(path)
-        val os = new GridFTPOutputStream(credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
+        val os = new GridFTPOutputStream(credential(), inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
         try copy(file, os, copyBufferSize, timeout)
         finally os.close
     }
@@ -137,7 +137,7 @@ trait WMSJobService extends JobService {
   private def lbService(url: URL)(implicit credential: A) = {
     val locator = new LoggingAndBookkeepingLocator(provider)
     val lbService = locator.getLoggingAndBookkeeping(url)
-    lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
+    lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential())
     lbService.asInstanceOf[Stub].setTimeout(timeout * 1000)
     lbService
   }

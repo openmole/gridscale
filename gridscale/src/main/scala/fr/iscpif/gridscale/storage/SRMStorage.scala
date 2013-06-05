@@ -69,7 +69,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   SRMStorage.init
 
-  type A = GlobusGSSCredentialImpl
+  type A = () ⇒ GlobusGSSCredentialImpl
 
   def host: String
   def port: Int
@@ -170,7 +170,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   protected def _openInputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToGet(path)
 
-    new GridFTPInputStream(credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
+    new GridFTPInputStream(credential(), url.getHost, gridFtpPort(url.getPort), url.getPath) {
       override def close = {
         try freeInputStream(token, path)
         finally super.close
@@ -181,7 +181,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   protected def _openOutputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToPut(path)
 
-    new GridFTPOutputStream(credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
+    new GridFTPOutputStream(credential(), url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
       override def close = {
         try freeOutputStream(token, path)
         finally super.close
@@ -262,7 +262,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     else throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + request.getReturnStatus.getStatusCode)
   }
 
-  private def complete[R <: RequestStatus](request: R with RequestStatusWithToken)(requestRequest: String ⇒ R)(implicit credential: GlobusGSSCredentialImpl) =
+  private def complete[R <: RequestStatus](request: R with RequestStatusWithToken)(requestRequest: String ⇒ R)(implicit credential: A) =
     status(request) match {
       case Left(r) ⇒ r
       case Right(token) ⇒

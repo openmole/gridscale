@@ -39,7 +39,7 @@ object VOMSAuthentication {
 
 }
 
-trait VOMSAuthentication {
+trait VOMSAuthentication extends (() ⇒ GlobusGSSCredentialImpl) {
 
   def serverURL: String
   def voName: String
@@ -48,7 +48,9 @@ trait VOMSAuthentication {
   def fqan: Option[String] = None
   def lifeTime: Int
 
-  def init = {
+  @transient lazy val apply = get
+
+  def get = {
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
