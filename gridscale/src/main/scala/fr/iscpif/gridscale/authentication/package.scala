@@ -19,14 +19,27 @@ package fr.iscpif.gridscale
 
 package object authentication {
 
-  def renew[T](f: () ⇒ T)(time: Long): () ⇒ T = {
-    val current = System.currentTimeMillis
-    val t = f()
-    if (current + time < System.currentTimeMillis) () ⇒ t else renew(f)(time)
+  def cache[T](f: () ⇒ T)(time: Long): () ⇒ T = synchronized {
+    var cache = f()
+    var current = System.currentTimeMillis
+    () ⇒ {
+      if (current + time * 1000 < System.currentTimeMillis) {
+        cache = f()
+        current = System.currentTimeMillis
+      }
+      cache
+    }
   }
 
+  def bind[T](f: () ⇒ T)(b: (() ⇒ T) ⇒ Unit): () ⇒ T =
+    () ⇒ {
+      b(f)
+      f()
+    }
+
   implicit class RenewDecoder[T](f: () ⇒ T) {
-    def renew(time: Long) = authentication.renew[T](f)(time)
+    def cache(time: Long) = authentication.cache[T](f)(time)
+    def bind(b: (() ⇒ T) ⇒ Unit): () ⇒ T = authentication.bind(f)(b)
   }
 
 }

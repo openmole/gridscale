@@ -66,9 +66,9 @@ trait WMSJobService extends JobService {
   val delegationId = UUID.randomUUID.toString
   def copyBufferSize = 64 * 1000
 
-  def delegateProxy(implicit credential: A) = {
-    val req = grstStub.getProxyReq(delegationId)
-    serviceStub.putProxy(delegationId, createProxyfromCertReq(req, proxyString(credential()._2)))
+  def delegate(credential: A) = {
+    val req = grstStub(credential).getProxyReq(delegationId)
+    serviceStub(credential).putProxy(delegationId, createProxyfromCertReq(req, proxyString(credential()._2)))
   }
 
   def submit(desc: WMSJobDescription)(implicit credential: A) = {
@@ -138,7 +138,7 @@ trait WMSJobService extends JobService {
   private def lbService(url: URL)(implicit credential: A) = {
     val locator = new LoggingAndBookkeepingLocator(provider)
     val lbService = locator.getLoggingAndBookkeeping(url)
-    lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential())
+    lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential()._1)
     lbService.asInstanceOf[Stub].setTimeout(timeout * 1000)
     lbService
   }
@@ -154,14 +154,14 @@ trait WMSJobService extends JobService {
 
   private def serviceStub(implicit credential: A) = {
     val serviceStub = serviceLocator.getWMProxy_PortType(url.toURL)
-    serviceStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
+    serviceStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential()._1)
     serviceStub.asInstanceOf[Stub].setTimeout(timeout * 1000)
     serviceStub
   }
 
   private def grstStub(implicit credential: A) = {
     val grstStub = serviceLocator.getWMProxyDelegation2_PortType(url.toURL)
-    grstStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential)
+    grstStub.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential()._1)
     grstStub.asInstanceOf[Stub].setTimeout(timeout * 1000)
     grstStub
   }

@@ -50,9 +50,7 @@ trait VOMSAuthentication extends (() ⇒ VOMSAuthentication.Proxy) {
   def fqan: Option[String] = None
   def lifeTime: Int
 
-  @transient lazy val apply = get
-
-  def get = {
+  def apply() = {
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
