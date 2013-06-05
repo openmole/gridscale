@@ -130,14 +130,14 @@ To submit a job on the biomed VO of the EGI grid:
 
     VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
     
-    val auth = new P12VOMSAuthentication {
+    implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
       def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
       def lifeTime = 3600
       def certificate = new File("/path/to/your/certificate.p12")
-    }
+    }.cache(3600).bind(wms.delegate)
     
     implicit val cred = auth.init("pasword")
      
@@ -150,8 +150,7 @@ To submit a job on the biomed VO of the EGI grid:
       def outputSandbox = List("out.txt" -> "/tmp/out.txt", "error.txt" -> "/tmp/error.txt")
       override def fuzzy = true
     }
-    
-    wms.delegateProxy(auth.proxyFile)
+
     val j = wms.submit(jobDesc)
       
     val s = untilFinished{Thread.sleep(5000); val s = wms.state(j); println(s); s}
@@ -205,4 +204,17 @@ Submit a long running job with my proxy:
       def myProxyServer = Some("myproxy.cern.ch")
     }
 
+  Maven
+-------------
 
+GridScale depend on the 2.10 version of scala. We intend to switch to sbt and support multi-version at some point in the future.
+
+    <repository>
+      <id>iscpif</id>
+      <name>iscpif Repo</name>
+      <url>http://maven.iscpif.fr/public/</url>
+    </repository>
+
+    <artifactId>parent</artifactId>
+    <groupId>fr.iscpif.gridscale</groupId>
+    <version>1.40</version>
