@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 04/06/13 Romain Reuillon
+ * Copyright (C) 05/06/13 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,11 +15,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.authentication
+package fr.iscpif.gridscale.tools
 
-import javax.net.ssl.HttpsURLConnection
-import java.net.URL
+import java.net.HttpURLConnection
+import scala.io.Source
 
-trait HTTPSAuthentication {
-  def connect(url: URL): HttpsURLConnection
+object HttpURLConnectionUtil {
+
+  implicit class HTTPURLConnectionDecorator(c: HttpURLConnection) {
+    def getString = {
+      c.connect
+      if (c.getResponseCode != 200) throw new RuntimeException("Response code is " + c.getResponseCode + " (not 200) " + c.getResponseMessage)
+      val s = Source.fromInputStream(c.getInputStream)
+      try s.getLines().mkString("\n")
+      finally s.close
+    }
+  }
 }
