@@ -201,25 +201,25 @@ Submit a long running job with my proxy:
 
 To submit a job to DIRAC:
 
-    implicit val p12certificate = new p12httpsauthentication {
-      def certificate = new file("/path/to/your/certificate.p12")
+    implicit val p12certificate = new P12HTTPSAuthentication {
+      def certificate = new File("/path/to/your/certificate.p12")
       def password = "youpassword"
     }
   
-    val dirac = new diracjobservice {
+    val dirac = new DIRACJobService {
       def group = "biomed_user"
       def service = "https://ccdirac06.in2p3.fr:9178"
     }
   
-    val job = new diracjobdescription {
+    val job = new DIRACJobDescription {
       def executable = "/bin/cat"
       def arguments = "test"
-      def inputsandbox = seq(new file("/tmp/test"))
-      override def cputime = some(3600)
-      override def platforms = seq(diracjobdescription.linux_x86_64_glibc_2_5)
+      def inputsandbox = Seq(new File("/tmp/test"))
+      override def cpuTime = Some(3600)
+      override def platforms = Seq(DIRACJobDescription.linux_x86_64_glibc_2_5)
     }
   
-    val j = dirac.submit(job)
+    val id = dirac.submit(job)
 
   maven
 -------------
