@@ -32,18 +32,18 @@ trait Cache[K, T] {
   @transient val cache = new mutable.WeakHashMap[K, Cached]
 
   def apply(k: K): T = synchronized {
-    if (!cache.contains(k) || cache(k).expiresTime < System.currentTimeMillis) {
-      val v = compute(k)
-      cache(k) = Cached(v)
-      v
-    } else cache(k).value
+    if (!cache.contains(k) || cache(k).expiresTime < System.currentTimeMillis) computeCache(k)
+    else cache(k).value
   }
 
   def get(k: K) = cache.get(k).map(_.value)
 
-  def forceRenewal(k: K) = {
-    cache.remove(k)
-    apply(k)
+  def forceRenewal(k: K) = computeCache(k)
+
+  def computeCache(k: K): T = synchronized {
+    val v = compute(k)
+    cache(k) = Cached(v)
+    v
   }
 
 }
