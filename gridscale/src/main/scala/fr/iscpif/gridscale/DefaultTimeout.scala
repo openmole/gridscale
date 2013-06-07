@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 04/06/13 Romain Reuillon
+ * Copyright (C) 06/06/13 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,11 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.authentication
+package fr.iscpif.gridscale
 
-import javax.net.ssl.HttpsURLConnection
-import java.net.URL
-
-trait HTTPSAuthentication {
-  def connect(connection: HttpsURLConnection)
+trait DefaultTimeout {
+  def timeout = 30
 }

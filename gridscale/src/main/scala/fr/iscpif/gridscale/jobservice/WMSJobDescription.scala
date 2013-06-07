@@ -18,10 +18,11 @@
 package fr.iscpif.gridscale.jobservice
 
 import fr.iscpif.gridscale.tools._
+import java.io.File
 
 trait WMSJobDescription extends JobDescription {
-  def inputSandbox: Iterable[String]
-  def outputSandbox: Iterable[(String, String)]
+  def inputSandbox: Iterable[File]
+  def outputSandbox: Iterable[(String, File)]
 
   def rank = "(-other.GlueCEStateEstimatedResponseTime)"
   def fuzzy: Boolean = false
@@ -54,7 +55,7 @@ trait WMSJobDescription extends JobDescription {
     script += "Executable = \"" + executable + "\";"
     script += "Arguments = \"" + arguments + "\";"
 
-    if (!inputSandbox.isEmpty) script += "InputSandbox = " + sandboxTxt(inputSandbox) + ";"
+    if (!inputSandbox.isEmpty) script += "InputSandbox = " + sandboxTxt(inputSandbox.map(_.getPath)) + ";"
     if (!outputSandbox.isEmpty) script += "OutputSandbox = " + sandboxTxt(outputSandbox.unzip._1) + ";"
 
     if (!stdOutput.isEmpty) script += "StdOutput = \"" + stdOutput + "\";"

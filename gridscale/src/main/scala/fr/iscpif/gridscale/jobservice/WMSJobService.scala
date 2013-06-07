@@ -46,6 +46,7 @@ import scala.io.Source
 import fr.iscpif.gridscale.storage.SRMStorage
 import fr.iscpif.gridscale.tools._
 import fr.iscpif.gridscale.authentication.VOMSAuthentication
+import fr.iscpif.gridscale.DefaultTimeout
 
 object WMSJobService {
 
@@ -56,13 +57,12 @@ object WMSJobService {
 
 import WMSJobService._
 
-trait WMSJobService extends JobService {
+trait WMSJobService extends JobService with DefaultTimeout {
   type J = WMSJobId
   type A = () ⇒ VOMSAuthentication.Proxy
   type D = WMSJobDescription
 
   def url: URI
-  def timeout: Int = 30
   val delegationId = UUID.randomUUID.toString
   def copyBufferSize = 64 * 1000
 
@@ -92,14 +92,13 @@ trait WMSJobService extends JobService {
     lbService(lbServiceURL).jobStatus(jobId.id, flags).getState
   }
 
-  def downloadOutputSandbox(desc: WMSJobDescription, jobId: J)(implicit credential: A) = {
+  def downloadOutputSandbox(desc: D, jobId: J)(implicit credential: A) = {
     val indexed = desc.outputSandbox.groupBy(_._1).map { case (k, v) ⇒ k -> v.head }
 
     serviceStub.getOutputFileList(jobId.id, "gsiftp").getFile.foreach {
       from ⇒
         val url = new URI(from.getName)
-        val to = indexed(new File(url.getPath).getName)._2
-        val file = new File(to)
+        val file = indexed(new File(url.getPath).getName)._2
 
         val is = new GridFTPInputStream(credential()._1, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
@@ -125,8 +124,7 @@ trait WMSJobService extends JobService {
   private def fillInputSandbox(desc: WMSJobDescription, jobId: String)(implicit credential: A) = {
     val inputSandboxURL = new URI(serviceStub.getSandboxDestURI(jobId, "gsiftp").getItem(0))
     desc.inputSandbox.foreach {
-      path ⇒
-        val file = new File(path)
+      file ⇒
         val os = new GridFTPOutputStream(credential()._1, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
         try copy(file, os, copyBufferSize, timeout)
         finally os.close

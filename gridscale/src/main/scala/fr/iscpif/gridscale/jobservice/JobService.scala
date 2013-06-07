@@ -26,5 +26,4 @@ trait JobService {
   def state(job: J)(implicit credential: A): JobState
   def cancel(job: J)(implicit credential: A)
   def purge(job: J)(implicit credential: A)
-
 }

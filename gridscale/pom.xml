@@ -58,6 +58,11 @@
       <version>0.5</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+      <version>1.5</version>
+    </dependency>
+    <dependency>
       <groupId>org.htmlparser</groupId>
       <artifactId>htmlparser</artifactId>
       <version>2.1</version>
@@ -66,6 +71,16 @@
       <groupId>io.spray</groupId>
       <artifactId>spray-json_${scala.major.version}</artifactId>
       <version>1.2.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scalaj</groupId>
+      <artifactId>scalaj-http_${scala.major.version}</artifactId>
+      <version>0.3.7</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.scala-incubator.io</groupId>
+      <artifactId>scala-io-file_${scala.major.version}</artifactId>
+      <version>0.4.2</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

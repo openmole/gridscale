@@ -25,11 +25,11 @@ import java.security.KeyStore
 
 trait P12HTTPSAuthentication extends HTTPSAuthentication with P12Authentication {
 
-  def connect(url: URL): HttpsURLConnection = {
-    val scon = url.openConnection.asInstanceOf[HttpsURLConnection]
+  def connect(scon: HttpsURLConnection) = {
+    //val scon = url.openConnection.asInstanceOf[HttpsURLConnection]
     scon.setSSLSocketFactory(sslContext.getSocketFactory)
     scon.setHostnameVerifier(hv)
-    scon
+    //scon
   }
 
   @transient lazy val sslContext = {

@@ -23,14 +23,14 @@ import net.schmizz.sshj._
 import net.schmizz.sshj.sftp._
 import transport.verification.HostKeyVerifier
 import java.security.PublicKey
+import fr.iscpif.gridscale.DefaultTimeout
 
-trait SSHHost {
+trait SSHHost extends DefaultTimeout {
   type A = SSHAuthentication
 
   def user: String
   def host: String
   def port: Int = 22
-  def timeout = 30 * 1000
 
   def connectionCache = ConnectionCache.default
 
@@ -42,8 +42,8 @@ trait SSHHost {
 
   def connect(implicit authentication: SSHAuthentication) = {
     val ssh = new SSHClient
-    ssh.setConnectTimeout(timeout)
-    ssh.setTimeout(timeout)
+    ssh.setConnectTimeout(timeout * 1000)
+    ssh.setTimeout(timeout * 1000)
     ssh.addHostKeyVerifier(new HostKeyVerifier {
       def verify(p1: String, p2: Int, p3: PublicKey) = true
     })
