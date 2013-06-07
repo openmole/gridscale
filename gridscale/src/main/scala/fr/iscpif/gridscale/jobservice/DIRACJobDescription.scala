@@ -27,6 +27,8 @@ trait DIRACJobDescription extends JobDescription {
   def inputSandbox: Iterable[File]
   //def outputSandbox: Iterable[(String, File)]
 
+  def cpuTime: Option[Int] = None
+
   def toJSON = {
 
     def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)).toSeq: _*)
@@ -37,8 +39,8 @@ trait DIRACJobDescription extends JobDescription {
       "Arguments" -> JsString(arguments)) ++
       stdOut.map(s ⇒ "StdOut" -> JsString(s)) ++
       stdErr.map(s ⇒ "StdErr" -> JsString(s)) ++
-      (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) //++
-    //(if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
+      (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++ //++  (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
+      cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toString))
 
     JsObject(fields: _*).compactPrint
   }
