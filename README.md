@@ -141,8 +141,8 @@ To submit a job on the biomed VO of the EGI grid:
       def arguments = "testis"
       override def stdOutput = "out.txt"
       override def stdError = "error.txt"
-      def inputSandbox = List("/tmp/testis")
-      def outputSandbox = List("out.txt" -> "/tmp/out.txt", "error.txt" -> "/tmp/error.txt")
+      def inputSandbox = List(new File("/tmp/testis"))
+      def outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt"))
       override def fuzzy = true
     }
 
@@ -199,17 +199,39 @@ Submit a long running job with my proxy:
       def myProxyServer = Some("myproxy.cern.ch")
     }
 
-  Maven
+To submit a job to DIRAC:
+
+    implicit val p12certificate = new p12httpsauthentication {
+      def certificate = new file("/path/to/your/certificate.p12")
+      def password = "youpassword"
+    }
+  
+    val dirac = new diracjobservice {
+      def group = "biomed_user"
+      def service = "https://ccdirac06.in2p3.fr:9178"
+    }
+  
+    val job = new diracjobdescription {
+      def executable = "/bin/cat"
+      def arguments = "test"
+      def inputsandbox = seq(new file("/tmp/test"))
+      override def cputime = some(3600)
+      override def platforms = seq(diracjobdescription.linux_x86_64_glibc_2_5)
+    }
+  
+    val j = dirac.submit(job)
+
+  maven
 -------------
 
-GridScale depend on the 2.10 version of scala. We intend to switch to sbt and support multi-version at some point in the future.
+gridscale depend on the 2.10 version of scala. we intend to switch to sbt and support multi-version at some point in the future.
 
     <repository>
       <id>iscpif</id>
-      <name>iscpif Repo</name>
+      <name>iscpif repo</name>
       <url>http://maven.iscpif.fr/public/</url>
     </repository>
 
-    <artifactId>parent</artifactId>
-    <groupId>fr.iscpif.gridscale</groupId>
+    <artifactid>parent</artifactid>
+    <groupid>fr.iscpif.gridscale</groupid>
     <version>1.40</version>
