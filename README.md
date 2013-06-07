@@ -130,12 +130,11 @@ To submit a job on the biomed VO of the EGI grid:
       def voName = "biomed"
       def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
-      def lifeTime = 3600
+      def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
+      def password = "password"
     }.cache(3600).bind(wms.delegate)
     
-    implicit val cred = auth.init("pasword")
-     
     val jobDesc = new WMSJobDescription {
       def executable = "/bin/cat"
       def arguments = "testis"
@@ -160,16 +159,15 @@ To acces a storage of the biomed VO of the EGI grid:
     
     VOMSAuthentication.setCARepository(new File( "/path/to/authority/certificates/directory"))
     
-    val auth = new P12VOMSAuthentication {
+    implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
       def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
-      def lifeTime = 3600
+      def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
-    }
-  
-    implicit val proxy = auth.init("password")
+      def password = "password"
+    }.cache(3600)
     
     srm.listNames("/").foreach(println)
 
@@ -177,22 +175,21 @@ Submit a long running job with my proxy:
 
     VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
     
-    val auth = new P12VOMSAuthentication {
+    implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
       def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
-      def lifeTime = 3600
+      def lifeTime = 24 * 3600
       def certificate = new File("/home/reuillon/.globus/certificate.p12")
-    }
+    }.cache(3600)
   
-    implicit val proxy = auth.init("password")
     
     val myProxy = new MyProxy {
       def host = "myproxy.cern.ch"
     }
     
-    myProxy.delegate(proxy, 6000)
+    myProxy.delegate(auth(), 6000)
      
     val jobDesc = new WMSJobDescription {
       ...
