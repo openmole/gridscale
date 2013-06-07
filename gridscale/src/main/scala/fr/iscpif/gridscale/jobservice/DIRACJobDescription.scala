@@ -25,20 +25,20 @@ trait DIRACJobDescription extends JobDescription {
   def stdOut: Option[String] = None
   def stdErr: Option[String] = None
   def inputSandbox: Iterable[File]
-  def outputSandbox: Iterable[(String, File)]
+  //def outputSandbox: Iterable[(String, File)]
 
   def toJSON = {
 
     def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)).toSeq: _*)
-    def outputSandboxArray = JsArray(outputSandbox.map(f ⇒ JsString(f._1)).toSeq: _*)
+    //def outputSandboxArray = JsArray(outputSandbox.map(f ⇒ JsString(f._1)).toSeq: _*)
 
     val fields = Seq(
       "Executable" -> JsString(executable),
       "Arguments" -> JsString(arguments)) ++
       stdOut.map(s ⇒ "StdOut" -> JsString(s)) ++
       stdErr.map(s ⇒ "StdErr" -> JsString(s)) ++
-      (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++
-      (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
+      (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) //++
+    //(if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
 
     JsObject(fields: _*).compactPrint
   }

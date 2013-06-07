@@ -33,7 +33,7 @@ import java.util.zip.GZIPInputStream
 import scalax.io.Resource
 import org.apache.commons.compress.archivers.tar.{ TarArchiveInputStream, TarArchiveEntry }
 
-trait DIRACJobService extends DefaultTimeout {
+trait DIRACJobService extends JobService with DefaultTimeout {
 
   type A = HTTPSAuthentication
   type J = String
@@ -58,13 +58,18 @@ trait DIRACJobService extends DefaultTimeout {
       option(HttpOptions.connTimeout(timeout * 1000)).
       option(HttpOptions.readTimeout(timeout * 1000))
     def withToken(implicit credential: A) = r.param("access_token", tokenCache(credential).token)
+    def asStringChecked = {
+      val (responseCode, headersMap, resultString) = r.asHeadersAndParse(Http.readString)
+      if(responseCode != HttpURLConnection.HTTP_OK) throw new RuntimeException(s"Response code was $responseCode when to the request $r, message is $resultString")
+      resultString
+    }
   }
 
   lazy val tokenCache = new Cache[A, Token](token(_), (t: Token) ⇒ t.expires_in * 1000, tokenExpirationMargin)
 
   def token(implicit credential: A) = {
     val o =
-      Http(auth2Auth).param("response_type", "client_credentials").param("group", group).param("setup", setup).initialise.asString.asJson.asJsObject
+      Http(auth2Auth).param("response_type", "client_credentials").param("group", group).param("setup", setup).initialise.asStringChecked.asJson.asJsObject
     val f = o.getFields("token", "expires_in")
     Token(f(0).convertTo[String], f(1).convertTo[Long])
   }
@@ -77,12 +82,12 @@ trait DIRACJobService extends DefaultTimeout {
           try MultiPart(i.toString, f.getName, "text/plain", s.map(_.toByte).toArray)
           finally s.close
       }
-    val res = Http.multipart(jobs, files.toSeq: _*).withToken.param("manifest", jobDescription.toJSON).initialise.asString
+    val res = Http.multipart(jobs, files.toSeq: _*).withToken.param("manifest", jobDescription.toJSON).initialise.asStringChecked
     res.asJson.asJsObject.getFields("jids").head.toJson.convertTo[JsArray].elements.head.toString
   }
 
   def state(jobId: J)(implicit credential: A) = {
-    val res = Http(jobs + "/" + jobId).withToken.initialise.asString
+    val res = Http(jobs + "/" + jobId).withToken.initialise.asStringChecked
     res.asJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
       case "Received" ⇒ Submitted
       case "Checking" ⇒ Submitted
@@ -118,9 +123,8 @@ trait DIRACJobService extends DefaultTimeout {
   } */
 
   def cancel(jobId: J)(implicit credential: A) = {
-    val request = Http(jobs + "/" + jobId).copy(method = "DELETE").option(HttpOptions.method("DELETE")).withToken.initialise
-    println(request.method)
-    request.asString
+    val request = Http(jobs + "/" + jobId).option(HttpOptions.method("DELETE")).withToken.initialise
+    request.asStringChecked
   }
 
   def purge(job: J)(implicit credential: A) = {}
