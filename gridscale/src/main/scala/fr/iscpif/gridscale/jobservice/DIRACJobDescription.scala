@@ -20,19 +20,29 @@ package fr.iscpif.gridscale.jobservice
 import spray.json.{ JsArray, JsString, JsObject }
 import java.io.File
 
+object DIRACJobDescription {
+  val Linux_x86_64_glibc_2_11 = "Linux_x86_64_glibc-2.11"
+  val Linux_x86_64_glibc_2_12 = "Linux_x86_64_glibc-2.12"
+  val Linux_x86_64_glibc_2_5 = "Linux_x86_64_glibc-2.5"
+
+  val Linux_i686_glibc_2_34 = "Linux_i686_glibc-2.3.4"
+  val Linux_i686_glibc_2_5 = "Linux_i686_glibc-2.5"
+}
+
 trait DIRACJobDescription extends JobDescription {
 
   def stdOut: Option[String] = None
   def stdErr: Option[String] = None
-  def inputSandbox: Iterable[File]
+  def inputSandbox: Seq[File]
   //def outputSandbox: Iterable[(String, File)]
+  def platforms: Seq[String] = Seq.empty
 
   def cpuTime: Option[Int] = None
 
   def toJSON = {
-
-    def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)).toSeq: _*)
+    def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)): _*)
     //def outputSandboxArray = JsArray(outputSandbox.map(f ⇒ JsString(f._1)).toSeq: _*)
+    def platformsArray = JsArray(platforms.map(f ⇒ JsString(f)): _*)
 
     val fields = Seq(
       "Executable" -> JsString(executable),
@@ -40,7 +50,8 @@ trait DIRACJobDescription extends JobDescription {
       stdOut.map(s ⇒ "StdOut" -> JsString(s)) ++
       stdErr.map(s ⇒ "StdErr" -> JsString(s)) ++
       (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++ //++  (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
-      cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toString))
+      cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toString)) ++
+      (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None)
 
     JsObject(fields: _*).compactPrint
   }
