@@ -63,12 +63,24 @@ trait WMSJobService extends JobService with DefaultTimeout {
   type D = WMSJobDescription
 
   def url: URI
-  val delegationId = UUID.randomUUID.toString
-  def copyBufferSize = 64 * 1000
 
-  def delegate(credential: A) = {
+  def copyBufferSize = 64 * 1000
+  def delegationRenewal = 60 * 3600
+
+  lazy val delegationCache =
+    new Cache[A, String] {
+      def compute(k: A) = _delegate(k, get(k).getOrElse(UUID.randomUUID.toString))
+      def cacheTime(s: String) = Some(delegationRenewal * 1000)
+    }
+
+  def delegationId(implicit credential: A) = delegationCache(credential)
+
+  def delegate(credential: A) = delegationCache.forceRenewal(credential)
+
+  private def _delegate(credential: A, delegationId: String): String = {
     val req = grstStub(credential).getProxyReq(delegationId)
     serviceStub(credential).putProxy(delegationId, createProxyfromCertReq(req, proxyString(credential()._2)))
+    delegationId
   }
 
   def submit(desc: WMSJobDescription)(implicit credential: A) = {

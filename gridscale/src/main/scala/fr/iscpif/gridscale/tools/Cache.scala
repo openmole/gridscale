@@ -19,20 +19,31 @@ package fr.iscpif.gridscale.tools
 
 import scala.collection.mutable
 
-class Cache[K, T](f: K ⇒ T, cacheTime: T ⇒ Long, margin: Long) {
+trait Cache[K, T] {
+
+  def compute(k: K): T
+  def cacheTime(t: T): Option[Long]
+  def margin: Long = 0
 
   case class Cached(value: T, time: Long = System.currentTimeMillis) {
-    def expiresTime = time + cacheTime(value) - margin
+    def expiresTime = cacheTime(value).map(_ + time - margin).getOrElse(Long.MaxValue)
   }
 
   @transient val cache = new mutable.WeakHashMap[K, Cached]
 
   def apply(k: K): T = synchronized {
     if (!cache.contains(k) || cache(k).expiresTime < System.currentTimeMillis) {
-      val v = f(k)
+      val v = compute(k)
       cache(k) = Cached(v)
       v
     } else cache(k).value
+  }
+
+  def get(k: K) = cache.get(k).map(_.value)
+
+  def forceRenewal(k: K) = {
+    cache.remove(k)
+    apply(k)
   }
 
 }

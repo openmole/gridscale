@@ -31,15 +31,8 @@ package object authentication {
     }
   }
 
-  def bind[T](f: () ⇒ T)(b: (() ⇒ T) ⇒ Unit): () ⇒ T =
-    () ⇒ {
-      b(f)
-      f()
-    }
-
   implicit class RenewDecoder[T](f: () ⇒ T) {
     def cache(time: Long) = authentication.cache[T](f)(time)
-    def bind(b: (() ⇒ T) ⇒ Unit): () ⇒ T = authentication.bind(f)(b)
   }
 
 }

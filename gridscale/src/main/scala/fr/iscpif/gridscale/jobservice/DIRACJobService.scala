@@ -65,7 +65,12 @@ trait DIRACJobService extends JobService with DefaultTimeout {
     }
   }
 
-  lazy val tokenCache = new Cache[A, Token](token(_), (t: Token) ⇒ t.expires_in * 1000, tokenExpirationMargin)
+  lazy val tokenCache =
+    new Cache[A, Token] {
+      def compute(k: A) = token(k)
+      def cacheTime(t: Token) = Some(t.expires_in * 1000)
+      override def margin = tokenExpirationMargin
+    }
 
   def token(implicit credential: A) = {
     val o =
