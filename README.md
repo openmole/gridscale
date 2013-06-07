@@ -133,7 +133,7 @@ To submit a job on the biomed VO of the EGI grid:
       def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
       def password = "password"
-    }.cache(3600).bind(wms.delegate)
+    }.cache(3600)
     
     val jobDesc = new WMSJobDescription {
       def executable = "/bin/cat"
