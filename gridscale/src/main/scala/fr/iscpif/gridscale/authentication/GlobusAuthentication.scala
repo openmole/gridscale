@@ -24,6 +24,4 @@ object GlobusAuthentication {
   type Proxy = (GlobusGSSCredentialImpl, File)
 }
 
-trait GlobusAuthentication extends (() ⇒ GlobusAuthentication.Proxy) {
-
-}
+trait GlobusAuthentication extends (() ⇒ GlobusAuthentication.Proxy)

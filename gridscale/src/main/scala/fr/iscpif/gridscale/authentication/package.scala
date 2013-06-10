@@ -31,7 +31,7 @@ package object authentication {
     }
   }
 
-  implicit class RenewDecoder[T](f: () ⇒ T) {
+  implicit class RenewDecorator[T](f: () ⇒ T) {
     def cache(time: Long) = authentication.cache[T](f)(time)
   }
 
