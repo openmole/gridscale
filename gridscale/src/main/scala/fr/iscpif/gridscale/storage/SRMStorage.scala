@@ -304,7 +304,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   private def stub(implicit credential: A) = {
     val stub = locator.getsrm(serviceUrl)
-    stub.asInstanceOf[Stub]._setProperty(GSIConstants.GSI_CREDENTIALS, credential)
+    stub.asInstanceOf[Stub]._setProperty(GSIConstants.GSI_CREDENTIALS, credential()._1)
     stub.asInstanceOf[Stub].setTimeout(timeout * 1000)
     stub
   }
