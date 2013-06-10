@@ -70,7 +70,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   SRMStorage.init
 
-  type A = GlobusAuthentication
+  type A = () ⇒ GlobusAuthentication.Proxy
 
   def host: String
   def port: Int

@@ -59,7 +59,7 @@ import WMSJobService._
 
 trait WMSJobService extends JobService with DefaultTimeout {
   type J = WMSJobId
-  type A = GlobusAuthentication
+  type A = () ⇒ GlobusAuthentication.Proxy
   type D = WMSJobDescription
 
   def url: URI
