@@ -231,4 +231,4 @@ gridscale depend on the 2.10 version of scala. we intend to switch to sbt and s
 
     <artifactid>parent</artifactid>
     <groupid>fr.iscpif.gridscale</groupid>
-    <version>1.40</version>
+    <version>1.41</version>
