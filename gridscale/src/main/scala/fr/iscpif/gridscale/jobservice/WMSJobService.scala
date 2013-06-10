@@ -45,7 +45,7 @@ import org.globus.io.streams.GridFTPOutputStream
 import scala.io.Source
 import fr.iscpif.gridscale.storage.SRMStorage
 import fr.iscpif.gridscale.tools._
-import fr.iscpif.gridscale.authentication.VOMSAuthentication
+import fr.iscpif.gridscale.authentication.{ GlobusAuthentication, VOMSAuthentication }
 import fr.iscpif.gridscale.DefaultTimeout
 
 object WMSJobService {
@@ -59,7 +59,7 @@ import WMSJobService._
 
 trait WMSJobService extends JobService with DefaultTimeout {
   type J = WMSJobId
-  type A = () ⇒ VOMSAuthentication.Proxy
+  type A = GlobusAuthentication
   type D = WMSJobDescription
 
   def url: URI

@@ -43,7 +43,7 @@ import collection.JavaConversions._
 import java.util.concurrent.TimeoutException
 import org.globus.gsi.gssapi.auth.HostAuthorization
 import org.globus.io.streams._
-import fr.iscpif.gridscale.authentication.VOMSAuthentication
+import fr.iscpif.gridscale.authentication.{ GlobusAuthentication, VOMSAuthentication }
 
 object SRMStorage {
 
@@ -70,7 +70,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   SRMStorage.init
 
-  type A = () ⇒ VOMSAuthentication.Proxy
+  type A = GlobusAuthentication
 
   def host: String
   def port: Int

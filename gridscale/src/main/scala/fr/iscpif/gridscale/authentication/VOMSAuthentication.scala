@@ -37,11 +37,9 @@ object VOMSAuthentication {
     System.setProperty("CADIR", directory.getAbsolutePath)
   }
 
-  type Proxy = (GlobusGSSCredentialImpl, File)
-
 }
 
-trait VOMSAuthentication extends (() ⇒ VOMSAuthentication.Proxy) {
+trait VOMSAuthentication extends GlobusAuthentication {
 
   def serverURL: String
   def voName: String
