@@ -22,6 +22,7 @@ import java.io.File
 
 object GlobusAuthentication {
   type Proxy = (GlobusGSSCredentialImpl, File)
+  type ProxyCreator = () ⇒ Proxy
 }
 
-trait GlobusAuthentication extends (() ⇒ GlobusAuthentication.Proxy)
+trait GlobusAuthentication extends GlobusAuthentication.ProxyCreator
