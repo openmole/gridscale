@@ -44,6 +44,7 @@ import java.util.concurrent.TimeoutException
 import org.globus.gsi.gssapi.auth.HostAuthorization
 import org.globus.io.streams._
 import fr.iscpif.gridscale.authentication.{ GlobusAuthentication, VOMSAuthentication }
+import com.sun.org.apache.xalan.internal.templates.Constants
 
 object SRMStorage {
 
@@ -82,6 +83,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   def SERVICE_PROTOCOL = "httpg"
   def SERVICE_PATH = "/srm/managerv2"
   def transferProtocols = Array("gsiftp")
+  def permissive = false
 
   def version(implicit credential: A) = stub.srmPing(new SrmPingRequest).getVersionInfo
 
@@ -138,6 +140,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     request.setSURL(uri)
     val requestStatus = stub.srmMkdir(request)
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
+    if(permissive) allowAllPermissions(path)
   }
 
   def rmEmptyDir(path: String)(implicit credential: A) = {
@@ -166,6 +169,21 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     request.setToSURL(toURI)
     val requestStatus = stub.srmMv(request)
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
+    if(permissive) allowAllPermissions(to)
+  }
+
+  def allowAllPermissions(path: String)(implicit authentication: A) = {
+    val uri = this.toSrmURI(path)
+    val request = new SrmSetPermissionRequest
+
+    request.setSURL(uri)
+
+    request.setPermissionType(TPermissionType.CHANGE)
+    request.setOwnerPermission(TPermissionMode.RWX)
+    request.setOtherPermission(TPermissionMode.RWX)
+
+    val requestStatus = stub.srmSetPermission(request)
+    if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
   protected def _openInputStream(path: String)(implicit credential: A) = {
@@ -186,6 +204,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
       override def close = {
         try freeOutputStream(token, path)
         finally super.close
+        if(permissive) allowAllPermissions(path)
       }
     }
   }

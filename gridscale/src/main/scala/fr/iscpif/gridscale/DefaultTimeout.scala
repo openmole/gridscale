@@ -18,5 +18,5 @@
 package fr.iscpif.gridscale
 
 trait DefaultTimeout {
-  def timeout = 30
+  def timeout = 60
 }
