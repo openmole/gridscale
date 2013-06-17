@@ -140,7 +140,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     request.setSURL(uri)
     val requestStatus = stub.srmMkdir(request)
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
-    if(permissive) allowAllPermissions(path)
+    if (permissive) allowAllPermissions(path)
   }
 
   def rmEmptyDir(path: String)(implicit credential: A) = {
@@ -169,7 +169,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     request.setToSURL(toURI)
     val requestStatus = stub.srmMv(request)
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
-    if(permissive) allowAllPermissions(to)
+    if (permissive) allowAllPermissions(to)
   }
 
   def allowAllPermissions(path: String)(implicit authentication: A) = {
@@ -204,7 +204,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
       override def close = {
         try freeOutputStream(token, path)
         finally super.close
-        if(permissive) allowAllPermissions(path)
+        if (permissive) allowAllPermissions(path)
       }
     }
   }
