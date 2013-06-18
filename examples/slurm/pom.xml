@@ -6,7 +6,14 @@
     <groupId>fr.iscpif.gridscale</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
-  <artifactId>slurm-gridscale-example</artifactId>
+  <artifactId>slurm-example</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>fr.iscpif.gridscale</groupId>
+      <artifactId>slurm</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+  </dependencies>
   <build>
     <plugins>
       <plugin>

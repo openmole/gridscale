@@ -9,6 +9,12 @@
   <modules>
     <module>libraries</module>
     <module>gridscale</module>
+    <module>gridscale-dirac</module>
+    <module>gridscale-glite</module>
+    <module>gridscale-http</module>
+    <module>gridscale-pbs</module>
+    <module>gridscale-ssh</module>
+    <module>gridscale-slurm</module>
     <module>examples</module>
   </modules>
   <scm>
@@ -27,6 +33,7 @@
     </snapshotRepository>
   </distributionManagement>
   <properties>
+    <lib.sshj.version>0.9.0-20121212</lib.sshj.version>
     <lib.org.jglobus.version>2.1-20130610</lib.org.jglobus.version>
     <lib.org.scala-lang.scala.version>2.10.2</lib.org.scala-lang.scala.version>
     <scala.major.version>2.10</scala.major.version>
@@ -84,6 +91,23 @@
           </execution>
         </executions>
       </plugin>-->
+      <plugin>
+        <groupId>org.scalariform</groupId>
+        <artifactId>scalariform-maven-plugin</artifactId>
+        <version>0.1.3</version>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>format</goal>
+            </goals>
+            <configuration>
+              <rewriteArrowSymbols>true</rewriteArrowSymbols>
+              <alignParameters>true</alignParameters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>com.google.code.sortpom</groupId>
         <artifactId>maven-sortpom-plugin</artifactId>
