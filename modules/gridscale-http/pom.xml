@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>parent</artifactId>
+    <artifactId>modules</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
-  <artifactId>dirac</artifactId>
+  <artifactId>http</artifactId>
   <packaging>jar</packaging>
   <properties>
     <skipTests>true</skipTests>
@@ -18,14 +18,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.spray</groupId>
-      <artifactId>spray-json_${scala.major.version}</artifactId>
-      <version>1.2.5</version>
-    </dependency>
-    <dependency>
-      <groupId>org.scalaj</groupId>
-      <artifactId>scalaj-http_${scala.major.version}</artifactId>
-      <version>0.3.7</version>
+      <groupId>org.htmlparser</groupId>
+      <artifactId>htmlparser</artifactId>
+      <version>2.1</version>
     </dependency>
   </dependencies>
 </project>

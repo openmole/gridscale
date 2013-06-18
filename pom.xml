@@ -8,13 +8,8 @@
   <name>${project.artifactId} ${project.version}</name>
   <modules>
     <module>libraries</module>
-    <module>gridscale</module>
-    <module>gridscale-dirac</module>
-    <module>gridscale-glite</module>
-    <module>gridscale-http</module>
-    <module>gridscale-pbs</module>
-    <module>gridscale-ssh</module>
-    <module>gridscale-slurm</module>
+    <module>modules</module>
+    <module>bundles</module>
     <module>examples</module>
   </modules>
   <scm>
@@ -41,13 +36,6 @@
     <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-  <dependencies>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${lib.org.scala-lang.scala.version}</version>
-    </dependency>
-  </dependencies>
   <repositories>
     <repository>
       <id>iscpif</id>
@@ -62,52 +50,6 @@
   </repositories>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>${maven.scala.plugin.version}</version>
-        <executions>
-          <execution>
-            <id>scala-compile-first</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>add-source</goal>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <!--<plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>-->
-      <plugin>
-        <groupId>org.scalariform</groupId>
-        <artifactId>scalariform-maven-plugin</artifactId>
-        <version>0.1.3</version>
-        <executions>
-          <execution>
-            <phase>process-sources</phase>
-            <goals>
-              <goal>format</goal>
-            </goals>
-            <configuration>
-              <rewriteArrowSymbols>true</rewriteArrowSymbols>
-              <alignParameters>true</alignParameters>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>com.google.code.sortpom</groupId>
         <artifactId>maven-sortpom-plugin</artifactId>

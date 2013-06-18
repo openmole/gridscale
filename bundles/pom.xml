@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>parent</artifactId>
+    <groupId>fr.iscpif.gridscale</groupId>
+    <version>1.47-SNAPSHOT</version>
+  </parent>
+  <artifactId>bundles</artifactId>
+  <packaging>pom</packaging>
+  <name>${project.artifactId} ${project.version}</name>
+  <modules>
+    <module>gridscale</module>
+    <module>gridscale-ssh</module>
+    <module>gridscale-glite</module>
+    <module>gridscale-dirac</module>
+    <module>gridscale-http</module>
+    <module>gridscale-pbs</module>
+    <module>gridscale-slurm</module>
+  </modules>
+  <properties>
+    <!-- Default properties for bundles creation -->
+    <!--<embed-dep>*;type=!pom;inline=true</embed7-dep>-->
+    <not.embeded.deb />
+    <embed-dep>*;artifactId=!scala-library|slf4j-api|log4j|commons-logging${not.embeded.deb};scope=compile|runtime;type=!pom;inline=true</embed-dep>
+    <embed-transitive>true</embed-transitive>
+    <bundle.name>${project.name}</bundle.name>
+    <bundle.description>${project.name}</bundle.description>
+    <bundle.classpath>.</bundle.classpath>
+    <import.packages>*;resolution:=optional</import.packages>
+    <bundle.version>${project.version}</bundle.version>
+    <export.packages>${bundle.namespace}.*;version="${bundle.version}"</export.packages>
+    <bundle.activationpolicy>lazy</bundle.activationpolicy>
+  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.3.7</version>
+        <extensions>true</extensions>
+        <configuration>
+          <!--<manifestLocation>target/META-INF</manifestLocation>-->
+          <finalName>${symbolic.name}_${bundle.version}</finalName>
+          <instructions>
+            <Bundle-Name>${bundle.name}</Bundle-Name>
+            <Bundle-SymbolicName>${symbolic.name}</Bundle-SymbolicName>
+            <Bundle-Version>${bundle.version}</Bundle-Version>
+            <Bundle-Description>${bundle.description}</Bundle-Description>
+            <Import-Package>${import.packages}</Import-Package>
+            <Export-Package>${export.packages}</Export-Package>
+            <Embed-Transitive>${embed-transitive}</Embed-Transitive>
+            <Embed-Dependency>${embed-dep}</Embed-Dependency>
+            <Eclipse-BuddyPolicy>${eclipse.buddypolicy}</Eclipse-BuddyPolicy>
+            <Bundle-Activator>${bundle.activator}</Bundle-Activator>
+            <Bundle-ActivationPolicy>${bundle.activationpolicy}</Bundle-ActivationPolicy>
+            <Bundle-ClassPath>${bundle.classpath}</Bundle-ClassPath>
+            <_include>${include}</_include>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

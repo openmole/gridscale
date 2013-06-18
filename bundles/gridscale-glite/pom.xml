@@ -2,25 +2,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>parent</artifactId>
+    <artifactId>bundles</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
-  <artifactId>ssh</artifactId>
-  <packaging>jar</packaging>
+  <artifactId>glite-bundle</artifactId>
+  <packaging>bundle</packaging>
   <properties>
-    <skipTests>true</skipTests>
+    <bundle.namespace>fr.iscpif.gridscale.glite</bundle.namespace>
+    <export.packages>${bundle.namespace}.*,org.glite.*,org.globus.*,org.ogf.*</export.packages>
+    <bundle.classpath>bcprov-jdk16-1.46.jar,.</bundle.classpath>
+    <embed-dep>*;groupId=org.bouncycastle,*;artifactId=!scala-library|guava|commons-logging|log4j|slf4j-api|gridscale;scope=compile|runtime;type=!pom;inline=true</embed-dep>
   </properties>
   <dependencies>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
-      <artifactId>gridscale</artifactId>
+      <artifactId>glite</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>net.schmizz</groupId>
-      <artifactId>sshj</artifactId>
-      <version>${lib.sshj.version}</version>
     </dependency>
   </dependencies>
 </project>

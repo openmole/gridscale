@@ -6,10 +6,17 @@
     <groupId>fr.iscpif.gridscale</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
-  <artifactId>examples</artifactId>
+  <artifactId>modules</artifactId>
   <packaging>pom</packaging>
+  <name>${project.artifactId} ${project.version}</name>
   <modules>
-    <module>slurm</module>
+    <module>gridscale</module>
+    <module>gridscale-dirac</module>
+    <module>gridscale-glite</module>
+    <module>gridscale-http</module>
+    <module>gridscale-pbs</module>
+    <module>gridscale-ssh</module>
+    <module>gridscale-slurm</module>
   </modules>
   <dependencies>
     <dependency>
@@ -18,9 +25,16 @@
       <version>${lib.org.scala-lang.scala.version}</version>
     </dependency>
     <dependency>
-      <groupId>fr.iscpif.gridscale</groupId>
-      <artifactId>gridscale</artifactId>
-      <version>${project.parent.version}</version>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${scala.major.version}</artifactId>
+      <version>2.0.M5b</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
@@ -57,6 +71,17 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.12</version>
+        <configuration>
+          <includes>
+            <include>**/*Spec.class</include>
+          </includes>
+          <skipTests>${skipTests}</skipTests>
+        </configuration>
       </plugin>
     </plugins>
   </build>

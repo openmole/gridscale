@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>parent</artifactId>
+    <artifactId>modules</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
@@ -21,18 +21,6 @@
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>ssh</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.major.version}</artifactId>
-      <version>2.0.M5b</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
