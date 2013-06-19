@@ -3,14 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>bundles</artifactId>
-    <groupId>fr.iscpif.gridscale</groupId>
+    <groupId>fr.iscpif.gridscale.bundle</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
-  <artifactId>glite-bundle</artifactId>
+  <artifactId>fr.iscpif.gridscale.glite</artifactId>
   <packaging>bundle</packaging>
   <properties>
-    <bundle.namespace>fr.iscpif.gridscale.glite</bundle.namespace>
-    <export.packages>${bundle.namespace}.*,org.glite.*,org.globus.*,org.ogf.*</export.packages>
+    <export.packages>${bundle.name}.*,org.glite.*,org.globus.*,org.ogf.*</export.packages>
     <bundle.classpath>bcprov-jdk16-1.46.jar,.</bundle.classpath>
     <embed-dep>*;groupId=org.bouncycastle,*;artifactId=!scala-library|guava|commons-logging|log4j|slf4j-api|gridscale;scope=compile|runtime;type=!pom;inline=true</embed-dep>
   </properties>

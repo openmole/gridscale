@@ -6,6 +6,7 @@
     <groupId>fr.iscpif.gridscale</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
+  <groupId>fr.iscpif.gridscale.bundle</groupId>
   <artifactId>bundles</artifactId>
   <packaging>pom</packaging>
   <name>${project.artifactId} ${project.version}</name>
@@ -19,18 +20,16 @@
     <module>gridscale-slurm</module>
   </modules>
   <properties>
-    <!-- Default properties for bundles creation -->
-    <!--<embed-dep>*;type=!pom;inline=true</embed7-dep>-->
     <not.embeded.deb />
     <embed-dep>*;artifactId=!scala-library|slf4j-api|log4j|commons-logging${not.embeded.deb};scope=compile|runtime;type=!pom;inline=true</embed-dep>
     <embed-transitive>true</embed-transitive>
-    <bundle.name>${bundle.namespace}</bundle.name>
+    <bundle.name>${project.artifactId}</bundle.name>
     <symbolic.name>${bundle.name}</symbolic.name>
-    <bundle.description>${project.name}</bundle.description>
+    <bundle.description>${bundle.name}</bundle.description>
     <bundle.classpath>.</bundle.classpath>
     <import.packages>*;resolution:=optional</import.packages>
     <bundle.version>${project.version}</bundle.version>
-    <export.packages>${bundle.namespace}.*;version="${bundle.version}"</export.packages>
+    <export.packages>${bundle.name}.*;version="${bundle.version}"</export.packages>
     <bundle.activationpolicy>lazy</bundle.activationpolicy>
   </properties>
   <build>

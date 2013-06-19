@@ -3,13 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>bundles</artifactId>
-    <groupId>fr.iscpif.gridscale</groupId>
+    <groupId>fr.iscpif.gridscale.bundle</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
-  <artifactId>slurm-bundle</artifactId>
+  <artifactId>fr.iscpif.gridscale.slurm</artifactId>
   <packaging>bundle</packaging>
   <properties>
-    <bundle.namespace>fr.iscpif.gridscale.slurm</bundle.namespace>
     <not.embeded.deb>|gridscale|ssh|sshj</not.embeded.deb>
   </properties>
   <dependencies>

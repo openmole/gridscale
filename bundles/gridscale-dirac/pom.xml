@@ -3,14 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>bundles</artifactId>
-    <groupId>fr.iscpif.gridscale</groupId>
+    <groupId>fr.iscpif.gridscale.bundle</groupId>
     <version>1.47-SNAPSHOT</version>
   </parent>
-  <artifactId>dirac-bundle</artifactId>
+  <artifactId>fr.iscpif.gridscale.dirac</artifactId>
   <packaging>bundle</packaging>
   <properties>
     <not.embeded.deb>|gridscale</not.embeded.deb>
-    <bundle.namespace>fr.iscpif.gridscale.dirac</bundle.namespace>
   </properties>
   <dependencies>
     <dependency>
