@@ -18,10 +18,11 @@
     <module>gridscale-http</module>
     <module>gridscale-pbs</module>
     <module>gridscale-slurm</module>
+    <module>bouncycastle</module>
   </modules>
   <properties>
     <not.embeded.deb />
-    <embed-dep>*;artifactId=!scala-library|slf4j-api|log4j|commons-logging${not.embeded.deb};scope=compile|runtime;type=!pom;inline=true</embed-dep>
+    <embed-dep>*;artifactId=!scala-library|slf4j-api|log4j|commons-logging${not.embeded.deb};groupId=!fr.iscpif.gridscale.bundle;scope=compile|runtime;type=!pom;inline=true</embed-dep>
     <embed-transitive>true</embed-transitive>
     <bundle.name>${project.artifactId}</bundle.name>
     <symbolic.name>${bundle.name}</symbolic.name>

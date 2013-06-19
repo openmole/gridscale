@@ -10,13 +10,17 @@
   <packaging>bundle</packaging>
   <properties>
     <export.packages>${bundle.name}.*,org.glite.*,org.globus.*,org.ogf.*</export.packages>
-    <bundle.classpath>bcprov-jdk16-1.46.jar,.</bundle.classpath>
-    <embed-dep>*;groupId=org.bouncycastle,*;artifactId=!scala-library|guava|commons-logging|log4j|slf4j-api|gridscale;scope=compile|runtime;type=!pom;inline=true</embed-dep>
+    <not.embeded.deb>|gridscale|bcprov-jdk16</not.embeded.deb>
   </properties>
   <dependencies>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>fr.iscpif.gridscale.bundle</groupId>
+      <artifactId>org.bouncycastle</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
