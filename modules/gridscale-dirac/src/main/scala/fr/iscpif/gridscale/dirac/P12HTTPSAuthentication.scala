@@ -15,13 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale
+package fr.iscpif.gridscale.dirac
 
 import javax.net.ssl._
 import java.net.URL
 import java.security.cert.X509Certificate
 import java.io.{ FileInputStream, File }
 import java.security.KeyStore
+import fr.iscpif.gridscale.{P12Authentication, HTTPSAuthentication}
 
 trait P12HTTPSAuthentication extends HTTPSAuthentication with P12Authentication {
 
