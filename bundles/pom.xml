@@ -24,7 +24,8 @@
     <not.embeded.deb />
     <embed-dep>*;artifactId=!scala-library|slf4j-api|log4j|commons-logging${not.embeded.deb};scope=compile|runtime;type=!pom;inline=true</embed-dep>
     <embed-transitive>true</embed-transitive>
-    <bundle.name>${project.name}</bundle.name>
+    <bundle.name>${bundle.namespace}</bundle.name>
+    <symbolic.name>${bundle.name}</symbolic.name>
     <bundle.description>${project.name}</bundle.description>
     <bundle.classpath>.</bundle.classpath>
     <import.packages>*;resolution:=optional</import.packages>
