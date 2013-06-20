@@ -35,7 +35,10 @@ trait SSHConnectionCache <: SSHHost {
   }
 
   override def getConnection(implicit authentication: SSHAuthentication) = synchronized {
-    connections.headOption.map(_.client).getOrElse(connect)
+    connections match {
+      case h :: t => connections = t; h.client
+      case Nil => connect
+    }
   }
 
   override def release(c: SSHClient) = synchronized {
@@ -44,7 +47,7 @@ trait SSHConnectionCache <: SSHHost {
   }
 
   def clean = synchronized {
-    val (keep, discard) = connections.partition(_.lastUsed + connectionKeepAlive > System.currentTimeMillis)
+    val (keep, discard) = connections.partition(_.lastUsed + connectionKeepAlive * 1000 > System.currentTimeMillis)
     discard.foreach(_.client.close)
     connections = keep
   }
