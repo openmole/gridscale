@@ -23,7 +23,6 @@ import net.schmizz.sshj.SSHClient
 trait SSHConnectionCache <: SSHHost {
 
   def connectionKeepAlive: Long
-  def maxConnections: Int
 
   case class CacheLine(client: SSHClient, lastUsed: Long = System.currentTimeMillis)
 
@@ -40,6 +39,7 @@ trait SSHConnectionCache <: SSHHost {
   }
 
   override def release(c: SSHClient) = synchronized {
+    clean
     if (c.isAuthenticated && c.isConnected) connections = CacheLine(c) :: connections
   }
 
