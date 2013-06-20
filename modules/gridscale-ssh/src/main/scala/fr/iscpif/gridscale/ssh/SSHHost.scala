@@ -30,13 +30,14 @@ trait SSHHost extends DefaultTimeout {
   def host: String
   def port: Int = 22
 
-  def connectionCache = ConnectionCache.default
-
   def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication) = {
-    val connection = connectionCache.cached(this)
-    try f(connection.get)
-    finally connectionCache.release(connection)
+    val connection = getConnection
+    try f(connection)
+    finally release(connection)
   }
+
+  def getConnection(implicit authentication: SSHAuthentication) = connect
+  def release(c: SSHClient) = c.close
 
   def connect(implicit authentication: SSHAuthentication) = {
     val ssh = new SSHClient
