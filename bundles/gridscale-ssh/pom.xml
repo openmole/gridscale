@@ -9,7 +9,7 @@
   <artifactId>fr.iscpif.gridscale.ssh</artifactId>
   <packaging>bundle</packaging>
   <properties>
-    <export.packages>${bundle.name}.*;version="${bundle.version}",net.schmizz.ssh.*;"${lib.sshj.version}"</export.packages>
+    <export.packages>${bundle.name}.*;version="${bundle.version}",net.schmizz.sshj.*;"${lib.sshj.version}"</export.packages>
     <not.embeded.deb>|gridscale|bcprov-jdk16</not.embeded.deb>
   </properties>
   <dependencies>

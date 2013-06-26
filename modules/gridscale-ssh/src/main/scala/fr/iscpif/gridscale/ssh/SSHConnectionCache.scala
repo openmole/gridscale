@@ -17,16 +17,11 @@
 
 package fr.iscpif.gridscale.ssh
 
-import net.schmizz.sshj.connection.{ ConnectionException, Connection }
 import net.schmizz.sshj.SSHClient
+import java.util.concurrent.Executors
 
 trait SSHConnectionCache <: SSHHost {
-
-  def connectionKeepAlive: Long
-
-  case class CacheLine(client: SSHClient, lastUsed: Long = System.currentTimeMillis)
-
-  @transient private var connections = List.empty[CacheLine]
+  @transient private var connection: Option[SSHClient] = None
 
   override def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication): T = {
     val c = getConnection
@@ -35,23 +30,26 @@ trait SSHConnectionCache <: SSHHost {
   }
 
   override def getConnection(implicit authentication: SSHAuthentication) = synchronized {
-    connections match {
-      case h :: t => connections = t; h.client
-      case Nil => connect
+    def updateConnection = {
+      val newC = connect
+      connection = Some(newC)
+      newC
+    }
+
+    connection match {
+      case Some(c) ⇒
+        if (c.isAuthenticated && c.isConnected) c
+        else updateConnection
+      case None ⇒ updateConnection
     }
   }
 
-  override def release(c: SSHClient) = synchronized {
-    clean
-    if (c.isAuthenticated && c.isConnected) connections = CacheLine(c) :: connections
-  }
+  override def release(c: SSHClient) = {}
 
-  def clean = synchronized {
-    val (keep, discard) = connections.partition(_.lastUsed + connectionKeepAlive * 1000 > System.currentTimeMillis)
-    discard.foreach(_.client.close)
-    connections = keep
+  override def finalize = {
+    Executors.newSingleThreadExecutor.submit(new Runnable {
+      def run = connection.foreach(_.close)
+    })
   }
-
-  override def finalize = connections.foreach(_.client.close)
 
 }
