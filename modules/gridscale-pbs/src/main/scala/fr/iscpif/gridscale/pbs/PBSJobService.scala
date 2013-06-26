@@ -33,6 +33,8 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
   type J = PBSJob
   type D = PBSJobDescription
 
+  def sourceBashRC = "source ~/.bashrc ; "
+
   def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
     withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
     val outputStream = openOutputStream(pbsScriptPath(description))
@@ -40,31 +42,34 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
     finally outputStream.close
 
     withSession(c) { session ⇒
-      val (ret, jobId) = execReturnCodeOutput(session, "cd " + description.workDirectory + " ; qsub " + description.uniqId + ".pbs")
-      if (ret != 0 || jobId == null) throw new RuntimeException("qsub did not return a JobID")
+      val command = sourceBashRC + "cd " + description.workDirectory + " && qsub " + description.uniqId + ".pbs"
+      val (ret, jobId) = execReturnCodeOutput(session, command)
+      if (ret != 0) throw new RuntimeException(s"Return code was $ret, expecting 0 when running: $command")
+      if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
       new PBSJob(description, jobId)
     }
   }
 
   def state(job: J)(implicit credential: A): JobState = withConnection(withSession(_) { session ⇒
-    val command = "qstat -f -1 " + job.pbsId
+    val command = sourceBashRC + "qstat -f " + job.pbsId
 
     val (ret, output) = execReturnCodeOutput(session, command)
 
-    if (ret == 153) Done
-    else {
-      val lines = output.split("\n").map(_.trim)
-
-      val state = lines.filter(_.matches(".*=.*")).map {
-        prop ⇒
-          val splited = prop.split('=')
-          splited(0).trim.toUpperCase -> splited(1).trim
-      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output."))
-      translateStatus(ret, state)
+    ret.toInt match {
+      case 153 => Done
+      case 0 =>
+        val lines = output.split("\n").map(_.trim)
+        val state = lines.filter(_.matches(".*=.*")).map {
+          prop ⇒
+            val splited = prop.split('=')
+            splited(0).trim.toUpperCase -> splited(1).trim
+        }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output: " + output))
+        translateStatus(ret, state)
+      case r => throw new RuntimeException(s"Unexpected return code $r for command: $command")
     }
   })
 
-  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, "qdel " + job.pbsId) })
+  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, sourceBashRC + "qdel " + job.pbsId) })
 
   //Purge output error job script
   def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒

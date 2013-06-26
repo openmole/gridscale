@@ -25,6 +25,8 @@ import fr.iscpif.gridscale._
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒
 
+  def unconfirmedExchanges = 10
+
   def home(implicit authentication: A) = withSftpClient {
     _.canonicalize(".")
   }
@@ -147,7 +149,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
       finally close
     }
 
-    new fileHandle.RemoteFileOutputStream {
+    new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges) {
       override def close = {
         try closeAll
         finally super.close

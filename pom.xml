@@ -28,7 +28,7 @@
     </snapshotRepository>
   </distributionManagement>
   <properties>
-    <lib.sshj.version>0.9.0-20121212</lib.sshj.version>
+    <lib.sshj.version>0.9-20130626</lib.sshj.version>
     <lib.org.jglobus.version>2.1-20130610</lib.org.jglobus.version>
     <lib.org.scala-lang.scala.version>2.10.2</lib.org.scala-lang.scala.version>
     <scala.major.version>2.10</scala.major.version>
