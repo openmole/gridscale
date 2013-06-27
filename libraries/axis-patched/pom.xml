@@ -4,10 +4,10 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.47</version>
+    <version>1.48-SNAPSHOT</version>
   </parent>
   <artifactId>axis-patched</artifactId>
-  <version>1.47</version>
+  <version>1.48-SNAPSHOT</version>
   <build>
     <plugins>
       <plugin>
