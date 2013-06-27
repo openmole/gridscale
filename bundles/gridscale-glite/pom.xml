@@ -4,7 +4,7 @@
   <parent>
     <artifactId>bundles</artifactId>
     <groupId>fr.iscpif.gridscale.bundle</groupId>
-    <version>1.47-SNAPSHOT</version>
+    <version>1.47</version>
   </parent>
   <artifactId>fr.iscpif.gridscale.glite</artifactId>
   <packaging>bundle</packaging>
