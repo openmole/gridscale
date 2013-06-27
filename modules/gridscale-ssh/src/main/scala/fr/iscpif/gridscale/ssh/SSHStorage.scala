@@ -25,7 +25,7 @@ import fr.iscpif.gridscale._
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒
 
-  def unconfirmedExchanges = 10
+  def unconfirmedExchanges = 5
 
   def home(implicit authentication: A) = withSftpClient {
     _.canonicalize(".")
