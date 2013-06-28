@@ -10,6 +10,7 @@
   <packaging>pom</packaging>
   <modules>
     <module>slurm</module>
+    <module>glite</module>
   </modules>
   <dependencies>
     <dependency>
