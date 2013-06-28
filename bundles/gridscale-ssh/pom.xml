@@ -4,7 +4,7 @@
   <parent>
     <artifactId>bundles</artifactId>
     <groupId>fr.iscpif.gridscale.bundle</groupId>
-    <version>1.48</version>
+    <version>1.49-SNAPSHOT</version>
   </parent>
   <artifactId>fr.iscpif.gridscale.ssh</artifactId>
   <packaging>bundle</packaging>
