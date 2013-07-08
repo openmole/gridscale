@@ -35,7 +35,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.statExistence(path) != null
   }
 
-  def list(path: String)(implicit authentication: A) = withSftpClient {
+  def _list(path: String)(implicit authentication: A) = withSftpClient {
     listWithClient(path) _
   }
 
@@ -52,11 +52,11 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     }
   }
 
-  def makeDir(path: String)(implicit authentication: A) = withSftpClient {
+  def _makeDir(path: String)(implicit authentication: A) = withSftpClient {
     _.mkdir(path)
   }
 
-  def rmDir(path: String)(implicit authentication: A) = withSftpClient {
+  def _rmDir(path: String)(implicit authentication: A) = withSftpClient {
     rmDirWithClient(path) _
   }
 
@@ -73,11 +73,11 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rmdir(path)
   }
 
-  def rmFile(path: String)(implicit authentication: A) = withSftpClient {
+  def _rmFile(path: String)(implicit authentication: A) = withSftpClient {
     rmFileWithClient(path) _
   }
 
-  def mv(from: String, to: String)(implicit authentication: A) = withSftpClient {
+  def _mv(from: String, to: String)(implicit authentication: A) = withSftpClient {
     _.rename(from, to)
   }
 

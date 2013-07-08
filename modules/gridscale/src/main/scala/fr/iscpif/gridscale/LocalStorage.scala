@@ -33,7 +33,7 @@ trait LocalStorage extends Storage {
   override def exists(path: String)(implicit authentication: A) =
     new File(path).exists
 
-  def list(path: String)(implicit authentication: A): Seq[(String, FileType)] =
+  def _list(path: String)(implicit authentication: A): Seq[(String, FileType)] =
     new File(path).listFiles.map {
       f ⇒
         val fs = FileSystems.getDefault
@@ -47,10 +47,10 @@ trait LocalStorage extends Storage {
         f.getName -> ftype
     }
 
-  def makeDir(path: String)(implicit authentication: A) =
+  def _makeDir(path: String)(implicit authentication: A) =
     new File(path).mkdirs
 
-  def rmDir(path: String)(implicit authentication: A) = {
+  def _rmDir(path: String)(implicit authentication: A) = {
     def delete(f: File): Unit = {
       if (f.isDirectory) f.listFiles.foreach(delete)
       f.delete
@@ -58,10 +58,10 @@ trait LocalStorage extends Storage {
     delete(new File(path))
   }
 
-  def rmFile(path: String)(implicit authentication: A) =
+  def _rmFile(path: String)(implicit authentication: A) =
     new File(path).delete
 
-  def mv(from: String, to: String)(implicit authentication: A) =
+  def _mv(from: String, to: String)(implicit authentication: A) =
     new File(from).renameTo(new File(to))
 
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream =

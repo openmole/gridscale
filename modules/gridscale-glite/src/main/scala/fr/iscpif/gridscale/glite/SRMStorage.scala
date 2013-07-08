@@ -87,7 +87,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   def version(implicit credential: A) = stub.srmPing(new SrmPingRequest).getVersionInfo
 
-  def list(absolutePath: String)(implicit credential: A): Seq[(String, FileType)] = {
+  def _list(absolutePath: String)(implicit credential: A): Seq[(String, FileType)] = {
     def recList(offset: Int, res: List[Seq[(String, FileType)]] = List.empty): Seq[(String, FileType)] = {
       val ls = list(absolutePath, offset, lsSizeMax)
       if (ls.size < lsSizeMax) (ls :: res).reverse.flatten
@@ -134,7 +134,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     }).toSeq
   }
 
-  def makeDir(path: String)(implicit credential: A) = {
+  def _makeDir(path: String)(implicit credential: A) = {
     val uri = this.toSrmURI(path)
     val request = new SrmMkdirRequest
     request.setSURL(uri)
@@ -153,7 +153,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def rmFile(path: String)(implicit credential: A) = {
+  def _rmFile(path: String)(implicit credential: A) = {
     val uri = this.toSrmURI(path)
     val request = new SrmRmRequest
     request.setArrayOfSURLs(new ArrayOfAnyURI(Array(uri)))
@@ -161,7 +161,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     if (requestStatus.getReturnStatus.getStatusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def mv(from: String, to: String)(implicit authentication: A) = {
+  def _mv(from: String, to: String)(implicit authentication: A) = {
     val fromURI = this.toSrmURI(from)
     val toURI = this.toSrmURI(to)
     val request = new SrmMvRequest

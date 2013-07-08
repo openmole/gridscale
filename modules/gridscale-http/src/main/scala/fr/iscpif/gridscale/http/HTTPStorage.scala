@@ -51,7 +51,7 @@ trait HTTPStorage extends Storage {
   def timeout = 120
   def bufferSize = 64000
 
-  def list(path: String)(implicit authentication: A): Seq[(String, FileType)] = {
+  def _list(path: String)(implicit authentication: A): Seq[(String, FileType)] = {
     val is = openInputStream(path)(authentication)
     try {
       val parser = new Parser
@@ -72,16 +72,16 @@ trait HTTPStorage extends Storage {
     } finally is.close
   }
 
-  def makeDir(path: String)(implicit authentication: A) =
+  def _makeDir(path: String)(implicit authentication: A) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  def rmDir(path: String)(implicit authentication: A) =
+  def _rmDir(path: String)(implicit authentication: A) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  def rmFile(patg: String)(implicit authentication: A) =
+  def _rmFile(patg: String)(implicit authentication: A) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  def mv(from: String, to: String)(implicit authentication: A) =
+  def _mv(from: String, to: String)(implicit authentication: A) =
     throw new RuntimeException("Operation not supported for http protocol")
 
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream = withConnection(path) {

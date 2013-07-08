@@ -57,5 +57,4 @@ object Main extends App {
   if (s == Done) wms.downloadOutputSandbox(jobDesc, j)
   wms.purge(j)
 
-
 }
