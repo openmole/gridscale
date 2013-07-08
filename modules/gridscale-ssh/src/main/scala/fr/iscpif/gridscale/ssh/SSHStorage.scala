@@ -57,31 +57,35 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   }
 
   def _rmDir(path: String)(implicit authentication: A) = withSftpClient {
-    rmDirWithClient(path) _
+    rmDirWithClient(path)(_)
   }
 
-  private def rmDirWithClient(path: String)(c: SFTPClient): Unit = {
+  private def rmDirWithClient(path: String)(c: SFTPClient): Unit = wrapException(s"rm dir $path") {
     listWithClient(path)(c).foreach {
       case (p, t) ⇒
-        val child = path + "/" + p
-        t match {
-          case FileType ⇒ rmFileWithClient(child)(c)
-          case LinkType ⇒ rmFileWithClient(child)(c)
-          case DirectoryType ⇒ rmDirWithClient(child)(c)
+        try {
+          val child = path + "/" + p
+          t match {
+            case FileType ⇒ rmFileWithClient(child)(c)
+            case LinkType ⇒ rmFileWithClient(child)(c)
+            case DirectoryType ⇒ rmDirWithClient(child)(c)
+          }
+        } catch {
+          case _: Throwable =>
         }
     }
     c.rmdir(path)
   }
 
   def _rmFile(path: String)(implicit authentication: A) = withSftpClient {
-    rmFileWithClient(path) _
+    rmFileWithClient(path)(_)
   }
 
   def _mv(from: String, to: String)(implicit authentication: A) = withSftpClient {
     _.rename(from, to)
   }
 
-  protected def rmFileWithClient(path: String)(c: SFTPClient) = {
+  protected def rmFileWithClient(path: String)(c: SFTPClient) = wrapException(s"rm $path"){
     c.rm(path)
   }
 
