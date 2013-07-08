@@ -22,6 +22,7 @@ import collection.JavaConversions._
 import net.schmizz.sshj.sftp.{ OpenMode, FileAttributes, FileMode, SFTPClient }
 import java.util
 import fr.iscpif.gridscale._
+import java.util.logging.{Level, Logger}
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒
 
@@ -71,7 +72,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
             case DirectoryType ⇒ rmDirWithClient(child)(c)
           }
         } catch {
-          case _: Throwable =>
+          case t: Throwable => Logger.getLogger(classOf[SSHStorage].getName).log(Level.FINE, "Error in recursive rm", t)
         }
     }
     c.rmdir(path)

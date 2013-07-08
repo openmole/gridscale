@@ -17,6 +17,8 @@
 
 package fr.iscpif.gridscale
 
+import java.util.logging.{ Level, Logger }
+
 trait RecursiveRmDir extends Storage {
 
   def _rmDir(path: String)(implicit authentication: A) = {
@@ -24,9 +26,13 @@ trait RecursiveRmDir extends Storage {
     if (subfiles.isEmpty) rmEmptyDir(path)
     else subfiles.foreach {
       case (name, t) ⇒
-        t match {
-          case DirectoryType ⇒ _rmDir(child(path, name))
-          case _ ⇒ _rmFile(child(path, name))
+        try {
+          t match {
+            case DirectoryType ⇒ _rmDir(child(path, name))
+            case _ ⇒ _rmFile(child(path, name))
+          }
+        } catch {
+          case t: Throwable ⇒ Logger.getLogger(classOf[RecursiveRmDir].getName).log(Level.FINE, "Error in recursive rm", t)
         }
     }
   }
