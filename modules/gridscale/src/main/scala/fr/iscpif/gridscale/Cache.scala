@@ -32,8 +32,11 @@ trait Cache[K, T] {
   @transient val cache = new mutable.WeakHashMap[K, Cached]
 
   def apply(k: K): T = synchronized {
-    if (!cache.contains(k) || cache(k).expiresTime < System.currentTimeMillis) computeCache(k)
-    else cache(k).value
+    cache.get(k) match {
+      case Some(cached) ⇒
+        if (cached.expiresTime < System.currentTimeMillis) computeCache(k) else cached.value
+      case None ⇒ computeCache(k)
+    }
   }
 
   def get(k: K) = cache.get(k).map(_.value)

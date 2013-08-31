@@ -19,10 +19,13 @@ package fr.iscpif.gridscale.glite
 
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import java.io.File
+import java.util.UUID
 
 object GlobusAuthentication {
-  type Proxy = (GlobusGSSCredentialImpl, File)
+  case class Proxy(credential: GlobusGSSCredentialImpl, proxy: File, delegationID: String)
   type ProxyCreator = () ⇒ Proxy
 }
 
-trait GlobusAuthentication extends GlobusAuthentication.ProxyCreator
+trait GlobusAuthentication extends GlobusAuthentication.ProxyCreator {
+  @transient lazy val delegationID = UUID.randomUUID
+}

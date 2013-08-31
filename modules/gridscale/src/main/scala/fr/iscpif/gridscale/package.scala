@@ -54,17 +54,27 @@ package object gridscale {
 
   implicit val nothingImplicit: Unit = Unit
 
-  def cache[T](f: () ⇒ T)(time: Long): () ⇒ T = synchronized {
-    var cache = f()
-    var current = System.currentTimeMillis
-    () ⇒ {
+  trait SingleValueCache[T] extends (() ⇒ T) {
+    @transient private var cached: T = compute()
+    @transient var current = System.currentTimeMillis
+
+    def compute(): T
+    def time: Long
+
+    def apply(): T = synchronized {
       if (current + time * 1000 < System.currentTimeMillis) {
-        cache = f()
+        cached = compute()
         current = System.currentTimeMillis
       }
-      cache
+      cached
     }
   }
+
+  def cache[T](f: () ⇒ T)(_time: Long): SingleValueCache[T] =
+    new SingleValueCache[T] {
+      def compute() = f()
+      def time = _time
+    }
 
   implicit class RenewDecorator[T](f: () ⇒ T) {
     def cache(time: Long) = gridscale.cache[T](f)(time)

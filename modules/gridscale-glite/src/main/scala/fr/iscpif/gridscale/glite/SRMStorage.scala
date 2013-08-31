@@ -189,7 +189,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   protected def _openInputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToGet(path)
 
-    new GridFTPInputStream(credential()._1, url.getHost, gridFtpPort(url.getPort), url.getPath) {
+    new GridFTPInputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
       override def close = {
         try freeInputStream(token, path)
         finally super.close
@@ -200,7 +200,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
   protected def _openOutputStream(path: String)(implicit credential: A) = {
     val (token, url) = prepareToPut(path)
 
-    new GridFTPOutputStream(credential()._1, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
+    new GridFTPOutputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
       override def close = {
         try freeOutputStream(token, path)
         finally super.close
@@ -323,7 +323,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   private def stub(implicit credential: A) = {
     val stub = locator.getsrm(serviceUrl)
-    stub.asInstanceOf[Stub]._setProperty(GSIConstants.GSI_CREDENTIALS, credential()._1)
+    stub.asInstanceOf[Stub]._setProperty(GSIConstants.GSI_CREDENTIALS, credential().credential)
     stub.asInstanceOf[Stub].setTimeout(timeout * 1000)
     stub
   }

@@ -29,6 +29,7 @@ import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.globus.util.Util
 import collection.JavaConversions._
 import org.ietf.jgss.GSSCredential
+import java.util.UUID
 
 object VOMSAuthentication {
 
@@ -48,7 +49,9 @@ trait VOMSAuthentication extends GlobusAuthentication {
   def fqan: Option[String] = None
   def lifeTime: Int
 
-  def apply() = {
+  def apply() = synchronized {
+    val file = proxyFile
+    file.delete
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
@@ -77,6 +80,6 @@ trait VOMSAuthentication extends GlobusAuthentication {
     val globusProxy = proxy.getVomsProxy(List(requestOption))
     Util.setFilePermissions(proxy.getProxyOutputFile, 600)
 
-    (new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), proxyFile)
+    GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), proxyFile, delegationID.toString)
   }
 }
