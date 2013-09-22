@@ -24,8 +24,8 @@ import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.x509.GeneralName;
@@ -97,7 +97,7 @@ public class ProxyRestrictionData {
      * @throws IOException In case there is a problem parsing the structure.
      */
     public ProxyRestrictionData(byte[] bytes) throws IOException {
-        ASN1Sequence nameSpaceRestrictionsSeq = (ASN1Sequence) ASN1Object.fromByteArray(bytes);
+        ASN1Sequence nameSpaceRestrictionsSeq = (ASN1Sequence) ASN1Primitive.fromByteArray(bytes);
         switch (nameSpaceRestrictionsSeq.size()) {
         case 0:
             return;
@@ -165,10 +165,10 @@ public class ProxyRestrictionData {
      * @param vector The target to copy the parsed GeneralSubtree objects.
      */
     private static void copyCondSequenceToVector(DERSequence subSeq, Vector<GeneralSubtree> vector) {
-        Enumeration<DERObject> subTreeEnum = subSeq.getObjects();
+        Enumeration<ASN1Primitive> subTreeEnum = subSeq.getObjects();
         while (subTreeEnum.hasMoreElements()) {
-            DERObject object = subTreeEnum.nextElement();
-            vector.add(new GeneralSubtree((ASN1Sequence) object));
+            ASN1Primitive object = subTreeEnum.nextElement();
+            vector.add(GeneralSubtree.getInstance((ASN1Sequence) object));
         }
     }
 

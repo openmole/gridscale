@@ -9,7 +9,7 @@ import org.bouncycastle.asn1.x509.IssuerSerial;
  *
  * @author Vincenzo Ciaschini
  */
-public class ACTarget implements DEREncodable {
+public class ACTarget implements ASN1Encodable {
     private GeneralName name;
     private GeneralName  group;
     private IssuerSerial cert;
@@ -74,7 +74,7 @@ public class ACTarget implements DEREncodable {
      * @return the IssuerSerial as String.
      */
     public String getIssuerSerialString() {
-        ASN1Sequence seq = ASN1Sequence.getInstance(cert.getIssuer().getDERObject());
+        ASN1Sequence seq = ASN1Sequence.getInstance(cert.getIssuer().toASN1Primitive());
         GeneralName  name  = GeneralName.getInstance(seq.getObjectAt(0));
 
         return new String(NameConverter.getInstance(name).getAsString() + ":" +
@@ -96,7 +96,8 @@ public class ACTarget implements DEREncodable {
      * @param s the name.
      */
     public void setName(String s) {
-        name = new GeneralName(new DERIA5String(s), 6);
+        //name = new GeneralName(new DERIA5String(s), 6);
+        name = new GeneralName(6, s);     
     }
 
     /**
@@ -114,7 +115,8 @@ public class ACTarget implements DEREncodable {
      * @param s the group name.
      */
     public void setGroup(String s) {
-        group = new GeneralName(new DERIA5String(s), 6);
+        //group = new GeneralName(new DERIA5String(s), 6);
+        name = new GeneralName(6, s);
     }
 
     /**
@@ -138,13 +140,14 @@ public class ACTarget implements DEREncodable {
             String iss, ser;
             iss = s.substring(0, ch);
             ser = s.substring(ch+1);
-            GeneralName nm = new GeneralName(new DERIA5String(iss), 6);
-            ASN1Sequence seq = ASN1Sequence.getInstance(name.getDERObject());
+            //GeneralName nm = new GeneralName(new DERIA5String(iss), 6);
+            GeneralName nm = new GeneralName(6, iss);
+            ASN1Sequence seq = ASN1Sequence.getInstance(name.toASN1Primitive());
 
-            ASN1EncodableVector v = new ASN1EncodableVector();
+            DEREncodableVector v = new DEREncodableVector();
             v.add(nm);
             v.add(seq);
-            cert = new IssuerSerial(new DERSequence(v));
+            cert = IssuerSerial.getInstance(new DERSequence(v));
         }
         else throw new IllegalArgumentException("cannot identify issuer and serial");
     }
@@ -187,7 +190,7 @@ public class ACTarget implements DEREncodable {
                 case 2:
                     group = null;
                     name = null;
-                    cert = new IssuerSerial((ASN1Sequence)obj.getObject());
+                    cert = IssuerSerial.getInstance((ASN1Sequence)obj.getObject());
                     break;
                 default:
                     throw new IllegalArgumentException("Bad tag in encoding ACTarget");
@@ -204,8 +207,8 @@ public class ACTarget implements DEREncodable {
      *
      * @return the DERObject
      */
-    public DERObject getDERObject() {
-        ASN1EncodableVector v = new ASN1EncodableVector();
+    public ASN1Primitive toASN1Primitive() {
+        DEREncodableVector v = new DEREncodableVector();
 
         if (name != null)
             v.add(new DERTaggedObject(0, name));

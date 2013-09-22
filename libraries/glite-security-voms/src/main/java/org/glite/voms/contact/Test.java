@@ -12,7 +12,6 @@ import java.util.List;
 import javax.xml.transform.TransformerException;
 
 import org.apache.log4j.PropertyConfigurator;
-import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.X509Credential;
 import org.ietf.jgss.GSSException;
 

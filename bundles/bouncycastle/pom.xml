@@ -9,14 +9,14 @@
   <artifactId>org.bouncycastle</artifactId>
   <packaging>bundle</packaging>
   <properties>
-    <bundle.classpath>bcprov-jdk16-1.46.jar</bundle.classpath>
+    <bundle.classpath>bcpkix-jdk15on-1.49.jar</bundle.classpath>
     <embed-dep>*;groupId=org.bouncycastle,*;artifactId=!commons-logging|log4j|slf4j-api;scope=compile|runtime;type=!pom;inline=true</embed-dep>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk16</artifactId>
-      <version>1.46</version>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>1.49</version>
     </dependency>
   </dependencies>
 </project>

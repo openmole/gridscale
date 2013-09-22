@@ -16,7 +16,7 @@
  */
 package org.glite.security.util.proxy;
 
-import org.bouncycastle.asn1.DEREncodable;
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 
 /**
@@ -36,7 +36,7 @@ public class CertificateExtensionData {
     /**
      * The contents of the extension.
      */
-    public DEREncodable value;
+    public ASN1Encodable value;
 
     /**
      * Creates the extension object out of the given arguments.
@@ -45,7 +45,7 @@ public class CertificateExtensionData {
      * @param critical The criticality flag of the extension.
      * @param value The contents of the extension.
      */
-    public CertificateExtensionData(DERObjectIdentifier oid, boolean critical, DEREncodable value) {
+    public CertificateExtensionData(DERObjectIdentifier oid, boolean critical, ASN1Encodable value) {
         this.oid = oid;
         this.critical = critical;
         this.value = value;

@@ -25,6 +25,7 @@ import java.security.interfaces.RSAKey;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Object;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.openssl.PEMWriter;
 
@@ -184,7 +185,7 @@ public class CertUtil {
         if(bytes == null){
             return null;
         }
-        DEROctetString valueOctets = (DEROctetString)ASN1Object.fromByteArray(bytes);
+        DEROctetString valueOctets = (DEROctetString)ASN1Primitive.fromByteArray(bytes);
         return valueOctets.getOctets();
     }
     

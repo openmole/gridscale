@@ -23,10 +23,12 @@ import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
+import java.util.logging.Level;
 
 import javax.net.ssl.X509TrustManager;
 
 import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.crypto.digests.MD5Digest;
 import org.glite.security.util.CaseInsensitiveProperties;
@@ -133,23 +135,27 @@ public class OpensslTrustmanager implements X509TrustManager {
      */
     @SuppressWarnings("boxing")
     public static String getOpenSSLCAHash(X509Name subject) {
-        byte[] bytes = subject.getDEREncoded();
+        try {
+            byte[] bytes = subject.getEncoded(ASN1Encoding.DER);
 
-        MD5Digest digest = new MD5Digest();
-        digest.update(bytes, 0, bytes.length);
+            MD5Digest digest = new MD5Digest();
+            digest.update(bytes, 0, bytes.length);
 
-        byte output[] = new byte[16];
+            byte output[] = new byte[16];
 
-        digest.doFinal(output, 0);
+            digest.doFinal(output, 0);
 
-        StringBuffer outputString = new StringBuffer();
+            StringBuffer outputString = new StringBuffer();
 
-        outputString.append(String.format("%02x", output[3] & 0xFF));
-        outputString.append(String.format("%02x", output[2] & 0xFF));
-        outputString.append(String.format("%02x", output[1] & 0xFF));
-        outputString.append(String.format("%02x", output[0] & 0xFF));
+            outputString.append(String.format("%02x", output[3] & 0xFF));
+            outputString.append(String.format("%02x", output[2] & 0xFF));
+            outputString.append(String.format("%02x", output[1] & 0xFF));
+            outputString.append(String.format("%02x", output[0] & 0xFF));
 
-        return outputString.toString();
+            return outputString.toString();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

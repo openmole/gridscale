@@ -17,8 +17,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1Primitive;
 
-import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DEREncodableVector;
+import org.bouncycastle.asn1.DERSequence;
 
 /**
  * The intent of this class is to represent the ACTargets extension which
@@ -26,7 +30,7 @@ import org.bouncycastle.asn1.*;
  *
  * @author Vincenzo Ciaschini
  */
-public class ACTargets implements DEREncodable {
+public class ACTargets implements ASN1Encodable {
     private List l;
     private List parsed;
 
@@ -101,8 +105,8 @@ public class ACTargets implements DEREncodable {
      *
      * @return the DERObject
      */
-    public DERObject getDERObject() {
-        ASN1EncodableVector v = new ASN1EncodableVector();
+    public ASN1Primitive toASN1Primitive() {
+        DEREncodableVector v = new DEREncodableVector();
 
         ListIterator li = l.listIterator();
         while (li.hasNext()) {

@@ -21,6 +21,7 @@ import java.io.StringWriter;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
@@ -35,12 +36,13 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
+import java.util.logging.Level;
 
 import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DEREncodable;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERPrintableString;
@@ -51,7 +53,6 @@ import org.bouncycastle.asn1.x509.X509Extensions;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.jce.provider.JDKKeyPairGenerator;
 import org.bouncycastle.openssl.PEMWriter;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.glite.security.util.PrivateKeyReader;
@@ -159,7 +160,7 @@ public class ProxyCertificateGenerator {
 
         // m_certReq = certReq;
         m_publicKey = certReq.getPublicKey();
-        m_newDN = certReq.getCertificationRequestInfo().getSubject();
+        m_newDN = X509Name.getInstance(certReq.getCertificationRequestInfo().getSubject());
         /*
          * // test for DN violation, the new DN must be composed of the parentDN // and and additional CN component. DN
          * baseDN = DNHandler.getSubject(m_parentCert); DN reqSubject = DNHandler.getDN(m_newDN); try{
@@ -216,7 +217,7 @@ public class ProxyCertificateGenerator {
      * @param critical whether the extension is critical or not.
      * @param value The extension value.
      */
-    public void addExtension(String oid, boolean critical, DEREncodable value) {
+    public void addExtension(String oid, boolean critical, ASN1Encodable value) {
         m_certGen.addExtension(new DERObjectIdentifier(oid), critical, value);
     }
 
@@ -287,11 +288,16 @@ public class ProxyCertificateGenerator {
      * Generates the private and public keys if they are not given.
      */
     private void generateKeys() {
-        JDKKeyPairGenerator.RSA keyPairGen = new JDKKeyPairGenerator.RSA();
-        keyPairGen.initialize(m_keyLength, new SecureRandom());
-        KeyPair pair = keyPairGen.generateKeyPair();
-        m_privateKey = pair.getPrivate();
-        m_publicKey = pair.getPublic();
+        try {
+            KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", new BouncyCastleProvider());
+            //JDKKeyPairGenerator.RSA keyPairGen = new JDKKeyPairGenerator.RSA();
+            keyPairGen.initialize(m_keyLength, new SecureRandom());
+            KeyPair pair = keyPairGen.generateKeyPair();
+            m_privateKey = pair.getPrivate();
+            m_publicKey = pair.getPublic();
+        } catch (NoSuchAlgorithmException ex) {
+            new RuntimeException(ex);
+        }
     }
 
     /**
@@ -399,13 +405,13 @@ public class ProxyCertificateGenerator {
         newCnPart.add(new DERPrintableString(newCN));
 
         // copy the RDNs to a new vector so that the new part can be added.
-        ASN1Sequence subjectSequence = (ASN1Sequence) basename.getDERObject();
+        ASN1Sequence subjectSequence = (ASN1Sequence) basename.toASN1Primitive();
         Enumeration subjectParts = subjectSequence.getObjects();
 
         ASN1EncodableVector subjectVector = new ASN1EncodableVector();
 
         while (subjectParts.hasMoreElements()) {
-            DERObject part = (DERObject) subjectParts.nextElement();
+            ASN1Primitive part = (ASN1Primitive) subjectParts.nextElement();
             subjectVector.add(part);
         }
 
@@ -429,7 +435,7 @@ public class ProxyCertificateGenerator {
      */
     private String guessCN(X509Name basename, boolean addLimited) {
         String newCN;
-        ASN1Sequence subjectSequence = (ASN1Sequence) basename.getDERObject();
+        ASN1Sequence subjectSequence = (ASN1Sequence) basename.toASN1Primitive();
         int rdns = subjectSequence.size();
         DERSet rdn = (DERSet) subjectSequence.getObjectAt(rdns - 1);
         DERSequence rdnSequence = (DERSequence) rdn.getObjectAt(0);
@@ -465,7 +471,7 @@ public class ProxyCertificateGenerator {
      */
     @SuppressWarnings("unchecked")
     private void setupDNs(String newCn) {
-        ASN1Sequence seqSubject = (ASN1Sequence) m_baseName.getDERObject();
+        ASN1Sequence seqSubject = (ASN1Sequence) m_baseName.toASN1Primitive();
 
         ASN1EncodableVector newCnPart = new ASN1EncodableVector();
         newCnPart.add(X509Name.CN);
@@ -476,7 +482,7 @@ public class ProxyCertificateGenerator {
         ASN1EncodableVector subjectVector = new ASN1EncodableVector();
 
         while (subjectParts.hasMoreElements()) {
-            DERObject part = (DERObject) subjectParts.nextElement();
+            ASN1Primitive part = (ASN1Primitive) subjectParts.nextElement();
             subjectVector.add(part);
         }
 

@@ -47,11 +47,11 @@ import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1OutputStream;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERTaggedObject;
@@ -307,14 +307,14 @@ public class PKIUtils {
     }
 
     static private BigInteger getAuthorityCertificateSerialNumber(AuthorityKeyIdentifier akid) {
-        DERObject obj = akid.getDERObject();
+        ASN1Primitive obj = akid.toASN1Primitive();
         ASN1Sequence seq = ASN1Sequence.getInstance(obj);
 
         for (int i = 0; i < seq.size(); i++) {
-            DERObject o = (DERObject) seq.getObjectAt(i);
+            ASN1Primitive o = (ASN1Primitive) seq.getObjectAt(i);
             if ((o instanceof ASN1TaggedObject) &&
                 (((ASN1TaggedObject)o).getTagNo() == 2)) {
-                DERObject realObject = ((ASN1TaggedObject)o).getObject();
+                ASN1Primitive realObject = ((ASN1TaggedObject)o).getObject();
                 if (realObject instanceof DERInteger) {
                     return ((DERInteger)realObject).getValue();
                 }
@@ -324,11 +324,11 @@ public class PKIUtils {
     }
 
     static private GeneralNames getAuthorityCertIssuer(AuthorityKeyIdentifier akid) {
-        DERObject obj = akid.getDERObject();
+        ASN1Primitive obj = akid.toASN1Primitive();
         ASN1Sequence seq = ASN1Sequence.getInstance(obj);
 
         for (int i = 0; i < seq.size(); i++) {
-            DERObject o = (DERObject) seq.getObjectAt(i);
+            ASN1Primitive o = (ASN1Primitive) seq.getObjectAt(i);
             if ((o instanceof ASN1TaggedObject) &&
                 (((ASN1TaggedObject)o).getTagNo() == 1)) {
                 return GeneralNames.getInstance(((DERTaggedObject)o), false);
@@ -342,7 +342,7 @@ public class PKIUtils {
     }
 
     static private GeneralName[] getNames(GeneralNames gns) {
-        DERObject obj = gns.getDERObject();
+        ASN1Primitive obj = gns.toASN1Primitive();
         Vector v = new Vector();
 
         ASN1Sequence seq = (ASN1Sequence)obj;
@@ -481,7 +481,7 @@ public class PKIUtils {
                         //                    System.out.println("NAME = " + names[i].getName());
                         //                    System.out.println("TAG IS: " + names[i].getTagNo());
                         if (names[i].getTagNo() == 4) {
-                            DERObject dobj = names[i].getName().getDERObject();
+                            ASN1Primitive dobj = names[i].getName().toASN1Primitive();
                             ByteArrayOutputStream baos = null;
                             ASN1OutputStream aos = null;
                             //                        System.out.println("Inside tag 4");
@@ -556,7 +556,7 @@ public class PKIUtils {
                 logger.debug(str);
             }
 
-            DERObject dobj = null;
+            ASN1Primitive dobj = null;
             try {
                 dobj = new ASN1InputStream(new ByteArrayInputStream(keybytes)).readObject();
                 logger.debug("Class = " + dobj.getClass());
@@ -663,7 +663,7 @@ public class PKIUtils {
                 //                    System.out.print(llist2[i] + " ");
                 //                System.out.println("");
                         
-                DERObject dobj = null;
+                ASN1Primitive dobj = null;
                 try {
                     dobj = new ASN1InputStream(new ByteArrayInputStream(llist2)).readObject();
                     dobj = new ASN1InputStream(new ByteArrayInputStream(((DEROctetString)dobj).getOctets())).readObject();
@@ -682,7 +682,7 @@ public class PKIUtils {
 //                     System.out.print(list2[i] + " ");
 //                 System.out.println("");
 
-                return new AuthorityKeyIdentifier(ASN1Sequence.getInstance(dobj));
+                return AuthorityKeyIdentifier.getInstance(ASN1Sequence.getInstance(dobj));
             }
         }
         return null;
@@ -699,7 +699,7 @@ public class PKIUtils {
         if (cert != null) {
             byte[] akid = cert.getExtensionValue(SUBJECT_KEY_IDENTIFIER);
             if (akid != null) {
-                DERObject dobj = null;
+                ASN1Primitive dobj = null;
                 try {
                     dobj = new ASN1InputStream(new ByteArrayInputStream(akid)).readObject();
                     dobj = new ASN1InputStream(new ByteArrayInputStream(((DEROctetString)dobj).getOctets())).readObject();
@@ -726,7 +726,7 @@ public class PKIUtils {
         if (cert != null) {
             byte[] akid = cert.getExtensionValue(BASIC_CONSTRAINTS_IDENTIFIER);
             if (akid != null) {
-                DERObject dobj = null;
+                ASN1Primitive dobj = null;
                 try {
                     dobj = new ASN1InputStream(new ByteArrayInputStream(akid)).readObject();
                 }
@@ -734,7 +734,7 @@ public class PKIUtils {
                     throw new IllegalArgumentException("While extracting Subject Key Identifier " + e.getMessage());
                 }
 
-                return new BasicConstraints(ASN1Sequence.getInstance(dobj));
+                return BasicConstraints.getInstance(ASN1Sequence.getInstance(dobj));
             }
         }
         return null;

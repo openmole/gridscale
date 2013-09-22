@@ -42,6 +42,7 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import org.bouncycastle.asn1.ASN1Primitive;
 
 /**
  * This class is used to read and write private keys.
@@ -399,7 +400,7 @@ public class PrivateKeyReader {
         byte[] keyData = Base64.decode(buf.toString());
         
         try {
-            PrivateKeyInfo info = PrivateKeyInfo.getInstance(ASN1Object.fromByteArray(keyData));
+            PrivateKeyInfo info = PrivateKeyInfo.getInstance(ASN1Primitive.fromByteArray(keyData));
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyData);
 
             KeyFactory keyFact = KeyFactory.getInstance(info.getAlgorithmId().getObjectId().getId(), "BC");

@@ -24,16 +24,16 @@ import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.security.cert.CertificateException;
-
 import java.util.Enumeration;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.globus.gsi.bc.BouncyCastleOpenSSLKey;
 
 import org.glite.voms.PKIUtils;
 import org.globus.gsi.CredentialException;
 import org.globus.gsi.X509Credential;
+import org.globus.gsi.bc.BouncyCastleOpenSSLKey;
+import org.globus.gsi.util.CertificateLoadUtil;
 
 /**
  * This class implements parsing and handling of X509 user credentials 
@@ -56,7 +56,7 @@ public class UserCredentials {
     private X509Certificate userCert;
     private X509Certificate[] userChain;
 
-    private BouncyCastleOpenSSLKey userKey;
+    private PrivateKey userKey;
 
     
     /**
@@ -88,7 +88,7 @@ public class UserCredentials {
      *  
      * @return the user credentials private key.
      */
-    public BouncyCastleOpenSSLKey getUserKey() {
+    public PrivateKey getUserKey() {
 
         return userKey;
 
@@ -125,11 +125,25 @@ public class UserCredentials {
      * @param userKeyFile the file object that points to the PEM key.
      * @param password the password needed to decrypt the key.
      */
-    private void loadKey(File userKeyFile, String password){
+    private void loadKey(File userKeyFile, final String password){
         
         try {
             log.debug("File is: " + userKeyFile.getName());
-            userKey = new BouncyCastleOpenSSLKey( new FileInputStream(userKeyFile) );
+            BouncyCastleOpenSSLKey bcKey = new BouncyCastleOpenSSLKey(userKeyFile.getAbsolutePath());
+            bcKey.decrypt(password);
+
+            /*userKey = bcKey.getPrivateKey();
+
+                    CertificateLoadUtil.loadPrivateKey(
+                    userKeyFile.getAbsolutePath(),
+                    new PasswordFinder() {
+
+                public char[] getPassword() {
+                    return password.toCharArray();
+                }
+            }); */
+            
+            //userKey = new BouncyCastleOpenSSLKey( new FileInputStream(userKeyFile) );
 
         } catch ( IOException e ) {
             log.error( "Error loading user private key:"
@@ -152,45 +166,6 @@ public class UserCredentials {
 
             throw new VOMSException( e );
 
-        }
-    
-        log.debug("is encrypted ? " + userKey.isEncrypted());
-        log.debug("is password ? " + password );
-        log.debug("is password null ? " + (password == null));
-        if (password != null && userKey.isEncrypted()){
-            
-            try {
-
-                userKey.decrypt( password );
-
-            } catch ( javax.crypto.BadPaddingException e ) {
-
-                throw new VOMSException( "Error decrypting private key, passord may be wrong: "
-                        + e.getMessage());
-
-            } catch ( InvalidKeyException e ) {
-
-                log.error( "Error decrypting private key: "
-                        + e.getMessage() );
-
-                if ( log.isDebugEnabled() ) {
-                    log.error( e.getMessage(), e );
-                }
-
-                throw new VOMSException( e );
-
-            } catch ( GeneralSecurityException e ) {
-                
-                log.error( "Error parsing private key: "
-                        + e.getMessage() );
-                
-                if ( log.isDebugEnabled() ) {
-                    log.error( e.getMessage(), e );
-                }
-
-                throw new VOMSException( e );
-                
-            }
         }
         
     }
@@ -219,8 +194,9 @@ public class UserCredentials {
             if (alias == null)
                 throw new VOMSException("No aliases found inside pkcs12 certificate!");
             
-		userCert=(X509Certificate) ks.getCertificate( alias );
-            userKey = new BouncyCastleOpenSSLKey((PrivateKey)ks.getKey( alias, keyPassword.toCharArray()));
+            userCert=(X509Certificate) ks.getCertificate( alias );
+            userKey = (PrivateKey) ks.getKey(alias, keyPassword.toCharArray());
+            //new BouncyCastleOpenSSLKey((PrivateKey)ks.getKey( alias, keyPassword.toCharArray()));
             //userChain = (X509Certificate[]) ks.getCertificateChain( alias);
             userChain = new X509Certificate[1];
 		userChain[0] = userCert;
@@ -240,7 +216,7 @@ public class UserCredentials {
 
     private UserCredentials(X509Credential credentials) throws CredentialException {
         userChain = credentials.getCertificateChain();
-        userKey   = new BouncyCastleOpenSSLKey(credentials.getPrivateKey());
+        userKey   = credentials.getPrivateKey();
         userCert  = userChain[0];
     }
 

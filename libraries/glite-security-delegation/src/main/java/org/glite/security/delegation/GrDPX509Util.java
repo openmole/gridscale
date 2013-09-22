@@ -35,7 +35,9 @@ import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -49,11 +51,12 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.util.logging.Level;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
-import org.bouncycastle.jce.provider.JDKKeyPairGenerator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMWriter;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
@@ -899,11 +902,15 @@ public class GrDPX509Util {
      * @return The generated KeyPair object.
      */
     public static KeyPair getKeyPair(int size) {
-
-	    SecureRandom rand = new SecureRandom();
-	    JDKKeyPairGenerator.RSA keyPairGen = new JDKKeyPairGenerator.RSA();
-	    keyPairGen.initialize(size, rand);
-	    return keyPairGen.generateKeyPair();
+        try {
+            SecureRandom rand = new SecureRandom();
+            KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", new BouncyCastleProvider());
+            //JDKKeyPairGenerator.RSA keyPairGen = new JDKKeyPairGenerator.RSA();
+            keyPairGen.initialize(size, rand);
+            return keyPairGen.generateKeyPair();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

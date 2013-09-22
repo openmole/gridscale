@@ -28,7 +28,6 @@ import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.globus.gsi.GSIConstants;
 import org.globus.gsi.GSIConstants.DelegationType;
-import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.X509Credential;
 import org.globus.gsi.gssapi.GSSConstants;
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl;

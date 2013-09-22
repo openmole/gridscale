@@ -6,21 +6,23 @@
 
 package org.glite.voms.ac;
 
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
-import org.bouncycastle.asn1.DEREncodable;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.IssuerSerial;
 
+import java.io.IOException;
+
 
 /**
  * @author mulmo
  */
-public class V2Form implements DEREncodable {
+public class V2Form implements ASN1Encodable {
     GeneralNames issuerName;
     IssuerSerial baseCertificateID;
     ObjectDigestInfo objectDigestInfo;
@@ -29,11 +31,11 @@ public class V2Form implements DEREncodable {
         this.issuerName = issuerName;
     }
 
-    public V2Form(ASN1Sequence seq) {
+    public V2Form(ASN1Sequence seq) throws IOException {
         int n = 0;
 
         if (seq.getObjectAt(0) instanceof ASN1Sequence) {
-            issuerName = new GeneralNames((ASN1Sequence) seq.getObjectAt(0));
+            issuerName = GeneralNames.getInstance((ASN1Sequence) seq.getObjectAt(0));
             n++;
         }
 
@@ -42,7 +44,7 @@ public class V2Form implements DEREncodable {
 
             switch (tObj.getTagNo()) {
             case 0:
-                baseCertificateID = new IssuerSerial((ASN1Sequence) tObj.getObject());
+                baseCertificateID = IssuerSerial.getInstance((ASN1Sequence) tObj.getObject());
 
                 break;
 
@@ -82,12 +84,12 @@ public class V2Form implements DEREncodable {
      *  }
      * </pre>
      */
-    public DERObject getDERObject() {
+    public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector v = new ASN1EncodableVector();
 
         if (issuerName != null) {
             // IMPLICIT encoding of GeneralNames ... gosh, how I hate ASN.1 sometimes.
-            v.add(((ASN1Sequence) issuerName.getDERObject()).getObjectAt(0));
+            v.add(((ASN1Sequence) issuerName.toASN1Primitive()).getObjectAt(0));
         }
 
         if (baseCertificateID != null) {

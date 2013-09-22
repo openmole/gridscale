@@ -19,6 +19,7 @@ package org.glite.security.util.proxy;
 import java.io.IOException;
 
 import org.bouncycastle.asn1.ASN1Object;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.x509.GeneralName;
@@ -109,7 +110,7 @@ public class ProxyTracingExtension {
      * @throws IOException In case the byte array does not contain a valid ASN1 encoded proxy tracing extension.
      */
     public ProxyTracingExtension(byte[] bytes) throws IOException {
-        m_names = new GeneralNames((ASN1Sequence) ASN1Object.fromByteArray(bytes));
+        m_names = GeneralNames.getInstance((ASN1Sequence) ASN1Primitive.fromByteArray(bytes));
         m_name = m_names.getNames()[0];
     }
 

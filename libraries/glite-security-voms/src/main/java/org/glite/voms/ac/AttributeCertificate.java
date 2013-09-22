@@ -25,19 +25,19 @@ import java.util.Vector;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERSet;
-import org.bouncycastle.asn1.DEREncodable;
 import org.bouncycastle.asn1.DERGeneralizedTime;
-import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DEROutputStream;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.AttCertValidityPeriod;
 import org.bouncycastle.asn1.x509.GeneralName;
@@ -53,15 +53,15 @@ import org.glite.voms.PKIUtils;
  *
  * @author Joni Hahkala, Olle Mulmo
  */
-public class AttributeCertificate implements DEREncodable {
+public class AttributeCertificate implements ASN1Encodable {
     protected static Logger logger = Logger.getLogger(AttributeCertificate.class);
     AttributeCertificateInfo acInfo;
     AlgorithmIdentifier signatureAlgorithm;
     DERBitString signatureValue;
-    DERObject signedObj = null;
+    ASN1Primitive signedObj = null;
 
     public AttributeCertificate(ASN1Sequence seq) throws IOException {
-        signedObj = ((ASN1Sequence)seq.getObjectAt(0)).getDERObject();
+        signedObj = ((ASN1Sequence)seq.getObjectAt(0)).toASN1Primitive();
         acInfo = new AttributeCertificateInfo((ASN1Sequence) seq.getObjectAt(0));
         signatureAlgorithm = AlgorithmIdentifier.getInstance(seq.getObjectAt(1));
         signatureValue = (DERBitString) seq.getObjectAt(2);
@@ -224,7 +224,7 @@ public class AttributeCertificate implements DEREncodable {
             return null;
         }
 
-        ASN1Sequence seq = (ASN1Sequence) acInfo.getIssuer().getIssuerName().getDERObject();
+        ASN1Sequence seq = (ASN1Sequence) acInfo.getIssuer().getIssuerName().toASN1Primitive();
 
         for (Enumeration e = seq.getObjects(); e.hasMoreElements();) {
             GeneralName gn = GeneralName.getInstance(e.nextElement());
@@ -246,7 +246,7 @@ public class AttributeCertificate implements DEREncodable {
             return null;
         }
 
-        ASN1Sequence seq = (ASN1Sequence) acInfo.getIssuer().getIssuerName().getDERObject();
+        ASN1Sequence seq = (ASN1Sequence) acInfo.getIssuer().getIssuerName().toASN1Primitive();
 
         for (Enumeration e = seq.getObjects(); e.hasMoreElements();) {
             GeneralName gn = GeneralName.getInstance(e.nextElement());
@@ -270,7 +270,7 @@ public class AttributeCertificate implements DEREncodable {
 
         GeneralNames gns = acInfo.getHolder().getIssuer();
 
-        for (Enumeration e = ((ASN1Sequence)gns.getDERObject()).getObjects(); e.hasMoreElements();) {
+        for (Enumeration e = ((ASN1Sequence)gns.toASN1Primitive()).getObjects(); e.hasMoreElements();) {
             GeneralName gn = GeneralName.getInstance(e.nextElement());
 
             if (gn.getTagNo() == 4) {
@@ -475,7 +475,7 @@ public class AttributeCertificate implements DEREncodable {
      *  }
      * </pre>
      */
-    public DERObject getDERObject() {
+    public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector v = new ASN1EncodableVector();
 
         v.add(acInfo);

@@ -17,8 +17,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1Primitive;
 
-import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DEREncodableVector;
+import org.bouncycastle.asn1.DERSequence;
 
 /**
  * This class represents the GenericAttributes extension which may be found
@@ -26,7 +30,7 @@ import org.bouncycastle.asn1.*;
  *
  * @author Vincenzo Ciaschini
  */
-public class FullAttributes implements DEREncodable {
+public class FullAttributes implements ASN1Encodable {
     private List l;
 
     /**
@@ -83,8 +87,8 @@ public class FullAttributes implements DEREncodable {
      *
      * @return the DERObject
      */
-    public DERObject getDERObject() {
-        ASN1EncodableVector v2 = new ASN1EncodableVector();
+    public ASN1Primitive toASN1Primitive() {
+        DEREncodableVector v2 = new DEREncodableVector();
 
         for (ListIterator li = l.listIterator(); li.hasNext(); ) {
             AttributeHolder holder = (AttributeHolder)li.next();
@@ -92,7 +96,7 @@ public class FullAttributes implements DEREncodable {
         }
 
         ASN1Sequence seq = (ASN1Sequence) new DERSequence(v2);
-        ASN1EncodableVector v = new ASN1EncodableVector();
+        DEREncodableVector v = new DEREncodableVector();
         v.add(seq);
 
         return new DERSequence(v);

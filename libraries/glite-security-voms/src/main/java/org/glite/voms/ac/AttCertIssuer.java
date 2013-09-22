@@ -6,12 +6,14 @@
 
 package org.glite.voms.ac;
 
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
-import org.bouncycastle.asn1.DEREncodable;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.x509.GeneralNames;
+
+import java.io.IOException;
 
 
 /**
@@ -20,12 +22,12 @@ import org.bouncycastle.asn1.x509.GeneralNames;
  *
  * @author Joni Hahkala, Olle Mulmo
  */
-public class AttCertIssuer implements DEREncodable {
+public class AttCertIssuer implements ASN1Encodable {
     GeneralNames v1Form;
     V2Form v2Form;
     int version = -1;
 
-    public AttCertIssuer(DEREncodable obj) {
+    public AttCertIssuer(ASN1Encodable obj) throws IOException {
         if (obj instanceof ASN1TaggedObject) {
             ASN1TaggedObject cObj = (ASN1TaggedObject) obj;
 
@@ -35,7 +37,7 @@ public class AttCertIssuer implements DEREncodable {
                 version = 2;
             }
         } else if (obj instanceof ASN1Sequence) {
-            v1Form = new GeneralNames((ASN1Sequence) obj);
+            v1Form = GeneralNames.getInstance((ASN1Sequence) obj);
             version = 1;
         }
 
@@ -80,10 +82,10 @@ public class AttCertIssuer implements DEREncodable {
      *
      * </pre>
      */
-    public DERObject getDERObject() {
+    public ASN1Primitive toASN1Primitive() {
         switch (version) {
         case 1:
-            return v1Form.getDERObject();
+            return v1Form.toASN1Primitive();
 
         case 2:
             return new DERTaggedObject(true, 0, v2Form);

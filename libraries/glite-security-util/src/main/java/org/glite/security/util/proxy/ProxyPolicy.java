@@ -18,11 +18,14 @@ limitations under the License.
 
 package org.glite.security.util.proxy;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
@@ -32,7 +35,7 @@ import org.bouncycastle.asn1.DERSequence;
  * 
  * @author Joni Hahkala
  */
-public class ProxyPolicy extends ASN1Encodable {
+public class ProxyPolicy implements ASN1Encodable {
     /**
      * The normal, default policy, the proxy inherits the rights of the parent. Defined in RFC 3820.
      */
@@ -138,11 +141,15 @@ public class ProxyPolicy extends ASN1Encodable {
      * 
      * @see org.bouncycastle.asn1.ASN1Encodable#toASN1Object()
      */
-    public DERObject toASN1Object() {
+    public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector v = new ASN1EncodableVector();
         v.add(new DERObjectIdentifier(m_oid));
         if (m_policy != null) {
-            v.add(new DEROctetString(m_policy));
+            try {
+                v.add(new DEROctetString(m_policy));
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
 
         return new DERSequence(v);

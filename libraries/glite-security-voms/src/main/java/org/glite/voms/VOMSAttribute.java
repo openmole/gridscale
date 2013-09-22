@@ -197,7 +197,7 @@ public class VOMSAttribute {
 
         GeneralNames names = myAC.getHolder().getIssuer();
 
-        Enumeration e = ((ASN1Sequence) names.getDERObject()).getObjects();
+        Enumeration e = ((ASN1Sequence) names.toASN1Primitive()).getObjects();
         if (e.hasMoreElements()) {
             GeneralName gn = GeneralName.getInstance(e.nextElement());
             

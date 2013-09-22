@@ -30,6 +30,7 @@ import java.util.Vector;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Object;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.x509.IssuingDistributionPoint;
@@ -283,18 +284,18 @@ public class FileCRLChecker extends RevocationChecker {
     private void checkIssuinDistributionPoint() throws CertificateException, IOException {
         byte extensionBytes[] = m_crl.getExtensionValue(X509Extensions.IssuingDistributionPoint.toString());
 
-        ASN1Object object = ASN1Object.fromByteArray(extensionBytes);
+        ASN1Object object = ASN1Primitive.fromByteArray(extensionBytes);
         if (!(object instanceof DEROctetString)) {
             throw new CertificateException("Invalid data in IssuingDistributionPoint extension, not DEROctetString");
         }
         DEROctetString string = (DEROctetString) object;
 
-        object = ASN1Object.fromByteArray(string.getOctets());
+        object = ASN1Primitive.fromByteArray(string.getOctets());
         if (!(object instanceof ASN1Sequence)) {
             throw new CertificateException("Invalid data in IssuingDistributionPoint extension, not ASN1Sequence");
         }
 
-        IssuingDistributionPoint issuingDistributionPoint = new IssuingDistributionPoint((ASN1Sequence) object);
+        IssuingDistributionPoint issuingDistributionPoint = IssuingDistributionPoint.getInstance((ASN1Sequence) object);
 
         if (issuingDistributionPoint.onlyContainsAttributeCerts()) {
             throw new CertificateException("CRL only contains attribute certs, not useful for authentication.");

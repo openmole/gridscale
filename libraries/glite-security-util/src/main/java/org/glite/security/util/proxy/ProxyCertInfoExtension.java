@@ -22,9 +22,9 @@ import java.io.IOException;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Object;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERSequence;
 
 /**
@@ -40,7 +40,7 @@ import org.bouncycastle.asn1.DERSequence;
  * 
  * @author Joni Hahkala
  */
-public class ProxyCertInfoExtension extends ASN1Encodable {
+public class ProxyCertInfoExtension implements ASN1Encodable {
 
     /** Identifier for no proxy path length limit. */
     public static final int UNLIMITED = Integer.MAX_VALUE;
@@ -84,7 +84,7 @@ public class ProxyCertInfoExtension extends ASN1Encodable {
      * @throws IOException thrown in case the parsing of the byte array fails.
      */
     public ProxyCertInfoExtension(byte[] bytes) throws IOException {
-        this((ASN1Sequence) ASN1Object.fromByteArray(bytes));
+        this((ASN1Sequence) ASN1Primitive.fromByteArray(bytes));
     }
 
     /**
@@ -141,13 +141,13 @@ public class ProxyCertInfoExtension extends ASN1Encodable {
      * Return the extension in DER format.
      * @see org.bouncycastle.asn1.ASN1Encodable#toASN1Object()
      */
-    public DERObject toASN1Object() {
+    public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector v = new ASN1EncodableVector();
         if (m_pathLen > -1 && m_pathLen != UNLIMITED) {
             v.add(new DERInteger(m_pathLen));
         }
         if (m_policy != null) {
-            v.add(m_policy.toASN1Object());
+            v.add(m_policy.toASN1Primitive());
         } else {
             throw new IllegalArgumentException("Can't generate ProxyCertInfoExtension without mandatory policy");
         }
