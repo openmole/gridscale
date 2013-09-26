@@ -43,8 +43,8 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
 
     withSession(c) { session ⇒
       val command = sourceBashRC + "cd " + description.workDirectory + " && qsub " + description.uniqId + ".pbs"
-      val (ret, jobId) = execReturnCodeOutput(session, command)
-      if (ret != 0) throw new RuntimeException(s"Return code was $ret, expecting 0 when running: $command")
+      val (ret, jobId, error) = execReturnCodeOutput(session, command)
+      if (ret != 0) throw exception(ret, command, jobId, error)
       if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
       new PBSJob(description, jobId)
     }
@@ -53,11 +53,11 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
   def state(job: J)(implicit credential: A): JobState = withConnection(withSession(_) { session ⇒
     val command = sourceBashRC + "qstat -f " + job.pbsId
 
-    val (ret, output) = execReturnCodeOutput(session, command)
+    val (ret, output, error) = execReturnCodeOutput(session, command)
 
     ret.toInt match {
-      case 153 => Done
-      case 0 =>
+      case 153 ⇒ Done
+      case 0 ⇒
         val lines = output.split("\n").map(_.trim)
         val state = lines.filter(_.matches(".*=.*")).map {
           prop ⇒
@@ -65,7 +65,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
             splited(0).trim.toUpperCase -> splited(1).trim
         }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output: " + output))
         translateStatus(ret, state)
-      case r => throw new RuntimeException(s"Unexpected return code $r for command: $command")
+      case r ⇒ throw exception(ret, command, output, error)
     }
   })
 

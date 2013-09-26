@@ -41,11 +41,12 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     finally outputStream.close
 
     withSession(c) { s ⇒
-      val (ret, output) = execReturnCodeOutput(s, "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
+      val command = "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm"
+      val (ret, output, error) = execReturnCodeOutput(s, command)
 
       val jobId = output.trim.reverse.takeWhile(_ != ' ').reverse
 
-      if (ret != 0 || jobId.isEmpty) throw new RuntimeException("sbatch did not return a JobID (got ret=" + ret + " jobId=" + jobId + " output=" + output + ")")
+      if (ret != 0 || jobId.isEmpty) throw exception(ret, command, output, error)
       new SLURMJob(description, jobId)
     }
   }
@@ -54,13 +55,13 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     val command = "scontrol show job " + job.slurmId
 
     withSession(c) { s ⇒
-      val (ret, output) = execReturnCodeOutput(s, command)
+      val (ret, output, error) = execReturnCodeOutput(s, command)
       val lines = output.split("\n").map(_.trim)
       val state = lines.filter(_.matches(".*JobState=.*")).map {
         prop ⇒
           val splits = prop.split('=')
           splits(0).trim -> splits(1).trim.split(' ')(0)
-      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output."))
+      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException(s"State not found in scontrol output, return=$ret, output=$output, error=$error."))
       translateStatus(ret, state)
     }
   }

@@ -66,7 +66,7 @@ object SSHJobService {
     val cmd = session.exec(cde)
     try {
       cmd.join
-      (cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString)
+      (cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
   }
 
@@ -74,6 +74,8 @@ object SSHJobService {
     val retCode = execReturnCode(session, cde)
     if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode)
   }
+
+  def exception(ret: Int, command: String, output: String, error: String) = new RuntimeException(s"Unexpected return code $ret, when running $command (stdout=$output, stderr=$error")
 
 }
 
