@@ -26,7 +26,7 @@ import java.util.logging.{Level, Logger}
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒
 
-  def unconfirmedExchanges = 5
+  def unconfirmedExchanges = 32
 
   def home(implicit authentication: A) = withSftpClient {
     _.canonicalize(".")
