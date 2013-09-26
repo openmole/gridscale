@@ -4,10 +4,10 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.52-SNAPSHOT</version>
+    <version>1.52</version>
   </parent>
   <artifactId>cog-axis</artifactId>
-  <version>1.52-SNAPSHOT</version>
+  <version>1.52</version>
   <dependencies>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
