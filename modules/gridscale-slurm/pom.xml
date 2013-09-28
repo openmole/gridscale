@@ -4,7 +4,7 @@
   <parent>
     <artifactId>modules</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.53-SNAPSHOT</version>
+    <version>1.53</version>
   </parent>
   <artifactId>slurm</artifactId>
   <packaging>jar</packaging>
