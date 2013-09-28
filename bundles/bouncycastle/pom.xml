@@ -4,7 +4,7 @@
   <parent>
     <artifactId>bundles</artifactId>
     <groupId>fr.iscpif.gridscale.bundle</groupId>
-    <version>1.53</version>
+    <version>1.54-SNAPSHOT</version>
   </parent>
   <artifactId>org.bouncycastle</artifactId>
   <packaging>bundle</packaging>
