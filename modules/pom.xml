@@ -4,7 +4,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.54</version>
+    <version>1.55-SNAPSHOT</version>
   </parent>
   <artifactId>modules</artifactId>
   <packaging>pom</packaging>
