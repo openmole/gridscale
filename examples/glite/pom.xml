@@ -4,7 +4,7 @@
   <parent>
     <artifactId>examples</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.54-SNAPSHOT</version>
+    <version>1.54</version>
   </parent>
   <artifactId>glite-example</artifactId>
   <dependencies>
