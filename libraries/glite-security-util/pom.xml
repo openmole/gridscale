@@ -17,7 +17,7 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
-      <version>1.49</version>
+      <version>${bouncycastle.version}</version>
     </dependency>
   </dependencies>
 </project>

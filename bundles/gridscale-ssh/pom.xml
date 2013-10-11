@@ -10,7 +10,7 @@
   <packaging>bundle</packaging>
   <properties>
     <export.packages>${bundle.name}.*;version="${bundle.version}",net.schmizz.sshj.*;"${lib.sshj.version}"</export.packages>
-    <not.embeded.deb>|gridscale|bcprov-jdk16</not.embeded.deb>
+    <not.embeded.deb>|gridscale|${bouncycastle.artifactID}|bcpkix-jdk15on</not.embeded.deb>
   </properties>
   <dependencies>
     <dependency>

@@ -35,6 +35,8 @@
     <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
     <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <bouncycastle.artifactID>bcprov-jdk15on</bouncycastle.artifactID>
+    <bouncycastle.version>1.49</bouncycastle.version>
   </properties>
   <repositories>
     <repository>
