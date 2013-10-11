@@ -4,7 +4,7 @@
   <parent>
     <artifactId>modules</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.55-SNAPSHOT</version>
+    <version>1.55</version>
   </parent>
   <artifactId>pbs</artifactId>
   <packaging>jar</packaging>

@@ -4,7 +4,7 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.55-SNAPSHOT</version>
+    <version>1.55</version>
   </parent>
   <artifactId>glite-security-trustmanager-axis</artifactId>
   <dependencies>
@@ -21,7 +21,7 @@
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-util</artifactId>
-      <version>1.55-SNAPSHOT</version>
+      <version>1.55</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
