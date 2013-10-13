@@ -9,7 +9,7 @@
   <artifactId>org.bouncycastle</artifactId>
   <packaging>bundle</packaging>
   <properties>
-    <bundle.classpath>${bouncycastle.artifactID}-${bouncycastle.version}.jar</bundle.classpath>
+    <bundle.classpath>${bouncycastle.artifactID}-${bouncycastle.version}.jar,.</bundle.classpath>
     <embed-dep>*;artifactId=${bouncycastle.artifactID},*;artifactId=!commons-logging|log4j|slf4j-api;scope=compile|runtime;type=!pom;inline=true</embed-dep>
   </properties>
   <dependencies>
