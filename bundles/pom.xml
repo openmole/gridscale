@@ -18,7 +18,6 @@
     <module>gridscale-http</module>
     <module>gridscale-pbs</module>
     <module>gridscale-slurm</module>
-    <module>bouncycastle</module>
   </modules>
   <properties>
     <not.embeded.deb />

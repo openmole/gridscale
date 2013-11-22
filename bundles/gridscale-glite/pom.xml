@@ -18,10 +18,5 @@
       <artifactId>glite</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>fr.iscpif.gridscale.bundle</groupId>
-      <artifactId>org.bouncycastle</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 </project>
