@@ -29,7 +29,7 @@
   </distributionManagement>
   <properties>
     <lib.sshj.version>0.9-20130626</lib.sshj.version>
-    <lib.org.jglobus.version>2.1-20130922</lib.org.jglobus.version>
+    <lib.org.jglobus.version>2.1-20131122</lib.org.jglobus.version>
     <lib.org.scala-lang.scala.version>2.10.2</lib.org.scala-lang.scala.version>
     <scala.major.version>2.10</scala.major.version>
     <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
