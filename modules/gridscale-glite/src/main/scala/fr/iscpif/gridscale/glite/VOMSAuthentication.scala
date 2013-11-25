@@ -23,19 +23,16 @@ import java.net.URI
 import org.glite.voms.contact.VOMSProxyInit
 import org.glite.voms.contact.VOMSRequestOptions
 import org.glite.voms.contact.VOMSServerInfo
-import org.glite.voms.contact.cli.VomsProxyInitClient
-import org.globus.gsi.X509Credential
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.globus.util.Util
 import collection.JavaConversions._
 import org.ietf.jgss.GSSCredential
-import java.util.UUID
 
 object VOMSAuthentication {
 
   def setCARepository(directory: File) = {
-    System.setProperty("X509_CERT_DIR", directory.getAbsolutePath)
-    System.setProperty("CADIR", directory.getAbsolutePath)
+    System.setProperty("X509_CERT_DIR", directory.getCanonicalPath)
+    System.setProperty("CADIR", directory.getCanonicalPath)
   }
 
 }

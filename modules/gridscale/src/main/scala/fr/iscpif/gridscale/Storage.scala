@@ -28,7 +28,9 @@ trait Storage {
 
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
 
-  def parent(path: String) = new File(path).getParent
+  def parent(path: String) =
+    path.reverse.dropWhile(c => c == '/' || c == '\\').drop(name(path).length).reverse
+
   def name(path: String) = new File(path).getName
   def isRoot(path: String) = parent(path) == path
 

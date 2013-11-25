@@ -98,6 +98,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
 
   def list(absolutePath: String, offset: Int, size: Int)(implicit credential: A) = {
     val uri = toSrmURI(absolutePath)
+    println("uri " + uri)
     val request = new SrmLsRequest
     request.setArrayOfSURLs(new ArrayOfAnyURI(Array(uri)))
     request.setAllLevelRecursive(false)
