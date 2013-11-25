@@ -30,7 +30,7 @@
   <properties>
     <lib.sshj.version>0.9-20130626</lib.sshj.version>
     <lib.org.jglobus.version>2.1-20131125</lib.org.jglobus.version>
-    <lib.org.scala-lang.scala.version>2.10.2</lib.org.scala-lang.scala.version>
+    <lib.org.scala-lang.scala.version>2.10.3</lib.org.scala-lang.scala.version>
     <scala.major.version>2.10</scala.major.version>
     <maven.scala.version>${lib.org.scala-lang.scala.version}</maven.scala.version>
     <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
