@@ -4,10 +4,10 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.57-SNAPSHOT</version>
+    <version>1.57</version>
   </parent>
   <artifactId>glite-wms-wmproxy</artifactId>
-  <version>1.57-SNAPSHOT</version>
+  <version>1.57</version>
   <dependencies>
     <dependency>
       <groupId>axis</groupId>
@@ -23,22 +23,22 @@
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-delegation</artifactId>
-      <version>1.57-SNAPSHOT</version>
+      <version>1.57</version>
     </dependency>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-trustmanager</artifactId>
-      <version>1.57-SNAPSHOT</version>
+      <version>1.57</version>
     </dependency>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-util</artifactId>
-      <version>1.57-SNAPSHOT</version>
+      <version>1.57</version>
     </dependency>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>cog-axis</artifactId>
-      <version>1.57-SNAPSHOT</version>
+      <version>1.57</version>
     </dependency>
   </dependencies>
   <build>

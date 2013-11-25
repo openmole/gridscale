@@ -4,10 +4,10 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.57-SNAPSHOT</version>
+    <version>1.57</version>
   </parent>
   <artifactId>glite-security-util</artifactId>
-  <version>1.57-SNAPSHOT</version>
+  <version>1.57</version>
   <dependencies>
     <dependency>
       <groupId>log4j</groupId>
