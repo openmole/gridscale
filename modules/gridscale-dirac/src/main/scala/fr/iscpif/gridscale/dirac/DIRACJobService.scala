@@ -110,7 +110,7 @@ trait DIRACJobService extends JobService with DefaultTimeout {
     val is = new TarArchiveInputStream(new ByteArrayInputStream(bytes))
 
     Iterator.continually(is.getNextEntry).takeWhile(_ != null).
-      filter { e ⇒ println(e); outputSandboxMap.contains(e.getName) }.foreach {
+      filter { e ⇒  outputSandboxMap.contains(e.getName) }.foreach {
         e ⇒
           println(e)
           val os = new FileOutputStream(outputSandboxMap(e.getName))
