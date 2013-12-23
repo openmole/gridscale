@@ -10,9 +10,9 @@
   <version>1.60-SNAPSHOT</version>
   <dependencies>
     <dependency>
-      <groupId>axis</groupId>
-      <artifactId>axis</artifactId>
-      <version>1.4-patched</version>
+      <groupId>fr.iscpif.gridscale</groupId>
+      <artifactId>axis-patched</artifactId>
+      <version>1.60-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
