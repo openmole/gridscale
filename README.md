@@ -6,9 +6,10 @@ GridScale is a scala library for accessing various file and batch system. For th
 * Remote SSH server,
 * PBS clusters,
 * SLURM clusters,
-* HTTP file lists.
+* HTTP file lists,
+* DIRAC job pilot system.
 
-Support is planned for SGE and DIRAC job pilot system.
+Support is planned for SGE and Condor.
 
 Documentation
 -------------
