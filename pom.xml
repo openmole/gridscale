@@ -38,6 +38,19 @@
     <bouncycastle.artifactID>bcprov-jdk15on</bouncycastle.artifactID>
     <bouncycastle.version>1.49</bouncycastle.version>
   </properties>
+  <repositories>
+    <repository>
+      <id>iscpif</id>
+      <name>iscpif Repo</name>
+      <url>http://maven.iscpif.fr/public/</url>
+    </repository>
+    <repository>
+      <id>iscpif snapshot</id>
+      <name>iscpif snapshot Repo</name>
+      <url>http://maven.iscpif.fr/public-snapshots/</url>
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
       <plugin>
