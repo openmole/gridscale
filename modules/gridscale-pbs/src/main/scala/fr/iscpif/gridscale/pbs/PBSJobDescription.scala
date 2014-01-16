@@ -59,6 +59,10 @@ trait PBSJobDescription extends JobDescription {
     nodes match {
       case Some(n) ⇒ buffer += "#PBS -lnodes=" + n + ":ppn=" + coreByNode.getOrElse(1)
       case None ⇒
+        coreByNode match {
+          case Some(c) => buffer += "#PBS -lnodes=1:ppn=" + c
+          case None =>
+        }
     }
 
     buffer += "cd " + workDirectory
