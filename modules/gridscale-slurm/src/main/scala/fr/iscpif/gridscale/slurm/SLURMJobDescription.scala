@@ -26,6 +26,12 @@ class Gres(val gresName: String, val gresValue: Int) extends Tuple2[String, Int]
   override def toString = _1 + ":" + _2.toString
 }
 
+object Gres {
+  def apply(inGresName: String, inGresValue: Int) = {
+    new Gres(inGresName, inGresValue)
+  }
+}
+
 trait SLURMJobDescription extends JobDescription {
 
   val uniqId = UUID.randomUUID.toString
