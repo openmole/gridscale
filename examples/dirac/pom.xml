@@ -2,20 +2,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>bundles</artifactId>
-    <groupId>fr.iscpif.gridscale.bundle</groupId>
+    <artifactId>examples</artifactId>
+    <groupId>fr.iscpif.gridscale</groupId>
     <version>1.60</version>
   </parent>
-  <artifactId>fr.iscpif.gridscale.dirac</artifactId>
-  <packaging>bundle</packaging>
-  <properties>
-    <not.embeded.deb>|gridscale</not.embeded.deb>
-  </properties>
+  <artifactId>dirac-example</artifactId>
   <dependencies>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>dirac</artifactId>
-      <version>${project.version}</version>
+      <version>${project.parent.version}</version>
     </dependency>
   </dependencies>
 </project>

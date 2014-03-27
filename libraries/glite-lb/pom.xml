@@ -4,21 +4,21 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.60-SNAPSHOT</version>
+    <version>1.60</version>
   </parent>
   <artifactId>glite-lb</artifactId>
-  <version>1.60-SNAPSHOT</version>
+  <version>1.60</version>
   <name>gLite-LB API</name>
   <dependencies>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>axis-patched</artifactId>
-      <version>1.60-SNAPSHOT</version>
+      <version>1.60</version>
     </dependency>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>cog-axis</artifactId>
-      <version>1.60-SNAPSHOT</version>
+      <version>1.60</version>
     </dependency>
     <dependency>
       <groupId>javax.xml</groupId>
