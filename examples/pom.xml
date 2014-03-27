@@ -11,6 +11,7 @@
   <modules>
     <module>slurm</module>
     <module>glite</module>
+    <module>dirac</module>
   </modules>
   <dependencies>
     <dependency>
@@ -39,23 +40,6 @@
               <goal>compile</goal>
               <goal>testCompile</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.scalariform</groupId>
-        <artifactId>scalariform-maven-plugin</artifactId>
-        <version>0.1.3</version>
-        <executions>
-          <execution>
-            <phase>process-sources</phase>
-            <goals>
-              <goal>format</goal>
-            </goals>
-            <configuration>
-              <rewriteArrowSymbols>true</rewriteArrowSymbols>
-              <alignParameters>true</alignParameters>
-            </configuration>
           </execution>
         </executions>
       </plugin>

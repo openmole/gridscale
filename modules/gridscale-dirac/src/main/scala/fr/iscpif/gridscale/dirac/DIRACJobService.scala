@@ -53,7 +53,7 @@ trait DIRACJobService extends JobService with DefaultTimeout {
     def withToken(implicit credential: A) = r.param("access_token", tokenCache(credential).token)
     def asStringChecked = {
       val (responseCode, headersMap, resultString) = r.asHeadersAndParse(Http.readString)
-      if(responseCode != HttpURLConnection.HTTP_OK) throw new RuntimeException(s"Response code was $responseCode when to the request $r, message is $resultString")
+      if (responseCode != HttpURLConnection.HTTP_OK) throw new RuntimeException(s"Response code was $responseCode when to the request $r, message is $resultString")
       resultString
     }
   }
@@ -66,6 +66,7 @@ trait DIRACJobService extends JobService with DefaultTimeout {
     }
 
   def token(implicit credential: A) = {
+    println(Http(auth2Auth).param("response_type", "client_credentials").param("group", group).param("setup", setup))
     val o =
       Http(auth2Auth).param("response_type", "client_credentials").param("group", group).param("setup", setup).initialise.asStringChecked.asJson.asJsObject
     val f = o.getFields("token", "expires_in")

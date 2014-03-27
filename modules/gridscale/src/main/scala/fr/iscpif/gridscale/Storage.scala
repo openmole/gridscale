@@ -29,7 +29,7 @@ trait Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
 
   def parent(path: String) =
-    path.reverse.dropWhile(c => c == '/' || c == '\\').drop(name(path).length).reverse
+    path.reverse.dropWhile(c ⇒ c == '/' || c == '\\').drop(name(path).length).reverse
 
   def name(path: String) = new File(path).getName
   def isRoot(path: String) = parent(path) == path
@@ -45,7 +45,6 @@ trait Storage {
   def rmFile(path: String)(implicit authentication: A) = wrapException(s"rm file $path")(_rmFile(path))
   def mv(from: String, to: String)(implicit authentication: A) = wrapException(s"move $from to $to")(_mv(from, to))
 
-
   def _list(path: String)(implicit authentication: A): Seq[(String, FileType)]
   def _makeDir(path: String)(implicit authentication: A)
   def _rmDir(path: String)(implicit authentication: A)
@@ -55,9 +54,9 @@ trait Storage {
   protected def _openInputStream(path: String)(implicit authentication: A): InputStream
   protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream
 
-  def wrapException[T](operation: String)(f: => T): T =
+  def wrapException[T](operation: String)(f: ⇒ T): T =
     try f
     catch {
-      case e: Throwable => throw new IOException(s"Error $operation", e)
+      case e: Throwable ⇒ throw new IOException(s"Error $operation", e)
     }
 }
