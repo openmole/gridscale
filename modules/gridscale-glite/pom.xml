@@ -4,7 +4,7 @@
   <parent>
     <artifactId>modules</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.60</version>
+    <version>1.61-SNAPSHOT</version>
   </parent>
   <artifactId>glite</artifactId>
   <packaging>jar</packaging>
