@@ -4,7 +4,7 @@
   <parent>
     <artifactId>examples</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.61</version>
+    <version>1.62-SNAPSHOT</version>
   </parent>
   <artifactId>dirac-example</artifactId>
   <dependencies>

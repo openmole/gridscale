@@ -4,10 +4,10 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.61</version>
+    <version>1.62-SNAPSHOT</version>
   </parent>
   <artifactId>glite-security-voms</artifactId>
-  <version>1.61</version>
+  <version>1.62-SNAPSHOT</version>
   <name>gLite-VOMS API</name>
   <dependencies>
     <dependency>
