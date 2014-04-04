@@ -51,6 +51,7 @@ package object gridscale {
   case object DirectoryType extends FileType
   case object FileType extends FileType
   case object LinkType extends FileType
+  case object UnknownType extends FileType
 
   implicit val nothingImplicit: Unit = Unit
 
