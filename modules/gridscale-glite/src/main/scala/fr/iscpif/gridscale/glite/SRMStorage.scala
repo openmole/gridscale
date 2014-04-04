@@ -129,7 +129,7 @@ trait SRMStorage extends Storage with RecursiveRmDir {
         case TFileType.DIRECTORY ⇒ DirectoryType
         case TFileType.FILE ⇒ FileType
         case TFileType.LINK ⇒ LinkType
-        case _ => UnknownType
+        case _ ⇒ UnknownType
       }
       new File(pd.getPath).getName -> t
     }).toSeq

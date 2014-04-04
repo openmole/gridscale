@@ -39,7 +39,7 @@ trait DIRACJobService extends JobService with DefaultTimeout {
   def service: String
   def group: String
   def setup = "Dirac-Production"
-  def auth2Auth = service + "/oauth2/auth"
+  def auth2Auth = service + "/oauth2/token"
   def jobs = service + "/jobs"
 
   def tokenExpirationMargin = 10 * 60 * 1000
@@ -66,9 +66,8 @@ trait DIRACJobService extends JobService with DefaultTimeout {
     }
 
   def token(implicit credential: A) = {
-    println(Http(auth2Auth).param("response_type", "client_credentials").param("group", group).param("setup", setup))
     val o =
-      Http(auth2Auth).param("response_type", "client_credentials").param("group", group).param("setup", setup).initialise.asStringChecked.asJson.asJsObject
+      Http(auth2Auth).param("grant_type", "client_credentials").param("group", group).param("setup", setup).initialise.asStringChecked.asJson.asJsObject
     val f = o.getFields("token", "expires_in")
     Token(f(0).convertTo[String], f(1).convertTo[Long])
   }
