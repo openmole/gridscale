@@ -40,7 +40,7 @@ trait ProxyFileAuthentication extends GlobusAuthentication {
       ExtendedGSSCredential.IMPEXP_OPAQUE,
       GSSCredential.DEFAULT_LIFETIME,
       null, // use default mechanism: GSI
-      GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
+      GSSCredential.ACCEPT_ONLY).asInstanceOf[GlobusGSSCredentialImpl]
     GlobusAuthentication.Proxy(credential, proxy, delegationID.toString)
   }
 
