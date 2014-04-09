@@ -19,6 +19,10 @@ package fr.iscpif.gridscale
 
 import java.io._
 
+object Storage {
+  def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
+}
+
 trait Storage {
   type A
 
@@ -26,7 +30,7 @@ trait Storage {
     if (isRoot(path)) true
     else listNames(parent(path)).toSet.contains(name(path))
 
-  def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
+  def child(parent: String, child: String) = Storage.child(parent, child)
 
   def parent(path: String) =
     path.reverse.dropWhile(c ⇒ c == '/' || c == '\\').drop(name(path).length).reverse
