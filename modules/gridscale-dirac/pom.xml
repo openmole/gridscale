@@ -20,12 +20,12 @@
     <dependency>
       <groupId>io.spray</groupId>
       <artifactId>spray-json_${scala.major.version}</artifactId>
-      <version>1.2.5</version>
+      <version>1.2.6</version>
     </dependency>
     <dependency>
       <groupId>org.scalaj</groupId>
       <artifactId>scalaj-http_${scala.major.version}</artifactId>
-      <version>0.3.14</version>
+      <version>0.3.15</version>
     </dependency>
   </dependencies>
 </project>
