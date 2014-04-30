@@ -4,25 +4,25 @@
   <parent>
     <artifactId>libraries</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.63-SNAPSHOT</version>
+    <version>1.63</version>
   </parent>
   <artifactId>glite-security-delegation</artifactId>
-  <version>1.63-SNAPSHOT</version>
+  <version>1.63</version>
   <dependencies>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-util</artifactId>
-      <version>1.63-SNAPSHOT</version>
+      <version>1.63</version>
     </dependency>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-voms</artifactId>
-      <version>1.63-SNAPSHOT</version>
+      <version>1.63</version>
     </dependency>
     <dependency>
       <groupId>fr.iscpif.gridscale</groupId>
       <artifactId>glite-security-trustmanager-axis</artifactId>
-      <version>1.63-SNAPSHOT</version>
+      <version>1.63</version>
     </dependency>
   </dependencies>
 </project>
