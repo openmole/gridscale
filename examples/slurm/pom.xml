@@ -4,7 +4,7 @@
   <parent>
     <artifactId>examples</artifactId>
     <groupId>fr.iscpif.gridscale</groupId>
-    <version>1.62-SNAPSHOT</version>
+    <version>1.62</version>
   </parent>
   <artifactId>slurm-example</artifactId>
   <dependencies>
