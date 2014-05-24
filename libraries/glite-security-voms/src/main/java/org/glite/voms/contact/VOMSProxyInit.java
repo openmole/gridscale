@@ -56,6 +56,8 @@ public class VOMSProxyInit {
     private String proxyOutputFile = File.separator+"tmp"+File.separator+"x509up_u_"+System.getProperty( "user.name" ); 
     
     private int proxyLifetime = VOMSProxyBuilder.DEFAULT_PROXY_LIFETIME;
+
+    private int proxySize = VOMSProxyBuilder.DEFAULT_PROXY_SIZE;
     
     private CertificateType proxyType = VOMSProxyBuilder.DEFAULT_PROXY_TYPE;
     
@@ -315,7 +317,7 @@ public class VOMSProxyInit {
         log.info( "ACs validation succeded." );
         
         X509Credential proxy = VOMSProxyBuilder.buildProxy( userCredentials, 
-                                                              ACs, proxyLifetime, 
+                                                              ACs, proxySize, proxyLifetime,
                                                               proxyType, 
                                                               delegationType,
                                                               policyType);
@@ -433,6 +435,14 @@ public class VOMSProxyInit {
     public void setProxyLifetime( int proxyLifetime ) {
     
         this.proxyLifetime = proxyLifetime;
+    }
+
+    public int getProxySize() {
+        return proxySize;
+    }
+
+    public void setProxySize(int proxySize) {
+        this.proxySize = proxySize;
     }
 
     public CertificateType getProxyType() {

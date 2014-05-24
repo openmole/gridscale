@@ -45,6 +45,7 @@ trait VOMSAuthentication extends GlobusAuthentication {
   def proxyFile: File
   def fqan: Option[String] = None
   def lifeTime: Int
+  def proxySize = 1024
 
   def apply() = synchronized {
     val file = proxyFile
@@ -72,6 +73,7 @@ trait VOMSAuthentication extends GlobusAuthentication {
     }
 
     proxy.setProxyLifetime(lifeTime)
+    proxy.setProxySize(proxySize)
     requestOption.setLifetime(lifeTime)
 
     val globusProxy = proxy.getVomsProxy(List(requestOption))

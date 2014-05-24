@@ -96,6 +96,7 @@ public class VOMSProxyBuilder {
     public static final CertificateType DEFAULT_PROXY_TYPE = CertificateType.GSI_2_PROXY;
     public static final DelegationType DEFAULT_DELEGATION_TYPE = DelegationType.FULL;
     public static final int DEFAULT_PROXY_LIFETIME = 86400;
+    public static final int DEFAULT_PROXY_SIZE = 1024;
     private static final String PROXY_CERT_INFO_V3_OID = "1.3.6.1.4.1.3536.1.222";
     private static final String PROXY_CERT_INFO_V4_OID = "1.3.6.1.5.5.7.1.14";
 
@@ -254,7 +255,7 @@ public class VOMSProxyBuilder {
     public static X509Credential buildProxy(UserCredentials cred,
             List ACs, int lifetime) {
         try {
-            return buildProxy(cred, ACs, lifetime, DEFAULT_PROXY_TYPE,
+            return buildProxy(cred, ACs, lifetime, DEFAULT_PROXY_SIZE, DEFAULT_PROXY_TYPE,
                     DEFAULT_DELEGATION_TYPE, null);
         } catch (Throwable e) {
 
@@ -289,7 +290,7 @@ public class VOMSProxyBuilder {
      *
      */
     public static X509Credential buildProxy(UserCredentials cred,
-            List ACs, int lifetime, CertificateType gtVersion, DelegationType delegType,
+            List ACs, int bits, int lifetime, CertificateType gtVersion, DelegationType delegType,
             String policyType) {
 
         if (ACs.isEmpty()) {
@@ -322,7 +323,7 @@ public class VOMSProxyBuilder {
         //        try {
         X509Credential proxy = myCreateCredential(
                 cred.getUserChain(),
-                cred.getUserKey(), 512, lifetime,
+                cred.getUserKey(), bits, lifetime,
                 delegType, gtVersion, extensions, policyType);
 
         return proxy;
