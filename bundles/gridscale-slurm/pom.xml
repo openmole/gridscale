@@ -9,7 +9,7 @@
   <artifactId>fr.iscpif.gridscale.slurm</artifactId>
   <packaging>bundle</packaging>
   <properties>
-    <not.embeded.deb>|gridscale|ssh|sshj</not.embeded.deb>
+    <not.embeded.deb>|gridscale|${bouncycastle.artifactID}|bcpkix-jdk15on|gridscale|ssh|sshj</not.embeded.deb>
   </properties>
   <dependencies>
     <dependency>
