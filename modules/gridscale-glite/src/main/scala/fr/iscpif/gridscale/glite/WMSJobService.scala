@@ -54,6 +54,43 @@ object WMSJobService {
   private val flags = new JobFlags
   flags.setFlag(Array(JobFlagsValue.CLASSADS, JobFlagsValue.CHILDREN, JobFlagsValue.CHILDSTAT))
 
+  def state(jobId: WMSJobService#J, timeout: Int = 60)(implicit credential: WMSJobService#A) = translateState(rawState(jobId, timeout))
+
+  private def translateState(s: StatName) =
+    s.getValue match {
+      case StatName._ABORTED ⇒ Failed
+      case StatName._CANCELLED ⇒ Failed
+      case StatName._CLEARED ⇒ Done
+      case StatName._DONE ⇒ Done
+      case StatName._PURGED ⇒ Done
+      case StatName._READY ⇒ Submitted
+      case StatName._RUNNING ⇒ Running
+      case StatName._SCHEDULED ⇒ Submitted
+      case StatName._SUBMITTED ⇒ Submitted
+      case StatName._UNKNOWN ⇒ Failed
+      case StatName._WAITING ⇒ Submitted
+    }
+
+  private def rawState(jobId: WMSJobId, timeout: Int)(implicit credential: WMSJobService#A) = {
+    val jobUrl = new URL(jobId.id)
+    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
+    lbService(lbServiceURL, timeout)(credential()).jobStatus(jobId.id, flags).getState
+  }
+  private def lbService(url: URL, timeout: Int)(credential: GlobusAuthentication.Proxy) = {
+    val locator = new LoggingAndBookkeepingLocator(provider)
+    val lbService = locator.getLoggingAndBookkeeping(url)
+    lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential.credential)
+    lbService.asInstanceOf[Stub].setTimeout(timeout * 1000)
+    lbService
+  }
+
+  private def provider = {
+    val provider = new SimpleProvider
+    provider.deployTransport("https", new SimpleTargetedChain(new HTTPSSender))
+    provider.deployTransport("http", new SimpleTargetedChain(new HTTPSSender))
+    provider
+  }
+
 }
 
 import WMSJobService._
@@ -98,13 +135,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
 
   def purge(jobId: J)(implicit credential: A) = serviceStub(credential()).jobPurge(jobId.id)
 
-  def state(jobId: J)(implicit credential: A) = translateState(rawState(jobId))
-
-  def rawState(jobId: J)(implicit credential: A) = {
-    val jobUrl = new URL(jobId.id)
-    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
-    lbService(lbServiceURL)(credential()).jobStatus(jobId.id, flags).getState
-  }
+  def state(jobId: J)(implicit credential: A) = WMSJobService.state(jobId, timeout)
 
   def downloadOutputSandbox(desc: D, jobId: J)(implicit credential: A) = {
     val cred = credential()
@@ -121,21 +152,6 @@ trait WMSJobService extends JobService with DefaultTimeout {
     }
   }
 
-  private def translateState(s: StatName) =
-    s.getValue match {
-      case StatName._ABORTED ⇒ Failed
-      case StatName._CANCELLED ⇒ Failed
-      case StatName._CLEARED ⇒ Done
-      case StatName._DONE ⇒ Done
-      case StatName._PURGED ⇒ Done
-      case StatName._READY ⇒ Submitted
-      case StatName._RUNNING ⇒ Running
-      case StatName._SCHEDULED ⇒ Submitted
-      case StatName._SUBMITTED ⇒ Submitted
-      case StatName._UNKNOWN ⇒ Failed
-      case StatName._WAITING ⇒ Submitted
-    }
-
   private def fillInputSandbox(desc: WMSJobDescription, jobId: String)(credential: GlobusAuthentication.Proxy) = {
     val inputSandboxURL = new URI(serviceStub(credential).getSandboxDestURI(jobId, "gsiftp").getItem(0))
     desc.inputSandbox.foreach {
@@ -147,21 +163,6 @@ trait WMSJobService extends JobService with DefaultTimeout {
   }
 
   private def register(jdl: String)(credential: GlobusAuthentication.Proxy) = serviceStub(credential).jobRegister(jdl, credential.delegationID)
-
-  private def lbService(url: URL)(credential: GlobusAuthentication.Proxy) = {
-    val locator = new LoggingAndBookkeepingLocator(provider)
-    val lbService = locator.getLoggingAndBookkeeping(url)
-    lbService.asInstanceOf[Stub]._setProperty(AGSIConstants.GSI_CREDENTIALS, credential.credential)
-    lbService.asInstanceOf[Stub].setTimeout(timeout * 1000)
-    lbService
-  }
-
-  private def provider = {
-    val provider = new SimpleProvider
-    provider.deployTransport("https", new SimpleTargetedChain(new HTTPSSender))
-    provider.deployTransport("http", new SimpleTargetedChain(new HTTPSSender))
-    provider
-  }
 
   @transient private lazy val serviceLocator = new WMProxyLocator(provider)
 

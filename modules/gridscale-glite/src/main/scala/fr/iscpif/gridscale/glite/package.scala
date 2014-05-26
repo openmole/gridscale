@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2014 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,16 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.glite
+package fr.iscpif.gridscale
 
-object WMSJobId {
-
-  def apply(_id: String) = new WMSJobId {
-    override def id: String = _id
-  }
-
-}
-
-trait WMSJobId {
-  def id: String
+package object glite {
+  implicit def stringToJobId(s: String) = WMSJobId(s)
 }
