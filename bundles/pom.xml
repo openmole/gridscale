@@ -12,12 +12,13 @@
   <name>${project.artifactId} ${project.version}</name>
   <modules>
     <module>gridscale</module>
-    <module>gridscale-ssh</module>
-    <module>gridscale-glite</module>
+    <module>gridscale-condor</module>
     <module>gridscale-dirac</module>
+    <module>gridscale-glite</module>
     <module>gridscale-http</module>
     <module>gridscale-pbs</module>
     <module>gridscale-slurm</module>
+    <module>gridscale-ssh</module>
   </modules>
   <properties>
     <not.embeded.deb />
