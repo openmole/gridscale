@@ -9,9 +9,10 @@
   <artifactId>examples</artifactId>
   <packaging>pom</packaging>
   <modules>
-    <module>slurm</module>
-    <module>glite</module>
+    <module>condor</module>
     <module>dirac</module>
+    <module>glite</module>
+    <module>slurm</module>
   </modules>
   <dependencies>
     <dependency>
