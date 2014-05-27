@@ -79,16 +79,16 @@ trait SLURMJobDescription extends JobDescription {
     buffer += "#SBATCH -D " + workDirectory + "\n"
 
     // TODO: handle several srun and split gres accordingly
-    buffer += "srun "
-    // must handle empty list separately since it is not done in mkString
-    gres match {
-      case List() ⇒
-      case _ ⇒ buffer += gres.mkString("--gres=", "--gres=", "")
-    }
-    constraints match {
-      case List() ⇒
-      case _ ⇒ buffer += constraints.mkString("--constraint=\"", "&", "\"")
-    }
+//    buffer += "srun "
+//    // must handle empty list separately since it is not done in mkString
+//    gres match {
+//      case List() ⇒
+//      case _ ⇒ buffer += gres.mkString("--gres=", "--gres=", "")
+//    }
+//    constraints match {
+//      case List() ⇒
+//      case _ ⇒ buffer += constraints.mkString("--constraint=\"", "&", "\"")
+//    }
 
     buffer += executable + " " + arguments
 
