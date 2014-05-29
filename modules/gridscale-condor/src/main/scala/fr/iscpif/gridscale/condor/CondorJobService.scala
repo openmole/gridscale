@@ -43,13 +43,14 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
     finally outputStream.close
 
     withSession(c) { session ⇒
-      val command = sourceBashRC + "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor"
-      //      val (ret, output, error) = execReturnCodeOutput(session, command)
-      //      if (ret != 0) throw exception(ret, command, output, error)
-      //
-      //
-      //      if (jobId == null) throw new RuntimeException("condor_submit did not return a JobID")
-      val jobId = "1" // dummy
+      val command = "bash -c \"source ~/.bashrc && cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor\""
+
+      val (ret, output, error) = execReturnCodeOutput(session, command)
+      if (0 != ret) throw exception(ret, command, output, error)
+
+      val jobId = output.trim.reverse.tail.takeWhile(_ != ' ')
+      if (jobId == null || jobId.isEmpty) throw exception(ret, command, output, error)
+
       new CondorJob(description, jobId)
     }
   }
@@ -87,8 +88,10 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
 
   def translateStatus(retCode: Int, status: String) =
     status match {
+      case "C" | "X" ⇒ Done
       case "R" ⇒ Running
       case "I" | "H" ⇒ Submitted
+      case "U" ⇒ Failed
       case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
     }
 

@@ -41,7 +41,7 @@ object Main {
     val description = new CondorJobDescription {
       def executable = "/bin/echo"
       def arguments = "success > test_success.txt"
-      def workDirectory = "/home/jopasserat/toto"
+      def workDirectory = "/homes/jpassera/toto"
     }
 
     println("job to submit:")
@@ -50,14 +50,14 @@ object Main {
     val j = condorService.submit(description)
     println("the job has been submitted")
 
-    val s1 = condorService.state(j)
-    println("it can be monitored")
-    println("Job is " + s1)
-
-    println("it should complete one day or another")
-    val s2 = untilFinished { Thread.sleep(5000); val s = condorService.state(j); println(s); s }
-
-    condorService.purge(j)
+    //    val s1 = condorService.state(j)
+    //    println("it can be monitored")
+    //    println("Job is " + s1)
+    //
+    //    println("it should complete one day or another")
+    //    val s2 = untilFinished { Thread.sleep(5000); val s = condorService.state(j); println(s); s }
+    //
+    //    condorService.purge(j)
   }
 
   def submitAndCancel(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
@@ -76,7 +76,7 @@ object Main {
     val description = new CondorJobDescription {
       def executable = "/usr/bin/find"
       def arguments = "/"
-      def workDirectory = "/home/jopasserat/toto"
+      def workDirectory = "/homes/jpassera/toto"
     }
 
     println("then the job has been submitted")
@@ -111,7 +111,7 @@ object Main {
     val description = new CondorJobDescription {
       def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
       def arguments = ""
-      def workDirectory = "/home/jopasserat/toto"
+      def workDirectory = "/homes/jpassera/toto"
       override def requirements = List("tesla", "fermi")
     }
 
