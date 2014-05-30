@@ -24,8 +24,6 @@ import SSHJobService._
 
 object CondorJobService {
   class CondorJob(val description: CondorJobDescription, val condorId: String)
-
-  val jobStateAttribute = "JOB_STATE"
 }
 
 import CondorJobService._
@@ -34,7 +32,11 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
   type J = CondorJob
   type D = CondorJobDescription
 
-  def sourceBashRC = "source ~/.bashrc ; "
+  // assume bash will be available on most systems
+  // bash -ci will fake an interactive shell (-i) in order to load the config files
+  // as an interactive ssh shell would (~/.bashrc, /etc/bashrc)
+  // and run the sequence of command without interaction (-c)
+  def baseCommand = "bash -ci \""
 
   def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
     withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
@@ -43,55 +45,76 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
     finally outputStream.close
 
     withSession(c) { session ⇒
-      val command = "bash -c \"source ~/.bashrc && cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor\""
+      val command = baseCommand + "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor\""
 
       val (ret, output, error) = execReturnCodeOutput(session, command)
       if (0 != ret) throw exception(ret, command, output, error)
 
-      val jobId = output.trim.reverse.tail.takeWhile(_ != ' ')
-      if (jobId == null || jobId.isEmpty) throw exception(ret, command, output, error)
+      val jobId = output.trim.reverse.tail.takeWhile(_ != ' ').reverse
+      if (jobId.isEmpty) throw exception(ret, command, output, error)
 
       new CondorJob(description, jobId)
     }
   }
 
-  def state(job: J)(implicit credential: A): JobState = withConnection(withSession(_) { session ⇒
-    val command = sourceBashRC + "qstat -f " + job.condorId
+  def state(job: J)(implicit credential: A): JobState = withConnection { c ⇒
+    // NOTE: submission sends only 1 process per cluster for the moment so no need to query the process id
 
-    val (ret, output, error) = execReturnCodeOutput(session, command)
+    // if the job is still running, his state is returned by condor_q...
+    val queryInQueue = baseCommand + "condor_q " + job.condorId + " -long -attributes JobStatus\""
 
-    ret.toInt match {
-      case 153 ⇒ Done
-      case 0 ⇒
-        val lines = output.split("\n").map(_.trim)
-        val state = lines.filter(_.matches(".*=.*")).map {
-          prop ⇒
-            val splited = prop.split('=')
-            splited(0).trim.toUpperCase -> splited(1).trim
-        }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output: " + output))
-        translateStatus(ret, state)
-      case r ⇒ throw exception(ret, command, output, error)
+    val (retInQueue, outputInQueue, errorInQueue) = withSession(c) {
+      session ⇒
+        execReturnCodeOutput(session, queryInQueue)
     }
-  })
 
-  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, sourceBashRC + "qdel " + job.condorId) })
+    retInQueue.toInt match {
+      case 0 if (!outputInQueue.isEmpty) ⇒ {
+        // when split, the actual state is the last member of a 2-element array
+        val state = outputInQueue.split('=').map(_ trim).last
+        translateStatus(state)
+      }
+      case 0 ⇒ {
+        // ...but if the job is already completed, his state is returned by condor_history...
+        val queryFinished = baseCommand + "condor_history " + job.condorId + " -long\""
 
-  //Purge output error job script
+        val (retFinished, outputFinished, errorFinished) = withSession(c) {
+          session ⇒ execReturnCodeOutput(session, queryFinished)
+        }
+
+        retFinished.toInt match {
+          case 0 if (!outputFinished.isEmpty) ⇒ {
+            // can't match it with a regex from the ouput for some reason...
+            // resulting in this ugly one-liner...
+            val state = outputFinished.split("\n").filter(_ matches "^JobStatus = .*").head.split('=').map(_ trim).last
+            translateStatus(state)
+          }
+          case _ ⇒ throw exception(retFinished, queryFinished, outputFinished, errorFinished)
+        }
+      }
+      case _ ⇒ throw exception(retInQueue, queryInQueue, outputInQueue, errorInQueue)
+    }
+
+  }
+
+  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, baseCommand + "condor_rm " + job.condorId + "\"") })
+
+  // Purge output, error and job script
   def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒
     rmFileWithClient(condorScriptPath(job.description))(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.log)(c)
   }
 
   def condorScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".condor"
 
-  def translateStatus(retCode: Int, status: String) =
+  def translateStatus(status: String) =
     status match {
-      case "C" | "X" ⇒ Done
-      case "R" ⇒ Running
-      case "I" | "H" ⇒ Submitted
-      case "U" ⇒ Failed
+      case "3" | "4" ⇒ Done
+      case "2" ⇒ Running
+      // choice was made to characterize held jobs (status=5) as submitted instead of Running
+      case "0" | "1" | "5" ⇒ Submitted
+      case "6" ⇒ Failed
       case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
     }
 

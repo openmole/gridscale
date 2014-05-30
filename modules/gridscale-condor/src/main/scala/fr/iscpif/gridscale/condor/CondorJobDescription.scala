@@ -32,7 +32,7 @@ trait CondorJobDescription extends JobDescription {
   def coreByNode: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
-  def log: String = uniqId + ".log"
+
   def requirements: List[String] = List()
 
   def toCondor = {
