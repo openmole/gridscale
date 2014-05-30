@@ -27,9 +27,9 @@ object Main {
 
   def submitEchoAndDone(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
 
-    println("a job is successfully submitted, runs then its results are retrived normally")
+    println("a job is successfully submitted, runs then its results are retrieved normally")
 
-    println("a condor environment using an SSH privatekey authentication")
+    println("a condor environment using an SSH private-key authentication")
     implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
@@ -50,21 +50,21 @@ object Main {
     val j = condorService.submit(description)
     println("the job has been submitted")
 
-    //    val s1 = condorService.state(j)
-    //    println("it can be monitored")
-    //    println("Job is " + s1)
-    //
-    //    println("it should complete one day or another")
-    //    val s2 = untilFinished { Thread.sleep(5000); val s = condorService.state(j); println(s); s }
-    //
-    //    condorService.purge(j)
+    val s1 = condorService.state(j)
+    println("it can be monitored")
+    println("Job is " + s1)
+
+    println("it should complete one day or another")
+    val s2 = untilFinished { Thread.sleep(5000); val s = condorService.state(j); println(s); s }
+
+    condorService.purge(j)
   }
 
   def submitAndCancel(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
 
     println("a job is successfully submitted, then cancelled")
 
-    println("a condor environment using an SSH privatekey authentication")
+    println("a condor environment using an SSH private-key authentication")
     implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
@@ -99,7 +99,7 @@ object Main {
 
     println("a job is successfully submitted, requesting a tesla&fermi node")
 
-    println("a condor environment using an SSH privatekey authentication")
+    println("a condor environment using an SSH private-key authentication")
     implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
@@ -145,8 +145,7 @@ object Main {
       "privateKeyPath = " + privateKeyPath + "\n")
 
     submitEchoAndDone(host, username, password, privateKeyPath)
-    //    submitAndCancel(host, username, password, privateKeyPath)
-    //    submitWithGres(host, username, password, privateKeyPath)
+    submitAndCancel(host, username, password, privateKeyPath)
     //    submitWithRequirements(host, username, password, privateKeyPath)
   }
 
