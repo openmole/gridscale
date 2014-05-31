@@ -107,12 +107,12 @@ object Main {
       def privateKey = new File(inPrivateKeyPath)
     }
 
-    println("a CUDA job")
+    println("a Java job")
     val description = new CondorJobDescription {
-      def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
-      def arguments = ""
+      def executable = "/usr/bin/java"
+      def arguments = "-version"
       def workDirectory = "/homes/jpassera/toto"
-      override def requirements = List("tesla", "fermi")
+      override def requirements = List("JavaVersion == \"1.7.0_03\"")
     }
 
     println("then the job has been submitted")
@@ -146,7 +146,7 @@ object Main {
 
     submitEchoAndDone(host, username, password, privateKeyPath)
     submitAndCancel(host, username, password, privateKeyPath)
-    //    submitWithRequirements(host, username, password, privateKeyPath)
+    submitWithRequirements(host, username, password, privateKeyPath)
   }
 
 }
