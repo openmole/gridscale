@@ -112,7 +112,7 @@ object Main {
       def executable = "/usr/bin/java"
       def arguments = "-version"
       def workDirectory = "/homes/jpassera/toto"
-      override def requirements = List("JavaVersion == \"1.7.0_03\"")
+      override def requirements = List(CondorRequirement("JavaVersion", "1.7.0_03"))
     }
 
     println("then the job has been submitted")

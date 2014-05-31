@@ -21,6 +21,19 @@ package fr.iscpif.gridscale.condor
 import java.util.UUID
 import fr.iscpif.gridscale._
 
+/** Represent Requirements by extending Tuple2 in order to override toString */
+class CondorRequirement(val requirementName: String,
+                        val requirementValue: String)
+    extends Tuple2[String, String](requirementName, requirementValue) {
+  override def toString = _1 + " == \"" + _2 + "\""
+}
+
+object CondorRequirement {
+  def apply(inRequirementName: String, inRequirementValue: String) = {
+    new CondorRequirement(inRequirementName, inRequirementValue)
+  }
+}
+
 trait CondorJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
   def workDirectory: String
@@ -33,7 +46,7 @@ trait CondorJobDescription extends JobDescription {
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
 
-  def requirements: List[String] = List()
+  def requirements: List[CondorRequirement] = List()
 
   def toCondor = {
     val buffer = new ScriptBuffer
