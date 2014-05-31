@@ -39,8 +39,7 @@ In order to use gridscale you should import the folowing namespaces:
 Examples
 --------
 
-## SSH server ## 
-
+### SSH server
 To access a storage through **SSH**:
 
     implicit val sshStorage = new SSHStorage with SSHUserPasswordAuthentication {
@@ -83,8 +82,7 @@ To run a process on a remote server through **SSH**:
     val s = untilFinished{Thread.sleep(5000); val s = sshJS.state(j); println(s); s}
     sshJS.purge(j)
 
-## PBS ## 
-
+### PBS
 To submit a job on a **PBS** cluster:
 
     implicit val pbsService = new PBSJobService with SSHPrivateKeyAuthentication {
@@ -105,8 +103,7 @@ To submit a job on a **PBS** cluster:
     pbsService.purge(j)
 
 
-## SLURM ##
-
+### SLURM
 To submit a job on a **SLURM** cluster:
 
     implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
@@ -128,8 +125,7 @@ To submit a job on a **SLURM** cluster:
     slurmService.purge(j)
 
 
-## Condor ##
-
+### Condor
 To submit a job on a **Condor** flock:
 
     implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
@@ -151,9 +147,8 @@ To submit a job on a **Condor** flock:
     condorService.purge(j)
 
 
-## GLite / EMI ##
-
-To submit a job on the biomed VO of the EGI grid:
+### GLite / EMI
+To **submit a job** on the biomed VO of the EGI grid:
 
     val bdii = new BDII("ldap://topbdii.grif.fr:2170")
     val wms = bdii.queryWMS("biomed", 120).head
@@ -187,7 +182,7 @@ To submit a job on the biomed VO of the EGI grid:
     if(s == Done) wms.downloadOutputSandbox(jobDesc, j)
     wms.purge(j)
 
-To acces a storage of the biomed VO of the EGI grid:
+To **acces a storage** of the biomed VO of the EGI grid:
 
     val bdii = new BDII("ldap://topbdii.grif.fr:2170")
     val srm = bdii.querySRM("biomed", 120).head
@@ -252,6 +247,7 @@ To submit a job to **DIRAC**:
     }
   
     val id = dirac.submit(job)
+
 
   maven
 -------------
