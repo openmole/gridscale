@@ -61,7 +61,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
         prop ⇒
           val splits = prop.split('=')
           splits(0).trim -> splits(1).trim.split(' ')(0)
-      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in scontrol output, return=$ret, output=$output, error=$error."))
+      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException(s"State not found in scontrol output, return=$ret, output=$output, error=$error."))
       translateStatus(ret, state)
     }
   }
