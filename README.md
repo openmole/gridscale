@@ -6,10 +6,11 @@ GridScale is a scala library for accessing various file and batch system. For th
 * Remote SSH server,
 * PBS clusters,
 * SLURM clusters,
+* Condor flocks
 * HTTP file lists,
 * DIRAC job pilot system.
 
-Support is planned for SGE and Condor.
+Support is planned for SGE.
 
 Documentation
 -------------
@@ -38,7 +39,9 @@ In order to use gridscale you should import the folowing namespaces:
 Examples
 --------
 
-To access a storage through ssh:
+## SSH server ## 
+
+To access a storage through **SSH**:
 
     implicit val sshStorage = new SSHStorage with SSHUserPasswordAuthentication {
       def host: String = "server.domain"
@@ -62,7 +65,7 @@ To access a storage through ssh:
     
     sshStorage.rmDir("/tmp/testdir")
 
-To run a process on a remote server through ssh:
+To run a process on a remote server through **SSH**:
 
     implicit val sshJS = new SSHJobService with SSHUserPasswordAuthentication {
       def host: String = "server.domain"
@@ -80,7 +83,9 @@ To run a process on a remote server through ssh:
     val s = untilFinished{Thread.sleep(5000); val s = sshJS.state(j); println(s); s}
     sshJS.purge(j)
 
-To submit a job on a PBS cluster:
+## PBS ## 
+
+To submit a job on a **PBS** cluster:
 
     implicit val pbsService = new PBSJobService with SSHPrivateKeyAuthentication {
       def host: String = "server.domain"
@@ -99,7 +104,10 @@ To submit a job on a PBS cluster:
     val s = untilFinished{Thread.sleep(5000); val s = pbsService.state(j); println(s); s}
     pbsService.purge(j)
 
-To submit a job on a SLURM cluster:
+
+## SLURM ##
+
+To submit a job on a **SLURM** cluster:
 
     implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
       def host: String = "server.domain"
@@ -118,6 +126,32 @@ To submit a job on a SLURM cluster:
     val s = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
 
     slurmService.purge(j)
+
+
+## Condor ##
+
+To submit a job on a **Condor** flock:
+
+    implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
+      def host = inHost
+      def user = inUsername
+      def password = inPassword
+      def privateKey = new File(inPrivateKeyPath)
+    }
+
+    val description = new CondorJobDescription {
+      def executable = "/bin/echo"
+      def arguments = "success > test_success.txt"
+      def workDirectory = "/homes/user"
+    }
+
+    val j = condorService.submit(description)
+    val s = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
+
+    condorService.purge(j)
+
+
+## GLite / EMI ##
 
 To submit a job on the biomed VO of the EGI grid:
 
@@ -172,7 +206,7 @@ To acces a storage of the biomed VO of the EGI grid:
     
     srm.listNames("/").foreach(println)
 
-Submit a long running job with my proxy:
+Submit a long running job with **MyProxy**:
 
     VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
     
@@ -197,7 +231,7 @@ Submit a long running job with my proxy:
       def myProxyServer = Some("myproxy.cern.ch")
     }
 
-To submit a job to DIRAC:
+To submit a job to **DIRAC**:
 
     implicit val p12certificate = new P12HTTPSAuthentication {
       def certificate = new File("/path/to/your/certificate.p12")
