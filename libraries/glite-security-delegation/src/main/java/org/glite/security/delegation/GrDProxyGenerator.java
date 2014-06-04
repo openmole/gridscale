@@ -67,7 +67,7 @@ public class GrDProxyGenerator {
     private String keyFile = null;
     private String certFile = null;
     private X509Certificate certificate;
-    private int bits = 512;
+    private int bits = 1024;
     private int lifetime = 3600 * 12;
     private boolean quiet = false;
     private boolean debug = false;
