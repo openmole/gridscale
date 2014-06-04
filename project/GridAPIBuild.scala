@@ -7,32 +7,13 @@ import com.typesafe.sbt.osgi.SbtOsgi._
 object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles {
 
   override def settings = super.settings ++ Seq(
-    resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
-    organization := "fr.iscpif.gridscale",
-    publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases" at nexus + "service/local/staging/deploy/maven2")
-    },
-    pomIncludeRepository := { _ => false},
-    licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
-    homepage := Some(url("https://github.com/romainreuillon/gridscale")),
-    scmInfo := Some(ScmInfo(url("https://github.com/romainreuillon/gridscale.git"), "scm:git:git@github.com:romainreuillon/gridscale.git")),
-    pomExtra := (
-      <developers>
-        <developer>
-          <id>romainreuillon</id>
-          <name>Romain Reuillon</name>
-        </developer>
-        <developer>
-          <id>jopasserat</id>
-          <name>Jonathan Passerat</name>
-        </developer>
-      </developers>
-      )
-  )
+      organization := "fr.iscpif.gridscale",
+      resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
+      name := "gridscale",
+      scalaVersion := "2.11.1",
+      crossScalaVersions := Seq("2.10.4", "2.11.1")
+    )
+
 
 }
 
@@ -134,7 +115,14 @@ trait Libraries {
   import ScalaxbKeys._
 
   lazy val jglobusVersion = "2.1-20140524"
+
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
+
+  lazy val xml =
+        libraryDependencies ++=
+          (if(!scalaVersion.value.startsWith("2.10")) Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1")
+          else Seq.empty)
+
   lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.49"
   lazy val log4j = "log4j" % "log4j" % "1.2.17"
 
@@ -142,15 +130,14 @@ trait Libraries {
     scalaxbSettings ++ Seq(
       sourceGenerators in Compile <+= scalaxb in Compile,
       packageName in scalaxb in Compile := "fr.iscpif.gridscale.libraries.srmstub",
-      libraryDependencies += dispatch): _*
+      libraryDependencies += dispatch, xml): _*
     )
 
   lazy val wmsStub = Project(id = "wmsstub", base = file("libraries/wmsstub")) settings (
     scalaxbSettings ++ Seq(
       sourceGenerators in Compile <+= scalaxb in Compile,
       packageName in scalaxb in Compile := "fr.iscpif.gridscale.libraries.wmsstub",
-      libraryDependencies += dispatch
-    ): _*
+      libraryDependencies += dispatch, xml): _*
     )
 
   lazy val lbStub = Project(id = "lbstub", base = file("libraries/lbstub")) settings (
@@ -158,7 +145,7 @@ trait Libraries {
       sourceGenerators in Compile <+= scalaxb in Compile,
       packageName in scalaxb in Compile := "fr.iscpif.gridscale.libraries.lbstub",
       wrapContents in scalaxb in Compile := Seq("{http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01}ComputingService_t"),
-      libraryDependencies += dispatch): _*
+      libraryDependencies += dispatch, xml): _*
     )
 
 
