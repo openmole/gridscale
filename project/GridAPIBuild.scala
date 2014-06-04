@@ -11,11 +11,14 @@ object GridAPIBuild extends Build with Libraries with Modules with Examples with
 
 trait Settings <: Build {
 
-lazy val defaultSettings = super.settings ++ Seq(
+  override def settings = super.settings ++ Seq (
+    scalaVersion := "2.11.1",
+    crossScalaVersions := Seq("2.10.4", "2.11.1")
+  )
+
+  lazy val defaultSettings = settings ++ Seq(
     organization := "fr.iscpif.gridscale",
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
-    scalaVersion := "2.11.1",
-    crossScalaVersions := Seq("2.10.4", "2.11.1"),
     publishTo <<= isSnapshot { snapshot =>
       val nexus = "https://oss.sonatype.org/"
       if (snapshot) Some("snapshots" at nexus + "content/repositories/snapshots")
@@ -26,6 +29,7 @@ lazy val defaultSettings = super.settings ++ Seq(
     homepage := Some(url("https://github.com/romainreuillon/gridscale")),
     scmInfo := Some(ScmInfo(url("https://github.com/romainreuillon/gridscale.git"), "scm:git:git@github.com:romainreuillon/gridscale.git"))
   )
+
 }
 
 
@@ -55,7 +59,9 @@ trait Bundles <: Modules with Settings {
     Seq("!net.schmizz.*", "!fr.iscpif.gridscale.ssh.*") ++ privatePackage.value
 
   lazy val gridscaleBundle = Project(id = "gridscalebundle", base = file("bundles/gridscale"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscale) settings (
-    name := "griscale"
+    privatePackage := Seq("fr.iscpif.gridscale.*", "!scala.*"),
+    exportPackage := Seq("fr.iscpif.gridscale.*"),
+    name := "gridscale"
     )
 
   lazy val gliteBundle = Project(id = "glitebundle", base = file("bundles/glite"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleGlite) settings(
