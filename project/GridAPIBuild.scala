@@ -6,13 +6,7 @@ import com.typesafe.sbt.osgi.SbtOsgi._
 
 
 
-object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles {
-
-
-
-
-
-}
+object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles
 
 
 trait Settings <: Build {
@@ -20,7 +14,6 @@ trait Settings <: Build {
 lazy val defaultSettings = super.settings ++ Seq(
     organization := "fr.iscpif.gridscale",
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
-    name := "gridscale",
     scalaVersion := "2.11.1",
     crossScalaVersions := Seq("2.10.4", "2.11.1"),
     publishTo <<= isSnapshot { snapshot =>
