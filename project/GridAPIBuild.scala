@@ -16,6 +16,7 @@ trait Settings <: Build {
     crossScalaVersions := Seq("2.10.4", "2.11.1")
   )
 
+
   lazy val defaultSettings = settings ++ Seq(
     organization := "fr.iscpif.gridscale",
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
