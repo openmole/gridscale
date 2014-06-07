@@ -52,7 +52,7 @@ trait Bundles <: Modules with Settings {
         privatePackage := Seq(s"fr.iscpif.gridscale.${name.value}.*", "!fr.iscpif.gridscale.*", "!scala.*", "!org.bouncycastle.*", "!org.apache.log4j.*", "!org.slf4j.*", "!org.apache.commons.logging.*", "*"),
         organization := "fr.iscpif.gridscale.bundle",
         bundleSymbolicName := s"fr.iscpif.gridscale.${name.value}",
-        exportPackage := Seq(s"${bundleSymbolicName.value}.**")
+        exportPackage := Seq(s"${bundleSymbolicName.value}.*")
       )
 
 
