@@ -118,10 +118,10 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     (for {
       pd: TMetaDataPathDetail ← childs.flatMap(_.map(_.arrayOfSubPaths.map(_.map(_.pathDetailArray)))).flatten.flatten.flatten.flatten
     } yield {
-      val t = pd.typeValue.get.get match {
-        case DIRECTORY ⇒ DirectoryType
-        case FILE ⇒ FileType
-        case LINK ⇒ LinkType
+      val t = pd.typeValue match {
+        case Some(Some(DIRECTORY)) ⇒ DirectoryType
+        case Some(Some(FILE)) ⇒ FileType
+        case Some(Some(LINK)) ⇒ LinkType
         case _ ⇒ UnknownType
       }
       new File(pd.path).getName -> t
@@ -306,7 +306,8 @@ trait SRMStorage <: Storage with RecursiveRmDir {
 
   private def abortRequest(token: String)(implicit credential: A) = stub.srmAbortRequest(SrmAbortRequestRequest(token))
 
-  private def throwError[R <: RequestStatus](r: R) = throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.returnStatus.statusCode + " " + r.returnStatus.explanation)
+  private def throwError[R <: RequestStatus](r: R) =
+    throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.returnStatus.statusCode + " " + r.returnStatus.explanation.getOrElse(None).getOrElse(""))
 
   private def toSrmURI(absolutePath: String) =
     new URI("srm", null, host, port, SERVICE_PATH, "SFN=" + basePath + absolutePath, null)

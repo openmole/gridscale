@@ -5,7 +5,6 @@ import com.typesafe.sbt.osgi.OsgiKeys._
 import com.typesafe.sbt.osgi.SbtOsgi._
 
 
-
 object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles
 
 
@@ -67,7 +66,7 @@ trait Bundles <: Modules with Settings {
 
   lazy val gliteBundle = Project(id = "glitebundle", base = file("bundles/glite"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleGlite) settings(
     name := "glite",
-    privatePackage := Seq("fr.iscpif.gridscale.libraries.*") ++ privatePackage.value,
+    privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
 
