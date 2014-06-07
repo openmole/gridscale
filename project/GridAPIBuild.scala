@@ -49,10 +49,10 @@ trait Bundles <: Modules with Settings {
     osgiSettings ++
       Seq(
         importPackage := Seq("*;resolution:=optional"),
-        privatePackage := Seq(s"fr.iscpif.gridscale.${name.value}", "!fr.iscpif.gridscale.*", "!scala.*", "!org.bouncycastle.*", "!org.apache.log4j.*", "!org.slf4j.*", "!org.apache.commons.logging.*", "*"),
+        privatePackage := Seq(s"fr.iscpif.gridscale.${name.value}.*", "!fr.iscpif.gridscale.*", "!scala.*", "!org.bouncycastle.*", "!org.apache.log4j.*", "!org.slf4j.*", "!org.apache.commons.logging.*", "*"),
         organization := "fr.iscpif.gridscale.bundle",
         bundleSymbolicName := s"fr.iscpif.gridscale.${name.value}",
-        exportPackage := Seq(s"${bundleSymbolicName.value}.*")
+        exportPackage := Seq(s"${bundleSymbolicName.value}.**")
       )
 
 
@@ -66,7 +66,9 @@ trait Bundles <: Modules with Settings {
     )
 
   lazy val gliteBundle = Project(id = "glitebundle", base = file("bundles/glite"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleGlite) settings(
-    name := "glite", exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
+    name := "glite",
+    privatePackage := Seq("fr.iscpif.gridscale.libraries.*") ++ privatePackage.value,
+    exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
 
   lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHttp) settings (
