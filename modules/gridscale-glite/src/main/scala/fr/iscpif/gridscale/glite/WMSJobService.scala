@@ -29,14 +29,10 @@ import org.glite.security.delegation.GrDProxyGenerator
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.globus.io.streams.GridFTPInputStream
 import org.globus.io.streams.GridFTPOutputStream
-import scala.io.Source
+import scala.io._
 import fr.iscpif.gridscale._
-import scala.Some
-import scala.Some
-import scala.Some
 import fr.iscpif.gridscale.{ JobService, Cache, DefaultTimeout }
 import services._
-import scala.io.Source
 import fr.iscpif.gridscale.libraries.lbstub._
 
 trait WMSJobService extends JobService with DefaultTimeout {
@@ -68,7 +64,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
 
   def submit(desc: WMSJobDescription)(implicit credential: A) = {
     val cred = credential()
-    val j = wmsService(cred).jobRegister(desc.toJDL, cred.delegationID).get
+    val j = wmsService(cred).jobRegister(desc.toJDL, delegationId).get
     fillInputSandbox(desc, j.id)(cred)
     wmsService(cred).jobStart(j.id).get
     new WMSJobId {
@@ -90,7 +86,6 @@ trait WMSJobService extends JobService with DefaultTimeout {
       from ⇒
         val url = new URI(from.name)
         val file = indexed(new File(url.getPath).getName)._2
-
         val is = new GridFTPInputStream(cred.credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
         finally is.close
@@ -111,8 +106,8 @@ trait WMSJobService extends JobService with DefaultTimeout {
   private def wmsService(credential: GlobusAuthentication.Proxy) = WMSService(url, credential, timeout * 1000)
   private def lbService(jobId: WMSJobId, credential: GlobusAuthentication.Proxy) = {
     val jobUrl = new URL(jobId.id)
-    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "").toURI
-    LBService(lbServiceURL, credential, timeout * 1000)
+    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
+    LBService(lbServiceURL.toURI, credential, timeout * 1000)
   }
 
    private def translateState(s: StatName) =
@@ -130,21 +125,13 @@ trait WMSJobService extends JobService with DefaultTimeout {
       case WAITING ⇒ Submitted
     }
 
-
   private def rawState(jobId: WMSJobId)(implicit credential: WMSJobService#A) =
     lbService(jobId, credential()).jobStatus(jobId.id, flags).get.state
 
-  private lazy val flags = JobFlags(CLASSADS, CHILDREN, CHILDSTAT)
-
+  private lazy val flags = JobFlags()
 
   private def createProxyfromCertReq(certReq: String, proxy: GlobusAuthentication.Proxy) = {
-    def proxyString(proxyFile: File) = {
-      val s = Source.fromFile(proxyFile)
-      try s.mkString
-      finally s.close
-    }
-
-    val proxyStream = proxyString(proxy.proxy)
+    val proxyStream = proxy.proxyString
 
     // generator object
     val generator = new GrDProxyGenerator
@@ -157,10 +144,10 @@ trait WMSJobService extends JobService with DefaultTimeout {
     val cert = cf.generateCertificate(stream).asInstanceOf[X509Certificate]
     stream.close
     val now = new Date()
-    val lifetime = (cert.getNotAfter.getTime - now.getTime()) / 3600000; // in hour ! (TBC in secs)
+    val lifetime = (cert.getNotAfter.getTime - now.getTime()) / 3600000 // in hour ! (TBC in secs)
 
     // checks if the proxy is still valid
-    if (lifetime < 0) throw new RuntimeException("the local proxy has expired")
+    if (lifetime < 0) throw new RuntimeException("The local proxy has expired")
     // sets the lifetime
     generator.setLifetime(lifetime.toInt)
     // creates the new proxy and converts the proxy from byte[] to String

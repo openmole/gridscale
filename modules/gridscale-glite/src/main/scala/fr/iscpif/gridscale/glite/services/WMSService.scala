@@ -21,15 +21,15 @@ package fr.iscpif.gridscale.glite.services
 import fr.iscpif.gridscale.libraries.wmsstub._
 import scalaxb.HttpClients
 import java.net.URI
-import fr.iscpif.gridscale.globushttp.GlobusHttpClient
+import fr.iscpif.gridscale.globushttp.{SimpleSocketFactory, GlobusHttpClient}
 import fr.iscpif.gridscale.glite.GlobusAuthentication
 
 object WMSService {
 
   def apply(uri: URI, _proxy: GlobusAuthentication.Proxy, _timeout: Int) =
     new WMSService {
-      override def httpClient: HttpClient = new HttpClient with GlobusHttpClient {
-        val proxy = _proxy.proxy
+      override def httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory {
+        val proxyBytes = _proxy.proxyBytes
         val timeout = _timeout
       }
       override def baseAddress = uri

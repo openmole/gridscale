@@ -22,14 +22,14 @@ import fr.iscpif.gridscale.libraries.srmstub._
 import scalaxb.HttpClients
 import java.net.URI
 import fr.iscpif.gridscale.glite.GlobusAuthentication
-import fr.iscpif.gridscale.globushttp.GlobusHttpClient
+import fr.iscpif.gridscale.globushttp.{SimpleSocketFactory, GlobusHttpClient}
 
 object SRMService {
 
   def apply(uri: URI, _proxy: GlobusAuthentication.Proxy, _timeout: Int) =
     new SRMService {
-      override def httpClient: HttpClient = new HttpClient with GlobusHttpClient {
-        val proxy = _proxy.proxy
+      override def httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory {
+        val proxyBytes = _proxy.proxyBytes
         val timeout = _timeout
       }
       override def baseAddress = uri

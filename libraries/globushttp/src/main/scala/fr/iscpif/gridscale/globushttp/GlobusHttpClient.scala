@@ -17,75 +17,59 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import java.io.{ FileInputStream, File }
-import org.gridforum.jgss.{ ExtendedGSSCredential, ExtendedGSSManager }
+import org.gridforum.jgss.{ExtendedGSSContext, ExtendedGSSCredential, ExtendedGSSManager}
 import org.ietf.jgss.{ GSSContext, GSSCredential }
 import org.globus.gsi.gssapi.{ GSSConstants, GlobusGSSCredentialImpl }
 import org.apache.commons.httpclient.protocol.{ Protocol, ProtocolSocketFactory }
-import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
-import java.net.{ Socket, InetAddress }
-import org.apache.commons.httpclient.params.HttpConnectionParams
-import org.apache.commons.httpclient.HttpClient
-import org.apache.commons.httpclient.methods.{ PostMethod, StringRequestEntity }
+import org.apache.commons.httpclient.methods.{PutMethod, GetMethod, PostMethod, StringRequestEntity}
 
 object GlobusHttpClient {
-  def credential(proxy: File) = {
-    val proxyBytes = Array.ofDim[Byte](proxy.length.toInt)
-    val in = new FileInputStream(proxy)
-    try in.read(proxyBytes)
-    finally in.close
-
+  def credential(proxy: Array[Byte]) =
     ExtendedGSSManager.getInstance.asInstanceOf[ExtendedGSSManager].createCredential(
-      proxyBytes,
+      proxy,
       ExtendedGSSCredential.IMPEXP_OPAQUE,
       GSSCredential.DEFAULT_LIFETIME,
       null, // use default mechanism: GSI
       GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
-  }
-
-  def sslContext(proxy: File) = {
-    val manager = ExtendedGSSManager.getInstance
-
-    manager.createContext(null,
-      GSSConstants.MECH_OID,
-      credential(proxy),
-      GSSContext.DEFAULT_LIFETIME)
-  }
-
-  def protocolFactory(proxy: File, timeout: Int) = new ProtocolSocketFactory {
-    def createSocket(host: String, port: Int): java.net.Socket = {
-      val factory = GssSocketFactory.getDefault
-      val socket = factory.createSocket(host, port, sslContext(proxy)).asInstanceOf[GssSocket]
-      socket.setAuthorization(null)
-      socket.setUseClientMode(true)
-      socket.setSoTimeout(timeout)
-      socket
-    }
-
-    def createSocket(host: String, port: Int, localAddress: InetAddress, localPort: Int, params: HttpConnectionParams): java.net.Socket =
-      createSocket(host, port)
-    def createSocket(host: String, port: Int, localAddress: java.net.InetAddress, localPort: Int): Socket =
-      createSocket(host, port)
-  }
-
 }
 
 import GlobusHttpClient._
 
-trait GlobusHttpClient {
-  def proxy: File
+trait GlobusHttpClient <: SocketFactory {
+  def proxyBytes: Array[Byte]
   def timeout: Int
-  @transient private lazy val factory = protocolFactory(proxy, timeout)
 
-  def request(in: String, address: java.net.URI, headers: Map[String, String]): String = {
+  def httpclient(address: java.net.URI) = {
     val myHttpg = new Protocol("https", factory, 8446)
     val httpclient = new org.apache.commons.httpclient.HttpClient
     httpclient.getHostConfiguration.setHost(address.getHost, address.getPort, myHttpg)
+     httpclient
+  }
+
+  def get(address: java.net.URI, headers: Map[String, String] = Map.empty): String = {
+    val get = new GetMethod(address.getPath)
+    headers.foreach { case (k, v) => get.setRequestHeader(k, v) }
+    httpclient(address).executeMethod(get)
+    get.getResponseBodyAsString
+  }
+
+
+  def post(in: String, address: java.net.URI, headers: Map[String, String]): String = {
     val entity = new StringRequestEntity(in, "text/xml", null)
     val post = new PostMethod(address.getPath)
     post.setRequestEntity(entity)
     headers.foreach { case (k, v) => post.setRequestHeader(k, v) }
-    httpclient.executeMethod(post)
+    httpclient(address).executeMethod(post)
     post.getResponseBodyAsString
   }
+
+   def put(in: String, address: java.net.URI, headers: Map[String, String]): String = {
+    val entity = new StringRequestEntity(in, "text/xml", null)
+    val put = new PutMethod(address.getPath)
+    put.setRequestEntity(entity)
+    headers.foreach { case (k, v) => put.setRequestHeader(k, v) }
+    httpclient(address).executeMethod(put)
+    put.getResponseBodyAsString
+  }
+
 }

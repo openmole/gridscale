@@ -9,7 +9,7 @@ packagedArtifacts in file(".") := Map.empty
 
 publish in file(".") := {}
 
-
 publishSigned := {}
 
+scalariformSettings
 
