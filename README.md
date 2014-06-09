@@ -249,17 +249,9 @@ To submit a job to **DIRAC**:
     val id = dirac.submit(job)
 
 
-  maven
+  SBT 
 -------------
 
-gridscale depend on the 2.10 version of scala. we intend to switch to sbt and support multi-version at some point in the future.
+GridScale is cross compiled to serveral versions of scala. To use on of its modules add a dependency like:
 
-    <repository>
-      <id>iscpif</id>
-      <name>iscpif repo</name>
-      <url>http://maven.iscpif.fr/public/</url>
-    </repository>
-
-    <artifactid>parent</artifactid>
-    <groupid>fr.iscpif.gridscale</groupid>
-    <version>1.41</version>
+    libraryDependencies += "fr.iscpif.gridscale" %% "gridscalepbs" % version
