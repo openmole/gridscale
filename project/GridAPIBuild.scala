@@ -27,7 +27,23 @@ trait Settings <: Build {
     pomIncludeRepository := { _ => false},
     licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
     homepage := Some(url("https://github.com/romainreuillon/gridscale")),
-    scmInfo := Some(ScmInfo(url("https://github.com/romainreuillon/gridscale.git"), "scm:git:git@github.com:romainreuillon/gridscale.git"))
+    scmInfo := Some(ScmInfo(url("https://github.com/romainreuillon/gridscale.git"), "scm:git:git@github.com:romainreuillon/gridscale.git")),
+    // To sync with Maven central, you need to supply the following information:
+    pomExtra := {
+      <!-- Developer contact information -->
+      <developers>
+        <developer>
+          <id>romainreuillon</id>
+          <name>Romain Reuillon</name>
+          <url>https://github.com/romainreuillon/</url>
+        </developer>
+        <developer>
+          <id>jonathanpasserat</id>
+          <name>Jonathan Passert</name>
+          <url>https://github.com/jopasserat/</url>
+        </developer>
+      </developers>
+    }
   )
 
 }
