@@ -1,5 +1,9 @@
 
+import SonatypeKeys._
+
 import com.typesafe.sbt.pgp.PgpKeys._
+
+sonatypeSettings
 
 organization := "fr.iscpif"
 

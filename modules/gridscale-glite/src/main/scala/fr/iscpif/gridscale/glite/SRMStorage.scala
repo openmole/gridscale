@@ -59,6 +59,8 @@ trait SRMStorage <: Storage with RecursiveRmDir {
 
   type A = () ⇒ GlobusAuthentication.Proxy
 
+  override def toString = s"srm://$host:$port$basePath"
+
   def host: String
   def port: Int
   def basePath: String
