@@ -30,43 +30,24 @@ trait SimpleSocketFactory <: SocketFactory {
   def proxyBytes: Array[Byte]
   def timeout: Int
 
-  def factory = new ProtocolSocketFactory {
+  def sslContext(proxy: Array[Byte]) = {
+    val manager = ExtendedGSSManager.getInstance
 
-    def sslContext(proxy: Array[Byte]) = {
-      val manager = ExtendedGSSManager.getInstance
-
-      manager.createContext(null,
-        GSSConstants.MECH_OID,
-        GlobusHttpClient.credential(proxy),
-        GSSContext.DEFAULT_LIFETIME)
-    }
-
-    def initialize(socket: GssSocket) = {
-      socket.setAuthorization(null)
-      socket.setUseClientMode(true)
-      socket.setAuthorization(null)
-      socket.setSoTimeout(timeout)
-      socket
-    }
-
-    def createSocket(host: String, port: Int): java.net.Socket =
-      initialize(GssSocketFactory.getDefault.createSocket(host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket])
-
-    def createSocket(host: String, port: Int, localAddress: InetAddress, localPort: Int, params: HttpConnectionParams): java.net.Socket = {
-      val socket = javax.net.SocketFactory.getDefault.createSocket(host,
-        port,
-        localAddress,
-        localPort)
-      initialize(GssSocketFactory.getDefault.createSocket(socket, host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket])
-    }
-
-    def createSocket(host: String, port: Int, localAddress: java.net.InetAddress, localPort: Int): Socket = {
-      val socket = javax.net.SocketFactory.getDefault.createSocket(host,
-        port,
-        localAddress,
-        localPort)
-      initialize(GssSocketFactory.getDefault.createSocket(socket, host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket])
-    }
+    manager.createContext(null,
+      GSSConstants.MECH_OID,
+      GlobusHttpClient.credential(proxy),
+      GSSContext.DEFAULT_LIFETIME)
   }
+
+  def initialize(socket: GssSocket) = {
+    socket.setAuthorization(null)
+    socket.setUseClientMode(true)
+    socket.setAuthorization(null)
+    socket.setSoTimeout(timeout)
+    socket
+  }
+
+  def socket(host: String, port: Int): Socket =
+    initialize(GssSocketFactory.getDefault.createSocket(host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket])
 
 }

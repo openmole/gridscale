@@ -19,7 +19,7 @@ package fr.iscpif.gridscale.glite.services
 
 import fr.iscpif.gridscale.libraries.wmsstub._
 import scalaxb.HttpClients
-import fr.iscpif.gridscale.globushttp.{ SimpleSocketFactory, GlobusHttpClient }
+import fr.iscpif.gridscale.globushttp.{ FixedAddressSocketCache, SimpleSocketFactory, GlobusHttpClient }
 import java.net.URI
 import fr.iscpif.gridscale.glite.GlobusAuthentication
 
@@ -27,7 +27,7 @@ object DelegationService {
 
   def apply(uri: URI, _proxy: GlobusAuthentication.Proxy, _timeout: Int) =
     new DelegationService {
-      override def httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory {
+      @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory with FixedAddressSocketCache {
         val proxyBytes = _proxy.proxyBytes
         val timeout = _timeout
       }

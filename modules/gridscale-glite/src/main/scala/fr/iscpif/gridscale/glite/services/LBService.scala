@@ -21,14 +21,14 @@ import fr.iscpif.gridscale.libraries.lbstub._
 import scalaxb.HttpClients
 import java.net.URI
 import fr.iscpif.gridscale.glite.GlobusAuthentication
-import fr.iscpif.gridscale.globushttp.{ CompleteSocketFactory, GlobusHttpClient }
+import fr.iscpif.gridscale.globushttp.{ FixedAddressSocketCache, CompleteSocketFactory, GlobusHttpClient }
 import org.apache.commons.httpclient.methods.{ PostMethod, StringRequestEntity }
 
 object LBService {
 
   def apply(uri: URI, _proxy: GlobusAuthentication.Proxy, _timeout: Int) =
     new LBService {
-      override def httpClient: HttpClient = new HttpClient with GlobusHttpRequest with CompleteSocketFactory {
+      @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with CompleteSocketFactory with FixedAddressSocketCache {
         val proxyBytes = _proxy.proxyBytes
         val timeout = _timeout
       }

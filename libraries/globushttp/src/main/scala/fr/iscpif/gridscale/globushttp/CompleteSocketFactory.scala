@@ -31,39 +31,32 @@ trait CompleteSocketFactory <: SocketFactory {
   def proxyBytes: Array[Byte]
   def timeout: Int
 
-  def factory = new ProtocolSocketFactory {
-    def getSocket(host: String, port: Int, timeout: Int = 10000) = {
-      val authorisation = HostOrSelfAuthorization.getInstance()
-      val manager = ExtendedGSSManager.getInstance
+  def socket(host: String, port: Int): Socket = {
+    val authorisation = HostOrSelfAuthorization.getInstance()
+    val manager = ExtendedGSSManager.getInstance
 
-      // Expected name is null since delegation is never
-      // done. Custom authorization is invoked after handshake is finished.
-      val context = manager.createContext(null,
-        GSSConstants.MECH_OID,
-        GlobusHttpClient.credential(proxyBytes),
-        GSSContext.DEFAULT_LIFETIME).asInstanceOf[ExtendedGSSContext]
+    // Expected name is null since delegation is never
+    // done. Custom authorization is invoked after handshake is finished.
+    val context = manager.createContext(null,
+      GSSConstants.MECH_OID,
+      GlobusHttpClient.credential(proxyBytes),
+      GSSContext.DEFAULT_LIFETIME).asInstanceOf[ExtendedGSSContext]
 
-      context.setOption(GSSConstants.GSS_MODE, GSIConstants.MODE_SSL)
-      context.requestConf(false)
+    context.setOption(GSSConstants.GSS_MODE, GSIConstants.MODE_SSL)
+    context.requestConf(false)
 
-      val socket =
-        javax.net.SocketFactory.getDefault.createSocket(host, port)
+    val socket =
+      javax.net.SocketFactory.getDefault.createSocket(host, port)
 
-      val gsiSocket =
-        GssSocketFactory.getDefault.createSocket(socket,
-          host,
-          port,
-          context).asInstanceOf[GssSocket]
+    val gsiSocket =
+      GssSocketFactory.getDefault.createSocket(socket,
+        host,
+        port,
+        context).asInstanceOf[GssSocket]
 
-      gsiSocket.setAuthorization(authorisation)
+    gsiSocket.setAuthorization(authorisation)
 
-      gsiSocket
-    }
-
-    def createSocket(host: String, port: Int): java.net.Socket = getSocket(host, port)
-
-    def createSocket(host: String, port: Int, localAddress: InetAddress, localPort: Int, params: HttpConnectionParams): java.net.Socket = getSocket(host, port)
-
-    def createSocket(host: String, port: Int, localAddress: java.net.InetAddress, localPort: Int): Socket = getSocket(host, port)
+    gsiSocket
   }
+
 }

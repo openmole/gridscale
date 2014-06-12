@@ -17,16 +17,33 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import java.net.{ Socket, InetAddress }
-
-import org.apache.commons.httpclient.params.HttpConnectionParams
+import java.net.Socket
+import java.util.concurrent.Executors
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 
-trait SocketFactory {
-  @transient lazy val factory = new ProtocolSocketFactory {
-    def createSocket(host: String, port: Int): java.net.Socket = socket(host, port)
-    def createSocket(host: String, port: Int, localAddress: InetAddress, localPort: Int, params: HttpConnectionParams): java.net.Socket = socket(host, port)
-    def createSocket(host: String, port: Int, localAddress: java.net.InetAddress, localPort: Int): Socket = socket(host, port)
+trait FixedAddressSocketCache <: SocketFactory {
+
+  @transient private var connection: Option[Socket] = None
+
+  override def finalize = {
+    Executors.newSingleThreadExecutor.submit(new Runnable {
+      def run = connection.foreach(_.close)
+    })
   }
-  def socket(host: String, port: Int): java.net.Socket
+
+  @transient override abstract def socket(host: String, port: Int) = synchronized {
+    def updateConnection = {
+      val newC = super.socket(host, port)
+      connection = Some(newC)
+      newC
+    }
+
+    connection match {
+      case Some(c: Socket) ⇒
+        if (c.isConnected && !c.isClosed) c
+        else updateConnection
+      case None ⇒ updateConnection
+    }
+  }
+
 }
