@@ -29,7 +29,13 @@ trait RecursiveRmDir extends Storage {
         try {
           t match {
             case DirectoryType ⇒ _rmDir(child(path, name))
-            case _ ⇒ _rmFile(child(path, name))
+            case LinkType => _rmFile(child(path, name))
+            case FileType => _rmFile(child(path, name))
+            case UnknownType ⇒
+              try _rmFile(child(path, name))
+              catch {
+                case t: Throwable => _rmDir(child(path, name))
+              }
           }
         } catch {
           case t: Throwable ⇒ Logger.getLogger(classOf[RecursiveRmDir].getName).log(Level.FINE, "Error in recursive rm", t)
