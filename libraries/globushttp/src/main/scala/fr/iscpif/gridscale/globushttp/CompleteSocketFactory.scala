@@ -15,17 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.globushttp
 
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 import org.globus.gsi.gssapi.auth.HostOrSelfAuthorization
-import org.gridforum.jgss.{ExtendedGSSContext, ExtendedGSSManager}
+import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSManager }
 import org.globus.gsi.gssapi.GSSConstants
 import org.ietf.jgss.GSSContext
 import org.globus.gsi.GSIConstants
-import org.globus.gsi.gssapi.net.{GssSocket, GssSocketFactory}
-import java.net.{Socket, InetAddress}
+import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
+import java.net.{ Socket, InetAddress }
 import org.apache.commons.httpclient.params.HttpConnectionParams
 
 trait CompleteSocketFactory <: SocketFactory {
@@ -44,7 +43,6 @@ trait CompleteSocketFactory <: SocketFactory {
         GlobusHttpClient.credential(proxyBytes),
         GSSContext.DEFAULT_LIFETIME).asInstanceOf[ExtendedGSSContext]
 
-
       context.setOption(GSSConstants.GSS_MODE, GSIConstants.MODE_SSL)
       context.requestConf(false)
 
@@ -61,7 +59,6 @@ trait CompleteSocketFactory <: SocketFactory {
 
       gsiSocket
     }
-
 
     def createSocket(host: String, port: Int): java.net.Socket = getSocket(host, port)
 

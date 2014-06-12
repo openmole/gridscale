@@ -110,19 +110,19 @@ trait WMSJobService extends JobService with DefaultTimeout {
     LBService(lbServiceURL.toURI, credential, timeout * 1000)
   }
 
-   private def translateState(s: StatName) =
+  private def translateState(s: StatName) =
     s match {
-      case ABORTED ⇒ Failed
+      case ABORTED        ⇒ Failed
       case CANCELLEDValue ⇒ Failed
-      case CLEARED ⇒ Done
-      case DONEValue4 ⇒ Done
-      case PURGED ⇒ Done
-      case READY ⇒ Submitted
-      case RUNNING ⇒ Running
-      case SCHEDULED ⇒ Submitted
-      case SUBMITTED ⇒ Submitted
-      case UNKNOWNValue3 ⇒ Failed
-      case WAITING ⇒ Submitted
+      case CLEARED        ⇒ Done
+      case DONEValue4     ⇒ Done
+      case PURGED         ⇒ Done
+      case READY          ⇒ Submitted
+      case RUNNING        ⇒ Running
+      case SCHEDULED      ⇒ Submitted
+      case SUBMITTED      ⇒ Submitted
+      case UNKNOWNValue3  ⇒ Failed
+      case WAITING        ⇒ Submitted
     }
 
   private def rawState(jobId: WMSJobId)(implicit credential: WMSJobService#A) =

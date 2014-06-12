@@ -26,19 +26,20 @@ trait RecursiveRmDir extends Storage {
     if (subfiles.isEmpty) rmEmptyDir(path)
     else subfiles.foreach {
       case (name, t) ⇒
+        val childPath = child(path, name)
         try {
           t match {
-            case DirectoryType ⇒ _rmDir(child(path, name))
-            case LinkType => _rmFile(child(path, name))
-            case FileType => _rmFile(child(path, name))
+            case DirectoryType ⇒ _rmDir(childPath)
+            case LinkType      ⇒ _rmFile(childPath)
+            case FileType      ⇒ _rmFile(childPath)
             case UnknownType ⇒
               try _rmFile(child(path, name))
               catch {
-                case t: Throwable => _rmDir(child(path, name))
+                case t: Throwable ⇒ _rmDir(childPath)
               }
           }
         } catch {
-          case t: Throwable ⇒ Logger.getLogger(classOf[RecursiveRmDir].getName).log(Level.FINE, "Error in recursive rm", t)
+          case t: Throwable ⇒ Logger.getLogger(classOf[RecursiveRmDir].getName).log(Level.FINE, s"Error in recursive rm for $childPath", t)
         }
     }
   }

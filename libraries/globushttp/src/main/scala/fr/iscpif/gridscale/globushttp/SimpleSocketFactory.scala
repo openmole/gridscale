@@ -15,12 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.globushttp
 
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
-import org.globus.gsi.gssapi.net.{GssSocketFactory, GssSocket}
-import java.net.{Socket, InetAddress}
+import org.globus.gsi.gssapi.net.{ GssSocketFactory, GssSocket }
+import java.net.{ Socket, InetAddress }
 import org.apache.commons.httpclient.params.HttpConnectionParams
 import org.gridforum.jgss.ExtendedGSSManager
 import org.globus.gsi.gssapi.GSSConstants
@@ -31,7 +30,7 @@ trait SimpleSocketFactory <: SocketFactory {
   def proxyBytes: Array[Byte]
   def timeout: Int
 
-  def factory = new  ProtocolSocketFactory {
+  def factory = new ProtocolSocketFactory {
 
     def sslContext(proxy: Array[Byte]) = {
       val manager = ExtendedGSSManager.getInstance
@@ -52,7 +51,6 @@ trait SimpleSocketFactory <: SocketFactory {
 
     def createSocket(host: String, port: Int): java.net.Socket =
       initialize(GssSocketFactory.getDefault.createSocket(host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket])
-
 
     def createSocket(host: String, port: Int, localAddress: InetAddress, localPort: Int, params: HttpConnectionParams): java.net.Socket = {
       val socket = javax.net.SocketFactory.getDefault.createSocket(host,

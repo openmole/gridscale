@@ -15,14 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.glite.services
 
 import fr.iscpif.gridscale.libraries.srmstub._
 import scalaxb.HttpClients
 import java.net.URI
 import fr.iscpif.gridscale.glite.GlobusAuthentication
-import fr.iscpif.gridscale.globushttp.{SimpleSocketFactory, GlobusHttpClient}
+import fr.iscpif.gridscale.globushttp.{ SimpleSocketFactory, GlobusHttpClient }
 
 object SRMService {
 
@@ -36,6 +35,5 @@ object SRMService {
     }.service
 
 }
-
 
 trait SRMService <: SrmSoapBindings with scalaxb.Soap11Clients with HttpClients

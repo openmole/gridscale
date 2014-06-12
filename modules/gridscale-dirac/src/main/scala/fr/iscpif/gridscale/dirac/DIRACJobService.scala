@@ -87,18 +87,18 @@ trait DIRACJobService extends JobService with DefaultTimeout {
   def state(jobId: J)(implicit credential: A) = {
     val res = Http(jobs + "/" + jobId).withToken.initialise.asStringChecked
     res.asJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
-      case "Received" ⇒ Submitted
-      case "Checking" ⇒ Submitted
-      case "Staging" ⇒ Submitted
-      case "Waiting" ⇒ Submitted
-      case "Matched" ⇒ Submitted
-      case "Running" ⇒ Running
+      case "Received"  ⇒ Submitted
+      case "Checking"  ⇒ Submitted
+      case "Staging"   ⇒ Submitted
+      case "Waiting"   ⇒ Submitted
+      case "Matched"   ⇒ Submitted
+      case "Running"   ⇒ Running
       case "Completed" ⇒ Running
-      case "Stalled" ⇒ Running
-      case "Killed" ⇒ Failed
-      case "Deleted" ⇒ Failed
-      case "Done" ⇒ Done
-      case "Failed" ⇒ Failed
+      case "Stalled"   ⇒ Running
+      case "Killed"    ⇒ Failed
+      case "Deleted"   ⇒ Failed
+      case "Done"      ⇒ Done
+      case "Failed"    ⇒ Failed
     }
   }
 

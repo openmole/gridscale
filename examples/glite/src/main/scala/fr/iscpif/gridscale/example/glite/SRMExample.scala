@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.example.glite
 
 import fr.iscpif.gridscale.glite._
@@ -38,7 +37,6 @@ object SRMExample extends App {
     def certificate = new File("/path/to/certificate.p12")
     def password = "password"
   }.cache(3600)
-
 
   srm.list("/").foreach(println)
 

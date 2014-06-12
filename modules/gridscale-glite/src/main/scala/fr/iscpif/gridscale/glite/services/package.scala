@@ -15,17 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.glite
 
-import scala.util.{Success, Failure}
+import scala.util.{ Success, Failure }
 
 package object services {
 
   implicit def eitherToTry[T](r: Either[scalaxb.Soap11Fault[Any], T]) =
     r match {
-      case Left(e) => Failure(new ServiceException(e.toString))
-      case Right(t) => Success(t)
+      case Left(e)  ⇒ Failure(new ServiceException(e.toString))
+      case Right(t) ⇒ Success(t)
     }
 
 }

@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.globushttp
 
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory

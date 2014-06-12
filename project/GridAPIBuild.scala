@@ -3,7 +3,8 @@ import sbt._
 import sbt.Keys._
 import com.typesafe.sbt.osgi.OsgiKeys._
 import com.typesafe.sbt.osgi.SbtOsgi._
-
+import com.typesafe.sbt.SbtScalariform._
+import scalariform.formatter.preferences._
 
 object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles
 
@@ -16,7 +17,14 @@ trait Settings <: Build {
   )
 
 
-  lazy val defaultSettings = settings ++ Seq(
+
+  lazy val defaultSettings =
+    settings ++
+      scalariformSettings ++ Seq(
+    ScalariformKeys.preferences :=
+      ScalariformKeys.preferences.value
+        .setPreference(AlignSingleLineCaseStatements, true)
+        .setPreference(RewriteArrowSymbols, true),
     organization := "fr.iscpif.gridscale",
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
     publishTo <<= isSnapshot { snapshot =>

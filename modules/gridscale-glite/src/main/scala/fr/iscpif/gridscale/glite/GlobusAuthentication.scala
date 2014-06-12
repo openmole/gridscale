@@ -18,7 +18,7 @@
 package fr.iscpif.gridscale.glite
 
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
-import java.io.{FileInputStream, File}
+import java.io.{ FileInputStream, File }
 import java.util.UUID
 import io._
 

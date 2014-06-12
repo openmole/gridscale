@@ -109,12 +109,12 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     val childs = complete[SRMLsRS](requestStatus) {
       token ⇒
         val status =
-          SrmStatusOfLsRequestRequest (
+          SrmStatusOfLsRequestRequest(
             requestToken = token,
             offset = Some(offset),
             count = Some(Some(size))
           )
-         stub.srmStatusOfLsRequest(status).get
+        stub.srmStatusOfLsRequest(status).get
     }.details.get.get.pathDetailArray
 
     (for {
@@ -122,9 +122,9 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     } yield {
       val t = pd.typeValue match {
         case Some(Some(DIRECTORY)) ⇒ DirectoryType
-        case Some(Some(FILE)) ⇒ FileType
-        case Some(Some(LINK)) ⇒ LinkType
-        case _ ⇒ UnknownType
+        case Some(Some(FILE))      ⇒ FileType
+        case Some(Some(LINK))      ⇒ LinkType
+        case _                     ⇒ UnknownType
       }
       new File(pd.path).getName -> t
     }).toSeq
@@ -136,8 +136,6 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     val requestStatus = stub.srmMkdir(request).get
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
-
-
 
   def rmEmptyDir(path: String)(implicit credential: A) = {
     val uri = this.toSrmURI(path)
@@ -201,7 +199,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   private def freeInputStream(token: String, absolutePath: String)(implicit credential: A) = {
     val logicalUri = toSrmURI(absolutePath)
     val request =
-      SrmReleaseFilesRequest (
+      SrmReleaseFilesRequest(
         requestToken = Some(Some(token)),
         arrayOfSURLs = Some(Some(ArrayOfAnyURI(Some(logicalUri))))
       )
@@ -212,7 +210,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   private def freeOutputStream(token: String, absolutePath: String)(implicit credential: A) = {
     val logicalUri = toSrmURI(absolutePath)
     val request =
-      SrmPutDoneRequest (
+      SrmPutDoneRequest(
         requestToken = token,
         arrayOfSURLs = ArrayOfAnyURI(Some(logicalUri))
       )
@@ -223,7 +221,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   private def prepareToPut(absolutePath: String)(implicit credential: A) = {
     val logicalUri = toSrmURI(absolutePath)
     val request =
-      SrmPrepareToPutRequest (
+      SrmPrepareToPutRequest(
         arrayOfFileRequests = Some(Some(ArrayOfTPutFileRequest(Some(TPutFileRequest(Some(Some(logicalUri))))))),
         transferParameters = Some(Some(transferParameters))
       )
@@ -250,7 +248,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     val logicalUri = toSrmURI(absolutePath)
 
     val request =
-      SrmPrepareToGetRequest (
+      SrmPrepareToGetRequest(
         arrayOfFileRequests = ArrayOfTGetFileRequest(Some(TGetFileRequest(logicalUri))),
         transferParameters = Some(Some(transferParameters))
       )
@@ -317,6 +315,5 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler).toURI
 
   private def stub(implicit credential: A) = SRMService(serviceUrl, credential(), timeout * 1000)
-
 
 }

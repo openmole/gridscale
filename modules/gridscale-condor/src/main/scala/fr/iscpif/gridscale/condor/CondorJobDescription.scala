@@ -23,7 +23,7 @@ import fr.iscpif.gridscale._
 
 /** Represent Requirements by extending Tuple2 in order to override toString */
 class CondorRequirement(val requirementName: String,
-                        val requirementValue: String)
+  val requirementValue: String)
     extends Tuple2[String, String](requirementName, requirementValue) {
   override def toString = _1 + " == \"" + _2 + "\""
 }
@@ -79,18 +79,18 @@ trait CondorJobDescription extends JobDescription {
         buffer += "universe = vanilla"
         coreByNode match {
           case Some(c) ⇒ requirementsBuffer += "TotalCpus >= " + c
-          case None ⇒
+          case None    ⇒
         }
     }
 
     memory match {
       case Some(m) ⇒ buffer += "request_memory = " + m + " MB"
-      case None ⇒
+      case None    ⇒
     }
 
     requirements match {
       case List() ⇒
-      case _ ⇒ requirementsBuffer += requirements.mkString("( ", "&&", " )")
+      case _      ⇒ requirementsBuffer += requirements.mkString("( ", "&&", " )")
     }
 
     buffer += "requirements = " + requirementsBuffer

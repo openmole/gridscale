@@ -15,15 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.glite.services
 
 import fr.iscpif.gridscale.libraries.lbstub._
 import scalaxb.HttpClients
 import java.net.URI
 import fr.iscpif.gridscale.glite.GlobusAuthentication
-import fr.iscpif.gridscale.globushttp.{CompleteSocketFactory, GlobusHttpClient}
-import org.apache.commons.httpclient.methods.{PostMethod, StringRequestEntity}
+import fr.iscpif.gridscale.globushttp.{ CompleteSocketFactory, GlobusHttpClient }
+import org.apache.commons.httpclient.methods.{ PostMethod, StringRequestEntity }
 
 object LBService {
 
@@ -37,6 +36,5 @@ object LBService {
     }.service
 
 }
-
 
 trait LBService <: LoggingAndBookkeepingBindings with scalaxb.Soap11Clients with HttpClients

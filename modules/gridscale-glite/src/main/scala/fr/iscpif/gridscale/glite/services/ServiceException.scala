@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.glite.services
 
 class ServiceException(reason: String) extends Exception(reason)
