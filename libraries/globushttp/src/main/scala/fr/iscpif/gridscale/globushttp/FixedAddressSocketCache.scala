@@ -34,13 +34,14 @@ trait FixedAddressSocketCache <: SocketFactory {
   @transient override abstract def socket(host: String, port: Int) = synchronized {
     def updateConnection = {
       val newC = super.socket(host, port)
+      newC.setKeepAlive(true)
       connection = Some(newC)
       newC
     }
 
     connection match {
       case Some(c: Socket) ⇒
-        if (c.isConnected && !c.isClosed) c
+        if (c.isConnected && !c.isClosed && !c.isInputShutdown && !c.isOutputShutdown) c
         else updateConnection
       case None ⇒ updateConnection
     }
