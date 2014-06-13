@@ -26,6 +26,7 @@ import java.nio.file.Files
 
 trait LocalStorage extends Storage {
   type A = Unit
+  def credential = Unit
 
   override def child(parent: String, child: String) =
     new File(new File(parent), child).getAbsolutePath
@@ -33,7 +34,7 @@ trait LocalStorage extends Storage {
   override def exists(path: String) =
     new File(path).exists
 
-  def _list(path: String)(implicit authentication: A): Seq[(String, FileType)] =
+  def _list(path: String): Seq[(String, FileType)] =
     new File(path).listFiles.map {
       f ⇒
         val fs = FileSystems.getDefault

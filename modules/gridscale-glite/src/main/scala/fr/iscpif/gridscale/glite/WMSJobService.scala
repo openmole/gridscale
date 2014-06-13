@@ -44,7 +44,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
   def url: URI
 
   def copyBufferSize = 64 * 1000
-  def delegationRenewal = 1 -> HOURS
+  def delegationRenewal: Duration = 1 -> HOURS
 
   lazy val delegationCache =
     new SingleValueCache[String] {

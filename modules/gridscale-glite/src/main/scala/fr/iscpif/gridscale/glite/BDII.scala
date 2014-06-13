@@ -40,7 +40,17 @@ class BDII(location: String) {
   val srmServiceType = Array("srm", "SRM" /*, "srm_v1"*/ )
   val wmsServiceType = Array("org.glite.wms.WMProxy" /*, "org.glite.wms"*/ )
 
-  def querySRM(vo: String, timeOut: Int)(implicit auth: SRMStorage#A) = {
+  case class SRMLocation(host: String, port: Int, basePath: String) { self ⇒
+    def toSRM(implicit auth: SRMStorage#A) =
+      new SRMStorage {
+        val host = self.host
+        val port = self.port
+        val basePath = self.basePath
+        val credential = auth
+      }
+  }
+
+  def querySRMLocations(vo: String, timeOut: Int) = {
     val q = new BDIIQuery(location)
 
     var res = q.query("(&(objectClass=GlueSA)(GlueSAAccessControlBaseRule=VO:" + vo + "))", timeOut)
@@ -74,7 +84,7 @@ class BDII(location: String) {
 
     res = q.query(searchPhrase, timeOut)
 
-    val srms = new mutable.HashMap[(String, Int), SRMStorage]
+    val srms = new mutable.HashMap[(String, Int), SRMLocation]
 
     for (r ← res) {
 
@@ -84,17 +94,11 @@ class BDII(location: String) {
         val httpgURI = new URI(serviceEndPoint)
 
         if (basePaths.containsKey(httpgURI.getHost)) {
-          val bhost = httpgURI.getHost
-          val bport = httpgURI.getPort
-          val bbasePath = basePaths.get(bhost)
+          val host = httpgURI.getHost
+          val port = httpgURI.getPort
+          val basePath = basePaths.get(host)
 
-          srms += ((bhost, bport) ->
-            new SRMStorage {
-              val host = bhost
-              val port = bport
-              val basePath = bbasePath
-              val credential = auth
-            })
+          srms += ((host, port) -> SRMLocation(host, port, basePath))
 
           //          val srmURI = new StringBuilder();
           //
@@ -128,7 +132,17 @@ class BDII(location: String) {
     srms.values.toSeq
   }
 
-  def queryWMS(vo: String, timeOut: Int)(implicit auth: WMSJobService#A) = {
+  def querySRMs(vo: String, timeOut: Int)(implicit auth: SRMStorage#A) = querySRMLocations(vo, timeOut).map(_.toSRM(auth))
+
+  case class WMSLocation(url: URI) { self ⇒
+    def toWMS(auth: WMSJobService#A) =
+      new WMSJobService {
+        val url = self.url
+        val credential = auth
+      }
+  }
+
+  def queryWMSLocations(vo: String, timeOut: Int) = {
     val q = new BDIIQuery(location.toString)
 
     var searchPhrase =
@@ -154,12 +168,8 @@ class BDII(location: String) {
       }
     }
 
-    wmsURIs.toSeq.map {
-      u ⇒
-        new WMSJobService {
-          val url = u
-          val credential = auth
-        }
-    }
+    wmsURIs.toSeq.map { WMSLocation(_) }
   }
+
+  def queryWMS(vo: String, timeOut: Int)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
 }

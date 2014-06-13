@@ -48,6 +48,8 @@ object HTTPStorage {
 trait HTTPStorage extends Storage with DefaultTimeout {
 
   type A = Unit
+  def credential = Unit
+
   def url: String
 
   def bufferSize = 64000
