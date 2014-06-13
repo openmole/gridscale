@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2014 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,26 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.ssh
+package fr.iscpif.gridscale
 
-import fr.iscpif.gridscale.Credential
-import net.schmizz.sshj._
-
-trait SSHAuthentication <: Credential {
-  type A >: SSHAuthentication
-  def credential = this
-
-  def connect(host: String, port: Int) = {
-    val ssh = new SSHClient
-    ssh.connect(host, port)
-    try authenticate(ssh)
-    catch {
-      case t: Throwable ⇒
-        ssh.disconnect
-        throw t
-    }
-    ssh
-  }
-
-  def authenticate(c: SSHClient)
+trait Credential {
+  type A
+  def credential: A
 }

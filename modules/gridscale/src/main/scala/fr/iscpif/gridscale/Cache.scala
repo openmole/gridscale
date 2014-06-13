@@ -18,15 +18,15 @@
 package fr.iscpif.gridscale
 
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
 
 trait Cache[K, T] {
 
   def compute(k: K): T
-  def cacheTime(t: T): Option[Long]
-  def margin: Long = 0
+  def cacheTime(t: T): Option[Duration]
 
   case class Cached(value: T, time: Long = System.currentTimeMillis) {
-    def expiresTime = cacheTime(value).map(_ + time - margin).getOrElse(Long.MaxValue)
+    def expiresTime = cacheTime(value).map(_.toMillis + time).getOrElse(Long.MaxValue)
   }
 
   @transient val cache = new mutable.WeakHashMap[K, Cached]

@@ -34,7 +34,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
   type J = SLURMJob
   type D = SLURMJobDescription
 
-  def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
+  def submit(description: D): J = withConnection { c ⇒
     withSession(c) { s ⇒ exec(s, "mkdir -p " + description.workDirectory) }
     val outputStream = openOutputStream(slurmScriptPath(description))
     try outputStream.write(description.toSLURM.getBytes)
@@ -51,7 +51,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     }
   }
 
-  def state(job: J)(implicit credential: A): JobState = withConnection { c ⇒
+  def state(job: J): JobState = withConnection { c ⇒
     val command = "scontrol show job " + job.slurmId
 
     withSession(c) { s ⇒
@@ -66,10 +66,10 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage {
     }
   }
 
-  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, "scancel " + job.slurmId) })
+  def cancel(job: J) = withConnection(withSession(_) { exec(_, "scancel " + job.slurmId) })
 
   //Purge output error job script
-  def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒
+  def purge(job: J) = withSftpClient { c ⇒
     rmFileWithClient(slurmScriptPath(job.description))(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)

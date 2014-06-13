@@ -26,9 +26,6 @@ import fr.iscpif.gridscale._
 
 object SSHJobService {
 
-  val bufferSize = 65535
-  val timeout = 120
-
   val rootDir = ".gridscale/ssh"
 
   def file(jobId: String, suffix: String) = rootDir + "/" + jobId + "." + suffix
@@ -85,7 +82,9 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
   type J = String
   type D = SSHJobDescription
 
-  def submit(description: D)(implicit credential: A): J = {
+  def bufferSize = 65535
+
+  def submit(description: D): J = {
     val jobId = UUID.randomUUID.toString
     val command = new ScriptBuffer
 
@@ -108,23 +107,23 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
     jobId
   }
 
-  def state(job: J)(implicit credential: A): JobState =
+  def state(job: J): JobState =
     if (exists(endCodeFile(job))) {
       val is = openInputStream(endCodeFile(job))
       val content =
-        try getBytes(is, bufferSize, SSHJobService.timeout)
+        try getBytes(is, bufferSize, timeout)
         finally is.close
 
       translateState(new String(content).takeWhile(_.isDigit).toInt)
     } else Running
 
-  def cancel(jobId: J)(implicit credential: A) = withConnection(withSession(_) {
+  def cancel(jobId: J) = withConnection(withSession(_) {
     s ⇒
       val cde = "kill `cat " + pidFile(jobId) + "`;"
       exec(s, cde)
   })
 
-  def purge(jobId: String)(implicit credential: A) = withConnection(withSession(_) {
+  def purge(jobId: String) = withConnection(withSession(_) {
     s ⇒
       val cde = "rm -rf " + rootDir + "/" + jobId + "*"
       exec(s, cde)

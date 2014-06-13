@@ -23,10 +23,9 @@ object Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
 }
 
-trait Storage {
-  type A
+trait Storage <: Credential {
 
-  def exists(path: String)(implicit authentication: A) =
+  def exists(path: String) =
     if (isRoot(path)) true
     else listNames(parent(path)).toSet.contains(name(path))
 
@@ -38,25 +37,25 @@ trait Storage {
   def name(path: String) = new File(path).getName
   def isRoot(path: String) = parent(path) == path
 
-  def listNames(path: String)(implicit authentication: A) = _list(path).unzip._1
+  def listNames(path: String) = _list(path).unzip._1
 
-  def openInputStream(path: String)(implicit authentication: A): InputStream = new BufferedInputStream(_openInputStream(path))
-  def openOutputStream(path: String)(implicit authentication: A): OutputStream = new BufferedOutputStream(_openOutputStream(path))
+  def openInputStream(path: String): InputStream = new BufferedInputStream(_openInputStream(path))
+  def openOutputStream(path: String): OutputStream = new BufferedOutputStream(_openOutputStream(path))
 
-  def list(path: String)(implicit authentication: A): Seq[(String, FileType)] = wrapException(s"list $path")(_list(path))
-  def makeDir(path: String)(implicit authentication: A) = wrapException(s"make dir $path")(_makeDir(path))
-  def rmDir(path: String)(implicit authentication: A) = wrapException(s"rm dir $path")(_rmDir(path))
-  def rmFile(path: String)(implicit authentication: A) = wrapException(s"rm file $path")(_rmFile(path))
-  def mv(from: String, to: String)(implicit authentication: A) = wrapException(s"move $from to $to")(_mv(from, to))
+  def list(path: String): Seq[(String, FileType)] = wrapException(s"list $path")(_list(path))
+  def makeDir(path: String) = wrapException(s"make dir $path")(_makeDir(path))
+  def rmDir(path: String) = wrapException(s"rm dir $path")(_rmDir(path))
+  def rmFile(path: String) = wrapException(s"rm file $path")(_rmFile(path))
+  def mv(from: String, to: String) = wrapException(s"move $from to $to")(_mv(from, to))
 
-  def _list(path: String)(implicit authentication: A): Seq[(String, FileType)]
-  def _makeDir(path: String)(implicit authentication: A)
-  def _rmDir(path: String)(implicit authentication: A)
-  def _rmFile(path: String)(implicit authentication: A)
-  def _mv(from: String, to: String)(implicit authentication: A)
+  def _list(path: String): Seq[(String, FileType)]
+  def _makeDir(path: String)
+  def _rmDir(path: String)
+  def _rmFile(path: String)
+  def _mv(from: String, to: String)
 
-  protected def _openInputStream(path: String)(implicit authentication: A): InputStream
-  protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream
+  protected def _openInputStream(path: String): InputStream
+  protected def _openOutputStream(path: String): OutputStream
 
   def wrapException[T](operation: String)(f: ⇒ T): T =
     try f

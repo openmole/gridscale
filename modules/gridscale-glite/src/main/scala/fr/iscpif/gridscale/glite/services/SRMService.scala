@@ -18,18 +18,20 @@
 package fr.iscpif.gridscale.glite.services
 
 import fr.iscpif.gridscale.libraries.srmstub._
+import scala.concurrent.duration.Duration
 import scalaxb.HttpClients
 import java.net.URI
 import fr.iscpif.gridscale.glite.GlobusAuthentication
-import fr.iscpif.gridscale.globushttp.{ FixedAddressSocketCache, SimpleSocketFactory, GlobusHttpClient }
+import fr.iscpif.gridscale.globushttp.{ SimpleSocketFactory, GlobusHttpClient }
 
 object SRMService {
 
-  def apply(uri: URI, _proxy: GlobusAuthentication.Proxy, _timeout: Int) =
+  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration) =
     new SRMService {
-      @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory with FixedAddressSocketCache {
-        val proxyBytes = _proxy.proxyBytes
+      @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory {
+        def proxyBytes = credential().proxyBytes
         val timeout = _timeout
+        val address = uri
       }
       override def baseAddress = uri
     }.service

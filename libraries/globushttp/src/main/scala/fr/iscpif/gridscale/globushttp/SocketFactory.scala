@@ -17,16 +17,20 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import java.net.{ Socket, InetAddress }
+import java.net.{ SocketTimeoutException, Socket, InetAddress }
+import java.util.concurrent.ConcurrentLinkedQueue
 
+import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.params.HttpConnectionParams
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 
 trait SocketFactory {
+
   @transient lazy val factory = new ProtocolSocketFactory {
     def createSocket(host: String, port: Int): java.net.Socket = socket(host, port)
     def createSocket(host: String, port: Int, localAddress: InetAddress, localPort: Int, params: HttpConnectionParams): java.net.Socket = socket(host, port)
     def createSocket(host: String, port: Int, localAddress: java.net.InetAddress, localPort: Int): Socket = socket(host, port)
   }
   def socket(host: String, port: Int): java.net.Socket
+
 }

@@ -17,13 +17,12 @@
 
 package fr.iscpif.gridscale
 
-trait JobService {
-  type A
+trait JobService <: Credential {
   type J
   type D
 
-  def submit(description: D)(implicit credential: A): J
-  def state(job: J)(implicit credential: A): JobState
-  def cancel(job: J)(implicit credential: A)
-  def purge(job: J)(implicit credential: A)
+  def submit(description: D): J
+  def state(job: J): JobState
+  def cancel(job: J)
+  def purge(job: J)
 }

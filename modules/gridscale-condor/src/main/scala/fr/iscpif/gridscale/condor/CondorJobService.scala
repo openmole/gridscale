@@ -38,7 +38,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
   // and run the sequence of command without interaction (-c)
   def baseCommand = "bash -ci \""
 
-  def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
+  def submit(description: D): J = withConnection { c ⇒
     withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
     val outputStream = openOutputStream(condorScriptPath(description))
     try outputStream.write(description.toCondor.getBytes)
@@ -57,7 +57,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
     }
   }
 
-  def state(job: J)(implicit credential: A): JobState = withConnection { c ⇒
+  def state(job: J): JobState = withConnection { c ⇒
     // NOTE: submission sends only 1 process per cluster for the moment so no need to query the process id
 
     // if the job is still running, his state is returned by condor_q...
@@ -97,10 +97,10 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
 
   }
 
-  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, baseCommand + "condor_rm " + job.condorId + "\"") })
+  def cancel(job: J) = withConnection(withSession(_) { exec(_, baseCommand + "condor_rm " + job.condorId + "\"") })
 
   // Purge output, error and job script
-  def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒
+  def purge(job: J) = withSftpClient { c ⇒
     rmFileWithClient(condorScriptPath(job.description))(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)

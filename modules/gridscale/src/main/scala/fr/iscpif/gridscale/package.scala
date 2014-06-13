@@ -33,6 +33,8 @@ import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration.Duration
+
 package object gridscale {
 
   sealed trait JobState
@@ -55,30 +57,14 @@ package object gridscale {
 
   implicit val nothingImplicit: Unit = Unit
 
-  trait SingleValueCache[T] extends (() ⇒ T) {
-    @transient private var cached: T = compute()
-    @transient var current = System.currentTimeMillis
-
-    def compute(): T
-    def time: Long
-
-    def apply(): T = synchronized {
-      if (current + time * 1000 < System.currentTimeMillis) {
-        cached = compute()
-        current = System.currentTimeMillis
-      }
-      cached
-    }
-  }
-
-  def cache[T](f: () ⇒ T)(_time: Long): SingleValueCache[T] =
+  def cache[T](f: () ⇒ T)(_time: Duration): SingleValueCache[T] =
     new SingleValueCache[T] {
       def compute() = f()
-      def time = _time
+      def expiresIn(t: T) = _time
     }
 
   implicit class RenewDecorator[T](f: () ⇒ T) {
-    def cache(time: Long) = gridscale.cache[T](f)(time)
+    def cache(time: Duration) = gridscale.cache[T](f)(time)
   }
 
   val daemonThreadFactory = new ThreadFactory {
@@ -91,15 +77,15 @@ package object gridscale {
 
   val defaultExecutor = Executors.newCachedThreadPool(daemonThreadFactory)
 
-  def timeout[F](f: ⇒ F)(duration: Long)(implicit executor: ExecutorService = defaultExecutor): F = {
+  def timeout[F](f: ⇒ F)(timeout: Duration)(implicit executor: ExecutorService = defaultExecutor): F = {
     val r = executor.submit(new Callable[F] { def call = f })
-    try r.get(duration, TimeUnit.SECONDS)
+    try r.get(timeout.length, timeout.unit)
     catch {
       case e: TimeoutException ⇒ r.cancel(true); throw e
     }
   }
 
-  def copy(from: File, to: OutputStream, buffSize: Int, timeout: Long) = {
+  def copy(from: File, to: OutputStream, buffSize: Int, timeout: Duration) = {
     val inputStream = new BufferedInputStream(new FileInputStream(from))
 
     try Iterator.continually {
@@ -111,7 +97,7 @@ package object gridscale {
     } finally inputStream.close
   }
 
-  def copy(from: InputStream, to: File, buffSize: Int, timeout: Long) = {
+  def copy(from: InputStream, to: File, buffSize: Int, timeout: Duration) = {
     val outputStream = new BufferedOutputStream(new FileOutputStream(to))
 
     try Iterator.continually {
@@ -123,7 +109,7 @@ package object gridscale {
     } finally outputStream.close
   }
 
-  def getBytes(from: InputStream, buffSize: Int, timeout: Long) = {
+  def getBytes(from: InputStream, buffSize: Int, timeout: Duration) = {
     val os = new ByteArrayOutputStream
     Iterator.continually {
       val b = Array.ofDim[Byte](buffSize)

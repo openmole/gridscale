@@ -21,7 +21,7 @@ import java.util.logging.{ Level, Logger }
 
 trait RecursiveRmDir extends Storage {
 
-  def _rmDir(path: String)(implicit authentication: A) = {
+  def _rmDir(path: String) = {
     val subfiles = _list(path)
     if (subfiles.isEmpty) rmEmptyDir(path)
     else subfiles.foreach {
@@ -44,5 +44,5 @@ trait RecursiveRmDir extends Storage {
     }
   }
 
-  def rmEmptyDir(path: String)(implicit authentication: A)
+  def rmEmptyDir(path: String)
 }

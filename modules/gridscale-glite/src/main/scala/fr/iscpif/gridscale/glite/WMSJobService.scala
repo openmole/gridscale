@@ -34,6 +34,7 @@ import fr.iscpif.gridscale._
 import fr.iscpif.gridscale.{ JobService, Cache, DefaultTimeout }
 import services._
 import fr.iscpif.gridscale.libraries.lbstub._
+import concurrent.duration._
 
 trait WMSJobService extends JobService with DefaultTimeout {
   type J = WMSJobId
@@ -43,71 +44,73 @@ trait WMSJobService extends JobService with DefaultTimeout {
   def url: URI
 
   def copyBufferSize = 64 * 1000
-  def delegationRenewal = 60 * 3600
+  def delegationRenewal = 1 -> HOURS
 
   lazy val delegationCache =
-    new Cache[A, String] {
-      def compute(k: A) = _delegate(k())
-      def cacheTime(s: String) = Some(delegationRenewal * 1000)
+    new SingleValueCache[String] {
+      def compute = _delegate
+      def expiresIn(s: String) = delegationRenewal
     }
 
-  def delegationId(implicit credential: A) = delegationCache(credential)
+  def delegationId = delegationCache()
 
-  def delegate(credential: A) = delegationCache.forceRenewal(credential)
+  def delegate = delegationCache.forceRenewal
 
-  private def _delegate(credential: GlobusAuthentication.Proxy): String = {
-    val service = delegationService(credential)
-    val req = service.getProxyReq(credential.delegationID).get
-    service.putProxy(credential.delegationID, createProxyfromCertReq(req, credential)).get
-    credential.delegationID
+  private def _delegate: String = {
+    val proxy = credential()
+    val req = delegationService.getProxyReq(proxy.delegationID).get
+    delegationService.putProxy(proxy.delegationID, createProxyfromCertReq(req, proxy)).get
+    proxy.delegationID
   }
 
-  def submit(desc: WMSJobDescription)(implicit credential: A) = {
+  def submit(desc: WMSJobDescription) = {
     val cred = credential()
-    val j = wmsService(cred).jobRegister(desc.toJDL, delegationId).get
-    fillInputSandbox(desc, j.id)(cred)
-    wmsService(cred).jobStart(j.id).get
+    val j = wmsService.jobRegister(desc.toJDL, delegationId).get
+    fillInputSandbox(desc, j.id)
+    wmsService.jobStart(j.id).get
     new WMSJobId {
       val id = j.id
     }
   }
 
-  def cancel(jobId: J)(implicit credential: A) = wmsService(credential()).jobCancel(jobId.id).get
+  def cancel(jobId: J) = wmsService.jobCancel(jobId.id).get
 
-  def purge(jobId: J)(implicit credential: A) = wmsService(credential()).jobPurge(jobId.id).get
+  def purge(jobId: J) = wmsService.jobPurge(jobId.id).get
 
-  def state(jobId: J)(implicit credential: A) = translateState(rawState(jobId))
+  def state(jobId: J) = translateState(rawState(jobId))
 
-  def downloadOutputSandbox(desc: D, jobId: J)(implicit credential: A) = {
-    val cred = credential()
+  def downloadOutputSandbox(desc: D, jobId: J) = {
     val indexed = desc.outputSandbox.groupBy(_._1).map { case (k, v) ⇒ k -> v.head }
 
-    wmsService(cred).getOutputFileList(jobId.id, "gsiftp").get.file.foreach {
+    wmsService.getOutputFileList(jobId.id, "gsiftp").get.file.foreach {
       from ⇒
         val url = new URI(from.name)
         val file = indexed(new File(url.getPath).getName)._2
-        val is = new GridFTPInputStream(cred.credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
+        val is = new GridFTPInputStream(credential().credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
         finally is.close
     }
   }
 
-  private def fillInputSandbox(desc: WMSJobDescription, jobId: String)(credential: GlobusAuthentication.Proxy) = {
-    val inputSandboxURL = new URI(wmsService(credential).getSandboxDestURI(jobId, "gsiftp").get.Item(0))
+  private def fillInputSandbox(desc: WMSJobDescription, jobId: String) = {
+    val inputSandboxURL = new URI(wmsService.getSandboxDestURI(jobId, "gsiftp").get.Item(0))
     desc.inputSandbox.foreach {
       file ⇒
-        val os = new GridFTPOutputStream(credential.credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
+        val os = new GridFTPOutputStream(credential().credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
         try copy(file, os, copyBufferSize, timeout)
         finally os.close
     }
   }
 
-  private def delegationService(credential: GlobusAuthentication.Proxy) = DelegationService(url, credential, timeout * 1000)
-  private def wmsService(credential: GlobusAuthentication.Proxy) = WMSService(url, credential, timeout * 1000)
-  private def lbService(jobId: WMSJobId, credential: GlobusAuthentication.Proxy) = {
-    val jobUrl = new URL(jobId.id)
-    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
-    LBService(lbServiceURL.toURI, credential, timeout * 1000)
+  @transient lazy val delegationService = DelegationService(url, credential, timeout)
+  @transient lazy val wmsService = WMSService(url, credential, timeout)
+
+  @transient lazy val lbServiceCache = new Cache[String, LoggingAndBookkeepingPortType] {
+    override def compute(k: String) = {
+      val lbServiceURL = new URL(k)
+      LBService(lbServiceURL.toURI, credential, timeout)
+    }
+    override def cacheTime(t: LoggingAndBookkeepingPortType) = None
   }
 
   private def translateState(s: StatName) =
@@ -125,8 +128,11 @@ trait WMSJobService extends JobService with DefaultTimeout {
       case WAITING        ⇒ Submitted
     }
 
-  private def rawState(jobId: WMSJobId)(implicit credential: WMSJobService#A) =
-    lbService(jobId, credential()).jobStatus(jobId.id, flags).get.state
+  private def rawState(jobId: WMSJobId) = {
+    val jobUrl = new URL(jobId.id)
+    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
+    lbServiceCache(lbServiceURL.toString).jobStatus(jobId.id, flags).get.state
+  }
 
   private lazy val flags = JobFlags()
 

@@ -40,7 +40,7 @@ class BDII(location: String) {
   val srmServiceType = Array("srm", "SRM" /*, "srm_v1"*/ )
   val wmsServiceType = Array("org.glite.wms.WMProxy" /*, "org.glite.wms"*/ )
 
-  def querySRM(vo: String, timeOut: Int) = {
+  def querySRM(vo: String, timeOut: Int)(implicit auth: SRMStorage#A) = {
     val q = new BDIIQuery(location)
 
     var res = q.query("(&(objectClass=GlueSA)(GlueSAAccessControlBaseRule=VO:" + vo + "))", timeOut)
@@ -93,6 +93,7 @@ class BDII(location: String) {
               val host = bhost
               val port = bport
               val basePath = bbasePath
+              val credential = auth
             })
 
           //          val srmURI = new StringBuilder();
@@ -127,7 +128,7 @@ class BDII(location: String) {
     srms.values.toSeq
   }
 
-  def queryWMS(vo: String, timeOut: Int) = {
+  def queryWMS(vo: String, timeOut: Int)(implicit auth: WMSJobService#A) = {
     val q = new BDIIQuery(location.toString)
 
     var searchPhrase =
@@ -157,6 +158,7 @@ class BDII(location: String) {
       u ⇒
         new WMSJobService {
           val url = u
+          val credential = auth
         }
     }
   }

@@ -17,13 +17,20 @@
 
 package fr.iscpif.gridscale.globushttp
 
+import java.net.SocketTimeoutException
+import java.util.concurrent.{ ConcurrentLinkedQueue, Executors }
+
+import org.apache.commons.httpclient.{ HttpClient, MultiThreadedHttpConnectionManager }
 import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSCredential, ExtendedGSSManager }
 import org.ietf.jgss.{ GSSContext, GSSCredential }
 import org.globus.gsi.gssapi.{ GSSConstants, GlobusGSSCredentialImpl }
 import org.apache.commons.httpclient.protocol.{ Protocol, ProtocolSocketFactory }
 import org.apache.commons.httpclient.methods.{ PutMethod, GetMethod, PostMethod, StringRequestEntity }
 
+import collection.JavaConversions._
+
 object GlobusHttpClient {
+
   def credential(proxy: Array[Byte]) =
     ExtendedGSSManager.getInstance.asInstanceOf[ExtendedGSSManager].createCredential(
       proxy,
@@ -31,17 +38,20 @@ object GlobusHttpClient {
       GSSCredential.DEFAULT_LIFETIME,
       null, // use default mechanism: GSI
       GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
+
 }
 
 import GlobusHttpClient._
 
 trait GlobusHttpClient <: SocketFactory {
   def proxyBytes: Array[Byte]
-  def timeout: Int
+  def address: java.net.URI
 
-  def httpclient(address: java.net.URI) = {
+  @transient lazy val manager = new MultiThreadedHttpConnectionManager()
+
+  @transient lazy val httpclient = {
     val myHttpg = new Protocol("https", factory, 8446)
-    val httpclient = new org.apache.commons.httpclient.HttpClient
+    val httpclient = new HttpClient(manager)
     httpclient.getHostConfiguration.setHost(address.getHost, address.getPort, myHttpg)
     httpclient
   }
@@ -49,10 +59,14 @@ trait GlobusHttpClient <: SocketFactory {
   def post(in: String, address: java.net.URI, headers: Map[String, String]): String = {
     val entity = new StringRequestEntity(in, "text/xml", null)
     val post = new PostMethod(address.getPath)
-    post.setRequestEntity(entity)
-    headers.foreach { case (k, v) ⇒ post.setRequestHeader(k, v) }
-    httpclient(address).executeMethod(post)
-    post.getResponseBodyAsString
+    try {
+      post.setRequestEntity(entity)
+      headers.foreach { case (k, v) ⇒ post.setRequestHeader(k, v) }
+      httpclient.executeMethod(post)
+      post.getResponseBodyAsString
+    } finally {
+      post.releaseConnection
+    }
   }
 
 }

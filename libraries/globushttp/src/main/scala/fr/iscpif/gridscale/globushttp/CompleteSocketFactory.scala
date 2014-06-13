@@ -17,19 +17,19 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 import org.globus.gsi.gssapi.auth.HostOrSelfAuthorization
 import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSManager }
 import org.globus.gsi.gssapi.GSSConstants
 import org.ietf.jgss.GSSContext
 import org.globus.gsi.GSIConstants
 import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
-import java.net.{ Socket, InetAddress }
-import org.apache.commons.httpclient.params.HttpConnectionParams
+import java.net.Socket
+
+import scala.concurrent.duration.Duration
 
 trait CompleteSocketFactory <: SocketFactory {
   def proxyBytes: Array[Byte]
-  def timeout: Int
+  def timeout: Duration
 
   def socket(host: String, port: Int): Socket = {
     val authorisation = HostOrSelfAuthorization.getInstance()
@@ -53,6 +53,8 @@ trait CompleteSocketFactory <: SocketFactory {
         host,
         port,
         context).asInstanceOf[GssSocket]
+
+    gsiSocket.setSoTimeout(timeout.toMillis.toInt)
 
     gsiSocket.setAuthorization(authorisation)
 

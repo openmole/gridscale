@@ -55,7 +55,7 @@ object SRMStorage {
 
 import SRMStorage._
 
-trait SRMStorage <: Storage with RecursiveRmDir {
+trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
 
   type A = () ⇒ GlobusAuthentication.Proxy
 
@@ -65,7 +65,6 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   def port: Int
   def basePath: String
 
-  def timeout = 60
   def sleepTime = 1
   def lsSizeMax = 500
   def SERVICE_PROTOCOL = "httpg"
@@ -78,9 +77,9 @@ trait SRMStorage <: Storage with RecursiveRmDir {
       arrayOfTransferProtocols = Some(Some(transferProtocols))
     )
 
-  def version(implicit credential: A) = stub.srmPing(new SrmPingRequest).get.versionInfo
+  def version = stub.srmPing(new SrmPingRequest).get.versionInfo
 
-  def _list(absolutePath: String)(implicit credential: A): Seq[(String, FileType)] = {
+  def _list(absolutePath: String): Seq[(String, FileType)] = {
     def recList(offset: Int, res: List[Seq[(String, FileType)]] = List.empty): Seq[(String, FileType)] = {
       val ls = list(absolutePath, offset, lsSizeMax)
       if (ls.size < lsSizeMax) (ls :: res).reverse.flatten
@@ -89,7 +88,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     recList(0)
   }
 
-  def list(absolutePath: String, offset: Int, size: Int)(implicit credential: A) = {
+  def list(absolutePath: String, offset: Int, size: Int) = {
     val uri = toSrmURI(absolutePath)
     val request =
       SrmLsRequest(
@@ -104,7 +103,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
       def details: Option[Option[ArrayOfTMetaDataPathDetail]]
     }
 
-    def requestStatus(implicit credential: A) = stub.srmLs(request).get
+    def requestStatus = stub.srmLs(request).get
 
     val childs = complete[SRMLsRS](requestStatus) {
       token ⇒
@@ -130,14 +129,14 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     }).toSeq
   }
 
-  def _makeDir(path: String)(implicit credential: A) = {
+  def _makeDir(path: String) = {
     val uri = this.toSrmURI(path)
     val request = SrmMkdirRequest(SURL = uri)
     val requestStatus = stub.srmMkdir(request).get
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def rmEmptyDir(path: String)(implicit credential: A) = {
+  def rmEmptyDir(path: String) = {
     val uri = this.toSrmURI(path)
     val request = SrmRmdirRequest(SURL = uri)
     //Doesn't work
@@ -146,14 +145,14 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def _rmFile(path: String)(implicit credential: A) = {
+  def _rmFile(path: String) = {
     val uri = this.toSrmURI(path)
     val request = SrmRmRequest(arrayOfSURLs = ArrayOfAnyURI(Some(uri)))
     val requestStatus = stub.srmRm(request).get
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def _mv(from: String, to: String)(implicit authentication: A) = {
+  def _mv(from: String, to: String) = {
     val fromURI = this.toSrmURI(from)
     val toURI = this.toSrmURI(to)
     val request = SrmMvRequest(fromSURL = fromURI, toSURL = toURI)
@@ -161,7 +160,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  def allowAllPermissions(path: String)(implicit authentication: A) = {
+  def allowAllPermissions(path: String) = {
     val uri = this.toSrmURI(path)
     val request =
       SrmSetPermissionRequest(
@@ -175,7 +174,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  protected def _openInputStream(path: String)(implicit credential: A) = {
+  protected def _openInputStream(path: String) = {
     val (token, url) = prepareToGet(path)
 
     new GridFTPInputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
@@ -186,7 +185,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     }
   }
 
-  protected def _openOutputStream(path: String)(implicit credential: A) = {
+  protected def _openOutputStream(path: String) = {
     val (token, url) = prepareToPut(path)
 
     new GridFTPOutputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
@@ -196,7 +195,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
       }
     }
   }
-  private def freeInputStream(token: String, absolutePath: String)(implicit credential: A) = {
+  private def freeInputStream(token: String, absolutePath: String) = {
     val logicalUri = toSrmURI(absolutePath)
     val request =
       SrmReleaseFilesRequest(
@@ -207,7 +206,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  private def freeOutputStream(token: String, absolutePath: String)(implicit credential: A) = {
+  private def freeOutputStream(token: String, absolutePath: String) = {
     val logicalUri = toSrmURI(absolutePath)
     val request =
       SrmPutDoneRequest(
@@ -218,7 +217,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  private def prepareToPut(absolutePath: String)(implicit credential: A) = {
+  private def prepareToPut(absolutePath: String) = {
     val logicalUri = toSrmURI(absolutePath)
     val request =
       SrmPrepareToPutRequest(
@@ -244,7 +243,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     (requestStatus.requestToken.get.get, url.get.get)
   }
 
-  private def prepareToGet(absolutePath: String)(implicit credential: A) = {
+  private def prepareToGet(absolutePath: String) = {
     val logicalUri = toSrmURI(absolutePath)
 
     val request =
@@ -278,7 +277,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     else throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + request.returnStatus.statusCode)
   }
 
-  private def complete[R <: RequestStatus](request: R with RequestStatusWithToken)(requestRequest: String ⇒ R)(implicit credential: A) =
+  private def complete[R <: RequestStatus](request: R with RequestStatusWithToken)(requestRequest: String ⇒ R) =
     status(request) match {
       case Left(r) ⇒ r
       case Right(token) ⇒
@@ -293,7 +292,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   private def waiting[R <: RequestStatus](r: R) =
     r.returnStatus.statusCode == SRM_REQUEST_QUEUED || r.returnStatus.statusCode == SRM_REQUEST_INPROGRESS
 
-  private def waitSuccess[R <: RequestStatus](f: () ⇒ R, deadLine: Long = System.currentTimeMillis + timeout * 1000, sleep: Long = sleepTime * 1000): R = {
+  private def waitSuccess[R <: RequestStatus](f: () ⇒ R, deadLine: Long = System.currentTimeMillis + timeout.toMillis, sleep: Long = sleepTime * 1000): R = {
     val request = f()
     if (request.returnStatus.statusCode == SRM_SUCCESS) request
     else if (waiting(request)) {
@@ -304,7 +303,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     } else throwError(request)
   }
 
-  private def abortRequest(token: String)(implicit credential: A) = stub.srmAbortRequest(SrmAbortRequestRequest(token))
+  private def abortRequest(token: String) = stub.srmAbortRequest(SrmAbortRequestRequest(token))
 
   private def throwError[R <: RequestStatus](r: R) =
     throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.returnStatus.statusCode + " " + r.returnStatus.explanation.getOrElse(None).getOrElse(""))
@@ -313,7 +312,6 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     new URI("srm", null, host, port, SERVICE_PATH, "SFN=" + basePath + absolutePath, null)
 
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler).toURI
-
-  private def stub(implicit credential: A) = SRMService(serviceUrl, credential(), timeout * 1000)
+  @transient lazy val stub = SRMService(serviceUrl, credential, timeout)
 
 }

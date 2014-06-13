@@ -25,10 +25,12 @@ import org.gridforum.jgss.ExtendedGSSManager
 import org.globus.gsi.gssapi.GSSConstants
 import org.ietf.jgss.GSSContext
 
+import scala.concurrent.duration.Duration
+
 trait SimpleSocketFactory <: SocketFactory {
 
   def proxyBytes: Array[Byte]
-  def timeout: Int
+  def timeout: Duration
 
   def sslContext(proxy: Array[Byte]) = {
     val manager = ExtendedGSSManager.getInstance
@@ -43,7 +45,7 @@ trait SimpleSocketFactory <: SocketFactory {
     socket.setAuthorization(null)
     socket.setUseClientMode(true)
     socket.setAuthorization(null)
-    socket.setSoTimeout(timeout)
+    socket.setSoTimeout(timeout.toMillis.toInt)
     socket
   }
 

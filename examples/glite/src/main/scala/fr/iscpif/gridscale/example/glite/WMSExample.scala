@@ -20,13 +20,9 @@ package fr.iscpif.gridscale.exemple.glite
 import fr.iscpif.gridscale.glite._
 import fr.iscpif.gridscale._
 import java.io.File
+import concurrent.duration._
 
 object WMSExample extends App {
-
-  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-  val wms = bdii.queryWMS("biomed", 120).head
-
-  VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
 
   implicit val auth = new P12VOMSAuthentication {
     def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
@@ -36,14 +32,19 @@ object WMSExample extends App {
     def lifeTime = 24 * 3600
     def certificate = new File("/path/to/your/certificate.p12")
     def password = "password"
-  }.cache(3600)
+  }.cache(1 -> HOURS)
+
+  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+  val wms = bdii.queryWMS("biomed", 120).head
+
+  VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
 
   val jobDesc = new WMSJobDescription {
-    def executable = "/bin/cat"
-    def arguments = "testis"
+    def executable = "/bin/echo"
+    def arguments = "Hello world!"
     override def stdOutput = "out.txt"
     override def stdError = "error.txt"
-    def inputSandbox = List(new File("/tmp/testis"))
+    def inputSandbox = List()
     def outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt"))
     override def fuzzy = true
   }

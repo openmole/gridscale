@@ -28,15 +28,15 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
 
   def unconfirmedExchanges = 32
 
-  def home(implicit authentication: A) = withSftpClient {
+  def home = withSftpClient {
     _.canonicalize(".")
   }
 
-  override def exists(path: String)(implicit authentication: A) = withSftpClient { c ⇒
+  override def exists(path: String) = withSftpClient { c ⇒
     c.statExistence(path) != null
   }
 
-  def _list(path: String)(implicit authentication: A) = withSftpClient {
+  def _list(path: String) = withSftpClient {
     listWithClient(path) _
   }
 
@@ -53,11 +53,11 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     }
   }
 
-  def _makeDir(path: String)(implicit authentication: A) = withSftpClient {
+  def _makeDir(path: String) = withSftpClient {
     _.mkdir(path)
   }
 
-  def _rmDir(path: String)(implicit authentication: A) = withSftpClient {
+  def _rmDir(path: String) = withSftpClient {
     rmDirWithClient(path)(_)
   }
 
@@ -78,11 +78,11 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rmdir(path)
   }
 
-  def _rmFile(path: String)(implicit authentication: A) = withSftpClient {
+  def _rmFile(path: String) = withSftpClient {
     rmFileWithClient(path)(_)
   }
 
-  def _mv(from: String, to: String)(implicit authentication: A) = withSftpClient {
+  def _mv(from: String, to: String) = withSftpClient {
     _.rename(from, to)
   }
 
@@ -90,7 +90,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rm(path)
   }
 
-  protected def _openInputStream(path: String)(implicit authentication: A): InputStream = {
+  protected def _openInputStream(path: String): InputStream = {
     val connection = getConnection
 
     def close = release(connection)
@@ -126,7 +126,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     }
   }
 
-  protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream = {
+  protected def _openOutputStream(path: String): OutputStream = {
     val connection = getConnection
 
     def close = release(connection)

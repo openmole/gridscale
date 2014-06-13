@@ -35,7 +35,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
 
   def sourceBashRC = "source ~/.bashrc ; "
 
-  def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
+  def submit(description: D): J = withConnection { c ⇒
     withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
     val outputStream = openOutputStream(pbsScriptPath(description))
     try outputStream.write(description.toPBS.getBytes)
@@ -50,7 +50,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
     }
   }
 
-  def state(job: J)(implicit credential: A): JobState = withConnection(withSession(_) { session ⇒
+  def state(job: J): JobState = withConnection(withSession(_) { session ⇒
     val command = sourceBashRC + "qstat -f " + job.pbsId
 
     val (ret, output, error) = execReturnCodeOutput(session, command)
@@ -69,10 +69,10 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
     }
   })
 
-  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, sourceBashRC + "qdel " + job.pbsId) })
+  def cancel(job: J) = withConnection(withSession(_) { exec(_, sourceBashRC + "qdel " + job.pbsId) })
 
   //Purge output error job script
-  def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒
+  def purge(job: J) = withSftpClient { c ⇒
     rmFileWithClient(pbsScriptPath(job.description))(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)

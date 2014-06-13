@@ -23,7 +23,7 @@ import java.io.File
 
 object Main extends App {
 
-  implicit val auth = new P12HTTPSAuthentication {
+  val auth = new P12HTTPSAuthentication {
     def certificate = new File("/path/to/certificate.p12")
     def password = "password"
   }
@@ -37,6 +37,7 @@ object Main extends App {
   val js = new DIRACJobService {
     def group = "biomed_user"
     def service = "https://ccdirac06.in2p3.fr:9178"
+    def credential = auth
   }
 
   val j = js.submit(jobDesc)

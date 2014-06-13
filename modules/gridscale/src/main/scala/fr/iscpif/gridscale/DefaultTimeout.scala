@@ -17,6 +17,8 @@
 
 package fr.iscpif.gridscale
 
+import scala.concurrent.duration._
+
 trait DefaultTimeout {
-  def timeout = 60
+  def timeout: Duration = 60 -> SECONDS
 }
