@@ -42,7 +42,7 @@ Examples
 ### SSH server
 To access a storage through **SSH**:
 
-    implicit val sshStorage = new SSHStorage with SSHUserPasswordAuthentication {
+    val sshStorage = new SSHStorage with SSHUserPasswordAuthentication {
       def host: String = "server.domain"
       def user = "username"
       def password = "password"
@@ -66,7 +66,7 @@ To access a storage through **SSH**:
 
 To run a process on a remote server through **SSH**:
 
-    implicit val sshJS = new SSHJobService with SSHUserPasswordAuthentication {
+    val sshJS = new SSHJobService with SSHUserPasswordAuthentication {
       def host: String = "server.domain"
       def user = "user"
       def password = "password"
@@ -85,7 +85,7 @@ To run a process on a remote server through **SSH**:
 ### PBS
 To submit a job on a **PBS** cluster:
 
-    implicit val pbsService = new PBSJobService with SSHPrivateKeyAuthentication {
+    val pbsService = new PBSJobService with SSHPrivateKeyAuthentication {
       def host: String = "server.domain"
       def user = "user"
       def password = "password"
@@ -106,7 +106,7 @@ To submit a job on a **PBS** cluster:
 ### SLURM
 To submit a job on a **SLURM** cluster:
 
-    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+    val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
       def host: String = "server.domain"
       def user = "user"
       def password = "password"
@@ -128,7 +128,7 @@ To submit a job on a **SLURM** cluster:
 ### Condor
 To submit a job on a **Condor** flock:
 
-    implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
+    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
       def password = inPassword
@@ -150,11 +150,7 @@ To submit a job on a **Condor** flock:
 ### GLite / EMI
 To **submit a job** on the biomed VO of the EGI grid:
 
-    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-    val wms = bdii.queryWMS("biomed", 120).head
 
-    VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
-    
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
@@ -163,7 +159,12 @@ To **submit a job** on the biomed VO of the EGI grid:
       def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
       def password = "password"
-    }.cache(3600)
+    }.cache(1 -> HOURS)
+
+    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+    val wms = bdii.queryWMS("biomed", 120).head
+
+    VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir")) 
     
     val jobDesc = new WMSJobDescription {
       def executable = "/bin/cat"
@@ -184,11 +185,6 @@ To **submit a job** on the biomed VO of the EGI grid:
 
 To **acces a storage** of the biomed VO of the EGI grid:
 
-    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-    val srm = bdii.querySRM("biomed", 120).head
-    
-    VOMSAuthentication.setCARepository(new File( "/path/to/authority/certificates/directory"))
-    
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
@@ -197,7 +193,12 @@ To **acces a storage** of the biomed VO of the EGI grid:
       def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
       def password = "password"
-    }.cache(3600)
+    }.cache(1 -> HOURS)
+
+    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+    val srm = bdii.querySRM("biomed", 120).head
+    
+    VOMSAuthentication.setCARepository(new File( "/path/to/authority/certificates/directory"))    
     
     srm.listNames("/").foreach(println)
 
@@ -212,9 +213,8 @@ Submit a long running job with **MyProxy**:
       def fquan = None
       def lifeTime = 24 * 3600
       def certificate = new File("/home/reuillon/.globus/certificate.p12")
-    }.cache(3600)
+    }.cache(1 -> HOURS)
   
-    
     val myProxy = new MyProxy {
       def host = "myproxy.cern.ch"
     }
@@ -228,14 +228,11 @@ Submit a long running job with **MyProxy**:
 
 To submit a job to **DIRAC**:
 
-    implicit val p12certificate = new P12HTTPSAuthentication {
-      def certificate = new File("/path/to/your/certificate.p12")
-      def password = "youpassword"
-    }
-  
-    val dirac = new DIRACJobService {
+    val dirac = new DIRACJobService with P12HTTPSAuthentication {
       def group = "biomed_user"
       def service = "https://ccdirac06.in2p3.fr:9178"
+      def certificate = new File("/path/to/your/certificate.p12")
+      def password = "youpassword"
     }
   
     val job = new DIRACJobDescription {

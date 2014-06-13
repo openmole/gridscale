@@ -41,5 +41,4 @@ object SRMExample extends App {
 
   srm.list("/")
 
-
 }
