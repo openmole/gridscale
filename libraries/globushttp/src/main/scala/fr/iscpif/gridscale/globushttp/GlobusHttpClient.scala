@@ -46,13 +46,6 @@ trait GlobusHttpClient <: SocketFactory {
     httpclient
   }
 
-  def get(address: java.net.URI, headers: Map[String, String] = Map.empty): String = {
-    val get = new GetMethod(address.getPath)
-    headers.foreach { case (k, v) ⇒ get.setRequestHeader(k, v) }
-    httpclient(address).executeMethod(get)
-    get.getResponseBodyAsString
-  }
-
   def post(in: String, address: java.net.URI, headers: Map[String, String]): String = {
     val entity = new StringRequestEntity(in, "text/xml", null)
     val post = new PostMethod(address.getPath)
@@ -60,15 +53,6 @@ trait GlobusHttpClient <: SocketFactory {
     headers.foreach { case (k, v) ⇒ post.setRequestHeader(k, v) }
     httpclient(address).executeMethod(post)
     post.getResponseBodyAsString
-  }
-
-  def put(in: String, address: java.net.URI, headers: Map[String, String]): String = {
-    val entity = new StringRequestEntity(in, "text/xml", null)
-    val put = new PutMethod(address.getPath)
-    put.setRequestEntity(entity)
-    headers.foreach { case (k, v) ⇒ put.setRequestHeader(k, v) }
-    httpclient(address).executeMethod(put)
-    put.getResponseBodyAsString
   }
 
 }

@@ -17,11 +17,11 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import java.net.Socket
+import java.net.{ SocketTimeoutException, Socket }
 import java.util.concurrent.Executors
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 
-trait FixedAddressSocketCache <: SocketFactory {
+trait FixedAddressSocketCache <: GlobusHttpClient {
 
   @transient private var connection: Option[Socket] = None
 
@@ -46,5 +46,14 @@ trait FixedAddressSocketCache <: SocketFactory {
       case None ⇒ updateConnection
     }
   }
+
+  override def post(in: String, address: java.net.URI, headers: Map[String, String]): String =
+    try super.post(in, address, headers)
+    catch {
+      case e: SocketTimeoutException ⇒
+        connection.foreach(_.close)
+        connection = None
+        throw e
+    }
 
 }
