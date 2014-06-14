@@ -157,8 +157,6 @@ To **submit a job** on the biomed VO of the EGI grid:
     val bdii = new BDII("ldap://topbdii.grif.fr:2170")
     val wms = bdii.queryWMS("biomed", 120).head
 
-    VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir")) 
-    
     val jobDesc = new WMSJobDescription {
       def executable = "/bin/cat"
       def arguments = "testis"
@@ -190,14 +188,10 @@ To **acces a storage** of the biomed VO of the EGI grid:
     val bdii = new BDII("ldap://topbdii.grif.fr:2170")
     val srm = bdii.querySRM("biomed", 120).head
     
-    VOMSAuthentication.setCARepository(new File( "/path/to/authority/certificates/directory"))    
-    
     srm.listNames("/").foreach(println)
 
 Submit a long running job with **MyProxy**:
 
-    VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
-    
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"

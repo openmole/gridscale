@@ -36,8 +36,6 @@ object SRMExample extends App {
   val bdii = new BDII("ldap://topbdii.grif.fr:2170")
   val srm = bdii.querySRMs("biomed", 120).head
 
-  VOMSAuthentication.setCARepository(new File("/path/to/caCertificates"))
-
   srm.list("/")
 
 }

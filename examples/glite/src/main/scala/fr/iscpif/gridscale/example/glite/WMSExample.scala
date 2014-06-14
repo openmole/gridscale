@@ -29,11 +29,9 @@ object WMSExample extends App {
     def voName = "biomed"
     def fquan = None
     def lifeTime = 24 * 3600
-    def certificate = new File("/path/to/your/certificate.p12")
+    def certificate = new File("/path/to/certificate.p12")
     def password = "password"
   }.cache(1 -> HOURS)
-
-  VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
 
   val bdii = new BDII("ldap://topbdii.grif.fr:2170")
   val wms = bdii.queryWMS("biomed", 120).head
