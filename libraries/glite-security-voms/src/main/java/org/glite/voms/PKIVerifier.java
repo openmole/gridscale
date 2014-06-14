@@ -148,9 +148,7 @@ public class PKIVerifier {
 
         String vomsDir = System.getProperty( "VOMSDIR" );
         String caDir = System.getProperty( "CADIR");
-        
-        
-        
+
         if (vomsDir != null)
             vomsStore = new PKIStore(vomsDir,PKIStore.TYPE_VOMSDIR,true);
         else
