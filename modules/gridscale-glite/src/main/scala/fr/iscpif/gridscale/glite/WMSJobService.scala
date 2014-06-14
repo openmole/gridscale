@@ -134,7 +134,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
     lbServiceCache(lbServiceURL.toString).jobStatus(jobId.id, flags).get.state
   }
 
-  private lazy val flags = JobFlags()
+  private lazy val flags = JobFlags(CLASSADS, CHILDREN, CHILDSTAT)
 
   private def createProxyfromCertReq(certReq: String, proxy: GlobusAuthentication.Proxy) = {
     val proxyStream = proxy.proxyString

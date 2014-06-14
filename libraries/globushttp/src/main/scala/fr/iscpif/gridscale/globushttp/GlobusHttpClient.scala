@@ -69,4 +69,9 @@ trait GlobusHttpClient <: SocketFactory {
     }
   }
 
+  override def finalize =
+    Executors.newSingleThreadExecutor().submit(new Runnable {
+      override def run(): Unit = manager.shutdown()
+    })
+
 }
