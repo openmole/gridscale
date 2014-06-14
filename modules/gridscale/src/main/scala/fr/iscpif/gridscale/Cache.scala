@@ -29,7 +29,7 @@ trait Cache[K, T] {
     def expiresTime = cacheTime(value).map(_.toMillis + time).getOrElse(Long.MaxValue)
   }
 
-  @transient val cache = new mutable.WeakHashMap[K, Cached]
+  @transient val cache = new mutable.HashMap[K, Cached]
 
   def apply(k: K): T = synchronized {
     cache.get(k) match {
