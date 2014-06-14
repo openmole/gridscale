@@ -17,12 +17,10 @@
 
 package fr.iscpif.gridscale.glite
 
-import java.io.File
+import java.io.{ ByteArrayOutputStream, File }
 import java.net.MalformedURLException
 import java.net.URI
-import org.glite.voms.contact.VOMSProxyInit
-import org.glite.voms.contact.VOMSRequestOptions
-import org.glite.voms.contact.VOMSServerInfo
+import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.globus.util.Util
 import collection.JavaConversions._
@@ -42,14 +40,11 @@ trait VOMSAuthentication extends GlobusAuthentication {
   def serverURL: String
   def voName: String
   def proxyInit: VOMSProxyInit
-  def proxyFile: File
   def fqan: Option[String] = None
   def lifeTime: Int
   def proxySize = 1024
 
   def apply() = synchronized {
-    val file = proxyFile
-    file.delete
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
@@ -62,7 +57,6 @@ trait VOMSAuthentication extends GlobusAuthentication {
 
     val proxy = proxyInit
     proxy.addVomsServer(server)
-    proxy.setProxyOutputFile(proxyFile.getAbsolutePath)
 
     val requestOption = new VOMSRequestOptions
     requestOption.setVoName(voName)
@@ -77,8 +71,10 @@ trait VOMSAuthentication extends GlobusAuthentication {
     requestOption.setLifetime(lifeTime)
 
     val globusProxy = proxy.getVomsProxy(List(requestOption))
-    Util.setFilePermissions(proxy.getProxyOutputFile, 600)
 
-    GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), proxyFile, delegationID.toString)
+    val os = new ByteArrayOutputStream()
+    VOMSProxyBuilder.saveProxy(globusProxy, os)
+
+    GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), os.toByteArray, delegationID.toString)
   }
 }

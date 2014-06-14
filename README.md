@@ -27,13 +27,7 @@ Imports
 -------
 In order to use gridscale you should import the folowing namespaces:
 
-    import fr.iscpif.gridscale
-    
-    import authentication._
-    import information._
-    import storage._
-    import jobservice._
-    import tools._
+    import fr.iscpif.gridscale._
 
 
 Examples
@@ -154,7 +148,6 @@ To **submit a job** on the biomed VO of the EGI grid:
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
-      def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
       def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
@@ -188,7 +181,6 @@ To **acces a storage** of the biomed VO of the EGI grid:
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
-      def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
       def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")

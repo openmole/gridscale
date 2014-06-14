@@ -27,17 +27,16 @@ object WMSExample extends App {
   implicit val auth = new P12VOMSAuthentication {
     def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
     def voName = "biomed"
-    def proxyFile = new File("/tmp/proxy.x509")
     def fquan = None
     def lifeTime = 24 * 3600
     def certificate = new File("/path/to/your/certificate.p12")
     def password = "password"
   }.cache(1 -> HOURS)
 
+  VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
+
   val bdii = new BDII("ldap://topbdii.grif.fr:2170")
   val wms = bdii.queryWMS("biomed", 120).head
-
-  VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
 
   val jobDesc = new WMSJobDescription {
     def executable = "/bin/echo"

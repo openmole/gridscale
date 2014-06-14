@@ -23,20 +23,8 @@ import java.util.UUID
 import io._
 
 object GlobusAuthentication {
-  case class Proxy(credential: GlobusGSSCredentialImpl, proxy: File, delegationID: String) {
-    @transient lazy val proxyBytes = {
-      val proxyBytes = Array.ofDim[Byte](proxy.length.toInt)
-      val in = new FileInputStream(proxy)
-      try in.read(proxyBytes)
-      finally in.close
-      proxyBytes
-    }
-
-    @transient lazy val proxyString = {
-      val s = Source.fromFile(proxy)
-      try s.mkString
-      finally s.close
-    }
+  case class Proxy(credential: GlobusGSSCredentialImpl, proxyBytes: Array[Byte], delegationID: String) {
+    @transient lazy val proxyString = new String(proxyBytes)
   }
   type ProxyCreator = () ⇒ Proxy
 }

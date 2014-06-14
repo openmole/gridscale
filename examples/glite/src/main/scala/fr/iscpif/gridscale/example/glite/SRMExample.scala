@@ -27,7 +27,6 @@ object SRMExample extends App {
   implicit val auth = new P12VOMSAuthentication {
     def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
     def voName = "biomed"
-    def proxyFile = new File("/tmp/proxy.x509")
     def fquan = None
     def lifeTime = 24 * 3600
     def certificate = new File("/path/to/certificate.p12")

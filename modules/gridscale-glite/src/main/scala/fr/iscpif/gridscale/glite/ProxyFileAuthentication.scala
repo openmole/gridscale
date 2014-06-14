@@ -17,13 +17,14 @@
 
 package fr.iscpif.gridscale.glite
 
-import java.io.File
-import java.io.FileInputStream
+import java.io.{ BufferedInputStream, File, FileInputStream }
 import org.glite.voms.contact.VOMSProxyInit
 import org.gridforum.jgss.ExtendedGSSManager
 import org.gridforum.jgss.ExtendedGSSCredential
 import org.ietf.jgss.GSSCredential
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
+
+import scala.io.Source
 
 trait ProxyFileAuthentication extends GlobusAuthentication {
 
@@ -41,7 +42,8 @@ trait ProxyFileAuthentication extends GlobusAuthentication {
       GSSCredential.DEFAULT_LIFETIME,
       null, // use default mechanism: GSI
       GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
-    GlobusAuthentication.Proxy(credential, proxy, delegationID.toString)
+
+    GlobusAuthentication.Proxy(credential, proxyBytes, delegationID.toString)
   }
 
 }
