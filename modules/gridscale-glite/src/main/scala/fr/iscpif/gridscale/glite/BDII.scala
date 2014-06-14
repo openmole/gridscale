@@ -125,13 +125,7 @@ class BDII(location: String) {
   }
 
   def querySRMs(vo: String, timeOut: Int)(implicit auth: SRMStorage#A) =
-    querySRMLocations(vo, timeOut).map(_.toSRM(auth)).filter {
-      srm =>
-        Try(srm.version) match {
-          case Success(v) => if (v.takeWhile(_ isDigit).toInt >= 3) true else false
-          case _ => true
-        }
-    }
+    querySRMLocations(vo, timeOut).map(_.toSRM(auth))
 
   case class WMSLocation(url: URI) { self ⇒
     def toWMS(auth: WMSJobService#A) =
