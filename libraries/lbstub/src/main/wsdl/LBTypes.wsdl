@@ -157,7 +157,7 @@
           <xsd:element name="accessRights" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="history" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsState" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
-          <xsd:element name="pbsSubstate" type="xsd:int" minOccurs="1" maxOccurs="1" nillable="false" />
+          <xsd:element name="pbsSubstate" type="xsd:int" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsQueue" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsOwner" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />
           <xsd:element name="pbsName" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="false" />

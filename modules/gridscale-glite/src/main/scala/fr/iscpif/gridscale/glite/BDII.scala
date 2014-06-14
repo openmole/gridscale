@@ -17,23 +17,15 @@
 
 package fr.iscpif.gridscale.glite
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.naming.NamingException;
-
-import javax.naming.directory.SearchResult;
-
+import java.net.URI
+import java.net.URISyntaxException
+import java.util.TreeMap
+import java.util.logging.Level
+import java.util.logging.Logger
+import javax.naming.NamingException
 import collection.mutable
 import collection.JavaConversions._
+import scala.util._
 
 class BDII(location: String) {
 
@@ -132,7 +124,14 @@ class BDII(location: String) {
     srms.values.toSeq
   }
 
-  def querySRMs(vo: String, timeOut: Int)(implicit auth: SRMStorage#A) = querySRMLocations(vo, timeOut).map(_.toSRM(auth))
+  def querySRMs(vo: String, timeOut: Int)(implicit auth: SRMStorage#A) =
+    querySRMLocations(vo, timeOut).map(_.toSRM(auth)).filter {
+      srm =>
+        Try(srm.version) match {
+          case Success(v) => if (v.takeWhile(_ isDigit).toInt >= 3) true else false
+          case _ => true
+        }
+    }
 
   case class WMSLocation(url: URI) { self ⇒
     def toWMS(auth: WMSJobService#A) =
