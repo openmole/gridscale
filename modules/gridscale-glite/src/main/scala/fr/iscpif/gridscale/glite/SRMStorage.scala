@@ -40,6 +40,8 @@ import fr.iscpif.gridscale.libraries.srmstub._
 
 object SRMStorage {
 
+  def SERVICE_PATH = "/srm/managerv2"
+
   def gridFtpPort(p: Int) =
     if (p == -1) 2811 else p
 
@@ -50,6 +52,9 @@ object SRMStorage {
   type RequestStatusWithToken = RequestStatus {
     def requestToken: Option[Option[String]]
   }
+
+  def fullEndpoint(host: String, port: Int, absolutePath: String) =
+    new URI("srm", null, host, port, SERVICE_PATH, "SFN=" + absolutePath, null)
 
 }
 
@@ -68,7 +73,6 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   def sleepTime = 1
   def lsSizeMax = 500
   def SERVICE_PROTOCOL = "httpg"
-  def SERVICE_PATH = "/srm/managerv2"
   def transferProtocols = ArrayOfString(Some("gsiftp"))
   @transient lazy val transferParameters =
     TTransferParameters(
@@ -89,7 +93,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   def list(absolutePath: String, offset: Int, size: Int) = {
-    val uri = toSrmURI(absolutePath)
+    val uri = fullEndPoint(absolutePath)
     val request =
       SrmLsRequest(
         arrayOfSURLs = ArrayOfAnyURI(Some(uri)),
@@ -130,14 +134,14 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   def _makeDir(path: String) = {
-    val uri = this.toSrmURI(path)
+    val uri = this.fullEndPoint(path)
     val request = SrmMkdirRequest(SURL = uri)
     val requestStatus = stub.srmMkdir(request).get
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
   def rmEmptyDir(path: String) = {
-    val uri = this.toSrmURI(path)
+    val uri = this.fullEndPoint(path)
     val request = SrmRmdirRequest(SURL = uri)
     //Doesn't work
     //request.setRecursive(java.lang.Boolean.TRUE)
@@ -146,22 +150,22 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   def _rmFile(path: String) = {
-    val uri = this.toSrmURI(path)
+    val uri = this.fullEndPoint(path)
     val request = SrmRmRequest(arrayOfSURLs = ArrayOfAnyURI(Some(uri)))
     val requestStatus = stub.srmRm(request).get
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
   def _mv(from: String, to: String) = {
-    val fromURI = this.toSrmURI(from)
-    val toURI = this.toSrmURI(to)
+    val fromURI = this.fullEndPoint(from)
+    val toURI = this.fullEndPoint(to)
     val request = SrmMvRequest(fromSURL = fromURI, toSURL = toURI)
     val requestStatus = stub.srmMv(request).get
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
   def allowAllPermissions(path: String) = {
-    val uri = this.toSrmURI(path)
+    val uri = this.fullEndPoint(path)
     val request =
       SrmSetPermissionRequest(
         SURL = uri,
@@ -196,7 +200,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
     }
   }
   private def freeInputStream(token: String, absolutePath: String) = {
-    val logicalUri = toSrmURI(absolutePath)
+    val logicalUri = fullEndPoint(absolutePath)
     val request =
       SrmReleaseFilesRequest(
         requestToken = Some(Some(token)),
@@ -207,7 +211,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   private def freeOutputStream(token: String, absolutePath: String) = {
-    val logicalUri = toSrmURI(absolutePath)
+    val logicalUri = fullEndPoint(absolutePath)
     val request =
       SrmPutDoneRequest(
         requestToken = token,
@@ -218,7 +222,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   private def prepareToPut(absolutePath: String) = {
-    val logicalUri = toSrmURI(absolutePath)
+    val logicalUri = fullEndPoint(absolutePath)
     val request =
       SrmPrepareToPutRequest(
         arrayOfFileRequests = Some(Some(ArrayOfTPutFileRequest(Some(TPutFileRequest(Some(Some(logicalUri))))))),
@@ -244,7 +248,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   private def prepareToGet(absolutePath: String) = {
-    val logicalUri = toSrmURI(absolutePath)
+    val logicalUri = fullEndPoint(absolutePath)
 
     val request =
       SrmPrepareToGetRequest(
@@ -308,8 +312,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   private def throwError[R <: RequestStatus](r: R) =
     throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.returnStatus.statusCode + " " + r.returnStatus.explanation.getOrElse(None).getOrElse(""))
 
-  private def toSrmURI(absolutePath: String) =
-    new URI("srm", null, host, port, SERVICE_PATH, "SFN=" + basePath + absolutePath, null)
+  def fullEndPoint(absolutePath: String) = fullEndpoint(host, port, basePath + absolutePath)
 
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler).toURI
   @transient lazy val stub = SRMService(serviceUrl, credential, timeout)
