@@ -172,6 +172,7 @@ trait Libraries <: Settings {
 
   lazy val srmStub = Project(id = "srmstub", base = file("libraries/srmstub"), settings = defaultSettings) settings (
     scalaxbSettings ++ Seq(
+      async in (Compile, scalaxb) := false,
       sourceGenerators in Compile <+= scalaxb in Compile,
       packageName in scalaxb in Compile := "fr.iscpif.gridscale.libraries.srmstub",
       libraryDependencies += dispatch, xml): _*
@@ -179,6 +180,7 @@ trait Libraries <: Settings {
 
   lazy val wmsStub = Project(id = "wmsstub", base = file("libraries/wmsstub"), settings = defaultSettings) settings (
     scalaxbSettings ++ Seq(
+      async in (Compile, scalaxb) := false,
       sourceGenerators in Compile <+= scalaxb in Compile,
       packageName in scalaxb in Compile := "fr.iscpif.gridscale.libraries.wmsstub",
       libraryDependencies += dispatch, xml): _*
@@ -186,6 +188,7 @@ trait Libraries <: Settings {
 
   lazy val lbStub = Project(id = "lbstub", base = file("libraries/lbstub"), settings = defaultSettings) settings (
     scalaxbSettings ++ Seq(
+      async in (Compile, scalaxb) := false,
       sourceGenerators in Compile <+= scalaxb in Compile,
       packageName in scalaxb in Compile := "fr.iscpif.gridscale.libraries.lbstub",
       wrapContents in scalaxb in Compile := Seq("{http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01}ComputingService_t"),
