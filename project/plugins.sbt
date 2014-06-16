@@ -1,6 +1,6 @@
 
 
-addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.2.0-SNAPSHOT")
+addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.2.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.7.0")
 
