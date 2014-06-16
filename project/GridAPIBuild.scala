@@ -27,6 +27,7 @@ trait Settings <: Build {
         .setPreference(RewriteArrowSymbols, true),
     organization := "fr.iscpif.gridscale",
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
+    resolvers += Resolver.sonatypeRepo("snapshots"),
     publishTo <<= isSnapshot { snapshot =>
       val nexus = "https://oss.sonatype.org/"
       if (snapshot) Some("snapshots" at nexus + "content/repositories/snapshots")
