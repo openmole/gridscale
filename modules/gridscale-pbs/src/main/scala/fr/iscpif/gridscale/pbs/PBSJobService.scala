@@ -20,6 +20,7 @@ package fr.iscpif.gridscale.pbs
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh._
 import SSHJobService._
+import fr.iscpif.gridscale.tools.shell.BashShell
 
 object PBSJobService {
   class PBSJob(val description: PBSJobDescription, val pbsId: String)
@@ -29,11 +30,9 @@ object PBSJobService {
 
 import PBSJobService._
 
-trait PBSJobService extends JobService with SSHHost with SSHStorage {
+trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = PBSJob
   type D = PBSJobDescription
-
-  def sourceBashRC = "source ~/.bashrc ; "
 
   def submit(description: D): J = withConnection { c ⇒
     withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
@@ -42,7 +41,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
     finally outputStream.close
 
     withSession(c) { session ⇒
-      val command = sourceBashRC + "cd " + description.workDirectory + " && qsub " + description.uniqId + ".pbs"
+      val command = "cd " + description.workDirectory + " && qsub " + description.uniqId + ".pbs"
       val (ret, jobId, error) = execReturnCodeOutput(session, command)
       if (ret != 0) throw exception(ret, command, jobId, error)
       if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
@@ -51,7 +50,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
   }
 
   def state(job: J): JobState = withConnection(withSession(_) { session ⇒
-    val command = sourceBashRC + "qstat -f " + job.pbsId
+    val command = "qstat -f " + job.pbsId
 
     val (ret, output, error) = execReturnCodeOutput(session, command)
 
@@ -69,7 +68,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
     }
   })
 
-  def cancel(job: J) = withConnection(withSession(_) { exec(_, sourceBashRC + "qdel " + job.pbsId) })
+  def cancel(job: J) = withConnection(withSession(_) { exec(_, "qdel " + job.pbsId) })
 
   //Purge output error job script
   def purge(job: J) = withSftpClient { c ⇒

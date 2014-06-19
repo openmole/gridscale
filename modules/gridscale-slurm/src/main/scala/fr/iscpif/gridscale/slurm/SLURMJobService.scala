@@ -21,6 +21,7 @@ package fr.iscpif.gridscale.slurm
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh._
 import SSHJobService._
+import fr.iscpif.gridscale.tools.shell.BashShell
 
 object SLURMJobService {
   class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
@@ -30,7 +31,7 @@ object SLURMJobService {
 
 import SLURMJobService._
 
-trait SLURMJobService extends JobService with SSHHost with SSHStorage {
+trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = SLURMJob
   type D = SLURMJobDescription
 

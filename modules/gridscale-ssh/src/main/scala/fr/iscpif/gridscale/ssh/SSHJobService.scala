@@ -18,7 +18,7 @@
 package fr.iscpif.gridscale.ssh
 
 import java.util.UUID
-import fr.iscpif.gridscale.tools.ScriptBuffer
+import fr.iscpif.gridscale.tools.shell._
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.connection.channel.direct.Session
 import net.schmizz.sshj.common.IOUtils
@@ -53,23 +53,23 @@ object SSHJobService {
     finally session.close
   }
 
-  def execReturnCode(session: Session, cde: String) = {
-    val cmd = session.exec(cde)
+  def execReturnCode(session: Session, cde: Command) = {
+    val cmd = session.exec(cde.toString)
     try {
       cmd.join
       cmd.getExitStatus
     } finally cmd.close
   }
 
-  def execReturnCodeOutput(session: Session, cde: String) = {
-    val cmd = session.exec(cde)
+  def execReturnCodeOutput(session: Session, cde: Command) = {
+    val cmd = session.exec(cde.toString)
     try {
       cmd.join
       (cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
   }
 
-  def exec(session: Session, cde: String) = {
+  def exec(session: Session, cde: Command) = {
     val retCode = execReturnCode(session, cde)
     if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode)
   }
@@ -80,7 +80,7 @@ object SSHJobService {
 
 import SSHJobService._
 
-trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
+trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShell { js ⇒
   type J = String
   type D = SSHJobDescription
 
@@ -105,7 +105,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
         " echo $? > " + absolute(endCodeFile(jobId)) + ") & " +
         "echo $! > " + absolute(pidFile(jobId)) + " )"
 
-    withConnection(withSession(_) { exec(_, "bash -c '" + command.toString + "'") })
+    withConnection(withSession(_) { exec(_, command.toString) })
     jobId
   }
 
@@ -121,13 +121,13 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
 
   def cancel(jobId: J) = withConnection(withSession(_) {
     s ⇒
-      val cde = "kill `cat " + pidFile(jobId) + "`;"
+      val cde = s"kill `cat ${pidFile(jobId)}`;"
       exec(s, cde)
   })
 
   def purge(jobId: String) = withConnection(withSession(_) {
     s ⇒
-      val cde = "rm -rf " + rootDir + "/" + jobId + "*"
+      val cde = s"rm -rf $rootDir/$jobId*"
       exec(s, cde)
   })
 
