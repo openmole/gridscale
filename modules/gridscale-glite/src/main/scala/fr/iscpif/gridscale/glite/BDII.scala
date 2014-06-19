@@ -25,6 +25,7 @@ import java.util.logging.Logger
 import javax.naming.NamingException
 import collection.mutable
 import collection.JavaConversions._
+import scala.concurrent.duration.Duration
 import scala.util._
 
 class BDII(location: String) {
@@ -42,7 +43,7 @@ class BDII(location: String) {
       }
   }
 
-  def querySRMLocations(vo: String, timeOut: Int) = {
+  def querySRMLocations(vo: String, timeOut: Duration) = {
     val q = new BDIIQuery(location)
 
     var res = q.query("(&(objectClass=GlueSA)(GlueSAAccessControlBaseRule=VO:" + vo + "))", timeOut)
@@ -124,7 +125,7 @@ class BDII(location: String) {
     srms.values.toSeq
   }
 
-  def querySRMs(vo: String, timeOut: Int)(implicit auth: SRMStorage#A) =
+  def querySRMs(vo: String, timeOut: Duration)(implicit auth: SRMStorage#A) =
     querySRMLocations(vo, timeOut).map(_.toSRM(auth))
 
   case class WMSLocation(url: URI) { self ⇒
@@ -135,7 +136,7 @@ class BDII(location: String) {
       }
   }
 
-  def queryWMSLocations(vo: String, timeOut: Int) = {
+  def queryWMSLocations(vo: String, timeOut: Duration) = {
     val q = new BDIIQuery(location.toString)
 
     var searchPhrase =
@@ -164,5 +165,5 @@ class BDII(location: String) {
     wmsURIs.toSeq.map { WMSLocation(_) }
   }
 
-  def queryWMS(vo: String, timeOut: Int)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
+  def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
 }

@@ -22,9 +22,10 @@ import java.net.MalformedURLException
 import java.net.URI
 import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
-import org.globus.util.Util
 import collection.JavaConversions._
 import org.ietf.jgss.GSSCredential
+
+import scala.concurrent.duration.Duration
 
 object VOMSAuthentication {
 
@@ -41,7 +42,7 @@ trait VOMSAuthentication extends GlobusAuthentication {
   def voName: String
   def proxyInit: VOMSProxyInit
   def fqan: Option[String] = None
-  def lifeTime: Int
+  def lifeTime: Duration
   def proxySize = 1024
 
   def apply() = synchronized {
@@ -66,9 +67,9 @@ trait VOMSAuthentication extends GlobusAuthentication {
       case None    ⇒
     }
 
-    proxy.setProxyLifetime(lifeTime)
+    proxy.setProxyLifetime(lifeTime.toSeconds.toInt)
     proxy.setProxySize(proxySize)
-    requestOption.setLifetime(lifeTime)
+    requestOption.setLifetime(lifeTime.toSeconds.toInt)
 
     val globusProxy = proxy.getVomsProxy(List(requestOption))
 

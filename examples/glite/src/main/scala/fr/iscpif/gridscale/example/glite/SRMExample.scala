@@ -30,13 +30,13 @@ object SRMExample extends App {
     def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
     def voName = "biomed"
     def fquan = None
-    def lifeTime = 24 * 3600
+    def lifeTime = 24 hours
     def certificate = new File("/path/to/certificate.p12")
     def password = "password"
-  }.cache(1 -> HOURS)
+  }.cache(1 hour)
 
   val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-  val srm = bdii.querySRMs("biomed", 120).head
+  val srm = bdii.querySRMs("biomed", 2 minutes).head
 
   srm.list("/")
 
