@@ -40,7 +40,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
     finally outputStream.close
 
     withSession(c) { session ⇒
-      val command = "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor\""
+      val command = "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor"
 
       val (ret, output, error) = execReturnCodeOutput(session, command)
       if (0 != ret) throw exception(ret, command, output, error)
@@ -56,7 +56,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
     // NOTE: submission sends only 1 process per cluster for the moment so no need to query the process id
 
     // if the job is still running, his state is returned by condor_q...
-    val queryInQueue = "condor_q " + job.condorId + " -long -attributes JobStatus\""
+    val queryInQueue = "condor_q " + job.condorId + " -long -attributes JobStatus"
 
     val (retInQueue, outputInQueue, errorInQueue) = withSession(c) {
       session ⇒
@@ -92,7 +92,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
 
   }
 
-  def cancel(job: J) = withConnection(withSession(_) { exec(_, "condor_rm " + job.condorId + "\"") })
+  def cancel(job: J) = withConnection(withSession(_) { exec(_, "condor_rm " + job.condorId) })
 
   // Purge output, error and job script
   def purge(job: J) = withSftpClient { c ⇒
