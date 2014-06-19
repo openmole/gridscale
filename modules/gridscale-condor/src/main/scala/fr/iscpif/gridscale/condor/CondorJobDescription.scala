@@ -41,7 +41,7 @@ trait CondorJobDescription extends JobDescription {
   def workDirectory: String
   // not available yet
   //  def queue: Option[String] = None
-  //  def wallTime: Option[Int] = None
+  //  def wallTime: Option[Duration] = None
   def memory: Option[Int] = None
   def nodes: Option[Int] = None
   def coreByNode: Option[Int] = None
