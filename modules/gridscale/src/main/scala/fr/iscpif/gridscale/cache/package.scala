@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2014 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,12 +17,12 @@
 
 package fr.iscpif.gridscale
 
-trait JobService <: Credential {
-  type J
-  type D
+import scala.concurrent.duration.Duration
 
-  def submit(description: D): J
-  def state(job: J): JobState
-  def cancel(job: J)
-  def purge(job: J)
+package object cache {
+  def cache[T](f: () ⇒ T)(_time: Duration): SingleValueCache[T] =
+    new SingleValueCache[T] {
+      def compute() = f()
+      def expiresIn(t: T) = _time
+    }
 }

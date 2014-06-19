@@ -15,13 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.ssh
+package fr.iscpif.gridscale.jobservice
 
-import fr.iscpif.gridscale.authentication.UserPassword
-import net.schmizz.sshj.SSHClient
-
-trait SSHUserPasswordAuthentication extends SSHAuthentication with UserPassword {
-
-  def authenticate(c: SSHClient) = c.authPassword(user, password)
-
+trait JobDescription {
+  def executable: String
+  def arguments: String
 }

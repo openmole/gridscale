@@ -22,13 +22,13 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URI
-import java.net.URL
-import java.net.URLEncoder
+import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.htmlparser.Parser
-import collection.JavaConversions._
 import org.htmlparser.filters.NodeClassFilter
 import org.htmlparser.tags.LinkTag
 import fr.iscpif.gridscale._
+import storage._
+import tools._
 
 import scala.concurrent.duration.Duration
 

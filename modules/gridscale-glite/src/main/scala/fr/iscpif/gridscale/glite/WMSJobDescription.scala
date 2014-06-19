@@ -19,6 +19,8 @@ package fr.iscpif.gridscale.glite
 
 import java.io.File
 import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.ScriptBuffer
 
 trait WMSJobDescription extends JobDescription {
   def inputSandbox: Iterable[File]

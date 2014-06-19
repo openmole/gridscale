@@ -18,7 +18,7 @@
 
 package fr.iscpif.gridscale.condor
 
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh._
 import SSHJobService._
 

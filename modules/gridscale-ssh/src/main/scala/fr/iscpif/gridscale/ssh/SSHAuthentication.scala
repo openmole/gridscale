@@ -17,7 +17,7 @@
 
 package fr.iscpif.gridscale.ssh
 
-import fr.iscpif.gridscale.Credential
+import fr.iscpif.gridscale.authentication.Credential
 import net.schmizz.sshj._
 
 trait SSHAuthentication <: Credential {

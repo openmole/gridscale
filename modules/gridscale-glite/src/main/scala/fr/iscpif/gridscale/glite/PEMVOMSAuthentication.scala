@@ -17,8 +17,8 @@
 
 package fr.iscpif.gridscale.glite
 
+import fr.iscpif.gridscale.authentication.PEMAuthentication
 import org.glite.voms.contact.VOMSProxyInit
-import fr.iscpif.gridscale.PEMAuthentication
 
 trait PEMVOMSAuthentication extends VOMSAuthentication with PEMAuthentication {
   def proxyInit = VOMSProxyInit.instance(certificate.getPath, key.getPath, password)

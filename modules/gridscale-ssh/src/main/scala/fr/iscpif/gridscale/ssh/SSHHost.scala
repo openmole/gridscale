@@ -17,11 +17,12 @@
 
 package fr.iscpif.gridscale.ssh
 
+import fr.iscpif.gridscale.authentication.Credential
+import fr.iscpif.gridscale.tools.DefaultTimeout
 import net.schmizz.sshj._
 import net.schmizz.sshj.sftp._
 import transport.verification.HostKeyVerifier
 import java.security.PublicKey
-import fr.iscpif.gridscale.{ Credential, DefaultTimeout }
 
 trait SSHHost <: DefaultTimeout with Credential {
   type A = SSHAuthentication

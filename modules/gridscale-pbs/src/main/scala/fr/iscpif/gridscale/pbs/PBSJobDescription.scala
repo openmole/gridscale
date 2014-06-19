@@ -18,7 +18,8 @@
 package fr.iscpif.gridscale.pbs
 
 import java.util.UUID
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.tools.ScriptBuffer
 
 trait PBSJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString

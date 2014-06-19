@@ -18,23 +18,11 @@
 package fr.iscpif.gridscale.glite
 
 import java.io.File
-import java.net.MalformedURLException
 import java.net.URI
-import org.glite.voms.contact.VOMSProxyInit
-import org.glite.voms.contact.VOMSRequestOptions
-import org.glite.voms.contact.VOMSServerInfo
-import org.globus.gsi.GSIConstants.DelegationType
-import org.globus.gsi.GSIConstants.CertificateType
-import org.ietf.jgss.GSSCredential
-import collection.JavaConversions._
-import org.globus.util.Util
-import org.globus.gsi.X509Credential
-import org.globus.gsi.gssapi._
-import collection.JavaConversions._
+import fr.iscpif.gridscale.tools.DefaultTimeout
 import java.util.concurrent.TimeoutException
-import org.globus.gsi.gssapi.auth.HostAuthorization
 import org.globus.io.streams._
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.storage._
 import fr.iscpif.gridscale.glite.services._
 import fr.iscpif.gridscale.libraries.srmstub._
 

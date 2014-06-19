@@ -15,9 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale
+package fr.iscpif.gridscale.storage
 
 import java.io._
+
+import fr.iscpif.gridscale.authentication.Credential
 
 object Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child

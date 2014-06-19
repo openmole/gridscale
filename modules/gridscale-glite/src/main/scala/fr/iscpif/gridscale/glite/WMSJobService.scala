@@ -24,14 +24,12 @@ import java.net.URL
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.Date
-import java.util.UUID
+import fr.iscpif.gridscale.cache.{ SingleValueCache, Cache }
 import org.glite.security.delegation.GrDProxyGenerator
-import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.globus.io.streams.GridFTPInputStream
 import org.globus.io.streams.GridFTPOutputStream
-import scala.io._
-import fr.iscpif.gridscale._
-import fr.iscpif.gridscale.{ JobService, Cache, DefaultTimeout }
+import fr.iscpif.gridscale.tools._
+import fr.iscpif.gridscale.jobservice._
 import services._
 import fr.iscpif.gridscale.libraries.lbstub._
 import concurrent.duration._

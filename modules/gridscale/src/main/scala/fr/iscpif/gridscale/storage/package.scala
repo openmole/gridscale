@@ -17,28 +17,10 @@
 
 package fr.iscpif.gridscale
 
-import scala.concurrent.duration.Duration
-
-trait SingleValueCache[T] extends (() ⇒ T) {
-  @transient private var cached: Option[(T, Long)] = None
-
-  def compute(): T
-  def expiresIn(t: T): Duration
-
-  def apply(): T = synchronized {
-    def cache = {
-      val value = compute()
-      cached = Some((value, System.currentTimeMillis + expiresIn(value).toMillis))
-      value
-    }
-
-    cached match {
-      case None ⇒ cache
-      case Some((v, expireTime)) ⇒
-        if (expireTime < System.currentTimeMillis) cache
-        else v
-    }
-  }
-
-  def forceRenewal = cached = None
+package object storage {
+  sealed trait FileType
+  case object DirectoryType extends FileType
+  case object FileType extends FileType
+  case object LinkType extends FileType
+  case object UnknownType extends FileType
 }

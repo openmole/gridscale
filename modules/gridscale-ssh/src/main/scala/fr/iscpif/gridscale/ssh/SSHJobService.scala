@@ -17,12 +17,14 @@
 
 package fr.iscpif.gridscale.ssh
 
-import java.io.ByteArrayOutputStream
 import java.util.UUID
+import fr.iscpif.gridscale.tools.ScriptBuffer
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.connection.channel.direct.Session
 import net.schmizz.sshj.common.IOUtils
 import fr.iscpif.gridscale._
+import tools._
+import jobservice._
 
 object SSHJobService {
 

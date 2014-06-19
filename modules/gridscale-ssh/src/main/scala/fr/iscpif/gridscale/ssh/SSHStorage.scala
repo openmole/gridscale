@@ -19,9 +19,9 @@ package fr.iscpif.gridscale.ssh
 
 import java.io._
 import collection.JavaConversions._
-import net.schmizz.sshj.sftp.{ OpenMode, FileAttributes, FileMode, SFTPClient }
+import net.schmizz.sshj.sftp.{ OpenMode, FileMode, SFTPClient }
 import java.util
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.storage._
 import java.util.logging.{ Level, Logger }
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒

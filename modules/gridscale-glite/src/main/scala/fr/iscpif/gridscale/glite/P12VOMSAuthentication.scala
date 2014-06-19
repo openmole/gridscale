@@ -16,8 +16,8 @@
  */
 package fr.iscpif.gridscale.glite
 
+import fr.iscpif.gridscale.authentication.P12Authentication
 import org.glite.voms.contact.VOMSProxyInit
-import fr.iscpif.gridscale.P12Authentication
 
 trait P12VOMSAuthentication extends VOMSAuthentication with P12Authentication {
   def proxyInit = VOMSProxyInit.instance(certificate, password)

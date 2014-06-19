@@ -15,14 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale
+package fr.iscpif.gridscale.storage
 
 import java.io._
-import collection.JavaConversions._
-import java.io.InputStream
-import java.io.OutputStream
-import java.nio.file.FileSystems
-import java.nio.file.Files
+import java.nio.file.{ FileSystems, Files }
 
 trait LocalStorage extends Storage {
   type A = Unit

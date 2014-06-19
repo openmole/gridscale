@@ -20,6 +20,8 @@ package fr.iscpif.gridscale.condor
 
 import java.util.UUID
 import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.ScriptBuffer
 
 /** Represent Requirements by extending Tuple2 in order to override toString */
 class CondorRequirement(val requirementName: String,

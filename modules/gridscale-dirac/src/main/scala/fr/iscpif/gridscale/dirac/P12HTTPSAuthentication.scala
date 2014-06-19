@@ -22,7 +22,7 @@ import java.net.URL
 import java.security.cert.X509Certificate
 import java.io.{ FileInputStream, File }
 import java.security.KeyStore
-import fr.iscpif.gridscale.{ Credential, P12Authentication, HTTPSAuthentication }
+import fr.iscpif.gridscale.authentication.{ Credential, P12Authentication, HTTPSAuthentication }
 
 trait P12HTTPSAuthentication extends HTTPSAuthentication with P12Authentication with Credential {
 

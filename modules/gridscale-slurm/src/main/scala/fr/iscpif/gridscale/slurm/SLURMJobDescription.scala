@@ -19,7 +19,8 @@
 package fr.iscpif.gridscale.slurm
 
 import java.util.UUID
-import fr.iscpif.gridscale.{ JobDescription, ScriptBuffer }
+import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.ScriptBuffer
 
 /** Represent Gres by extending Tuple2 in order to override toString */
 class Gres(val gresName: String, val gresValue: Int) extends Tuple2[String, Int](gresName, gresValue) {

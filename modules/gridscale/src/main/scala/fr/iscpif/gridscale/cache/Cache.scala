@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale
+package fr.iscpif.gridscale.cache
 
 import scala.collection.mutable
 import scala.concurrent.duration.Duration

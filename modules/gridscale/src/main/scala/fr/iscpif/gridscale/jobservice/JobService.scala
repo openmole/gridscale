@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Romain Reuillon
+ * Copyright (C) 2012 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,9 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale
+package fr.iscpif.gridscale.jobservice
 
-trait Credential {
-  type A
-  def credential: A
+import fr.iscpif.gridscale.authentication._
+
+trait JobService <: Credential {
+  type J
+  type D
+
+  def submit(description: D): J
+  def state(job: J): JobState
+  def cancel(job: J)
+  def purge(job: J)
+
 }

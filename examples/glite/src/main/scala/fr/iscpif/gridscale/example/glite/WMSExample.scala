@@ -19,6 +19,7 @@ package fr.iscpif.gridscale.exemple.glite
 
 import fr.iscpif.gridscale.glite._
 import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice._
 import java.io.File
 import concurrent.duration._
 

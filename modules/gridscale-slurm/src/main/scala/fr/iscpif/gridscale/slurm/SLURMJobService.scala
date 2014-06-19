@@ -18,9 +18,9 @@
 
 package fr.iscpif.gridscale.slurm
 
+import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh._
 import SSHJobService._
-import fr.iscpif.gridscale._
 
 object SLURMJobService {
   class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
