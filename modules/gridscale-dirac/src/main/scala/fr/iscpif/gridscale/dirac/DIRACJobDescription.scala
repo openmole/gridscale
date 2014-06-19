@@ -21,6 +21,8 @@ import fr.iscpif.gridscale.jobservice.JobDescription
 import spray.json.{ JsArray, JsString, JsObject }
 import java.io.File
 
+import scala.concurrent.duration.Duration
+
 object DIRACJobDescription {
   val Linux_x86_64_glibc_2_11 = "Linux_x86_64_glibc-2.11"
   val Linux_x86_64_glibc_2_12 = "Linux_x86_64_glibc-2.12"
@@ -38,7 +40,7 @@ trait DIRACJobDescription extends JobDescription {
   //def outputSandbox: Iterable[(String, File)]
   def platforms: Seq[String] = Seq.empty
 
-  def cpuTime: Option[Int] = None
+  def cpuTime: Option[Duration] = None
 
   def toJSON = {
     def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)): _*)
