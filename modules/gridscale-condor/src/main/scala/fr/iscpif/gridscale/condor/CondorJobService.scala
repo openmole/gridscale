@@ -33,35 +33,31 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
   type J = CondorJob
   type D = CondorJobDescription
 
-  def submit(description: D): J = withConnection { c ⇒
-    withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
+  def submit(description: D): J = withConnection { implicit connection ⇒
+    exec("mkdir -p " + description.workDirectory)
     val outputStream = openOutputStream(condorScriptPath(description))
     try outputStream.write(description.toCondor.getBytes)
     finally outputStream.close
 
-    withSession(c) { session ⇒
-      val command = "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor"
+    val command = "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor"
 
-      val (ret, output, error) = execReturnCodeOutput(session, command)
-      if (0 != ret) throw exception(ret, command, output, error)
+    val (ret, output, error) = execReturnCodeOutput(command)
+    if (0 != ret) throw exception(ret, command, output, error)
 
-      val jobId = output.trim.reverse.tail.takeWhile(_ != ' ').reverse
-      if (jobId.isEmpty) throw exception(ret, command, output, error)
+    val jobId = output.trim.reverse.tail.takeWhile(_ != ' ').reverse
+    if (jobId.isEmpty) throw exception(ret, command, output, error)
 
-      new CondorJob(description, jobId)
-    }
+    new CondorJob(description, jobId)
+
   }
 
-  def state(job: J): JobState = withConnection { c ⇒
+  def state(job: J): JobState = withConnection { implicit connection ⇒
     // NOTE: submission sends only 1 process per cluster for the moment so no need to query the process id
 
     // if the job is still running, his state is returned by condor_q...
     val queryInQueue = "condor_q " + job.condorId + " -long -attributes JobStatus"
 
-    val (retInQueue, outputInQueue, errorInQueue) = withSession(c) {
-      session ⇒
-        execReturnCodeOutput(session, queryInQueue)
-    }
+    val (retInQueue, outputInQueue, errorInQueue) = execReturnCodeOutput(queryInQueue)
 
     retInQueue.toInt match {
       case 0 if (!outputInQueue.isEmpty) ⇒ {
@@ -73,9 +69,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
         // ...but if the job is already completed, his state is returned by condor_history...
         val queryFinished = "condor_history " + job.condorId + " -long\""
 
-        val (retFinished, outputFinished, errorFinished) = withSession(c) {
-          session ⇒ execReturnCodeOutput(session, queryFinished)
-        }
+        val (retFinished, outputFinished, errorFinished) = execReturnCodeOutput(queryFinished)
 
         retFinished.toInt match {
           case 0 if (!outputFinished.isEmpty) ⇒ {
@@ -92,7 +86,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
 
   }
 
-  def cancel(job: J) = withConnection(withSession(_) { exec(_, "condor_rm " + job.condorId) })
+  def cancel(job: J) = withConnection { exec("condor_rm " + job.condorId)(_) }
 
   // Purge output, error and job script
   def purge(job: J) = withSftpClient { c ⇒

@@ -53,7 +53,7 @@ object SSHJobService {
     finally session.close
   }
 
-  def execReturnCode(session: Session, cde: Command) = {
+  def execReturnCode(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
     val cmd = session.exec(cde.toString)
     try {
       cmd.join
@@ -61,7 +61,7 @@ object SSHJobService {
     } finally cmd.close
   }
 
-  def execReturnCodeOutput(session: Session, cde: Command) = {
+  def execReturnCodeOutput(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
     val cmd = session.exec(cde.toString)
     try {
       cmd.join
@@ -69,8 +69,8 @@ object SSHJobService {
     } finally cmd.close
   }
 
-  def exec(session: Session, cde: Command) = {
-    val retCode = execReturnCode(session, cde)
+  def exec(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
+    val retCode = execReturnCode(cde)
     if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode)
   }
 
@@ -105,7 +105,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
         " echo $? > " + absolute(endCodeFile(jobId)) + ") & " +
         "echo $! > " + absolute(pidFile(jobId)) + " )"
 
-    withConnection(withSession(_) { exec(_, command.toString) })
+    withConnection(exec(command.toString)(_))
     jobId
   }
 
@@ -119,17 +119,15 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
       translateState(new String(content).takeWhile(_.isDigit).toInt)
     } else Running
 
-  def cancel(jobId: J) = withConnection(withSession(_) {
-    s ⇒
-      val cde = s"kill `cat ${pidFile(jobId)}`;"
-      exec(s, cde)
-  })
+  def cancel(jobId: J) = withConnection { implicit connection ⇒
+    val cde = s"kill `cat ${pidFile(jobId)}`;"
+    exec(cde)
+  }
 
-  def purge(jobId: String) = withConnection(withSession(_) {
-    s ⇒
-      val cde = s"rm -rf $rootDir/$jobId*"
-      exec(s, cde)
-  })
+  def purge(jobId: String) = withConnection { implicit connection ⇒
+    val cde = s"rm -rf $rootDir/$jobId*"
+    exec(cde)
+  }
 
   private def translateState(retCode: Int) =
     if (retCode >= 0)

@@ -35,39 +35,37 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
   type J = SLURMJob
   type D = SLURMJobDescription
 
-  def submit(description: D): J = withConnection { c ⇒
-    withSession(c) { s ⇒ exec(s, "mkdir -p " + description.workDirectory) }
+  def submit(description: D): J = withConnection { implicit connection ⇒
+    exec("mkdir -p " + description.workDirectory)
     val outputStream = openOutputStream(slurmScriptPath(description))
     try outputStream.write(description.toSLURM.getBytes)
     finally outputStream.close
 
-    withSession(c) { s ⇒
-      val command = "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm"
-      val (ret, output, error) = execReturnCodeOutput(s, command)
+    val command = "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm"
+    val (ret, output, error) = execReturnCodeOutput(command)
 
-      val jobId = output.trim.reverse.takeWhile(_ != ' ').reverse
+    val jobId = output.trim.reverse.takeWhile(_ != ' ').reverse
 
-      if (ret != 0 || jobId.isEmpty) throw exception(ret, command, output, error)
-      new SLURMJob(description, jobId)
-    }
+    if (ret != 0 || jobId.isEmpty) throw exception(ret, command, output, error)
+    new SLURMJob(description, jobId)
+
   }
 
-  def state(job: J): JobState = withConnection { c ⇒
+  def state(job: J): JobState = withConnection { implicit connection ⇒
     val command = "scontrol show job " + job.slurmId
 
-    withSession(c) { s ⇒
-      val (ret, output, error) = execReturnCodeOutput(s, command)
-      val lines = output.split("\n").map(_.trim)
-      val state = lines.filter(_.matches(".*JobState=.*")).map {
-        prop ⇒
-          val splits = prop.split('=')
-          splits(0).trim -> splits(1).trim.split(' ')(0)
-      }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException(s"State not found in scontrol output, return=$ret, output=$output, error=$error."))
-      translateStatus(ret, state)
-    }
+    val (ret, output, error) = execReturnCodeOutput(command)
+    val lines = output.split("\n").map(_.trim)
+    val state = lines.filter(_.matches(".*JobState=.*")).map {
+      prop ⇒
+        val splits = prop.split('=')
+        splits(0).trim -> splits(1).trim.split(' ')(0)
+    }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException(s"State not found in scontrol output, return=$ret, output=$output, error=$error."))
+    translateStatus(ret, state)
+
   }
 
-  def cancel(job: J) = withConnection(withSession(_) { exec(_, "scancel " + job.slurmId) })
+  def cancel(job: J) = withConnection { exec("scancel " + job.slurmId)(_) }
 
   //Purge output error job script
   def purge(job: J) = withSftpClient { c ⇒
