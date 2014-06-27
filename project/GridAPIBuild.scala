@@ -47,7 +47,7 @@ trait Settings <: Build {
         </developer>
         <developer>
           <id>jonathanpasserat</id>
-          <name>Jonathan Passert</name>
+          <name>Jonathan Passerat-Palmbach</name>
           <url>https://github.com/jopasserat/</url>
         </developer>
       </developers>
