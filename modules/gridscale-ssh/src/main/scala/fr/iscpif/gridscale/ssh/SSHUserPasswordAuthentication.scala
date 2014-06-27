@@ -17,8 +17,8 @@
 
 package fr.iscpif.gridscale.ssh
 
+import fr.iscpif.gridscale.authentication.UserPassword
 import net.schmizz.sshj.SSHClient
-import fr.iscpif.gridscale.UserPassword
 
 trait SSHUserPasswordAuthentication extends SSHAuthentication with UserPassword {
 

@@ -18,13 +18,16 @@
 package fr.iscpif.gridscale.pbs
 
 import java.util.UUID
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.tools.ScriptBuffer
+
+import scala.concurrent.duration.Duration
 
 trait PBSJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
   def workDirectory: String
   def queue: Option[String] = None
-  def wallTime: Option[Int] = None
+  def wallTime: Option[Duration] = None
   def memory: Option[Int] = None
   def nodes: Option[Int] = None
   def coreByNode: Option[Int] = None
@@ -52,7 +55,7 @@ trait PBSJobDescription extends JobDescription {
       case Some(t) ⇒
         val df = new java.text.SimpleDateFormat("HH:mm:ss")
         df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-        buffer += "#PBS -lwalltime=" + df.format(t * 60 * 1000)
+        buffer += "#PBS -lwalltime=" + df.format(t.toMillis)
       case None ⇒
     }
 

@@ -52,9 +52,7 @@ public class VOMSProxyInit {
     private VOMSServerMap serverMap;
     private UserCredentials userCredentials;
     private VOMSProtocol protocol = VOMSProtocol.instance();
-    
-    private String proxyOutputFile = File.separator+"tmp"+File.separator+"x509up_u_"+System.getProperty( "user.name" ); 
-    
+
     private int proxyLifetime = VOMSProxyBuilder.DEFAULT_PROXY_LIFETIME;
 
     private int proxySize = VOMSProxyBuilder.DEFAULT_PROXY_SIZE;
@@ -264,23 +262,7 @@ public class VOMSProxyInit {
     
     
     protected X509Credential getGridProxy(){
-        
-        X509Credential proxy = VOMSProxyBuilder.buildProxy( userCredentials, proxyLifetime, delegationType );
-        
-        try{
-            
-            saveProxy( proxy );
-            return proxy;
-            
-        }catch ( FileNotFoundException e ) {
-            
-            log.error("Error saving proxy to file "+proxyOutputFile+":"+e.getMessage());
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
-            throw new VOMSException("Error saving proxy to file "+proxyOutputFile+":"+e.getMessage(),e);
-        }
-        
+        return VOMSProxyBuilder.buildProxy( userCredentials, proxyLifetime, delegationType );
     }
     public synchronized X509Credential getVomsProxy(Collection listOfReqOptions){
         
@@ -316,38 +298,14 @@ public class VOMSProxyInit {
         
         log.info( "ACs validation succeded." );
         
-        X509Credential proxy = VOMSProxyBuilder.buildProxy( userCredentials, 
+        return VOMSProxyBuilder.buildProxy( userCredentials,
                                                               ACs, proxySize, proxyLifetime,
                                                               proxyType, 
                                                               delegationType,
                                                               policyType);
-        
-        try{
-            
-            saveProxy( proxy );
-            return proxy;
-            
-        }catch ( FileNotFoundException e ) {
-            
-            log.error("Error saving proxy to file "+proxyOutputFile+":"+e.getMessage());
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
-            throw new VOMSException("Error saving proxy to file "+proxyOutputFile+":"+e.getMessage(),e);
-        }
-        
-        
+
     }
-    
-    
-    private void saveProxy(X509Credential credential) throws FileNotFoundException{
-        
-        if (proxyOutputFile != null){
-            VOMSProxyBuilder.saveProxy( credential, proxyOutputFile );
-            log.info( "Proxy saved in :"+proxyOutputFile);
-        }
-        
-    }
+
     
     private void logErrorMessages(VOMSResponse response){
         
@@ -413,19 +371,7 @@ public class VOMSProxyInit {
            
     }
 
-    
-    public String getProxyOutputFile() {
-    
-        return proxyOutputFile;
-    }
 
-    
-    public void setProxyOutputFile( String proxyOutputFile ) {
-    
-        this.proxyOutputFile = proxyOutputFile;
-    }
-
-    
     public int getProxyLifetime() {
     
         return proxyLifetime;

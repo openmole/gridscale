@@ -17,30 +17,33 @@
 
 package fr.iscpif.gridscale.glite
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.naming.NamingException;
-
-import javax.naming.directory.SearchResult;
-
+import java.net.URI
+import java.net.URISyntaxException
+import java.util.TreeMap
+import java.util.logging.Level
+import java.util.logging.Logger
+import javax.naming.NamingException
 import collection.mutable
 import collection.JavaConversions._
+import scala.concurrent.duration.Duration
+import scala.util._
 
 class BDII(location: String) {
 
   val srmServiceType = Array("srm", "SRM" /*, "srm_v1"*/ )
   val wmsServiceType = Array("org.glite.wms.WMProxy" /*, "org.glite.wms"*/ )
 
-  def querySRM(vo: String, timeOut: Int) = {
+  case class SRMLocation(host: String, port: Int, basePath: String) { self ⇒
+    def toSRM(implicit auth: SRMStorage#A) =
+      new SRMStorage {
+        val host = self.host
+        val port = self.port
+        val basePath = self.basePath
+        val credential = auth
+      }
+  }
+
+  def querySRMLocations(vo: String, timeOut: Duration) = {
     val q = new BDIIQuery(location)
 
     var res = q.query("(&(objectClass=GlueSA)(GlueSAAccessControlBaseRule=VO:" + vo + "))", timeOut)
@@ -74,7 +77,7 @@ class BDII(location: String) {
 
     res = q.query(searchPhrase, timeOut)
 
-    val srms = new mutable.HashMap[(String, Int), SRMStorage]
+    val srms = new mutable.HashMap[(String, Int), SRMLocation]
 
     for (r ← res) {
 
@@ -84,16 +87,11 @@ class BDII(location: String) {
         val httpgURI = new URI(serviceEndPoint)
 
         if (basePaths.containsKey(httpgURI.getHost)) {
-          val bhost = httpgURI.getHost
-          val bport = httpgURI.getPort
-          val bbasePath = basePaths.get(bhost)
+          val host = httpgURI.getHost
+          val port = httpgURI.getPort
+          val basePath = basePaths.get(host)
 
-          srms += ((bhost, bport) ->
-            new SRMStorage {
-              val host = bhost
-              val port = bport
-              val basePath = bbasePath
-            })
+          srms += ((host, port) -> SRMLocation(host, port, basePath))
 
           //          val srmURI = new StringBuilder();
           //
@@ -127,7 +125,18 @@ class BDII(location: String) {
     srms.values.toSeq
   }
 
-  def queryWMS(vo: String, timeOut: Int) = {
+  def querySRMs(vo: String, timeOut: Duration)(implicit auth: SRMStorage#A) =
+    querySRMLocations(vo, timeOut).map(_.toSRM(auth))
+
+  case class WMSLocation(url: URI) { self ⇒
+    def toWMS(auth: WMSJobService#A) =
+      new WMSJobService {
+        val url = self.url
+        val credential = auth
+      }
+  }
+
+  def queryWMSLocations(vo: String, timeOut: Duration) = {
     val q = new BDIIQuery(location.toString)
 
     var searchPhrase =
@@ -153,11 +162,8 @@ class BDII(location: String) {
       }
     }
 
-    wmsURIs.toSeq.map {
-      u ⇒
-        new WMSJobService {
-          val url = u
-        }
-    }
+    wmsURIs.toSeq.map { WMSLocation(_) }
   }
+
+  def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
 }

@@ -32,6 +32,7 @@
      <enumeration value="FILE"/>
      <enumeration value="DIRECTORY"/>
      <enumeration value="LINK"/>
+     <enumeration value=""/>
     </restriction>
    </simpleType>
    <simpleType name="TRetentionPolicy">

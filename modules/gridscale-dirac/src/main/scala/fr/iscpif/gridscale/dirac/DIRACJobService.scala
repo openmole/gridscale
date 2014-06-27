@@ -19,12 +19,17 @@ package fr.iscpif.gridscale.dirac
 
 import java.net.{ HttpURLConnection, URL }
 import javax.net.ssl.HttpsURLConnection
+import fr.iscpif.gridscale.authentication.HTTPSAuthentication
+import fr.iscpif.gridscale.cache.SingleValueCache
+import fr.iscpif.gridscale.jobservice.JobService
+import fr.iscpif.gridscale.tools.DefaultTimeout
 import spray.json._
 import DefaultJsonProtocol._
 import scalaj.http.{ HttpOptions, MultiPart, Http }
 import scala.io.Source
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice._
 import scalaj.http.Http.Request
+import concurrent.duration._
 
 trait DIRACJobService extends JobService with DefaultTimeout {
 
@@ -42,15 +47,15 @@ trait DIRACJobService extends JobService with DefaultTimeout {
   def auth2Auth = service + "/oauth2/token"
   def jobs = service + "/jobs"
 
-  def tokenExpirationMargin = 10 * 60 * 1000
-  def httpsCredentialOption(c: HttpURLConnection)(implicit credential: A) =
+  def tokenExpirationMargin = 10 -> MINUTES
+  def httpsCredentialOption(c: HttpURLConnection) =
     credential.connect(c.asInstanceOf[HttpsURLConnection])
 
   implicit class RequestDecorator[R <: Request](r: R) {
-    def initialise(implicit credential: A) = r.option(httpsCredentialOption).
-      option(HttpOptions.connTimeout(timeout * 1000)).
-      option(HttpOptions.readTimeout(timeout * 1000))
-    def withToken(implicit credential: A) = r.param("access_token", tokenCache(credential).token)
+    def initialise = r.option(httpsCredentialOption).
+      option(HttpOptions.connTimeout(timeout.toMillis.toInt)).
+      option(HttpOptions.readTimeout(timeout.toMillis.toInt))
+    def withToken = r.param("access_token", tokenCache().token)
     def asStringChecked = {
       val (responseCode, headersMap, resultString) = r.asHeadersAndParse(Http.readString)
       if (responseCode != HttpURLConnection.HTTP_OK) throw new RuntimeException(s"Response code was $responseCode when to the request $r, message is $resultString")
@@ -59,20 +64,19 @@ trait DIRACJobService extends JobService with DefaultTimeout {
   }
 
   lazy val tokenCache =
-    new Cache[A, Token] {
-      def compute(k: A) = token(k)
-      def cacheTime(t: Token) = Some(t.expires_in * 1000)
-      override def margin = tokenExpirationMargin
+    new SingleValueCache[Token] {
+      def compute() = token
+      def expiresIn(t: Token) = (t.expires_in, SECONDS) - tokenExpirationMargin
     }
 
-  def token(implicit credential: A) = {
+  def token = {
     val o =
       Http(auth2Auth).param("grant_type", "client_credentials").param("group", group).param("setup", setup).initialise.asStringChecked.asJson.asJsObject
     val f = o.getFields("token", "expires_in")
     Token(f(0).convertTo[String], f(1).convertTo[Long])
   }
 
-  def submit(jobDescription: D)(implicit credential: A): String = {
+  def submit(jobDescription: D): String = {
     def files =
       jobDescription.inputSandbox.zipWithIndex.map {
         case (f, i) ⇒
@@ -84,7 +88,7 @@ trait DIRACJobService extends JobService with DefaultTimeout {
     res.asJson.asJsObject.getFields("jids").head.toJson.convertTo[JsArray].elements.head.toString
   }
 
-  def state(jobId: J)(implicit credential: A) = {
+  def state(jobId: J) = {
     val res = Http(jobs + "/" + jobId).withToken.initialise.asStringChecked
     res.asJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
       case "Received"  ⇒ Submitted
@@ -120,10 +124,10 @@ trait DIRACJobService extends JobService with DefaultTimeout {
 
   } */
 
-  def cancel(jobId: J)(implicit credential: A) = {
+  def cancel(jobId: J) = {
     val request = Http(jobs + "/" + jobId).option(HttpOptions.method("DELETE")).withToken.initialise
     request.asStringChecked
   }
 
-  def purge(job: J)(implicit credential: A) = {}
+  def purge(job: J) = {}
 }

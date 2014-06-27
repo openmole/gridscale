@@ -22,37 +22,40 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URI
-import java.net.URL
-import java.net.URLEncoder
+import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.htmlparser.Parser
-import collection.JavaConversions._
 import org.htmlparser.filters.NodeClassFilter
 import org.htmlparser.tags.LinkTag
 import fr.iscpif.gridscale._
+import storage._
+import tools._
+
+import scala.concurrent.duration.Duration
 
 object HTTPStorage {
 
-  def withConnection[T](uri: URI, timeout: Int)(f: HttpURLConnection ⇒ T): T = {
+  def withConnection[T](uri: URI, timeout: Duration)(f: HttpURLConnection ⇒ T): T = {
     val relativeURL = uri.toURL
     val cnx = relativeURL.openConnection.asInstanceOf[HttpURLConnection]
-    cnx.setConnectTimeout(timeout * 1000)
-    cnx.setReadTimeout(timeout * 1000)
+    cnx.setConnectTimeout(timeout.toMillis.toInt)
+    cnx.setReadTimeout(timeout.toMillis.toInt)
     if (cnx.getHeaderField(null) == null) throw new RuntimeException("Failed to connect to url: " + relativeURL)
     else f(cnx)
   }
 
 }
 
-trait HTTPStorage extends Storage {
+trait HTTPStorage extends Storage with DefaultTimeout {
 
   type A = Unit
+  def credential = Unit
+
   def url: String
 
-  def timeout = 120
   def bufferSize = 64000
 
-  def _list(path: String)(implicit authentication: A): Seq[(String, FileType)] = {
-    val is = openInputStream(path)(authentication)
+  def _list(path: String): Seq[(String, FileType)] = {
+    val is = openInputStream(path)
     try {
       val parser = new Parser
       parser.setInputHTML(new String(getBytes(is, 64000, timeout)))
@@ -72,23 +75,23 @@ trait HTTPStorage extends Storage {
     } finally is.close
   }
 
-  def _makeDir(path: String)(implicit authentication: A) =
+  def _makeDir(path: String) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  def _rmDir(path: String)(implicit authentication: A) =
+  def _rmDir(path: String) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  def _rmFile(patg: String)(implicit authentication: A) =
+  def _rmFile(patg: String) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  def _mv(from: String, to: String)(implicit authentication: A) =
+  def _mv(from: String, to: String) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  protected def _openInputStream(path: String)(implicit authentication: A): InputStream = withConnection(path) {
+  protected def _openInputStream(path: String): InputStream = withConnection(path) {
     _.getInputStream
   }
 
-  protected def _openOutputStream(path: String)(implicit authentication: A): OutputStream =
+  protected def _openOutputStream(path: String): OutputStream =
     throw new RuntimeException("Operation not supported for http protocol")
 
   private def withConnection[T](path: String)(f: HttpURLConnection ⇒ T): T =

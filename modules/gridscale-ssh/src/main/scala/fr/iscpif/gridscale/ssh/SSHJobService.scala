@@ -17,17 +17,16 @@
 
 package fr.iscpif.gridscale.ssh
 
-import java.io.ByteArrayOutputStream
 import java.util.UUID
+import fr.iscpif.gridscale.tools.shell._
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.connection.channel.direct.Session
 import net.schmizz.sshj.common.IOUtils
 import fr.iscpif.gridscale._
+import tools._
+import jobservice._
 
 object SSHJobService {
-
-  val bufferSize = 65535
-  val timeout = 120
 
   val rootDir = ".gridscale/ssh"
 
@@ -54,24 +53,24 @@ object SSHJobService {
     finally session.close
   }
 
-  def execReturnCode(session: Session, cde: String) = {
-    val cmd = session.exec(cde)
+  def execReturnCode(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
+    val cmd = session.exec(cde.toString)
     try {
       cmd.join
       cmd.getExitStatus
     } finally cmd.close
   }
 
-  def execReturnCodeOutput(session: Session, cde: String) = {
-    val cmd = session.exec(cde)
+  def execReturnCodeOutput(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
+    val cmd = session.exec(cde.toString)
     try {
       cmd.join
       (cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
   }
 
-  def exec(session: Session, cde: String) = {
-    val retCode = execReturnCode(session, cde)
+  def exec(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
+    val retCode = execReturnCode(cde)
     if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode)
   }
 
@@ -81,11 +80,13 @@ object SSHJobService {
 
 import SSHJobService._
 
-trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
+trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShell { js ⇒
   type J = String
   type D = SSHJobDescription
 
-  def submit(description: D)(implicit credential: A): J = {
+  def bufferSize = 65535
+
+  def submit(description: D): J = {
     val jobId = UUID.randomUUID.toString
     val command = new ScriptBuffer
 
@@ -104,31 +105,29 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage { js ⇒
         " echo $? > " + absolute(endCodeFile(jobId)) + ") & " +
         "echo $! > " + absolute(pidFile(jobId)) + " )"
 
-    withConnection(withSession(_) { exec(_, "bash -c '" + command.toString + "'") })
+    withConnection(exec(command.toString)(_))
     jobId
   }
 
-  def state(job: J)(implicit credential: A): JobState =
+  def state(job: J): JobState =
     if (exists(endCodeFile(job))) {
       val is = openInputStream(endCodeFile(job))
       val content =
-        try getBytes(is, bufferSize, SSHJobService.timeout)
+        try getBytes(is, bufferSize, timeout)
         finally is.close
 
       translateState(new String(content).takeWhile(_.isDigit).toInt)
     } else Running
 
-  def cancel(jobId: J)(implicit credential: A) = withConnection(withSession(_) {
-    s ⇒
-      val cde = "kill `cat " + pidFile(jobId) + "`;"
-      exec(s, cde)
-  })
+  def cancel(jobId: J) = withConnection { implicit connection ⇒
+    val cde = s"kill `cat ${pidFile(jobId)}`;"
+    exec(cde)
+  }
 
-  def purge(jobId: String)(implicit credential: A) = withConnection(withSession(_) {
-    s ⇒
-      val cde = "rm -rf " + rootDir + "/" + jobId + "*"
-      exec(s, cde)
-  })
+  def purge(jobId: String) = withConnection { implicit connection ⇒
+    val cde = s"rm -rf $rootDir/$jobId*"
+    exec(cde)
+  }
 
   private def translateState(retCode: Int) =
     if (retCode >= 0)

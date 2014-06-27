@@ -17,9 +17,10 @@
 
 package fr.iscpif.gridscale.pbs
 
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh._
 import SSHJobService._
+import fr.iscpif.gridscale.tools.shell.BashShell
 
 object PBSJobService {
   class PBSJob(val description: PBSJobDescription, val pbsId: String)
@@ -29,31 +30,28 @@ object PBSJobService {
 
 import PBSJobService._
 
-trait PBSJobService extends JobService with SSHHost with SSHStorage {
+trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = PBSJob
   type D = PBSJobDescription
 
-  def sourceBashRC = "source ~/.bashrc ; "
-
-  def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
-    withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
+  def submit(description: D): J = withConnection { implicit connection ⇒
+    exec("mkdir -p " + description.workDirectory)
     val outputStream = openOutputStream(pbsScriptPath(description))
     try outputStream.write(description.toPBS.getBytes)
     finally outputStream.close
 
-    withSession(c) { session ⇒
-      val command = sourceBashRC + "cd " + description.workDirectory + " && qsub " + description.uniqId + ".pbs"
-      val (ret, jobId, error) = execReturnCodeOutput(session, command)
-      if (ret != 0) throw exception(ret, command, jobId, error)
-      if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
-      new PBSJob(description, jobId)
-    }
+    val command = "cd " + description.workDirectory + " && qsub " + description.uniqId + ".pbs"
+    val (ret, jobId, error) = execReturnCodeOutput(command)
+    if (ret != 0) throw exception(ret, command, jobId, error)
+    if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
+    new PBSJob(description, jobId)
+
   }
 
-  def state(job: J)(implicit credential: A): JobState = withConnection(withSession(_) { session ⇒
-    val command = sourceBashRC + "qstat -f " + job.pbsId
+  def state(job: J): JobState = withConnection { implicit connection ⇒
+    val command = "qstat -f " + job.pbsId
 
-    val (ret, output, error) = execReturnCodeOutput(session, command)
+    val (ret, output, error) = execReturnCodeOutput(command)
 
     ret.toInt match {
       case 153 ⇒ Done
@@ -67,12 +65,12 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
         translateStatus(ret, state)
       case r ⇒ throw exception(ret, command, output, error)
     }
-  })
+  }
 
-  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, sourceBashRC + "qdel " + job.pbsId) })
+  def cancel(job: J) = withConnection { exec("qdel " + job.pbsId)(_) }
 
   //Purge output error job script
-  def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒
+  def purge(job: J) = withSftpClient { c ⇒
     rmFileWithClient(pbsScriptPath(job.description))(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)

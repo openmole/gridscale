@@ -17,8 +17,8 @@
 
 package fr.iscpif.gridscale.ssh
 
+import fr.iscpif.gridscale.authentication.PrivateKey
 import net.schmizz.sshj.SSHClient
-import fr.iscpif.gridscale.PrivateKey
 
 trait SSHPrivateKeyAuthentication extends SSHAuthentication with PrivateKey {
 

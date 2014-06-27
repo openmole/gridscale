@@ -20,6 +20,8 @@ package fr.iscpif.gridscale.condor
 
 import java.util.UUID
 import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.ScriptBuffer
 
 /** Represent Requirements by extending Tuple2 in order to override toString */
 class CondorRequirement(val requirementName: String,
@@ -39,7 +41,7 @@ trait CondorJobDescription extends JobDescription {
   def workDirectory: String
   // not available yet
   //  def queue: Option[String] = None
-  //  def wallTime: Option[Int] = None
+  //  def wallTime: Option[Duration] = None
   def memory: Option[Int] = None
   def nodes: Option[Int] = None
   def coreByNode: Option[Int] = None

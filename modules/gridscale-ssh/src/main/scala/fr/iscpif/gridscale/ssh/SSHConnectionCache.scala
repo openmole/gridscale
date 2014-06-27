@@ -23,13 +23,13 @@ import java.util.concurrent.Executors
 trait SSHConnectionCache <: SSHHost {
   @transient private var connection: Option[SSHClient] = None
 
-  override def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication): T = {
+  override def withConnection[T](f: SSHClient ⇒ T): T = {
     val c = getConnection
     try f(c)
     finally release(c)
   }
 
-  override def getConnection(implicit authentication: SSHAuthentication) = synchronized {
+  override def getConnection = synchronized {
     def updateConnection = {
       val newC = connect
       connection = Some(newC)

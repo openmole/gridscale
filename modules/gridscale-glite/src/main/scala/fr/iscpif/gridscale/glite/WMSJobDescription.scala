@@ -19,6 +19,10 @@ package fr.iscpif.gridscale.glite
 
 import java.io.File
 import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.ScriptBuffer
+
+import scala.concurrent.duration.Duration
 
 trait WMSJobDescription extends JobDescription {
   def inputSandbox: Iterable[File]
@@ -29,9 +33,9 @@ trait WMSJobDescription extends JobDescription {
   def stdOutput = ""
   def stdError = ""
   def memory: Option[Int] = None
-  def cpuTime: Option[Int] = None
+  def cpuTime: Option[Duration] = None
   def cpuNumber: Option[Int] = None
-  def wallTime: Option[Int] = None
+  def wallTime: Option[Duration] = None
   def jobType: Option[String] = None
   def smpGranularity: Option[Int] = None
   def retryCount: Option[Int] = None
@@ -43,8 +47,8 @@ trait WMSJobDescription extends JobDescription {
   def requirements =
     "other.GlueCEStateStatus == \"Production\"" +
       memory.map(" && other.GlueHostMainMemoryRAMSize >= " + _).mkString +
-      cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _).mkString +
-      wallTime.map(" && other.GlueCEPolicyMaxWallClockTime >= " + _).mkString +
+      cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _.toMinutes).mkString +
+      wallTime.map(" && other.GlueCEPolicyMaxWallClockTime >= " + _.toMinutes).mkString +
       architecture.map(" && other.GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString +
       ce.map(" && (" + _.map("other.GlueCEUniqueID == \"" + _ + "\"").mkString("|") + ")").mkString
 

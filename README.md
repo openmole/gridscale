@@ -27,23 +27,16 @@ Imports
 -------
 In order to use gridscale you should import the folowing namespaces:
 
-    import fr.iscpif.gridscale
-    
-    import authentication._
-    import information._
-    import storage._
-    import jobservice._
-    import tools._
+    import fr.iscpif.gridscale._
 
 
 Examples
 --------
 
-## SSH server ## 
-
+### SSH server
 To access a storage through **SSH**:
 
-    implicit val sshStorage = new SSHStorage with SSHUserPasswordAuthentication {
+    val sshStorage = new SSHStorage with SSHUserPasswordAuthentication {
       def host: String = "server.domain"
       def user = "username"
       def password = "password"
@@ -67,7 +60,7 @@ To access a storage through **SSH**:
 
 To run a process on a remote server through **SSH**:
 
-    implicit val sshJS = new SSHJobService with SSHUserPasswordAuthentication {
+    val sshJS = new SSHJobService with SSHUserPasswordAuthentication {
       def host: String = "server.domain"
       def user = "user"
       def password = "password"
@@ -83,11 +76,10 @@ To run a process on a remote server through **SSH**:
     val s = untilFinished{Thread.sleep(5000); val s = sshJS.state(j); println(s); s}
     sshJS.purge(j)
 
-## PBS ## 
-
+### PBS
 To submit a job on a **PBS** cluster:
 
-    implicit val pbsService = new PBSJobService with SSHPrivateKeyAuthentication {
+    val pbsService = new PBSJobService with SSHPrivateKeyAuthentication {
       def host: String = "server.domain"
       def user = "user"
       def password = "password"
@@ -105,11 +97,10 @@ To submit a job on a **PBS** cluster:
     pbsService.purge(j)
 
 
-## SLURM ##
-
+### SLURM
 To submit a job on a **SLURM** cluster:
 
-    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+    val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
       def host: String = "server.domain"
       def user = "user"
       def password = "password"
@@ -128,11 +119,10 @@ To submit a job on a **SLURM** cluster:
     slurmService.purge(j)
 
 
-## Condor ##
-
+### Condor
 To submit a job on a **Condor** flock:
 
-    implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
+    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
       def password = inPassword
@@ -151,25 +141,22 @@ To submit a job on a **Condor** flock:
     condorService.purge(j)
 
 
-## GLite / EMI ##
+### GLite / EMI
+To **submit a job** on the biomed VO of the EGI grid:
 
-To submit a job on the biomed VO of the EGI grid:
 
-    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-    val wms = bdii.queryWMS("biomed", 120).head
-
-    VOMSAuthentication.setCARepository(new File("/dir/to/you/authority/certificates/dir"))
-    
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
-      def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
       def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
       def password = "password"
-    }.cache(3600)
-    
+    }.cache(1 -> HOURS)
+
+    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+    val wms = bdii.queryWMS("biomed", 120).head
+
     val jobDesc = new WMSJobDescription {
       def executable = "/bin/cat"
       def arguments = "testis"
@@ -187,29 +174,24 @@ To submit a job on the biomed VO of the EGI grid:
     if(s == Done) wms.downloadOutputSandbox(jobDesc, j)
     wms.purge(j)
 
-To acces a storage of the biomed VO of the EGI grid:
+To **acces a storage** of the biomed VO of the EGI grid:
 
-    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-    val srm = bdii.querySRM("biomed", 120).head
-    
-    VOMSAuthentication.setCARepository(new File( "/path/to/authority/certificates/directory"))
-    
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
-      def proxyFile = new File("/tmp/proxy.x509")
       def fquan = None
       def lifeTime = 24 * 3600
       def certificate = new File("/path/to/your/certificate.p12")
       def password = "password"
-    }.cache(3600)
+    }.cache(1 -> HOURS)
+
+    val bdii = new BDII("ldap://topbdii.grif.fr:2170")
+    val srm = bdii.querySRM("biomed", 120).head
     
     srm.listNames("/").foreach(println)
 
 Submit a long running job with **MyProxy**:
 
-    VOMSAuthentication.setCARepository(new File( "/home/reuillon/.openmole/CACertificates"))
-    
     implicit val auth = new P12VOMSAuthentication {
       def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
       def voName = "biomed"
@@ -217,9 +199,8 @@ Submit a long running job with **MyProxy**:
       def fquan = None
       def lifeTime = 24 * 3600
       def certificate = new File("/home/reuillon/.globus/certificate.p12")
-    }.cache(3600)
+    }.cache(1 -> HOURS)
   
-    
     val myProxy = new MyProxy {
       def host = "myproxy.cern.ch"
     }
@@ -233,14 +214,11 @@ Submit a long running job with **MyProxy**:
 
 To submit a job to **DIRAC**:
 
-    implicit val p12certificate = new P12HTTPSAuthentication {
-      def certificate = new File("/path/to/your/certificate.p12")
-      def password = "youpassword"
-    }
-  
-    val dirac = new DIRACJobService {
+    val dirac = new DIRACJobService with P12HTTPSAuthentication {
       def group = "biomed_user"
       def service = "https://ccdirac06.in2p3.fr:9178"
+      def certificate = new File("/path/to/your/certificate.p12")
+      def password = "youpassword"
     }
   
     val job = new DIRACJobDescription {
@@ -253,17 +231,10 @@ To submit a job to **DIRAC**:
   
     val id = dirac.submit(job)
 
-  maven
+
+  SBT 
 -------------
 
-gridscale depend on the 2.10 version of scala. we intend to switch to sbt and support multi-version at some point in the future.
+GridScale is cross compiled to serveral versions of scala. To use on of its modules add a dependency like:
 
-    <repository>
-      <id>iscpif</id>
-      <name>iscpif repo</name>
-      <url>http://maven.iscpif.fr/public/</url>
-    </repository>
-
-    <artifactid>parent</artifactid>
-    <groupid>fr.iscpif.gridscale</groupid>
-    <version>1.41</version>
+    libraryDependencies += "fr.iscpif.gridscale" %% "gridscalepbs" % version

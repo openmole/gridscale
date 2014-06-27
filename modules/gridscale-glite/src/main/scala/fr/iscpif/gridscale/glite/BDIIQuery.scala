@@ -26,7 +26,9 @@ import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
+import javax.naming.directory.SearchResult
+
+import scala.concurrent.duration.Duration;
 
 class BDIIQuery(val bdii: String, attributeList: List[String] = List.empty) {
 
@@ -61,7 +63,7 @@ class BDIIQuery(val bdii: String, attributeList: List[String] = List.empty) {
    * @return an array list of SearchResult objects.
    * @throws InternalProcessingError
    */
-  def query(searchPhrase: String, timeOut: Int) = {
+  def query(searchPhrase: String, timeOut: Duration) = {
     //boolean hasError= false;
     var resultsList = new ArrayList[SearchResult]
     val bindDN = "o=grid"
@@ -75,7 +77,7 @@ class BDIIQuery(val bdii: String, attributeList: List[String] = List.empty) {
 
     /* specify search constraints to search subtree */
     val constraints = new SearchControls
-    constraints.setTimeLimit(timeOut)
+    constraints.setTimeLimit(timeOut.toMillis.toInt)
     constraints.setSearchScope(SearchControls.SUBTREE_SCOPE)
 
     // specify the elements to return

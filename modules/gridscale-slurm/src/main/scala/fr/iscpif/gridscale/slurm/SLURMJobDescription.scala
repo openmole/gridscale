@@ -19,7 +19,10 @@
 package fr.iscpif.gridscale.slurm
 
 import java.util.UUID
-import fr.iscpif.gridscale.{ JobDescription, ScriptBuffer }
+import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.ScriptBuffer
+
+import scala.concurrent.duration.Duration
 
 /** Represent Gres by extending Tuple2 in order to override toString */
 class Gres(val gresName: String, val gresValue: Int) extends Tuple2[String, Int](gresName, gresValue) {
@@ -37,7 +40,7 @@ trait SLURMJobDescription extends JobDescription {
   val uniqId = UUID.randomUUID.toString
   def workDirectory: String
   def queue: Option[String] = None
-  def wallTime: Option[Int] = None
+  def wallTime: Option[Duration] = None
   def memory: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
@@ -62,8 +65,11 @@ trait SLURMJobDescription extends JobDescription {
     }
 
     wallTime match {
-      case Some(t) ⇒ buffer += "#SBATCH --time=" + t * 60
-      case None    ⇒
+      case Some(t) ⇒
+        val df = new java.text.SimpleDateFormat("HH:mm:ss")
+        df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
+        buffer += "#PBS -lwalltime=" + df.format(t.toMillis)
+      case None ⇒
     }
 
     // must handle empty list separately since it is not done in mkString

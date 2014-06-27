@@ -18,9 +18,10 @@
 
 package fr.iscpif.gridscale.condor
 
-import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh._
 import SSHJobService._
+import fr.iscpif.gridscale.tools.shell.BashShell
 
 object CondorJobService {
   class CondorJob(val description: CondorJobDescription, val condorId: String)
@@ -28,45 +29,35 @@ object CondorJobService {
 
 import CondorJobService._
 
-trait CondorJobService extends JobService with SSHHost with SSHStorage {
+trait CondorJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = CondorJob
   type D = CondorJobDescription
 
-  // assume bash will be available on most systems
-  // bash -ci will fake an interactive shell (-i) in order to load the config files
-  // as an interactive ssh shell would (~/.bashrc, /etc/bashrc)
-  // and run the sequence of command without interaction (-c)
-  def baseCommand = "bash -ci \""
-
-  def submit(description: D)(implicit credential: A): J = withConnection { c ⇒
-    withSession(c) { exec(_, "mkdir -p " + description.workDirectory) }
+  def submit(description: D): J = withConnection { implicit connection ⇒
+    exec("mkdir -p " + description.workDirectory)
     val outputStream = openOutputStream(condorScriptPath(description))
     try outputStream.write(description.toCondor.getBytes)
     finally outputStream.close
 
-    withSession(c) { session ⇒
-      val command = baseCommand + "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor\""
+    val command = "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor"
 
-      val (ret, output, error) = execReturnCodeOutput(session, command)
-      if (0 != ret) throw exception(ret, command, output, error)
+    val (ret, output, error) = execReturnCodeOutput(command)
+    if (0 != ret) throw exception(ret, command, output, error)
 
-      val jobId = output.trim.reverse.tail.takeWhile(_ != ' ').reverse
-      if (jobId.isEmpty) throw exception(ret, command, output, error)
+    val jobId = output.trim.reverse.tail.takeWhile(_ != ' ').reverse
+    if (jobId.isEmpty) throw exception(ret, command, output, error)
 
-      new CondorJob(description, jobId)
-    }
+    new CondorJob(description, jobId)
+
   }
 
-  def state(job: J)(implicit credential: A): JobState = withConnection { c ⇒
+  def state(job: J): JobState = withConnection { implicit connection ⇒
     // NOTE: submission sends only 1 process per cluster for the moment so no need to query the process id
 
     // if the job is still running, his state is returned by condor_q...
-    val queryInQueue = baseCommand + "condor_q " + job.condorId + " -long -attributes JobStatus\""
+    val queryInQueue = "condor_q " + job.condorId + " -long -attributes JobStatus"
 
-    val (retInQueue, outputInQueue, errorInQueue) = withSession(c) {
-      session ⇒
-        execReturnCodeOutput(session, queryInQueue)
-    }
+    val (retInQueue, outputInQueue, errorInQueue) = execReturnCodeOutput(queryInQueue)
 
     retInQueue.toInt match {
       case 0 if (!outputInQueue.isEmpty) ⇒ {
@@ -76,11 +67,9 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
       }
       case 0 ⇒ {
         // ...but if the job is already completed, his state is returned by condor_history...
-        val queryFinished = baseCommand + "condor_history " + job.condorId + " -long\""
+        val queryFinished = "condor_history " + job.condorId + " -long\""
 
-        val (retFinished, outputFinished, errorFinished) = withSession(c) {
-          session ⇒ execReturnCodeOutput(session, queryFinished)
-        }
+        val (retFinished, outputFinished, errorFinished) = execReturnCodeOutput(queryFinished)
 
         retFinished.toInt match {
           case 0 if (!outputFinished.isEmpty) ⇒ {
@@ -97,10 +86,10 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
 
   }
 
-  def cancel(job: J)(implicit credential: A) = withConnection(withSession(_) { exec(_, baseCommand + "condor_rm " + job.condorId + "\"") })
+  def cancel(job: J) = withConnection { exec("condor_rm " + job.condorId)(_) }
 
   // Purge output, error and job script
-  def purge(job: J)(implicit credential: A) = withSftpClient { c ⇒
+  def purge(job: J) = withSftpClient { c ⇒
     rmFileWithClient(condorScriptPath(job.description))(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)

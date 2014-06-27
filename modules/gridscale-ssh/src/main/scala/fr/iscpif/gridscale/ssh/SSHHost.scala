@@ -17,41 +17,42 @@
 
 package fr.iscpif.gridscale.ssh
 
+import fr.iscpif.gridscale.authentication.Credential
+import fr.iscpif.gridscale.tools.DefaultTimeout
 import net.schmizz.sshj._
 import net.schmizz.sshj.sftp._
 import transport.verification.HostKeyVerifier
 import java.security.PublicKey
-import fr.iscpif.gridscale.DefaultTimeout
 
-trait SSHHost extends DefaultTimeout {
+trait SSHHost <: DefaultTimeout with Credential {
   type A = SSHAuthentication
 
   def user: String
   def host: String
   def port: Int = 22
 
-  def withConnection[T](f: SSHClient ⇒ T)(implicit authentication: SSHAuthentication) = {
+  def withConnection[T](f: SSHClient ⇒ T) = {
     val connection = getConnection
     try f(connection)
     finally release(connection)
   }
 
-  def getConnection(implicit authentication: SSHAuthentication) = connect
+  def getConnection = connect
   def release(c: SSHClient) = c.close
 
-  def connect(implicit authentication: SSHAuthentication) = {
+  def connect = {
     val ssh = new SSHClient
-    ssh.setConnectTimeout(timeout * 1000)
-    ssh.setTimeout(timeout * 1000)
+    ssh.setConnectTimeout(timeout.toMillis.toInt)
+    ssh.setTimeout(timeout.toMillis.toInt)
     ssh.addHostKeyVerifier(new HostKeyVerifier {
       def verify(p1: String, p2: Int, p3: PublicKey) = true
     })
     ssh.connect(host, port)
-    authentication.authenticate(ssh)
+    credential.authenticate(ssh)
     ssh
   }
 
-  def withSftpClient[T](f: SFTPClient ⇒ T)(implicit authentication: SSHAuthentication): T = withConnection {
+  def withSftpClient[T](f: SFTPClient ⇒ T): T = withConnection {
     connection ⇒
       val sftpClient = connection.newSFTPClient
       try f(sftpClient) finally sftpClient.close
