@@ -40,12 +40,12 @@ trait PBSJobDescription extends JobDescription {
 
     queue match {
       case Some(q) ⇒ buffer += "#PBS -q " + q
-      case None ⇒
+      case None    ⇒
     }
 
     memory match {
       case Some(m) ⇒ buffer += "#PBS -lmem=" + m + "mb"
-      case None ⇒
+      case None    ⇒
     }
 
     wallTime match {
@@ -61,7 +61,7 @@ trait PBSJobDescription extends JobDescription {
       case None ⇒
         coreByNode match {
           case Some(c) ⇒ buffer += "#PBS -lnodes=1:ppn=" + c
-          case None ⇒
+          case None    ⇒
         }
     }
 

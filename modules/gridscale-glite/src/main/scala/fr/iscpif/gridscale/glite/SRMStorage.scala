@@ -127,9 +127,9 @@ trait SRMStorage extends Storage with RecursiveRmDir {
     } yield {
       val t = pd.getType match {
         case TFileType.DIRECTORY ⇒ DirectoryType
-        case TFileType.FILE ⇒ FileType
-        case TFileType.LINK ⇒ LinkType
-        case _ ⇒ UnknownType
+        case TFileType.FILE      ⇒ FileType
+        case TFileType.LINK      ⇒ LinkType
+        case _                   ⇒ UnknownType
       }
       new File(pd.getPath).getName -> t
     }).toSeq

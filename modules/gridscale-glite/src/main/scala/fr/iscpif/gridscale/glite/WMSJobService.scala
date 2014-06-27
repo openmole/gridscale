@@ -58,17 +58,17 @@ object WMSJobService {
 
   private def translateState(s: StatName) =
     s.getValue match {
-      case StatName._ABORTED ⇒ Failed
+      case StatName._ABORTED   ⇒ Failed
       case StatName._CANCELLED ⇒ Failed
-      case StatName._CLEARED ⇒ Done
-      case StatName._DONE ⇒ Done
-      case StatName._PURGED ⇒ Done
-      case StatName._READY ⇒ Submitted
-      case StatName._RUNNING ⇒ Running
+      case StatName._CLEARED   ⇒ Done
+      case StatName._DONE      ⇒ Done
+      case StatName._PURGED    ⇒ Done
+      case StatName._READY     ⇒ Submitted
+      case StatName._RUNNING   ⇒ Running
       case StatName._SCHEDULED ⇒ Submitted
       case StatName._SUBMITTED ⇒ Submitted
-      case StatName._UNKNOWN ⇒ Failed
-      case StatName._WAITING ⇒ Submitted
+      case StatName._UNKNOWN   ⇒ Failed
+      case StatName._WAITING   ⇒ Submitted
     }
 
   private def rawState(jobId: WMSJobId, timeout: Int)(implicit credential: WMSJobService#A) = {

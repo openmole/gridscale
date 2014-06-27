@@ -69,7 +69,7 @@ trait VOMSAuthentication extends GlobusAuthentication {
 
     fqan match {
       case Some(s) ⇒ requestOption.addFQAN(s)
-      case None ⇒
+      case None    ⇒
     }
 
     proxy.setProxyLifetime(lifeTime)

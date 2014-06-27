@@ -53,27 +53,27 @@ trait SLURMJobDescription extends JobDescription {
 
     queue match {
       case Some(p) ⇒ buffer += "#SBATCH -p " + p
-      case None ⇒
+      case None    ⇒
     }
 
     memory match {
       case Some(m) ⇒ buffer += "#SBATCH --mem-per-cpu=" + m
-      case None ⇒
+      case None    ⇒
     }
 
     wallTime match {
       case Some(t) ⇒ buffer += "#SBATCH --time=" + t * 60
-      case None ⇒
+      case None    ⇒
     }
 
     // must handle empty list separately since it is not done in mkString
     gres match {
       case List() ⇒
-      case _ ⇒ buffer += gres.mkString("#SBATCH --gres=", "--gres=", "")
+      case _      ⇒ buffer += gres.mkString("#SBATCH --gres=", "--gres=", "")
     }
     constraints match {
       case List() ⇒
-      case _ ⇒ buffer += constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
+      case _      ⇒ buffer += constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
     }
 
     buffer += "#SBATCH -D " + workDirectory + "\n"

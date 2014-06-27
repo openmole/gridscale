@@ -110,12 +110,12 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage {
 
   def translateStatus(status: String) =
     status match {
-      case "3" | "4" ⇒ Done
-      case "2" ⇒ Running
+      case "3" | "4"       ⇒ Done
+      case "2"             ⇒ Running
       // choice was made to characterize held jobs (status=5) as submitted instead of Running
       case "0" | "1" | "5" ⇒ Submitted
-      case "6" ⇒ Failed
-      case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
+      case "6"             ⇒ Failed
+      case _               ⇒ throw new RuntimeException("Unrecognized state " + status)
     }
 
 }

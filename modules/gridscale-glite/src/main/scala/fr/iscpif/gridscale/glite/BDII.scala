@@ -119,7 +119,7 @@ class BDII(location: String) {
         }
 
       } catch {
-        case ex: NamingException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error interrogating the BDII.", ex);
+        case ex: NamingException   ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error interrogating the BDII.", ex);
         case e: URISyntaxException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error creating URI for a storge element.", e);
       }
     }
@@ -148,7 +148,7 @@ class BDII(location: String) {
         val wmsURI = new URI(r.getAttributes.get("GlueServiceEndpoint").get().toString)
         wmsURIs += wmsURI
       } catch {
-        case ex: NamingException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", ex);
+        case ex: NamingException   ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", ex);
         case e: URISyntaxException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", e);
       }
     }

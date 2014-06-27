@@ -46,8 +46,8 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
         val t =
           e.getAttributes.getType match {
             case FileMode.Type.DIRECTORY ⇒ DirectoryType
-            case FileMode.Type.SYMKLINK ⇒ LinkType
-            case _ ⇒ FileType
+            case FileMode.Type.SYMKLINK  ⇒ LinkType
+            case _                       ⇒ FileType
           }
         e.getName -> t
     }
@@ -67,8 +67,8 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
         try {
           val child = path + "/" + p
           t match {
-            case FileType ⇒ rmFileWithClient(child)(c)
-            case LinkType ⇒ rmFileWithClient(child)(c)
+            case FileType      ⇒ rmFileWithClient(child)(c)
+            case LinkType      ⇒ rmFileWithClient(child)(c)
             case DirectoryType ⇒ rmDirWithClient(child)(c)
           }
         } catch {

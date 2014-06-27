@@ -83,8 +83,8 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage {
   def translateStatus(retCode: Int, status: String) =
     status match {
       case "R" | "E" | "H" | "S" ⇒ Running
-      case "Q" | "W" | "T" ⇒ Submitted
-      case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
+      case "Q" | "W" | "T"       ⇒ Submitted
+      case _                     ⇒ throw new RuntimeException("Unrecognized state " + status)
     }
 
 }
