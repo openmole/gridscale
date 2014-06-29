@@ -154,7 +154,9 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
 
-  lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings)
+                          .dependsOn(gridscale, gridscaleSSH)
+                          .settings(libraryDependencies += scalaTest)
 
 }
 
@@ -229,5 +231,6 @@ trait Libraries <: Settings {
     libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
     )
 
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 
 }
