@@ -156,7 +156,7 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings)
                           .dependsOn(gridscale, gridscaleSSH)
-                          .settings(libraryDependencies += scalaTest)
+                          .settings(libraryDependencies += scalaTest, libraryDependencies += mockito)
 
 }
 
@@ -233,4 +233,5 @@ trait Libraries <: Settings {
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 
+  lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4"
 }
