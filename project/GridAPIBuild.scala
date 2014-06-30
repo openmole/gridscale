@@ -58,10 +58,11 @@ trait Settings <: Build {
 
 
 trait Examples <: Modules with Settings{
-  lazy val gliteExample = Project(id = "gliteexample", base = file("examples/glite"), settings = defaultSettings) dependsOn (gridscaleGlite)
-  lazy val diracExample = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings) dependsOn (gridscaleDIRAC)
+  lazy val gliteExample  = Project(id = "gliteexample", base = file("examples/glite"), settings = defaultSettings) dependsOn (gridscaleGlite)
+  lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings) dependsOn (gridscaleDIRAC)
   lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings) dependsOn (gridscaleCondor)
-  lazy val slurmExample = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings) dependsOn (gridscaleSLURM)
+  lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings) dependsOn (gridscaleSLURM)
+  lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings) dependsOn (gridscaleSGE)
 
 }
 
@@ -119,6 +120,10 @@ trait Bundles <: Modules with Settings {
     name := "slurm", noSSH
     )
 
+  lazy val sgeBundle = Project(id = "sgebundle", base = file("bundles/sge"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSGE) settings(
+    name := "sge", noSSH
+    )
+
 
 }
 
@@ -148,6 +153,10 @@ trait Modules <: Libraries with Settings {
   lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
 
   lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+
+  lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings)
+                          .dependsOn(gridscale, gridscaleSSH)
+                          .settings(libraryDependencies += scalaTest, libraryDependencies += mockito)
 
 }
 
@@ -222,5 +231,7 @@ trait Libraries <: Settings {
     libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
     )
 
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 
+  lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4"
 }
