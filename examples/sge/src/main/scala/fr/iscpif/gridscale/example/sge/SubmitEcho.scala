@@ -15,29 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package fr.iscpif.gridscale.example.sge
-import fr.iscpif.gridscale.sge.{SGEJobDescription, SGEJobService}
-import fr.iscpif.gridscale.ssh.{SSHUserPasswordAuthentication, SSHPrivateKeyAuthentication}
+import fr.iscpif.gridscale.sge.{ SGEJobDescription, SGEJobService }
+import fr.iscpif.gridscale.ssh.{ SSHUserPasswordAuthentication, SSHPrivateKeyAuthentication }
 import fr.iscpif.gridscale._
 
 object SubmitEcho extends App {
 
-    implicit val service = new SGEJobService with SSHUserPasswordAuthentication {
-      def host = "master.domain"
-      def user = "login"
-      def password = "password"
-    }
+  implicit val service = new SGEJobService with SSHUserPasswordAuthentication {
+    def host = "master.domain"
+    def user = "login"
+    def password = "password"
+  }
 
-    val description = new SGEJobDescription {
-      def executable = "/bin/echo"
-      def arguments = "hello wold"
-      def workDirectory = service.home + "/testjob/"
-    }
+  val description = new SGEJobDescription {
+    def executable = "/bin/echo"
+    def arguments = "hello wold"
+    def workDirectory = service.home + "/testjob/"
+  }
 
-    val j = service.submit(description)
+  val j = service.submit(description)
 
-    val s2 = untilFinished { Thread.sleep(5000); val s = service.state(j); println(s); s }
+  val s2 = untilFinished { Thread.sleep(5000); val s = service.state(j); println(s); s }
 
-    service.purge(j)
+  service.purge(j)
 }
