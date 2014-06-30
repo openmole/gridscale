@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 Romain Reuillon
- * Copyright (C) 2012 Jonathan Passerat-Palmbach
+ * Copyright (C) 2014 Jonathan Passerat-Palmbach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,7 @@ package fr.iscpif.gridscale.sge
 
 import java.util.UUID
 import fr.iscpif.gridscale.jobservice.JobDescription
+
 import fr.iscpif.gridscale.tools.ScriptBuffer
 
 import scala.concurrent.duration.Duration
@@ -40,6 +41,7 @@ trait SGEJobDescription extends JobDescription {
 
     buffer += "#$ -o " + output
     buffer += "#$ -e " + error
+
     queue.foreach(q ⇒ buffer += "#$ -q " + q)
     memory.foreach(m ⇒ buffer += "-l vmem=" + m + "M")
     wallTime.foreach(t ⇒ buffer += "-l ct=" + t.toSeconds)

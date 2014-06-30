@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2014 Jonathan Passerat-Palmbach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,6 +25,29 @@ import fr.iscpif.gridscale.tools.shell.BashShell
 
 object SGEJobService {
   class SGEJob(val description: SGEJobDescription, val sgeId: String)
+
+  object SGEJob {
+    def apply(description: SGEJobDescription, sgeId: String) = new SGEJob(description, sgeId)
+  }
+
+  val jobStateAttribute = "JOB_STATE"
+
+  /**
+   * Match SGE's states to 1 of the 4 generic states available in GridScale
+   * Arbitrary choices were made for SGE's Suspended states that either relate to
+   * Running or Submitted in GridScale.
+   * @param status The original state collected from the SGE job scheduler
+   * @return Corresponding state in GridScale
+   * @throws RuntimeException when the input state can't be recognized.
+   */
+  def translateStatus(status: String) =
+    status match {
+      case "qw" | "hqw" | "hRwq" | "Rs" | "Rts" | "RS" | "RtS" | "RT" | "RtT" ⇒ Submitted
+      case "r" | "t" | "Rr" | "Rt" | "T" | "tT" | "s" | "ts" | "S" | "tS" ⇒ Running
+      case "dr" | "dt" | "dRr" | "dRt" | "ds" | "dS" | "dT" | "dRs" | "dRS" | "dRT" ⇒ Done
+      case "Eqw" | "Ehqw" | "EhRqw" ⇒ Failed
+      case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
+    }
 }
 
 import SGEJobService._
@@ -45,7 +69,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
     val jobId = out.split(" ").drop(2).head
 
     if (!jobId.forall(_.isDigit)) throw new RuntimeException("qsub did not return a valid JobID in " + out)
-    new SGEJob(description, jobId)
+    SGEJob(description, jobId)
   }
 
   def state(job: J): JobState = withConnection { implicit connection ⇒
@@ -59,6 +83,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
         val stateString = (data \ "queue_info" \ "job_list" \ "state").text
         if (stateString.isEmpty) throw new RuntimeException(s"Job $job hasn't been found")
         translateStatus(stateString)
+
       case r ⇒ throw exception(ret, command, output, error)
     }
   }
@@ -66,6 +91,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
   def cancel(job: J) = withConnection { exec("qdel " + job.sgeId)(_) }
 
   //Purge output error job script
+  // TODO purge log as well
   def purge(job: J) = withSftpClient { implicit c ⇒
     rmFileWithClient(sgeScriptPath(job.description))
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)
@@ -74,15 +100,5 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   def sgeScriptName(description: D) = description.uniqId + ".sge"
   def sgeScriptPath(description: D) = description.workDirectory + "/" + sgeScriptName(description)
-
-  // From the SGE qstat man page: d(eletion),  E(rror), h(old), r(unning), R(estarted), s(uspended), S(uspended), t(ransfering), T(hreshold) or w(aiting)
-  def translateStatus(status: String) =
-    status match {
-      case "h" | "r" | "R" | "s" | "S" | "T" ⇒ Running
-      case "t" | "w"                         ⇒ Submitted
-      case "d"                               ⇒ Done
-      case "e"                               ⇒ Failed
-      case _                                 ⇒ throw new RuntimeException("Unrecognized state " + status)
-    }
 
 }
