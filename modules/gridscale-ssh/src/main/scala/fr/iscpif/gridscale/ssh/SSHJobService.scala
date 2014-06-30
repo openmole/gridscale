@@ -71,7 +71,7 @@ object SSHJobService {
 
   def exec(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
     val retCode = execReturnCode(cde)
-    if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode)
+    if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode + " while executing " + cde)
   }
 
   def exception(ret: Int, command: String, output: String, error: String) = new RuntimeException(s"Unexpected return code $ret, when running $command (stdout=$output, stderr=$error")

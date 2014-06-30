@@ -40,7 +40,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShe
     try outputStream.write(description.toPBS.getBytes)
     finally outputStream.close
 
-    val command = "cd " + description.workDirectory + " && qsub " + description.uniqId + ".pbs"
+    val command = "cd " + description.workDirectory + " && qsub " + pbsScriptName(description)
     val (ret, jobId, error) = execReturnCodeOutput(command)
     if (ret != 0) throw exception(ret, command, jobId, error)
     if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
@@ -76,7 +76,8 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShe
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)
   }
 
-  def pbsScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".pbs"
+  def pbsScriptName(description: D) = description.uniqId + ".pbs"
+  def pbsScriptPath(description: D) = description.workDirectory + "/" + pbsScriptName(description)
 
   def translateStatus(retCode: Int, status: String) =
     status match {

@@ -16,8 +16,6 @@ trait Settings <: Build {
     crossScalaVersions := Seq("2.10.4", "2.11.1")
   )
 
-
-
   lazy val defaultSettings =
     settings ++
       scalariformSettings ++ Seq(
@@ -148,6 +146,10 @@ trait Modules <: Libraries with Settings {
   lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
 
   lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+
+  lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH) settings {
+    libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+  }
 
 }
 

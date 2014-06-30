@@ -86,7 +86,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     _.rename(from, to)
   }
 
-  protected def rmFileWithClient(path: String)(c: SFTPClient) = wrapException(s"rm $path") {
+  protected def rmFileWithClient(path: String)(implicit c: SFTPClient) = wrapException(s"rm $path") {
     c.rm(path)
   }
 
