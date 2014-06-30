@@ -17,8 +17,6 @@
 
 package fr.iscpif.gridscale.sge
 
-import fr.iscpif.gridscale.ssh.{ SSHPrivateKeyAuthentication }
-
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed }
 import org.scalatest._
