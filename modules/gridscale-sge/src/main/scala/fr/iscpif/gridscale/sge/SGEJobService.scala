@@ -98,6 +98,6 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
     rmFileWithClient(job.description.workDirectory + "/" + job.description.error)
   }
 
-  def sgeScriptName(description: D) = description.uniqId + ".sge"
+  def sgeScriptName(description: D) = "job" + description.uniqId + ".sge"
   def sgeScriptPath(description: D) = description.workDirectory + "/" + sgeScriptName(description)
 }
