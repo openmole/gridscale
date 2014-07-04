@@ -79,7 +79,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
 
     ret.toInt match {
       case 0 ⇒
-        val status = output.takeWhile(_.isDigit)
+        val status = output.dropRight(1)
         if (status.isEmpty) throw new RuntimeException(s"Job $job hasn't been found")
         translateStatus(status)
 
