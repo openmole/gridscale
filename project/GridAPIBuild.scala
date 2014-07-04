@@ -153,7 +153,7 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings)
                           .dependsOn(gridscale, gridscaleSSH)
-                          .settings(libraryDependencies += scalaTest, libraryDependencies += mockito, libraryDependencies += scalaXML)
+                          .settings(libraryDependencies += scalaTest)
 
 }
 
@@ -168,6 +168,8 @@ trait Libraries <: Settings {
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
+   lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+  
   lazy val xml =
     libraryDependencies ++=
       (if (!scalaVersion.value.startsWith("2.10")) Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1")
@@ -228,9 +230,5 @@ trait Libraries <: Settings {
     libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
     )
 
-  lazy val scalaXML = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
 
-  lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
-
-  lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4"
 }
