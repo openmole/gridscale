@@ -169,7 +169,7 @@ trait Libraries <: Settings {
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
    lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
-  
+
   lazy val xml =
     libraryDependencies ++=
       (if (!scalaVersion.value.startsWith("2.10")) Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1")
