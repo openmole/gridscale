@@ -44,7 +44,7 @@ object SGEJobService {
     status match {
       case "qw" | "hqw" | "hRwq" | "Rs" | "Rts" | "RS" | "RtS" | "RT" | "RtT" ⇒ Submitted
       case "r" | "t" | "Rr" | "Rt" | "T" | "tT" | "s" | "ts" | "S" | "tS" ⇒ Running
-      case "dr" | "dt" | "dRr" | "dRt" | "ds" | "dS" | "dT" | "dRs" | "dRS" | "dRT" ⇒ Done
+      case "" | "dr" | "dt" | "dRr" | "dRt" | "ds" | "dS" | "dT" | "dRs" | "dRS" | "dRT" ⇒ Done
       case "Eqw" | "Ehqw" | "EhRqw" ⇒ Failed
       case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
     }
@@ -80,9 +80,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
     ret.toInt match {
       case 0 ⇒
         val status = output.dropRight(1)
-        if (status.isEmpty) throw new RuntimeException(s"Job $job hasn't been found")
         translateStatus(status)
-
       case r ⇒ throw exception(ret, command, output, error)
     }
   }
