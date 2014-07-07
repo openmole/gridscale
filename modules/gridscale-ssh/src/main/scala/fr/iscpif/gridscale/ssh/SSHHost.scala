@@ -33,6 +33,8 @@ trait SSHHost <: DefaultTimeout with Credential {
 
   def withConnection[T](f: SSHClient ⇒ T) = {
     val connection = getConnection
+    connection.setConnectTimeout(timeout.toMillis.toInt)
+    connection.setTimeout(timeout.toMillis.toInt)
     try f(connection)
     finally release(connection)
   }
