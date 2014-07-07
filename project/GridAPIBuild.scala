@@ -69,7 +69,7 @@ trait Bundles <: Modules with Settings {
   lazy val gridscaleOsgiSettings =
     osgiSettings ++
       Seq(
-        importPackage := Seq("*;resolution:=optional"),
+        importPackage := Seq("*"),
         privatePackage := Seq(s"fr.iscpif.gridscale.${name.value}.*", "!fr.iscpif.gridscale.*", "!scala.*", "!org.bouncycastle.*", "!org.apache.log4j.*", "!org.slf4j.*", "!org.apache.commons.logging.*", "*"),
         organization := "fr.iscpif.gridscale.bundle",
         bundleSymbolicName := s"fr.iscpif.gridscale.${name.value}",
@@ -88,6 +88,7 @@ trait Bundles <: Modules with Settings {
 
   lazy val gliteBundle = Project(id = "glitebundle", base = file("bundles/glite"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleGlite) settings(
     name := "glite",
+    importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*","*"),
     privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
@@ -102,6 +103,7 @@ trait Bundles <: Modules with Settings {
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
     name := "ssh",
+    importPackage := Seq("!com.jcraft.jzlib", "*"),
     exportPackage := exportPackage.value ++ Seq("net.schmizz.sshj.*")
     )
 
@@ -175,7 +177,7 @@ trait Libraries <: Settings {
       (if (!scalaVersion.value.startsWith("2.10")) Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1")
       else Seq.empty)
 
-  lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.49"
+  lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.50"
   lazy val log4j = "log4j" % "log4j" % "1.2.17"
 
   lazy val srmStub = Project(id = "srmstub", base = file("libraries/srmstub"), settings = defaultSettings) settings (

@@ -26,7 +26,7 @@ import java.security.cert.X509Certificate;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
-import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PEMParser;
 import org.glite.security.util.DNHandler;
 import org.glite.security.util.FileCertReader;
 import org.glite.security.util.Password;
@@ -86,7 +86,7 @@ public class DelegationHandler {
             }
 
             
-            PEMReader pemReader = new PEMReader(new StringReader(certReq));
+            PEMParser pemReader = new PEMParser(new StringReader(certReq));
             PKCS10CertificationRequest req;
             try {
                 req = (PKCS10CertificationRequest)pemReader.readObject();

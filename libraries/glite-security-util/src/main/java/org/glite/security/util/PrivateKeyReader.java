@@ -25,8 +25,9 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.pkcs.RSAPrivateKeyStructure;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMReader;
-import org.bouncycastle.openssl.PasswordFinder;
+import org.bouncycastle.openssl.*;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.bouncycastle.util.encoders.Base64;
 
 import java.io.BufferedInputStream;
@@ -43,6 +44,7 @@ import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.util.io.pem.PemReader;
 
 /**
  * This class is used to read and write private keys.
@@ -113,60 +115,32 @@ public class PrivateKeyReader {
                     break;
                 }
             }
-            
-            
-            
-//            TestBase.printInterval("setup");
-            PEMReader pemReader = new PEMReader(reader, finder, "BC");
-//            TestBase.printInterval("setup reader");
-            Object o = pemReader.readObject();
-//            TestBase.printInterval("read key");
-            
-            // skip possible certificates in the file.
-            while (o instanceof X509Certificate){
-                o = pemReader.readObject();            	
-            }
-            
-            if(o == null){
-                reader.reset();
-                
-                // try backup pkcs#8 parser
-                PrivateKey key = backupPKCS8Reader(reader);
-                if(key != null){
-                    LOGGER.debug("Read pkcs8 key with backup implementation");
-                    return key;
-                }
-                reader.reset();
-                line = reader.readLine() + reader.readLine();
-                LOGGER.debug("No key found, first two lines were: " + line);
-                throw new IOException("No private key found.");
+
+            PEMParser pemReader = new PEMParser(reader);
+            Object object = pemReader.readObject();
+
+            //skip possible certificates in the file.
+            while (object instanceof X509Certificate){
+                object = pemReader.readObject();
             }
 
-//            LOGGER.debug("read the keypair" + o);
-            PrivateKey privateKey = null;
-            // old method returned keypair
-            if(o instanceof KeyPair){
-            	KeyPair pair = (KeyPair) o;
-            	privateKey = pair.getPrivate();
+            JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+
+            KeyPair pair;
+            if (object instanceof PEMEncryptedKeyPair) {
+                //Encrypted key - we will use provided password
+                char [] password = new char[0];
+                if(finder != null) password = finder.getPassword();
+                PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(password);
+                pair = converter.getKeyPair(((PEMEncryptedKeyPair) object).decryptKeyPair(decProv));
             } else {
-            	// new method returns just private key
-            	if(o instanceof PrivateKey){
-            		privateKey = (PrivateKey) o;
-            	} else {
-                    LOGGER.debug("Error while reading private key. Item is not a private key. Item is: " + o.getClass());
-                    throw new IOException("Error while reading private key. Item is not a private key. Item is: " + o.getClass());
-            		
-            	}
+                //Unencrypted key - no password needed
+                pair = converter.getKeyPair((PEMKeyPair) object);
             }
-//            TestBase.printInterval("handle key");
-
-//            LOGGER.debug("the private key is " + privateKey);
-
-//            TestBase.printInterval("reset for skipping");
 
             reader.mark(MARK_LEN);
 
-            return privateKey;
+            return pair.getPrivate();
         } catch (IOException e) {
             LOGGER.debug("Error while reading private key. Exception: " + e.getClass().getName()
                     + " message:" + e.getMessage());
