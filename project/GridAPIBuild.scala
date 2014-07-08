@@ -61,6 +61,7 @@ trait Examples <: Modules with Settings{
   lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings) dependsOn (gridscaleCondor)
   lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings) dependsOn (gridscaleSLURM)
   lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings) dependsOn (gridscaleSGE)
+  lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings) dependsOn (gridscaleSSH)
 }
 
 trait Bundles <: Modules with Settings {

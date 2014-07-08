@@ -18,6 +18,7 @@
 package fr.iscpif.gridscale.ssh
 
 import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.ScriptBuffer
 
 trait SSHJobDescription extends JobDescription {
   def workDirectory: String

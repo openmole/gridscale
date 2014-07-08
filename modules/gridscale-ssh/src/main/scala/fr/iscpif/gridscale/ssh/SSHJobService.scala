@@ -28,16 +28,16 @@ import jobservice._
 
 object SSHJobService {
 
-  val rootDir = ".gridscale/ssh"
+  // val rootDir = ".gridscale/ssh"
 
-  def file(jobId: String, suffix: String) = rootDir + "/" + jobId + "." + suffix
-  def pidFile(jobId: String) = file(jobId, "pid")
-  def endCodeFile(jobId: String) = file(jobId, "end")
-  def outFile(jobId: String) = file(jobId, "out")
-  def errFile(jobId: String) = file(jobId, "err")
+  def file(dir: String, jobId: String, suffix: String) = dir + "/" + jobId + "." + suffix
+  def pidFile(dir: String, jobId: String) = file(dir, jobId, "pid")
+  def endCodeFile(dir: String, jobId: String) = file(dir, jobId, "end")
+  def outFile(dir: String, jobId: String) = file(dir, jobId, "out")
+  def errFile(dir: String, jobId: String) = file(dir, jobId, "err")
 
-  val PROCESS_CANCELED = 143
-  val COMMAND_NOT_FOUND = 127
+  //val PROCESS_CANCELED = 143
+  //val COMMAND_NOT_FOUND = 127
 
   /*def exec (connection: Connection, cde: String): Unit = {
     val session = connection.openSession
@@ -74,44 +74,60 @@ object SSHJobService {
     if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode + " while executing " + cde)
   }
 
+  def launch(cde: Command)(implicit client: SSHClient) = withSession(client) {
+    _.exec(cde.toString).close
+  }
+
   def exception(ret: Int, command: String, output: String, error: String) = new RuntimeException(s"Unexpected return code $ret, when running $command (stdout=$output, stderr=$error")
 
+  case class JobId(jobId: String, workDirectory: String)
 }
 
 import SSHJobService._
 
 trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShell { js ⇒
-  type J = String
+  type J = JobId
   type D = SSHJobDescription
 
   def bufferSize = 65535
 
-  def submit(description: D): J = {
+  def toScript(description: D, background: Boolean = true) = {
     val jobId = UUID.randomUUID.toString
     val command = new ScriptBuffer
 
-    def absolute(path: String) = "$HOME/" + path
+    def absolute(path: String) = description.workDirectory + "/" + path
 
-    command += "mkdir -p " + absolute(rootDir)
+    //command += "mkdir -p " + absolute(rootDir)
     command += "mkdir -p " + description.workDirectory
     command += "cd " + description.workDirectory
 
     val executable = description.executable + " " + description.arguments
 
     val jobDir =
-      command += "((" +
+      command += s"((" +
         executable +
-        " > " + absolute(outFile(jobId)) + " 2> " + absolute(errFile(jobId)) + " ; " +
-        " echo $? > " + absolute(endCodeFile(jobId)) + ") & " +
-        "echo $! > " + absolute(pidFile(jobId)) + " )"
+        " > " + outFile(description.workDirectory, jobId) + " 2>" + errFile(description.workDirectory, jobId) + " ; " +
+        " echo $? >" + endCodeFile(description.workDirectory, jobId) + s") ${if (background) "&" else ";"} " +
+        "echo $! >" + pidFile(description.workDirectory, jobId) + " )"
 
-    withConnection(exec(command.toString)(_))
-    jobId
+    (command.toString, jobId)
+  }
+
+  def execute(description: D) = withConnection { implicit c ⇒
+    val (command, _) = toScript(description, background = false)
+    val (ret, out, err) = execReturnCodeOutput(command)
+    if (ret != 0) throw exception(ret, command, out, err)
+  }
+
+  def submit(description: D): J = {
+    val (command, jobId) = toScript(description)
+    withConnection(launch(command)(_))
+    JobId(jobId, description.workDirectory)
   }
 
   def state(job: J): JobState =
-    if (exists(endCodeFile(job))) {
-      val is = openInputStream(endCodeFile(job))
+    if (exists(endCodeFile(job.workDirectory, job.jobId))) {
+      val is = openInputStream(endCodeFile(job.workDirectory, job.jobId))
       val content =
         try getBytes(is, bufferSize, timeout)
         finally is.close
@@ -119,21 +135,20 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
       translateState(new String(content).takeWhile(_.isDigit).toInt)
     } else Running
 
-  def cancel(jobId: J) = withConnection { implicit connection ⇒
-    val cde = s"kill `cat ${pidFile(jobId)}`;"
+  def cancel(job: J) = withConnection { implicit connection ⇒
+    val cde = s"kill `cat ${pidFile(job.workDirectory, job.jobId)}`;"
     exec(cde)
   }
 
-  def purge(jobId: String) = withConnection { implicit connection ⇒
-    val cde = s"rm -rf $rootDir/$jobId*"
+  def purge(job: J) = withConnection { implicit connection ⇒
+    val cde = s"rm -rf ${job.workDirectory}/${job.jobId}*"
     exec(cde)
   }
 
   private def translateState(retCode: Int) =
-    if (retCode >= 0)
-      if (retCode == PROCESS_CANCELED) Failed
-      else if (retCode == COMMAND_NOT_FOUND) Failed
-      else Done
-    else Failed
+    retCode match {
+      case 0 ⇒ Done
+      case _ ⇒ Failed
+    }
 
 }
