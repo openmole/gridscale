@@ -58,6 +58,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   def port: Int
   def basePath: String
 
+  def connections = 5
   def sleepTime = 1
   def lsSizeMax = 500
   def SERVICE_PROTOCOL = "httpg"
@@ -303,6 +304,6 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   def fullEndPoint(absolutePath: String) = fullEndpoint(host, port, basePath + absolutePath)
 
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler).toURI
-  @transient lazy val stub = SRMService(serviceUrl, credential, timeout)
+  @transient lazy val stub = SRMService(serviceUrl, credential, timeout, connections)
 
 }

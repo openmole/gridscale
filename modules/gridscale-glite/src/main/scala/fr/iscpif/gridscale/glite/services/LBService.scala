@@ -27,12 +27,13 @@ import org.apache.commons.httpclient.methods.{ PostMethod, StringRequestEntity }
 
 object LBService {
 
-  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration) =
+  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration, _maxConnections: Int) =
     new LBService {
       @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with CompleteSocketFactory {
         def proxyBytes = credential().proxyBytes
         val timeout = _timeout
         val address = uri
+        val maxConnections = _maxConnections
       }
       override def baseAddress = uri
     }.service

@@ -20,6 +20,7 @@ package fr.iscpif.gridscale.globushttp
 import java.net.SocketTimeoutException
 import java.util.concurrent.{ ConcurrentLinkedQueue, Executors }
 
+import org.apache.commons.httpclient.params.HttpConnectionManagerParams
 import org.apache.commons.httpclient.{ HttpClient, MultiThreadedHttpConnectionManager }
 import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSCredential, ExtendedGSSManager }
 import org.ietf.jgss.{ GSSContext, GSSCredential }
@@ -47,7 +48,16 @@ trait GlobusHttpClient <: SocketFactory {
   def proxyBytes: Array[Byte]
   def address: java.net.URI
 
-  @transient lazy val manager = new MultiThreadedHttpConnectionManager()
+  def maxConnections: Int
+
+  @transient lazy val manager = {
+    val m = new MultiThreadedHttpConnectionManager()
+    val param = new HttpConnectionManagerParams
+    param.setDefaultMaxConnectionsPerHost(maxConnections)
+    param.setMaxTotalConnections(maxConnections)
+    m.setParams(param)
+    m
+  }
 
   @transient lazy val httpclient = {
     val myHttpg = new Protocol("https", factory, 8446)

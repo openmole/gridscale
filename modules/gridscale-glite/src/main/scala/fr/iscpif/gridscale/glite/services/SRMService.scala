@@ -26,12 +26,13 @@ import fr.iscpif.gridscale.globushttp.{ SimpleSocketFactory, GlobusHttpClient }
 
 object SRMService {
 
-  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration) =
+  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration, _maxConnections: Int) =
     new SRMService {
       @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory {
         def proxyBytes = credential().proxyBytes
         val timeout = _timeout
         val address = uri
+        val maxConnections = _maxConnections
       }
       override def baseAddress = uri
     }.service

@@ -40,6 +40,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
   type D = WMSJobDescription
 
   def url: URI
+  def connections = 5
 
   def copyBufferSize = 64 * 1000
   def delegationRenewal: Duration = 1 -> HOURS
@@ -100,13 +101,13 @@ trait WMSJobService extends JobService with DefaultTimeout {
     }
   }
 
-  @transient lazy val delegationService = DelegationService(url, credential, timeout)
-  @transient lazy val wmsService = WMSService(url, credential, timeout)
+  @transient lazy val delegationService = DelegationService(url, credential, timeout, connections)
+  @transient lazy val wmsService = WMSService(url, credential, timeout, connections)
 
   @transient lazy val lbServiceCache = new Cache[String, LoggingAndBookkeepingPortType] {
     override def compute(k: String) = {
       val lbServiceURL = new URL(k)
-      LBService(lbServiceURL.toURI, credential, timeout)
+      LBService(lbServiceURL.toURI, credential, timeout, connections)
     }
     override def cacheTime(t: LoggingAndBookkeepingPortType) = None
   }
