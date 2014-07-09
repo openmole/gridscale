@@ -104,7 +104,7 @@ trait Bundles <: Modules with Settings {
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
     name := "ssh",
-    importPackage := Seq("!com.jcraft.jzlib", "*"),
+    importPackage := Seq("!com.jcraft.jzlib", "!javax.*", "*"),
     exportPackage := exportPackage.value ++ Seq("net.schmizz.sshj.*")
     )
 
