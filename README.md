@@ -7,14 +7,10 @@ GridScale is a scala library for accessing various file and batch system. For th
 * PBS clusters,
 * SLURM clusters,
 * SGE clusters,
+* OAR clusters,
 * Condor flocks
 * HTTP file lists,
 * DIRAC job pilot system.
-
-Documentation
--------------
-
-The scaladoc of GridScale will be available here: [scaladoc](http://romainreuillon.github.com/gridscale/scaladoc).
 
 Licence
 -------
@@ -31,6 +27,8 @@ In order to use gridscale you should import the folowing namespaces:
 
 Examples
 --------
+
+Up to date examples are avialable in the example directory.
 
 ### SSH server
 To access a storage through **SSH**:
