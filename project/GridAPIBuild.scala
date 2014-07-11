@@ -62,6 +62,7 @@ trait Examples <: Modules with Settings{
   lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings) dependsOn (gridscaleSLURM)
   lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings) dependsOn (gridscaleSGE)
   lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings) dependsOn (gridscaleSSH)
+  lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings) dependsOn (gridscaleOAR)
 }
 
 trait Bundles <: Modules with Settings {
@@ -157,6 +158,9 @@ trait Modules <: Libraries with Settings {
   lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings)
                           .dependsOn(gridscale, gridscaleSSH)
                           .settings(libraryDependencies += scalaTest)
+
+  lazy val gridscaleOAR = Project(id = "gridscaleoar", base = file("modules/gridscale-oar"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+
 
 }
 

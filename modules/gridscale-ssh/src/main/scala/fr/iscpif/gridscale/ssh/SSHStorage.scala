@@ -18,11 +18,15 @@
 package fr.iscpif.gridscale.ssh
 
 import java.io._
+
+import net.schmizz.sshj.xfer.FilePermission
+
 import collection.JavaConversions._
 import net.schmizz.sshj.sftp.{ OpenMode, FileMode, SFTPClient }
 import java.util
 import fr.iscpif.gridscale.storage._
 import java.util.logging.{ Level, Logger }
+import collection.JavaConversions._
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒
 
@@ -34,6 +38,10 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
 
   override def exists(path: String) = withSftpClient { c ⇒
     c.statExistence(path) != null
+  }
+
+  def chmod(path: String, perms: FilePermission*) = withSftpClient {
+    _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission]))
   }
 
   def _list(path: String) = withSftpClient {
