@@ -70,8 +70,6 @@ trait OARJobService extends JobService with SSHHost with SSHStorage with BashShe
         ressources +
         s"${description.workDirectory}/${oarScriptName(description)}"
 
-    println(command)
-
     val (ret, out, error) = execReturnCodeOutput(command)
     if (ret != 0) throw exception(ret, command, out, error)
 
