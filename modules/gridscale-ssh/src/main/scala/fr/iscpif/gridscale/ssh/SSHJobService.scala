@@ -18,6 +18,7 @@
 package fr.iscpif.gridscale.ssh
 
 import java.util.UUID
+import java.util.logging.Logger
 import fr.iscpif.gridscale.tools.shell._
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.connection.channel.direct.Session
@@ -25,6 +26,8 @@ import net.schmizz.sshj.common.IOUtils
 import fr.iscpif.gridscale._
 import tools._
 import jobservice._
+
+import scala.util.Try
 
 object SSHJobService {
 
@@ -114,9 +117,10 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
   }
 
   def execute(description: D) = withConnection { implicit c ⇒
-    val (command, _) = toScript(description, background = false)
+    val (command, jobId) = toScript(description, background = false)
     val (ret, out, err) = execReturnCodeOutput(command)
-    if (ret != 0) throw exception(ret, command, out, err)
+    try if (ret != 0) throw exception(ret, command, out, err)
+    finally { purge(JobId(jobId, description.workDirectory)) }
   }
 
   def submit(description: D): J = {
