@@ -21,6 +21,8 @@ import fr.iscpif.gridscale.oar._
 import fr.iscpif.gridscale.ssh.{ SSHUserPasswordAuthentication, SSHPrivateKeyAuthentication }
 import fr.iscpif.gridscale._
 
+import scala.concurrent.duration._
+
 object SubmitEcho extends App {
 
   implicit val service = new OARJobService with SSHUserPasswordAuthentication {
@@ -33,6 +35,10 @@ object SubmitEcho extends App {
     def executable = "/bin/echo"
     def arguments = "hello wold"
     def workDirectory = "/data/"
+    override def core = Some(1)
+    override def cpu = Some(1)
+
+    override def wallTime = Some(1 hour)
   }
 
   val j = service.submit(description)

@@ -30,9 +30,16 @@ trait OARJobDescription extends JobDescription {
   def error: String = uniqId + ".err"
   def workDirectory: String
   def queue: Option[String] = None
-  def memory: Option[Int] = None
+  def cpu: Option[Int] = None
+  def core: Option[Int] = None
   def wallTime: Option[Duration] = None
   def bestEffort: Boolean = false
+
+  def commandLineResources =
+    (List(cpu.map(c ⇒ s"cpu=$c"), core.map(c ⇒ s"core=$c")).flatten match {
+      case Nil ⇒ ""
+      case l   ⇒ "/" + l.mkString("/") + ","
+    }) + wallTime.map(wt ⇒ s"walltime=" + wt.toHHmmss).getOrElse("")
 
   def toOAR = {
     val buffer = new ScriptBuffer

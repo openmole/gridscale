@@ -58,8 +58,8 @@ trait OARJobService extends JobService with SSHHost with SSHStorage with BashShe
     chmod(script, FilePermission.USR_RWX)
 
     def ressources = {
-      val l = Seq(description.memory.map(m ⇒ s"memnode=$m"), description.wallTime.map(wt ⇒ s"walltime=" + wt.toHHmmss)).flatten
-      if (!l.isEmpty) "-l " + l.mkString(",") else ""
+      val l = description.commandLineResources
+      if (!l.isEmpty) s"-l $l " else ""
     }
 
     val command =
