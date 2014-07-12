@@ -41,13 +41,13 @@ trait PBSJobDescription extends JobDescription {
     buffer += "#PBS -o " + output
     buffer += "#PBS -e " + error
 
-    queue foreach { q => buffer += "#PBS -q " + q }
-    memory foreach { m => buffer += "#PBS -lmem=" + m + "mb" }
-    wallTime foreach { t => buffer += "#PBS -lwalltime=" + t.toHHmmss }
+    queue foreach { q ⇒ buffer += "#PBS -q " + q }
+    memory foreach { m ⇒ buffer += "#PBS -lmem=" + m + "mb" }
+    wallTime foreach { t ⇒ buffer += "#PBS -lwalltime=" + t.toHHmmss }
 
     nodes match {
       case Some(n) ⇒ buffer += "#PBS -lnodes=" + n + ":ppn=" + coreByNode.getOrElse(1)
-      case None ⇒  coreByNode foreach { c =>  buffer += "#PBS -lnodes=1:ppn=" + c }
+      case None    ⇒ coreByNode foreach { c ⇒ buffer += "#PBS -lnodes=1:ppn=" + c }
     }
 
     buffer += "cd " + workDirectory

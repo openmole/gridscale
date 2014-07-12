@@ -125,6 +125,9 @@ trait Bundles <: Modules with Settings {
     name := "sge", noSSH
     )
 
+  lazy val oarBundle = Project(id = "oarbundle", base = file("bundles/oar"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleOAR) settings(
+    name := "oar", noSSH
+    )
 
 }
 
