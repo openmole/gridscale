@@ -22,7 +22,7 @@ import fr.iscpif.gridscale._
 
 object SubmitEcho extends App {
 
-  implicit val service = new SGEJobService with SSHUserPasswordAuthentication {
+  val service = new SGEJobService with SSHUserPasswordAuthentication {
     def host = "master.domain"
     def user = "login"
     def password = "password"
@@ -36,7 +36,7 @@ object SubmitEcho extends App {
 
   val j = service.submit(description)
 
-  val s2 = untilFinished { Thread.sleep(5000); val s = service.state(j); println(s); s }
+  val s2 = service.untilFinished(j) { println }
 
   service.purge(j)
 }

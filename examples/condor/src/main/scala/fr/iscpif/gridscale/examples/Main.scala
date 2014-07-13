@@ -30,7 +30,7 @@ object Main {
     println("a job is successfully submitted, runs then its results are retrieved normally")
 
     println("a condor environment using an SSH private-key authentication")
-    implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
+    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
       def password = inPassword
@@ -55,7 +55,7 @@ object Main {
     println("Job is " + s1)
 
     println("it should complete one day or another")
-    val s2 = untilFinished { Thread.sleep(5000); val s = condorService.state(j); println(s); s }
+    val s2 = condorService.untilFinished(j) { s ⇒ println(s); Thread.sleep(5000) }
 
     condorService.purge(j)
   }
@@ -65,7 +65,7 @@ object Main {
     println("a job is successfully submitted, then cancelled")
 
     println("a condor environment using an SSH private-key authentication")
-    implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
+    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
       def password = inPassword
@@ -90,7 +90,7 @@ object Main {
     val s1 = condorService.cancel(j)
 
     println("it should appear as done")
-    val s2 = untilFinished { Thread.sleep(5000); val s = condorService.state(j); println(s); s }
+    val s2 = condorService.untilFinished(j) { s ⇒ println(s); Thread.sleep(5000) }
 
     condorService.purge(j)
   }
@@ -100,7 +100,7 @@ object Main {
     println("a job is successfully submitted, requesting a tesla&fermi node")
 
     println("a condor environment using an SSH private-key authentication")
-    implicit val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
+    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
       def password = inPassword
@@ -123,7 +123,7 @@ object Main {
     println(condorService.state(j))
 
     println("it should appear as done")
-    val s2 = untilFinished { Thread.sleep(5000); val s = condorService.state(j); println(s); s }
+    val s2 = condorService.untilFinished(j) { println }
 
     condorService.purge(j)
   }

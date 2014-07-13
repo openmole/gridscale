@@ -30,7 +30,7 @@ object Main {
     println("a job is successfully submitted, runs then its results are retrived normally")
 
     println("a slurm environment using an SSH privatekey authentication")
-    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+    val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
       def password = inPassword
@@ -55,7 +55,7 @@ object Main {
     println("Job is " + s1)
 
     println("it should complete one day or another")
-    val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
+    val s2 = slurmService.untilFinished(j) { s ⇒ println(s); Thread.sleep(5000) }
 
     slurmService.purge(j)
   }
@@ -65,7 +65,7 @@ object Main {
     println("a job is successfully submitted, then cancelled")
 
     println("a slurm environment using an SSH privatekey authentication")
-    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+    val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
       def host = inHost
       def user = inUsername
       def password = inPassword
@@ -90,7 +90,7 @@ object Main {
     val s1 = slurmService.cancel(j)
 
     println("it should appear as done")
-    val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
+    val s2 = slurmService.untilFinished(j) { println }
 
     slurmService.purge(j)
   }

@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 
 object SubmitEcho extends App {
 
-  implicit val service = new OARJobService with SSHUserPasswordAuthentication {
+  val service = new OARJobService with SSHUserPasswordAuthentication {
     def host = "172.17.0.4"
     def user = "docker"
     def password = "docker"
@@ -43,7 +43,7 @@ object SubmitEcho extends App {
 
   val j = service.submit(description)
 
-  val s2 = untilFinished { Thread.sleep(5000); val s = service.state(j); println(s); s }
+  val s2 = service.untilFinished(j) { s ⇒ println(s); Thread.sleep(5000) }
 
   service.purge(j)
 }

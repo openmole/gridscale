@@ -51,9 +51,7 @@ object WMSExample extends App {
 
   val j = wms.submit(jobDesc)
 
-  val s = untilFinished {
-    Thread.sleep(5000); val s = wms.state(j); println(s); s
-  }
+  val s = wms.untilFinished(j) { println }
 
   if (s == Done) wms.downloadOutputSandbox(jobDesc, j)
   wms.purge(j)

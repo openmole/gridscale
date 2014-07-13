@@ -38,11 +38,6 @@ object Main extends App {
 
   val j = js.submit(jobDesc)
 
-  untilFinished {
-    Thread.sleep(5000)
-    val s = js.state(j)
-    println(s)
-    s
-  }
+  js.untilFinished(j) { println }
 
 }
