@@ -67,7 +67,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
       }
       case 0 ⇒ {
         // ...but if the job is already completed, his state is returned by condor_history...
-        val queryFinished = "condor_history " + job.condorId + " -long\""
+        val queryFinished = "condor_history " + job.condorId + " -long"
 
         val (retFinished, outputFinished, errorFinished) = execReturnCodeOutput(queryFinished)
 
