@@ -109,7 +109,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
     val jobDir =
       command += s"((" +
         executable +
-        " > " + outFile(description.workDirectory, jobId) + " 2>" + errFile(description.workDirectory, jobId) + " ; " +
+        " >" + outFile(description.workDirectory, jobId) + " 2>" + errFile(description.workDirectory, jobId) + " ; " +
         " echo $? >" + endCodeFile(description.workDirectory, jobId) + s") ${if (background) "&" else ";"} " +
         "echo $! >" + pidFile(description.workDirectory, jobId) + " )"
 
