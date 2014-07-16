@@ -23,6 +23,8 @@ trait BashShell <: Shell {
   // as an interactive ssh shell would (~/.bashrc, /etc/bashrc)
   // and run the sequence of command without interaction (-c)
   override def command(cmd: String) = new Command {
-    override def toString = "bash -ci \"" + cmd + "\""
+    override def toString = "bash << EOF \n" +
+      cmd + "\n" +
+      "EOF"
   }
 }
