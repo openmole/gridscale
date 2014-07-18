@@ -30,7 +30,6 @@ import scala.concurrent.duration.Duration
 trait SimpleSocketFactory <: SocketFactory {
 
   def proxyBytes: Array[Byte]
-  def timeout: Duration
 
   def sslContext(proxy: Array[Byte]) = {
     val manager = ExtendedGSSManager.getInstance

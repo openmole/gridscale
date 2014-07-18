@@ -24,7 +24,11 @@ import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.params.HttpConnectionParams
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 
+import scala.concurrent.duration.Duration
+
 trait SocketFactory {
+
+  def timeout: Duration
 
   @transient lazy val factory = new ProtocolSocketFactory {
     def createSocket(host: String, port: Int): java.net.Socket = socket(host, port)

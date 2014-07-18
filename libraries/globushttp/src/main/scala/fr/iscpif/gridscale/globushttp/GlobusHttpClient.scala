@@ -55,6 +55,8 @@ trait GlobusHttpClient <: SocketFactory {
     val param = new HttpConnectionManagerParams
     param.setDefaultMaxConnectionsPerHost(maxConnections)
     param.setMaxTotalConnections(maxConnections)
+    param.setSoTimeout(timeout.toMillis.toInt)
+    param.setConnectionTimeout(timeout.toMillis.toInt)
     m.setParams(param)
     m
   }

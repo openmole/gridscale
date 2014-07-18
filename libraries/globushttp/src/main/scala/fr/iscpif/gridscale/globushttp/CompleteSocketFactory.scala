@@ -29,7 +29,6 @@ import scala.concurrent.duration.Duration
 
 trait CompleteSocketFactory <: SocketFactory {
   def proxyBytes: Array[Byte]
-  def timeout: Duration
 
   def socket(host: String, port: Int): Socket = {
     val authorisation = HostOrSelfAuthorization.getInstance()
