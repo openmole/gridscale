@@ -20,7 +20,7 @@ package fr.iscpif.gridscale.globushttp
 import java.net.SocketTimeoutException
 import java.util.concurrent.{ ConcurrentLinkedQueue, Executors }
 
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams
+import org.apache.commons.httpclient.params.{HttpMethodParams, HttpClientParams, HttpConnectionManagerParams}
 import org.apache.commons.httpclient.{ HttpClient, MultiThreadedHttpConnectionManager }
 import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSCredential, ExtendedGSSManager }
 import org.ietf.jgss.{ GSSContext, GSSCredential }
@@ -64,14 +64,22 @@ trait GlobusHttpClient <: SocketFactory {
   @transient lazy val httpclient = {
     val myHttpg = new Protocol("https", factory, 8446)
     val httpclient = new HttpClient(manager)
+    val param = new HttpClientParams()
+    param.setSoTimeout(timeout.toMillis.toInt)
+    httpclient.setParams(param)
     httpclient.getHostConfiguration.setHost(address.getHost, address.getPort, myHttpg)
     httpclient
   }
+
+
 
   def post(in: String, address: java.net.URI, headers: Map[String, String]): String = {
     val entity = new StringRequestEntity(in, "text/xml", null)
     val post = new PostMethod(address.getPath)
     try {
+      val params = new HttpMethodParams()
+      params.setSoTimeout(timeout.toMillis.toInt)
+      post.setParams(params)
       post.setRequestEntity(entity)
       headers.foreach { case (k, v) ⇒ post.setRequestHeader(k, v) }
       httpclient.executeMethod(post)
