@@ -53,7 +53,7 @@ trait DIRACJobDescription extends JobDescription {
       stdOut.map(s ⇒ "StdOut" -> JsString(s)) ++
       stdErr.map(s ⇒ "StdErr" -> JsString(s)) ++
       (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++ //++  (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
-      cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toString)) ++
+      cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toSeconds.toString)) ++
       (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None)
 
     JsObject(fields: _*).compactPrint
