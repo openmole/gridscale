@@ -145,7 +145,7 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleDIRAC = Project(id = "gridscaledirac", base = file("modules/gridscale-dirac"), settings = defaultSettings) dependsOn (gridscale) settings(
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
-    libraryDependencies += "org.scalaj" %% "scalaj-http" % "0.3.15"
+    libraryDependencies += "org.scalaj" %% "scalaj-http" % "0.3.16"
     )
 
   lazy val gridscaleSSH = Project(id = "gridscalessh", base = file("modules/gridscale-ssh"), settings = defaultSettings) dependsOn (gridscale) settings (

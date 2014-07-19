@@ -21,7 +21,6 @@ import java.net.{ HttpURLConnection, URL }
 import javax.net.ssl.HttpsURLConnection
 import fr.iscpif.gridscale.authentication.HTTPSAuthentication
 import fr.iscpif.gridscale.cache.SingleValueCache
-import fr.iscpif.gridscale.jobservice.JobService
 import fr.iscpif.gridscale.tools.DefaultTimeout
 import spray.json._
 import DefaultJsonProtocol._
