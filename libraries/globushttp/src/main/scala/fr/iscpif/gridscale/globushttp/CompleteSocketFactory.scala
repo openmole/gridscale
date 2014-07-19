@@ -23,7 +23,7 @@ import org.globus.gsi.gssapi.GSSConstants
 import org.ietf.jgss.GSSContext
 import org.globus.gsi.GSIConstants
 import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
-import java.net.Socket
+import java.net.{InetSocketAddress, Socket}
 
 import scala.concurrent.duration.Duration
 
@@ -44,11 +44,10 @@ trait CompleteSocketFactory <: SocketFactory {
     context.setOption(GSSConstants.GSS_MODE, GSIConstants.MODE_SSL)
     context.requestConf(false)
 
-    val socket =
-      javax.net.SocketFactory.getDefault.createSocket(host, port)
-
+    val socket = new Socket()
     socket.setSoTimeout(timeout.toMillis.toInt)
-
+    socket.connect(new InetSocketAddress(host, port), timeout.toMillis.toInt)
+    
     val gsiSocket =
       GssSocketFactory.getDefault.createSocket(socket,
         host,

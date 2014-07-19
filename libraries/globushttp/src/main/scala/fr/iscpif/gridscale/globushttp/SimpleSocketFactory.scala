@@ -19,7 +19,7 @@ package fr.iscpif.gridscale.globushttp
 
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 import org.globus.gsi.gssapi.net.{ GssSocketFactory, GssSocket }
-import java.net.{ Socket, InetAddress }
+import java.net.{InetSocketAddress, SocketAddress, Socket, InetAddress}
 import org.apache.commons.httpclient.params.HttpConnectionParams
 import org.gridforum.jgss.ExtendedGSSManager
 import org.globus.gsi.gssapi.GSSConstants
@@ -41,8 +41,9 @@ trait SimpleSocketFactory <: SocketFactory {
   }
 
   def socket(host: String, port: Int): Socket = {
-    val socket = javax.net.SocketFactory.getDefault.createSocket(host, port)
+    val socket = new Socket()
     socket.setSoTimeout(timeout.toMillis.toInt)
+    socket.connect(new InetSocketAddress(host, port), timeout.toMillis.toInt)
     val gssSocket = GssSocketFactory.getDefault.createSocket(socket, host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket]
     gssSocket.setAuthorization(null)
     gssSocket.setUseClientMode(true)
