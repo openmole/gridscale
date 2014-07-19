@@ -47,7 +47,7 @@ trait CompleteSocketFactory <: SocketFactory {
     val socket = new Socket()
     socket.setSoTimeout(timeout.toMillis.toInt)
     socket.connect(new InetSocketAddress(host, port), timeout.toMillis.toInt)
-    
+
     val gsiSocket =
       GssSocketFactory.getDefault.createSocket(socket,
         host,
