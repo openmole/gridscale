@@ -47,6 +47,8 @@ trait CompleteSocketFactory <: SocketFactory {
     val socket =
       javax.net.SocketFactory.getDefault.createSocket(host, port)
 
+    socket.setSoTimeout(timeout.toMillis.toInt)
+
     val gsiSocket =
       GssSocketFactory.getDefault.createSocket(socket,
         host,
@@ -54,7 +56,6 @@ trait CompleteSocketFactory <: SocketFactory {
         context).asInstanceOf[GssSocket]
 
     gsiSocket.setSoTimeout(timeout.toMillis.toInt)
-
     gsiSocket.setAuthorization(authorisation)
 
     gsiSocket

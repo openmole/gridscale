@@ -20,7 +20,7 @@ package fr.iscpif.gridscale.globushttp
 import java.net.SocketTimeoutException
 import java.util.concurrent.{ ConcurrentLinkedQueue, Executors }
 
-import org.apache.commons.httpclient.params.{HttpMethodParams, HttpClientParams, HttpConnectionManagerParams}
+import org.apache.commons.httpclient.params.{ HttpMethodParams, HttpClientParams, HttpConnectionManagerParams }
 import org.apache.commons.httpclient.{ HttpClient, MultiThreadedHttpConnectionManager }
 import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSCredential, ExtendedGSSManager }
 import org.ietf.jgss.{ GSSContext, GSSCredential }
@@ -70,8 +70,6 @@ trait GlobusHttpClient <: SocketFactory {
     httpclient.getHostConfiguration.setHost(address.getHost, address.getPort, myHttpg)
     httpclient
   }
-
-
 
   def post(in: String, address: java.net.URI, headers: Map[String, String]): String = {
     val entity = new StringRequestEntity(in, "text/xml", null)

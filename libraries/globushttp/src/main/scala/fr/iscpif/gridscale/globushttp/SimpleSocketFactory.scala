@@ -40,15 +40,15 @@ trait SimpleSocketFactory <: SocketFactory {
       GSSContext.DEFAULT_LIFETIME)
   }
 
-  def initialize(socket: GssSocket) = {
-    socket.setAuthorization(null)
-    socket.setUseClientMode(true)
-    socket.setAuthorization(null)
+  def socket(host: String, port: Int): Socket = {
+    val socket = javax.net.SocketFactory.getDefault.createSocket(host, port)
     socket.setSoTimeout(timeout.toMillis.toInt)
-    socket
+    val gssSocket = GssSocketFactory.getDefault.createSocket(socket, host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket]
+    gssSocket.setAuthorization(null)
+    gssSocket.setUseClientMode(true)
+    gssSocket.setAuthorization(null)
+    gssSocket.setSoTimeout(timeout.toMillis.toInt)
+    gssSocket
   }
-
-  def socket(host: String, port: Int): Socket =
-    initialize(GssSocketFactory.getDefault.createSocket(host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket])
 
 }
