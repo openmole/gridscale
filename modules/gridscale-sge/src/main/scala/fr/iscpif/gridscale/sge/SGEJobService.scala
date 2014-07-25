@@ -23,6 +23,8 @@ import fr.iscpif.gridscale.ssh._
 import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
+import scala.util.Try
+
 object SGEJobService {
   class SGEJob(val description: SGEJobDescription, val sgeId: String)
 
@@ -92,7 +94,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
   def purge(job: J) = withSftpClient { implicit c ⇒
     rmFileWithClient(sgeScriptPath(job.description))
     rmFileWithClient(job.description.workDirectory + "/" + job.description.output)
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.error)
+    Try(rmFileWithClient(job.description.workDirectory + "/" + job.description.error))
   }
 
   def sgeScriptName(description: D) = "job" + description.uniqId + ".sge"
