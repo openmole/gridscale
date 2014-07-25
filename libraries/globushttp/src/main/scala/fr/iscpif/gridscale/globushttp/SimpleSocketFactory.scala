@@ -19,7 +19,7 @@ package fr.iscpif.gridscale.globushttp
 
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 import org.globus.gsi.gssapi.net.{ GssSocketFactory, GssSocket }
-import java.net.{InetSocketAddress, SocketAddress, Socket, InetAddress}
+import java.net.{ InetSocketAddress, SocketAddress, Socket, InetAddress }
 import org.apache.commons.httpclient.params.HttpConnectionParams
 import org.gridforum.jgss.ExtendedGSSManager
 import org.globus.gsi.gssapi.GSSConstants

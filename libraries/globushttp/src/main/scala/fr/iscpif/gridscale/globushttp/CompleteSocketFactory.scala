@@ -23,7 +23,7 @@ import org.globus.gsi.gssapi.GSSConstants
 import org.ietf.jgss.GSSContext
 import org.globus.gsi.GSIConstants
 import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
-import java.net.{InetSocketAddress, Socket}
+import java.net.{ InetSocketAddress, Socket }
 
 import scala.concurrent.duration.Duration
 

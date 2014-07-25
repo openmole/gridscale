@@ -73,7 +73,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
   }
 
   def state(job: J): JobState = withConnection { implicit connection ⇒
-    val command = s"""qstat | grep '^${job.sgeId} ' | sed 's/  */ /g' | cut -d' ' -f5"""
+    val command = s"""qstat | sed 's/^  *//g'  |  grep '^${job.sgeId} ' | sed 's/  */ /g' | cut -d' ' -f5"""
 
     val (ret, output, error) = execReturnCodeOutput(command)
 
