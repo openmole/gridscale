@@ -12,8 +12,8 @@ object GridAPIBuild extends Build with Libraries with Modules with Examples with
 trait Settings <: Build {
 
   override def settings = super.settings ++ Seq (
-    scalaVersion := "2.11.1",
-    crossScalaVersions := Seq("2.10.4", "2.11.1")
+    scalaVersion := "2.11.2",
+    crossScalaVersions := Seq("2.10.4", "2.11.2")
   )
 
   lazy val defaultSettings =
