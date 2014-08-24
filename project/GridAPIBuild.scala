@@ -100,7 +100,8 @@ trait Bundles <: Modules with Settings {
     )
 
   lazy val diracBundle = Project(id = "diracbundle", base = file("bundles/dirac"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleDIRAC) settings (
-    name := "dirac"
+    name := "dirac",
+    importPackage := Seq("org.tukaani.xz.*;resolution:=optional") ++ importPackage.value
     )
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
