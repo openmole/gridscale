@@ -20,13 +20,13 @@ package fr.iscpif.gridscale.exemple.dirac
 import fr.iscpif.gridscale.dirac._
 import fr.iscpif.gridscale._
 import java.io.File
+import concurrent.duration._
 
 object Main extends App {
 
   val jobDesc = new DIRACJobDescription {
     def executable = "/bin/echo"
     def arguments = "hello"
-    def inputSandbox = List.empty
   }
 
   val js = new DIRACJobService with P12HTTPSAuthentication {
@@ -36,8 +36,11 @@ object Main extends App {
     def password = "password"
   }
 
+  println(js.token)
+  //println(js.submit(jobDesc))
+
   val j = js.submit(jobDesc)
 
-  js.untilFinished(j) { println }
+  js.untilFinished(j, sleepTime = 0 second) { println }
 
 }

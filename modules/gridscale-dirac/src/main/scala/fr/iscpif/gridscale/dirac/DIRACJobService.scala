@@ -17,22 +17,31 @@
 
 package fr.iscpif.gridscale.dirac
 
-import java.net.{ HttpURLConnection, URL }
-import javax.net.ssl.HttpsURLConnection
-import fr.iscpif.gridscale.authentication.HTTPSAuthentication
+import java.io.{ BufferedOutputStream, FileOutputStream, BufferedInputStream, InputStream }
+import java.net.{ URI, URL }
 import fr.iscpif.gridscale.cache.SingleValueCache
 import fr.iscpif.gridscale.tools.DefaultTimeout
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.client.utils.URIBuilder
+import org.apache.http.config.{ RegistryBuilder }
+import org.apache.http.conn.socket.ConnectionSocketFactory
+import org.apache.http.entity.mime.MultipartEntityBuilder
+import org.apache.http.{ HttpHost, HttpRequest }
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.client.methods._
+import org.apache.http.impl.client.{ HttpClients }
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
 import spray.json._
 import DefaultJsonProtocol._
-import scalaj.http.{ HttpOptions, MultiPart, Http }
+import scala.sys.process.BasicIO
 import scala.io.Source
 import fr.iscpif.gridscale.jobservice._
-import scalaj.http.Http.Request
 import concurrent.duration._
 
 trait DIRACJobService extends JobService with DefaultTimeout {
 
-  type A = HTTPSAuthentication
+  type A = P12HTTPSAuthentication
   type J = String
   type D = DIRACJobDescription
 
@@ -47,85 +56,155 @@ trait DIRACJobService extends JobService with DefaultTimeout {
   def jobs = service + "/jobs"
 
   def tokenExpirationMargin = 10 -> MINUTES
-  def httpsCredentialOption(c: HttpURLConnection) =
-    credential.connect(c.asInstanceOf[HttpsURLConnection])
+  def maxConnections = 20
 
-  implicit class RequestDecorator[R <: Request](r: R) {
-    def initialise = r.option(httpsCredentialOption).
-      option(HttpOptions.connTimeout(timeout.toMillis.toInt)).
-      option(HttpOptions.readTimeout(timeout.toMillis.toInt))
-    def withToken = r.param("access_token", tokenCache().token)
-    def asStringChecked = {
-      val (responseCode, headersMap, resultString) = r.asHeadersAndParse(Http.readString)
-      if (responseCode != HttpURLConnection.HTTP_OK) throw new RuntimeException(s"Response code was $responseCode when to the request $r, message is $resultString")
-      resultString
+  @transient lazy val pool = {
+    val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", credential.factory).build()
+    val pool = new PoolingHttpClientConnectionManager(registry)
+    pool.setMaxTotal(maxConnections)
+    pool.setDefaultMaxPerRoute(maxConnections)
+    pool
+  }
+
+  @transient lazy val httpContext = HttpClientContext.create
+
+  def requestConfig = {
+    RequestConfig.custom()
+      .setSocketTimeout(timeout.toMillis.toInt)
+      .setConnectTimeout(timeout.toMillis.toInt)
+      .build()
+  }
+
+  def httpHost: HttpHost = {
+    val uri = new URI(service)
+    new HttpHost(uri.getHost, uri.getPort, uri.getScheme)
+  }
+
+  def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = {
+    val client = HttpClients.custom()
+      .setConnectionManager(pool)
+      .build()
+
+    request.setConfig(requestConfig)
+
+    def close[T <: { def close(): Unit }, R](c: T)(f: T ⇒ R) =
+      try f(c)
+      finally c.close
+
+    close(client.execute(httpHost, request, httpContext)) { response ⇒
+      close(response.getEntity.getContent) { is ⇒
+        f(is)
+      }
     }
   }
 
-  lazy val tokenCache =
+  def request[T](request: HttpRequestBase with HttpRequest)(f: String ⇒ T): T =
+    requestContent(request) { is ⇒
+      f(Source.fromInputStream(is).mkString)
+    }
+
+  @transient lazy val tokenCache =
     new SingleValueCache[Token] {
       def compute() = token
       def expiresIn(t: Token) = (t.expires_in, SECONDS) - tokenExpirationMargin
     }
 
   def token = {
-    val o =
-      Http(auth2Auth).param("grant_type", "client_credentials").param("group", group).param("setup", setup).initialise.asStringChecked.asJson.asJsObject
-    val f = o.getFields("token", "expires_in")
-    Token(f(0).convertTo[String], f(1).convertTo[Long])
-  }
+    val uri = new URIBuilder(auth2Auth)
+      .setParameter("grant_type", "client_credentials")
+      .setParameter("group", group)
+      .setParameter("setup", setup)
+      .build()
 
-  def submit(jobDescription: D): String = {
-    def files =
-      jobDescription.inputSandbox.zipWithIndex.map {
-        case (f, i) ⇒
-          val s = Source.fromFile(f)
-          try MultiPart(i.toString, f.getName, "text/plain", s.map(_.toByte).toArray)
-          finally s.close
-      }
-    val res = Http.multipart(jobs, files.toSeq: _*).withToken.param("manifest", jobDescription.toJSON).initialise.asStringChecked
-    res.asJson.asJsObject.getFields("jids").head.toJson.convertTo[JsArray].elements.head.toString
-  }
+    val get = new HttpGet(uri)
 
-  def state(jobId: J) = {
-    val res = Http(jobs + "/" + jobId).withToken.initialise.asStringChecked
-    res.asJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
-      case "Received"  ⇒ Submitted
-      case "Checking"  ⇒ Submitted
-      case "Staging"   ⇒ Submitted
-      case "Waiting"   ⇒ Submitted
-      case "Matched"   ⇒ Submitted
-      case "Running"   ⇒ Running
-      case "Completed" ⇒ Running
-      case "Stalled"   ⇒ Running
-      case "Killed"    ⇒ Failed
-      case "Deleted"   ⇒ Failed
-      case "Done"      ⇒ Done
-      case "Failed"    ⇒ Failed
+    request(get) { r ⇒
+      val f = r.trim.parseJson.asJsObject.getFields("token", "expires_in")
+      Token(f(0).convertTo[String], f(1).convertTo[Long])
     }
   }
 
-  /*def downloadOutputSandbox(desc: D, jobId: J)(implicit credential: A) = {
+  def submit(jobDescription: D): String = {
+    def files = {
+      val builder = MultipartEntityBuilder.create()
+      jobDescription.inputSandbox.zipWithIndex.foreach {
+        case (f, i) ⇒ builder.addBinaryBody(f.getName, f)
+      }
+      builder.build
+    }
+
+    val uri = new URIBuilder(jobs)
+      .setParameter("access_token", tokenCache().token)
+      .setParameter("manifest", jobDescription.toJSON)
+      .build
+
+    val post = new HttpPost(uri)
+    post.setEntity(files)
+    request(post) { r ⇒
+      r.parseJson.asJsObject.getFields("jids").head.toJson.convertTo[JsArray].elements.head.toString
+    }
+  }
+
+  def state(jobId: J) = {
+    val uri =
+      new URIBuilder(jobs + "/" + jobId)
+        .setParameter("access_token", tokenCache().token)
+        .build
+
+    val get = new HttpGet(uri)
+
+    request(get) { r ⇒
+      r.parseJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
+        case "Received"  ⇒ Submitted
+        case "Checking"  ⇒ Submitted
+        case "Staging"   ⇒ Submitted
+        case "Waiting"   ⇒ Submitted
+        case "Matched"   ⇒ Submitted
+        case "Running"   ⇒ Running
+        case "Completed" ⇒ Running
+        case "Stalled"   ⇒ Running
+        case "Killed"    ⇒ Failed
+        case "Deleted"   ⇒ Failed
+        case "Done"      ⇒ Done
+        case "Failed"    ⇒ Failed
+      }
+    }
+  }
+
+  def downloadOutputSandbox(desc: D, jobId: J)(implicit credential: A) = {
     val outputSandboxMap = desc.outputSandbox.toMap
 
-    val bytes = initialiseRequest(Http(jobs + "/" + jobId + "/outputsandbox").param("access_token", tokenCache(credential).token))(credential).asBytes
+    val uri =
+      new URIBuilder(jobs + "/" + jobId + "/outputsandbox")
+        .setParameter("access_token", tokenCache().token)
+        .build
 
-    val is = new TarArchiveInputStream(new ByteArrayInputStream(bytes))
+    val get = new HttpGet(uri)
 
-    Iterator.continually(is.getNextEntry).takeWhile(_ != null).
-      filter { e ⇒  outputSandboxMap.contains(e.getName) }.foreach {
-        e ⇒
-          println(e)
-          val os = new FileOutputStream(outputSandboxMap(e.getName))
-          try BasicIO.transferFully(is, os)
-          finally os.close
-      }
+    requestContent(get) { str ⇒
+      val is = new TarArchiveInputStream(new BufferedInputStream(str))
 
-  } */
+      Iterator.continually(is.getNextEntry).takeWhile(_ != null).
+        filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {
+          e ⇒
+            println(e)
+            val os = new BufferedOutputStream(new FileOutputStream(outputSandboxMap(e.getName)))
+            try BasicIO.transferFully(is, os)
+            finally os.close
+        }
+    }
+
+  }
 
   def cancel(jobId: J) = {
-    val request = Http(jobs + "/" + jobId).option(HttpOptions.method("DELETE")).withToken.initialise
-    request.asStringChecked
+    val uri =
+      new URIBuilder(jobs + "/" + jobId)
+        .setParameter("access_token", tokenCache().token)
+        .build
+
+    val delete = new HttpDelete(uri)
+
+    request(delete) { identity }
   }
 
   def purge(job: J) = {}

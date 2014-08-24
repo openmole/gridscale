@@ -18,23 +18,20 @@
 package fr.iscpif.gridscale.dirac
 
 import javax.net.ssl._
-import java.net.URL
+import java.net.{ Socket, URL }
 import java.security.cert.X509Certificate
 import java.io.{ FileInputStream, File }
 import java.security.KeyStore
-import fr.iscpif.gridscale.authentication.{ Credential, P12Authentication, HTTPSAuthentication }
+import fr.iscpif.gridscale.authentication.{ Credential, P12Authentication }
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory
+import org.apache.http.protocol.HttpContext
 
-trait P12HTTPSAuthentication extends HTTPSAuthentication with P12Authentication with Credential {
+trait P12HTTPSAuthentication extends P12Authentication with Credential {
 
   type A >: P12HTTPSAuthentication
   def credential = this
 
-  def connect(scon: HttpsURLConnection) = {
-    //val scon = url.openConnection.asInstanceOf[HttpsURLConnection]
-    scon.setSSLSocketFactory(sslContext.getSocketFactory)
-    scon.setHostnameVerifier(hv)
-    //scon
-  }
+  @transient lazy val factory = new SSLConnectionSocketFactory(sslContext, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER)
 
   @transient lazy val sslContext = {
     val sslContext = javax.net.ssl.SSLContext.getInstance("TLS")

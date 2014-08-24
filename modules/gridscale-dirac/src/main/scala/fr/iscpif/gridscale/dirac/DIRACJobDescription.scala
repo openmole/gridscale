@@ -36,8 +36,8 @@ trait DIRACJobDescription extends JobDescription {
 
   def stdOut: Option[String] = None
   def stdErr: Option[String] = None
-  def inputSandbox: Seq[File]
-  //def outputSandbox: Iterable[(String, File)]
+  def inputSandbox: Seq[File] = List.empty
+  def outputSandbox: Seq[(String, File)] = List.empty
   def platforms: Seq[String] = Seq.empty
 
   def cpuTime: Option[Duration] = None

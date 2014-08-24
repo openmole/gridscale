@@ -133,6 +133,8 @@ trait Bundles <: Modules with Settings {
 
 trait Modules <: Libraries with Settings {
 
+  lazy val httpComponentsVersion = "4.3.5"
+
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings)
 
   lazy val gridscaleGlite = Project(id = "gridscaleglite", base = file("modules/gridscale-glite"), settings = defaultSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
@@ -145,7 +147,9 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleDIRAC = Project(id = "gridscaledirac", base = file("modules/gridscale-dirac"), settings = defaultSettings) dependsOn (gridscale) settings(
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
-    libraryDependencies += "org.scalaj" %% "scalaj-http" % "0.3.16"
+    libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
+    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
+    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1"
     )
 
   lazy val gridscaleSSH = Project(id = "gridscalessh", base = file("modules/gridscale-ssh"), settings = defaultSettings) dependsOn (gridscale) settings (
@@ -179,6 +183,8 @@ trait Libraries <: Settings {
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
    lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+
+  lazy val httpClient = "commons-httpclient" % "commons-httpclient" % "3.1"
 
   lazy val xml =
     libraryDependencies ++=
@@ -218,7 +224,7 @@ trait Libraries <: Settings {
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
     libraryDependencies += "org.jglobus" % "ssl-proxies" % jglobusVersion,
     libraryDependencies += "org.jglobus" % "gss" % jglobusVersion,
-    libraryDependencies += "commons-httpclient" % "commons-httpclient" % "3.1"
+    libraryDependencies += httpClient
     )
 
   lazy val gliteSecurityDelegation = Project(id = "glite-security-delegation", base = file("libraries/glite-security-delegation"), settings = defaultSettings) dependsOn(gliteSecurityUtil, gliteSecurityVoms) settings(
