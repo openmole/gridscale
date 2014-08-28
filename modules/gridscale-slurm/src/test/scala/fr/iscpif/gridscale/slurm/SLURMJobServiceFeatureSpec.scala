@@ -104,7 +104,7 @@ class SLURMJobServiceFeatureSpec extends FeatureSpec with GivenWhenThen {
 
       And("it should appear as done")
       val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
-      assert("Done" === s2)
+      assert("Failed" === s2)
       //slurmService.purge(j)
     }
 
