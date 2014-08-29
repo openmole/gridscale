@@ -60,7 +60,9 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
       prop ⇒
         val splits = prop.split('=')
         splits(0).trim -> splits(1).trim.split(' ')(0)
-    }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException(s"State not found in scontrol output, return=$ret, output=$output, error=$error."))
+      // consider job COMPLETED when scontrol returns 1: "Invalid job id specified"
+      /** @see translateStatus(retCode: Int, status: String) */
+    }.toMap.getOrElse(jobStateAttribute, "COMPLETED?")
     translateStatus(ret, state)
 
   }
@@ -77,11 +79,13 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
   private def slurmScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".slurm"
 
   private def translateStatus(retCode: Int, status: String) =
+
     status match {
-      case "CANCELLED" | "COMPLETED" ⇒ Done
+      case "COMPLETED" ⇒ Done
+      case "COMPLETED?" if (1 == retCode) ⇒ Done
       case "RUNNING" | "COMPLETING" ⇒ Running
       case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Submitted
-      case "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Failed
+      case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Failed
       case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
     }
 
