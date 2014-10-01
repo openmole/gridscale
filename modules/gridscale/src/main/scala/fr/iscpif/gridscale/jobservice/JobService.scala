@@ -28,4 +28,6 @@ trait JobService <: Credential {
   def cancel(job: J)
   def purge(job: J)
 
+  def states(jobs: Seq[J]) = jobs.map(state)
+
 }

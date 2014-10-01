@@ -130,14 +130,17 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
   }
 
   def state(job: J): JobState =
-    if (exists(endCodeFile(job.workDirectory, job.jobId))) {
-      val is = openInputStream(endCodeFile(job.workDirectory, job.jobId))
-      val content =
-        try getBytes(is, bufferSize, timeout)
-        finally is.close
+    if (jobIsRunning(job)) Running
+    else {
+      if (exists(endCodeFile(job.workDirectory, job.jobId))) {
+        val is = openInputStream(endCodeFile(job.workDirectory, job.jobId))
+        val content =
+          try getBytes(is, bufferSize, timeout)
+          finally is.close
 
-      translateState(new String(content).takeWhile(_.isDigit).toInt)
-    } else Running
+        translateState(new String(content).takeWhile(_.isDigit).toInt)
+      } else Failed
+    }
 
   def cancel(job: J) = withConnection { implicit connection ⇒
     val cde = s"kill `cat ${pidFile(job.workDirectory, job.jobId)}`;"
@@ -147,6 +150,12 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
   def purge(job: J) = withConnection { implicit connection ⇒
     val cde = s"rm -rf ${job.workDirectory}/${job.jobId}*"
     exec(cde)
+  }
+
+  private def jobIsRunning(job: J) = {
+    val cde = s"ps -p `cat ${pidFile(job.workDirectory, job.jobId)}`"
+    println(cde)
+    withConnection(execReturnCode(cde)(_) == 0)
   }
 
   private def translateState(retCode: Int) =
