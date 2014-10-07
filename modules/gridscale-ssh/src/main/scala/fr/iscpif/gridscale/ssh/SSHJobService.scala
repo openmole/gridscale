@@ -154,7 +154,6 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   private def jobIsRunning(job: J) = {
     val cde = s"ps -p `cat ${pidFile(job.workDirectory, job.jobId)}`"
-    println(cde)
     withConnection(execReturnCode(cde)(_) == 0)
   }
 
