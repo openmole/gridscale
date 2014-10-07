@@ -23,15 +23,21 @@ import java.security.cert.X509Certificate
 import java.io.{ FileInputStream, File }
 import java.security.KeyStore
 import fr.iscpif.gridscale.authentication.{ Credential, P12Authentication }
+import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.protocol.HttpContext
 
-trait P12HTTPSAuthentication extends P12Authentication with Credential {
+trait P12HTTPSAuthentication extends P12Authentication with Credential with DefaultTimeout {
 
   type A >: P12HTTPSAuthentication
   def credential = this
 
-  @transient lazy val factory = new SSLConnectionSocketFactory(sslContext, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER)
+  @transient lazy val factory =
+    new SSLConnectionSocketFactory(sslContext, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER) {
+      override protected def prepareSocket(socket: SSLSocket) = {
+        socket.setSoTimeout(timeout.toMillis.toInt)
+      }
+    }
 
   @transient lazy val sslContext = {
     val sslContext = javax.net.ssl.SSLContext.getInstance("TLS")
