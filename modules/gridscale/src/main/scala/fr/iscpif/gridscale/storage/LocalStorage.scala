@@ -18,14 +18,14 @@
 package fr.iscpif.gridscale.storage
 
 import java.io._
-import java.nio.file.{ FileSystems, Files }
+import java.nio.file.{Paths, Path, FileSystems, Files}
 
 trait LocalStorage extends Storage {
   type A = Unit
   def credential = Unit
 
   override def child(parent: String, child: String) =
-    new File(new File(parent), child).getAbsolutePath
+    Paths.get(parent, child).toString
 
   override def exists(path: String) =
     new File(path).exists
