@@ -18,7 +18,7 @@
 package fr.iscpif.gridscale.storage
 
 import java.io._
-import java.nio.file.{Paths, Path, FileSystems, Files}
+import java.nio.file.{ Paths, Path, FileSystems, Files }
 
 trait LocalStorage extends Storage {
   type A = Unit
