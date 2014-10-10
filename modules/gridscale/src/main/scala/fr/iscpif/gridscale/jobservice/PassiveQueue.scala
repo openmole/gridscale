@@ -81,31 +81,49 @@ trait PassiveQueue <: JobService {
     j
   }
 
-  override def state(job: J): JobState = synchronized {
-    runningJobs.get(job.id) match {
-      case None ⇒ if (queue.contains(job)) Submitted else Done
-      case Some(rj @ RunningJob(oldState, submittedId)) ⇒
-        val newState = jobService.state(submittedId)
-        runningJobs.put(job.id, RunningJob(newState, submittedId))
-        def wasSubmitted = oldState == Running || oldState == Submitted
-        def isFinished = newState == Done || newState == Failed
-        if (isFinished) runningJobs.remove(id)
-        if (wasSubmitted && isFinished) jobIsFinished
-        newState
+  override def state(job: J): JobState = {
+    val runningJob: RunningJob =
+      synchronized {
+        runningJobs.get(job.id) match {
+          case None ⇒ if (queue.contains(job)) return Submitted else return Done
+          case Some(rj) ⇒ if(rj.state == Failed) return Failed; rj
+        }
+      }
+
+    val newState = jobService.state(runningJob.jobServiceId)
+
+    synchronized {
+      runningJobs.put(job.id, runningJob.copy(state = newState))
+      def wasSubmitted = newState == Running || runningJob.state == Submitted
+      def isFinished = newState == Done || newState == Failed
+      if (isFinished) runningJobs.remove(id)
+      if (wasSubmitted && isFinished) jobIsFinished
     }
+
+    newState
   }
 
-  override def cancel(job: J): Unit = synchronized {
-    runningJobs.get(job.id) match {
-      case None                             ⇒ queue.remove(job)
-      case Some(RunningJob(_, submittedId)) ⇒ jobService.cancel(submittedId)
-    }
+
+
+  override def cancel(job: J): Unit = {
+    val submittedId =
+      synchronized {
+        runningJobs.get(job.id) match {
+          case None ⇒ queue.remove(job); None
+          case Some(RunningJob(_, submittedId)) ⇒ Some(submittedId)
+        }
+      }
+      submittedId.foreach(jobService.cancel)
   }
 
-  override def purge(job: J): Unit = synchronized {
-    runningJobs.remove(job.id) match {
-      case None                             ⇒ queue.remove(job)
-      case Some(RunningJob(_, submittedId)) ⇒ jobService.purge(submittedId)
+  override def purge(job: J): Unit = {
+    val submittedId =
+      synchronized {
+        runningJobs.remove(job.id) match {
+          case None                             ⇒ queue.remove(job); None
+          case Some(RunningJob(_, submittedId)) ⇒ Some(submittedId)
+        }
     }
+    submittedId.foreach(jobService.purge)
   }
 }
