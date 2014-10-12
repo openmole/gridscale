@@ -179,7 +179,7 @@ trait Libraries <: Settings {
   import sbtscalaxb.Plugin._
   import ScalaxbKeys._
 
-  lazy val jglobusVersion = "2.1-20140819"
+  lazy val jglobusVersion = "2.1.0"
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
