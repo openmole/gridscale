@@ -33,11 +33,8 @@ trait LocalStorage extends Storage {
   def _list(path: String): Seq[(String, FileType)] =
     new File(path).listFiles.map {
       f ⇒
-        val fs = FileSystems.getDefault
-        val p = fs.getPath(f.getAbsolutePath)
-
         val ftype =
-          if (Files.isSymbolicLink(p)) LinkType
+          if (Files.isSymbolicLink(f.toPath)) LinkType
           else if (f.isDirectory) DirectoryType
           else FileType
 
