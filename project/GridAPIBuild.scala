@@ -44,7 +44,7 @@ trait Settings <: Build {
           <url>https://github.com/romainreuillon/</url>
         </developer>
         <developer>
-          <id>jonathanpasserat</id>
+          <id>jopasserat</id>
           <name>Jonathan Passerat-Palmbach</name>
           <url>https://github.com/jopasserat/</url>
         </developer>
