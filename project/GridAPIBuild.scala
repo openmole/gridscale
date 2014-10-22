@@ -161,11 +161,16 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
 
-  lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings)
+                          .dependsOn(gridscale, gridscaleSSH)
+                          .settings(libraryDependencies += scalaTest)
 
   lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings)
                           .dependsOn(gridscale, gridscaleSSH)
-                          .settings(libraryDependencies += scalaTest)
+                          .settings(
+                            libraryDependencies += scalaTest,
+                            libraryDependencies += mockito
+                          )
 
   lazy val gridscaleOAR = Project(id = "gridscaleoar", base = file("modules/gridscale-oar"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
 
@@ -183,7 +188,9 @@ trait Libraries <: Settings {
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
-   lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+
+  lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4"
 
   lazy val httpClient = "commons-httpclient" % "commons-httpclient" % "3.1"
 
