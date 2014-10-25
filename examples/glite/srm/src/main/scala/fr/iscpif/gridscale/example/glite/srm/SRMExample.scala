@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.example.glite
+package fr.iscpif.gridscale.example.glite.srm
 
 import fr.iscpif.gridscale.glite._
 import java.io.File
