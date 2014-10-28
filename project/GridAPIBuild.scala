@@ -91,7 +91,7 @@ trait Bundles <: Modules with Settings {
   lazy val gliteBundle = Project(id = "glitebundle", base = file("bundles/glite"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleGlite) settings(
     name := "glite",
     importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "*"),
-    privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*") ++ privatePackage.value,
+    privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "org.apache.commons.logging.*", "org.apache.avalon.framework.logger.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
 
@@ -101,7 +101,7 @@ trait Bundles <: Modules with Settings {
 
   lazy val diracBundle = Project(id = "diracbundle", base = file("bundles/dirac"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleDIRAC) settings (
     name := "dirac",
-    importPackage := Seq("org.tukaani.xz.*;resolution:=optional") ++ importPackage.value
+    importPackage := Seq("org.tukaani.xz.*;resolution:=optional", "org.apache.commons.logging.*;resolution:=optional") ++ importPackage.value
     )
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
