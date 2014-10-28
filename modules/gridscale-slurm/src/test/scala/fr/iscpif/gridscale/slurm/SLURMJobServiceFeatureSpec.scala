@@ -5,12 +5,10 @@ import fr.iscpif.gridscale.ssh.{ SSHJobService, SSHPrivateKeyAuthentication }
 import fr.iscpif.gridscale._
 import java.io.File
 import org.scalatest.junit._
-import org.junit.runner._
 import org.scalatest._
 
 // test
 
-@RunWith(classOf[JUnitRunner])
 class SLURMJobServiceFeatureSpec extends FeatureSpec with GivenWhenThen {
 
   // TODO won't run anymore since SSH lib was changed (I think)

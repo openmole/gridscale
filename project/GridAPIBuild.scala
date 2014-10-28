@@ -5,6 +5,7 @@ import com.typesafe.sbt.osgi.OsgiKeys._
 import com.typesafe.sbt.osgi.SbtOsgi._
 import com.typesafe.sbt.SbtScalariform._
 import scalariform.formatter.preferences._
+import com.github.retronym.SbtOneJar
 
 object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles
 
@@ -15,6 +16,10 @@ trait Settings <: Build {
     scalaVersion := "2.11.2",
     crossScalaVersions := Seq("2.10.4", "2.11.2")
   )
+
+  def exportSettings = Seq(
+    exportJars := true
+  ) ++ SbtOneJar.oneJarSettings
 
   lazy val defaultSettings =
     settings ++
@@ -44,7 +49,7 @@ trait Settings <: Build {
           <url>https://github.com/romainreuillon/</url>
         </developer>
         <developer>
-          <id>jonathanpasserat</id>
+          <id>jopasserat</id>
           <name>Jonathan Passerat-Palmbach</name>
           <url>https://github.com/jopasserat/</url>
         </developer>
@@ -56,13 +61,16 @@ trait Settings <: Build {
 
 
 trait Examples <: Modules with Settings{
-  lazy val gliteExample  = Project(id = "gliteexample", base = file("examples/glite"), settings = defaultSettings) dependsOn (gridscaleGlite)
-  lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings) dependsOn (gridscaleDIRAC)
-  lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings) dependsOn (gridscaleCondor)
-  lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings) dependsOn (gridscaleSLURM)
-  lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings) dependsOn (gridscaleSGE)
-  lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings) dependsOn (gridscaleSSH)
-  lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings) dependsOn (gridscaleOAR)
+  lazy val glitesrmExample  = Project(id = "glitewmsexample", base = file("examples/glite/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
+  lazy val glitewmsExample  = Project(id = "glitesrmexample", base = file("examples/glite/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
+  lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleDIRAC)
+  lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleCondor)
+  lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSLURM)
+  lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSGE)
+  lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSSH)
+  lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleOAR)
+
+  mainClass in SbtOneJar.oneJar := Some("fr.iscpif.gridscale.examples.Main")
 }
 
 trait Bundles <: Modules with Settings {
@@ -136,38 +144,43 @@ trait Modules <: Libraries with Settings {
 
   lazy val httpComponentsVersion = "4.3.5"
 
-  lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings)
+  lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings)
 
-  lazy val gridscaleGlite = Project(id = "gridscaleglite", base = file("modules/gridscale-glite"), settings = defaultSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
+  lazy val gridscaleGlite = Project(id = "gridscaleglite", base = file("modules/gridscale-glite"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion
     )
 
-  lazy val gridscaleHttp = Project(id = "gridscalehttp", base = file("modules/gridscale-http"), settings = defaultSettings) dependsOn (gridscale) settings (
+  lazy val gridscaleHttp = Project(id = "gridscalehttp", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1"
     )
 
-  lazy val gridscaleDIRAC = Project(id = "gridscaledirac", base = file("modules/gridscale-dirac"), settings = defaultSettings) dependsOn (gridscale) settings(
+  lazy val gridscaleDIRAC = Project(id = "gridscaledirac", base = file("modules/gridscale-dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings(
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
     libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1"
     )
 
-  lazy val gridscaleSSH = Project(id = "gridscalessh", base = file("modules/gridscale-ssh"), settings = defaultSettings) dependsOn (gridscale) settings (
+  lazy val gridscaleSSH = Project(id = "gridscalessh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "net.schmizz" % "sshj" % "0.10.0"
     )
 
-  lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
-  lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
-  lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
-
-  lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings)
+  lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings ++ exportSettings)
                           .dependsOn(gridscale, gridscaleSSH)
                           .settings(libraryDependencies += scalaTest)
 
-  lazy val gridscaleOAR = Project(id = "gridscaleoar", base = file("modules/gridscale-oar"), settings = defaultSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings ++ exportSettings)
+                          .dependsOn(gridscale, gridscaleSSH)
+                          .settings(
+                            libraryDependencies += scalaTest,
+                            libraryDependencies += mockito
+                          )
+
+  lazy val gridscaleOAR = Project(id = "gridscaleoar", base = file("modules/gridscale-oar"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
 
 }
@@ -183,7 +196,9 @@ trait Libraries <: Settings {
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
-   lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+
+  lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4"
 
   lazy val httpClient = "commons-httpclient" % "commons-httpclient" % "3.1"
 

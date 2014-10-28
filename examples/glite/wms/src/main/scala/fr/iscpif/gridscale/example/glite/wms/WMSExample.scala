@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.exemple.glite
+package fr.iscpif.gridscale.example.glite.wms
 
 import fr.iscpif.gridscale.glite._
 import fr.iscpif.gridscale._

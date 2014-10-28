@@ -68,7 +68,7 @@ trait SLURMJobDescription extends JobDescription {
       case Some(t) ⇒
         val df = new java.text.SimpleDateFormat("HH:mm:ss")
         df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-        buffer += "#PBS -lwalltime=" + df.format(t.toMillis)
+        buffer += "#SBATCH --time=" + df.format(t.toMinutes)
       case None ⇒
     }
 
