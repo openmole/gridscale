@@ -14,7 +14,9 @@ trait Settings <: Build {
 
   override def settings = super.settings ++ Seq (
     scalaVersion := "2.11.2",
-    crossScalaVersions := Seq("2.10.4", "2.11.2")
+    crossScalaVersions := Seq("2.10.4", "2.11.2"),
+    javacOptions in (Compile, compile) ++= Seq("-source", "1.7", "-target", "1.7"),
+    scalacOptions += "-target:jvm-1.7"
   )
 
   def exportSettings = Seq(
@@ -171,7 +173,6 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings ++ exportSettings)
                           .dependsOn(gridscale, gridscaleSSH)
-                          .settings(libraryDependencies += scalaTest)
 
   lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings ++ exportSettings)
                           .dependsOn(gridscale, gridscaleSSH)
