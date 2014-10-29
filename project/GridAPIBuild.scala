@@ -175,10 +175,6 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings ++ exportSettings)
                           .dependsOn(gridscale, gridscaleSSH)
-                          .settings(
-                            libraryDependencies += scalaTest,
-                            libraryDependencies += mockito
-                          )
 
   lazy val gridscaleOAR = Project(id = "gridscaleoar", base = file("modules/gridscale-oar"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
