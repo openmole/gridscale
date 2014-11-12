@@ -74,8 +74,8 @@ trait SLURMJobDescription extends JobDescription {
     }
 
     qos match {
-      case Some(q) => buffer += s"#SBATCH --qos=${q}"
-      case None    =>
+      case Some(q) ⇒ buffer += s"#SBATCH --qos=${q}"
+      case None    ⇒
     }
 
     // must handle empty list separately since it is not done in mkString
