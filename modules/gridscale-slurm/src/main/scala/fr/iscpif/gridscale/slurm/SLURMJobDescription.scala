@@ -44,6 +44,7 @@ trait SLURMJobDescription extends JobDescription {
   def memory: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
+  def qos: Option[String] = None
   def gres: List[Gres] = List()
   def constraints: List[String] = List()
 
@@ -70,6 +71,11 @@ trait SLURMJobDescription extends JobDescription {
         df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
         buffer += "#SBATCH --time=" + df.format(t.toMinutes)
       case None ⇒
+    }
+
+    qos match {
+      case Some(q) => buffer += s"#SBATCH --qos=${q}"
+      case None    =>
     }
 
     // must handle empty list separately since it is not done in mkString
