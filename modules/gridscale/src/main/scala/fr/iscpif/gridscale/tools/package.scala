@@ -94,9 +94,9 @@ package object tools {
 
   implicit class DurationDecorator(d: Duration) {
     def toHHmmss = {
-      val df = new java.text.SimpleDateFormat("HH:mm:ss")
-      df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-      df.format(d.toMillis)
+      val millis = d.toMillis
+
+      f"${millis / (1000 * 60 * 60)}%02d:${(millis % (1000 * 60 * 60)) / (1000 * 60)}%02d:${((millis % (1000 * 60 * 60)) % (1000 * 60)) / 1000}%02d"
     }
   }
 }
