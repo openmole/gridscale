@@ -26,7 +26,22 @@ import fr.iscpif.gridscale.tools.shell.BashShell
 object SLURMJobService {
   class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
 
+  object SLURMJob {
+    def apply(slurmDescription: SLURMJobDescription, slurmId: String) = new SLURMJob(slurmDescription, slurmId)
+  }
+
   val jobStateAttribute = "JobState"
+
+  def translateStatus(retCode: Int, status: String) =
+    status match {
+      case "COMPLETED" ⇒ Done
+      case "COMPLETED?" if (1 == retCode) ⇒ Done
+      case "COMPLETED?" if (1 != retCode) ⇒ Failed
+      case "RUNNING" | "COMPLETING" ⇒ Running
+      case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Submitted
+      case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Failed
+      case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
+    }
 }
 
 import SLURMJobService._
@@ -77,16 +92,4 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
   }
 
   private def slurmScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".slurm"
-
-  private def translateStatus(retCode: Int, status: String) =
-
-    status match {
-      case "COMPLETED" ⇒ Done
-      case "COMPLETED?" if (1 == retCode) ⇒ Done
-      case "RUNNING" | "COMPLETING" ⇒ Running
-      case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Submitted
-      case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Failed
-      case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
-    }
-
 }
