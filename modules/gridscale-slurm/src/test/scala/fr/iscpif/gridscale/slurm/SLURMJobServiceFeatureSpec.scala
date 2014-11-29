@@ -1,140 +1,70 @@
 package fr.iscpif.gridscale.slurm
 
-import fr.iscpif.gridscale.ssh.{ SSHJobService, SSHPrivateKeyAuthentication }
+import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed }
 
 import fr.iscpif.gridscale._
 import java.io.File
+import org.mockito.Mockito._
 import org.scalatest.junit._
 import org.scalatest._
+import org.scalatest.mock
+import org.scalatest.mock.MockitoSugar
 
-// test
+// must do a mock per jobservice because of type alias JobService.D :(
+class SLURMJobServiceTests extends FunSuite with MockitoSugar {
+  test("JobService") {
 
-class SLURMJobServiceFeatureSpec extends FeatureSpec with GivenWhenThen {
+    val jobService = mock[SLURMJobService]
 
-  // TODO won't run anymore since SSH lib was changed (I think)
-  feature("The user can submit jobs to a SLURM-enabled cluster") {
-
-    info("As a user")
-    info("I want to be able to submit jobs to a SLURM-enabled cluster")
-    info("So that I can get my simulations compute faster")
-
-    scenario("a job is successfully submitted trough SLURM") {
-
-      Given("a machine using an SSH privatekey authentication")
-      implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-        def host = "Master"
-        def user = "jopasserat"
-        def password = ""
-        def privateKey = new File("/Users/jopasserat/.ssh/id_dsa")
-      }
-
-      Given("a simple job")
-      val jobDesc = new SLURMJobDescription {
-        def executable = "/bin/echo"
-        def arguments = "success > test_success.txt"
-        def workDirectory = "~/toto"
-      }
-
-      When("When the job has been submitted")
-      val j = slurmService.submit(jobDesc)
-      Then("it should complete one day or another")
-      val s = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
-      assert("Done" == s)
-
-      //sshJS.purge(j)
+    val description = new SLURMJobDescription {
+      def executable = "/bin/echo"
+      def arguments = "success > test_success.txt"
+      def workDirectory = "/homes/toto/"
     }
 
-    scenario("a job is successfully submitted, runs And its results are retrived normally") {
+    when(jobService.submit(description)).thenReturn(SLURMJobService.SLURMJob(description, "42"))
 
-      Given("a slurm environment using an SSH privatekey authentication")
-      implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-        def host = "Master"
-        def user = "jopasserat"
-        def password = ""
-        def privateKey = new File("/Users/jopasserat/.ssh/id_dsa")
-      }
+    val job = jobService.submit(description)
 
-      Given("a simple job")
-      val description = new SLURMJobDescription {
-        def executable = "/bin/echo"
-        def arguments = "success > test_success.txt"
-        def workDirectory = "~/toto"
-      }
+    assert(job.slurmId === "42")
+  }
+}
 
-      When("When the job has been submitted")
-      val j = slurmService.submit(description)
-      println(description.toSLURM)
+trait FeatureSpecStateBehaviours { this: FeatureSpec with GivenWhenThen ⇒
+  def matchState(slurmRetCode: Int, slurmState: String, gridscaleState: JobState) {
+    scenario(s"A job is in the state ${slurmState} in SLURM (and return code from submit is: ${slurmRetCode})") {
 
-      Then("it can be monitored")
-      val s1 = slurmService.state(j)
-      assert("Running" == s1 || "Submitted" == s1)
-      println("Job is " + s1)
+      Given("A job managed through the job service")
 
-      And("it should complete one day or another")
-      val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
-      assert("Done" === s2)
-      //      slurmService.purge(j)
+      Then("SLURM's \"" + slurmState + "\" state should translate as " + gridscaleState + " in GridScale")
+      assert(SLURMJobService.translateStatus(slurmRetCode, slurmState) === gridscaleState)
+    }
+  }
+}
+
+//@RunWith(classOf[JUnitRunner])
+class SLURMJobServiceFeatureSpec extends FeatureSpec with GivenWhenThen with FeatureSpecStateBehaviours {
+
+  feature("States returned by the remote SLURM scheduler are analyzed correctly") {
+
+    info("A job can go through several states all along its execution")
+    info("Different SLURM states translate to the same generic state in GridScale")
+
+    List("CONFIGURING", "PENDING", "SUSPENDED") foreach {
+      slurmState ⇒ scenariosFor(matchState(1, slurmState, Submitted))
     }
 
-    scenario("a job is successfully submitted, Then cancelled") {
-
-      Given("a slurm environment using an SSH privatekey authentication")
-      implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-        def host = "Master"
-        def user = "jopasserat"
-        def password = ""
-        def privateKey = new File("/Users/jopasserat/.ssh/id_dsa")
-      }
-
-      Given("an infinite job")
-      val description = new SLURMJobDescription {
-        def executable = "/bin/read"
-        def arguments = ""
-        def workDirectory = "~/toto"
-      }
-
-      When("When the job has been submitted")
-      val j = slurmService.submit(description)
-      println(description.toSLURM)
-
-      Then("it can be cancelled")
-      val s1 = slurmService.cancel(j)
-
-      And("it should appear as done")
-      val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
-      assert("Failed" === s2)
-      //slurmService.purge(j)
+    List("RUNNING", "COMPLETING") foreach {
+      slurmState ⇒ scenariosFor(matchState(1, slurmState, Running))
     }
 
-    scenario("a job request a gres gpu") {
+    List("COMPLETED", "COMPLETED?") foreach {
+      slurmState ⇒ scenariosFor(matchState(1, slurmState, Done))
+    }
 
-      Given("a slurm environment using an SSH privatekey authentication")
-      implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-        def host = "Master"
-        def user = "jopasserat"
-        def password = ""
-        def privateKey = new File("/Users/jopasserat/.ssh/id_dsa")
-      }
-
-      Given("a CUDA job")
-      val description = new SLURMJobDescription {
-        def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
-        def arguments = ""
-        def workDirectory = "~/toto"
-        override def gres = List(new Gres("gpu", 1))
-      }
-
-      When("When the job has been submitted")
-      val j = slurmService.submit(description)
-      println(description.toSLURM)
-
-      Then("it should be allocated a gres")
-      val s1 = slurmService.state(j)
-
-      And("it should appear as done after completion")
-      val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
-      assert("Done" === s2)
-      //slurmService.purge(j)
+    List("CANCELLED", "FAILED", "NODE_FAIL", "PREEMPTED", "TIMEOUT", "COMPLETED?") foreach {
+      slurmState ⇒ scenariosFor(matchState(2, slurmState, GSFailed))
     }
   }
 }
