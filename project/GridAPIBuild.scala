@@ -146,7 +146,7 @@ trait Modules <: Libraries with Settings {
 
   lazy val httpComponentsVersion = "4.3.5"
 
-  lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings)
+  lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
   lazy val gridscaleGlite = Project(id = "gridscaleglite", base = file("modules/gridscale-glite"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion
@@ -172,10 +172,14 @@ trait Modules <: Libraries with Settings {
   lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
   lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings ++ exportSettings)
-                          .dependsOn(gridscale, gridscaleSSH)
+                          .dependsOn(gridscale, gridscaleSSH)  settings (
+    libraryDependencies ++= Seq(scalaTest, mockito)
+    )
 
   lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings ++ exportSettings)
-                          .dependsOn(gridscale, gridscaleSSH)
+                          .dependsOn(gridscale, gridscaleSSH)  settings (
+    libraryDependencies ++= Seq(scalaTest, mockito)
+    )
 
   lazy val gridscaleOAR = Project(id = "gridscaleoar", base = file("modules/gridscale-oar"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
@@ -193,9 +197,9 @@ trait Libraries <: Settings {
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
-  lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 
-  lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4"
+  lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
 
   lazy val httpClient = "commons-httpclient" % "commons-httpclient" % "3.1"
 
