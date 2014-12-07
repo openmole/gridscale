@@ -18,10 +18,11 @@
 
 package fr.iscpif.gridscale.slurm
 
-import java.util.UUID
 import fr.iscpif.gridscale.jobservice.JobDescription
 import fr.iscpif.gridscale.tools.ScriptBuffer
+import fr.iscpif.gridscale.tools._
 
+import java.util.UUID
 import scala.concurrent.duration.Duration
 
 /** Represent Gres by extending Tuple2 in order to override toString */
@@ -67,9 +68,7 @@ trait SLURMJobDescription extends JobDescription {
 
     wallTime match {
       case Some(t) ⇒
-        val df = new java.text.SimpleDateFormat("HH:mm:ss")
-        df.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-        buffer += "#SBATCH --time=" + df.format(t.toMinutes)
+        buffer += "#SBATCH --time=" + t.toHHmmss
       case None ⇒
     }
 
@@ -88,6 +87,7 @@ trait SLURMJobDescription extends JobDescription {
       case _      ⇒ buffer += constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
     }
 
+    // FIXME workDirectory should be an option
     buffer += "#SBATCH -D " + workDirectory + "\n"
 
     // TODO: handle several srun and split gres accordingly
