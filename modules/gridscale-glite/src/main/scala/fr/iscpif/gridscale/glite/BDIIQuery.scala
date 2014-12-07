@@ -17,56 +17,26 @@
 
 package fr.iscpif.gridscale.glite
 
-import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.Hashtable
 
-import javax.naming.Context;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.InitialDirContext;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult
+import javax.naming.Context
+import javax.naming.directory.InitialDirContext
+import javax.naming.directory.SearchControls
+import scala.concurrent.duration.Duration
 
-import scala.concurrent.duration.Duration;
+object BDIIQuery {
 
-class BDIIQuery(val bdii: String, attributeList: List[String] = List.empty) {
+  def withBDIIQuery[T](bdii: String)(f: BDIIQuery ⇒ T) = {
+    val q = new BDIIQuery(bdii)
+    try f(q)
+    finally q.close
+  }
 
-  //private ArrayList<String> attributeList = new ArrayList<String>();
-  /**
-   * @param bdii the end poing of the bdii to query
-   */
-  //  public BDIIQuery(final String bdii)
-  //  {
-  //    this.bdii = bdii;
-  //  }
+}
 
-  /**
-   * Sets the specific attributes of the element that we want to return
-   * @param attribute a valid
-   */
-  //  public void setAttribute(final String attribute)
-  //  {
-  //    if (attribute!=null && attribute.length() > 0 )
-  //    {
-  //      this.attributeList.add( attribute );
-  //    }
-  //  }
+class BDIIQuery(val bdii: String) {
 
-  //  private ArrayList<String> getAttributes()
-  //  {
-  //    return this.attributeList;
-  //  }
-  /**
-   * This method queries the bdii set in the constructor
-   * @param searchPhrase the search phrase
-   * @return an array list of SearchResult objects.
-   * @throws InternalProcessingError
-   */
-  def query(searchPhrase: String, timeOut: Duration) = {
-    //boolean hasError= false;
-    var resultsList = new ArrayList[SearchResult]
-    val bindDN = "o=grid"
+  lazy val dirContext = {
     val env = new Hashtable[String, String]
 
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
@@ -74,6 +44,16 @@ class BDIIQuery(val bdii: String, attributeList: List[String] = List.empty) {
 
     /* get a handle to an Initial DirContext */
     val dirContext = new InitialDirContext(env)
+    dirContext
+  }
+
+  /**
+   * This method queries the bdii set in the constructor
+   * @param searchPhrase the search phrase
+   * @return an array list of SearchResult objects.
+   */
+  def query(searchPhrase: String, timeOut: Duration, attributeList: List[String] = List.empty) = {
+    //boolean hasError= false;
 
     /* specify search constraints to search subtree */
     val constraints = new SearchControls
@@ -84,11 +64,14 @@ class BDIIQuery(val bdii: String, attributeList: List[String] = List.empty) {
     if (attributeList.size > 0)
       constraints.setReturningAttributes(attributeList.toArray)
 
+    val bindDN = "o=grid"
     // Perform the search
     val results = dirContext.search(bindDN,
       searchPhrase,
       constraints)
     java.util.Collections.list(results)
-
   }
+
+  def close = dirContext.close
+
 }

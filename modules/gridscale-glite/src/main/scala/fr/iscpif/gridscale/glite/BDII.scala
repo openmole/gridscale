@@ -43,9 +43,7 @@ class BDII(location: String) {
       }
   }
 
-  def querySRMLocations(vo: String, timeOut: Duration) = {
-    val q = new BDIIQuery(location)
-
+  def querySRMLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
     var res = q.query("(&(objectClass=GlueSA)(GlueSAAccessControlBaseRule=VO:" + vo + "))", timeOut)
 
     val basePaths = new TreeMap[String, String]
@@ -136,8 +134,7 @@ class BDII(location: String) {
       }
   }
 
-  def queryWMSLocations(vo: String, timeOut: Duration) = {
-    val q = new BDIIQuery(location.toString)
+  def queryWMSLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
 
     var searchPhrase =
       "(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=" + vo + ")"
