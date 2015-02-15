@@ -43,6 +43,8 @@ trait SLURMJobDescription extends JobDescription {
   def queue: Option[String] = None
   def wallTime: Option[Duration] = None
   def memory: Option[Int] = None
+  def nodes: Option[Int] = None
+  def coresByNode: Option[Int] = None
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
   def qos: Option[String] = None
@@ -66,6 +68,13 @@ trait SLURMJobDescription extends JobDescription {
       case None    ⇒
     }
 
+    nodes match {
+      case Some(n) ⇒ buffer += s"#SBATCH --nodes=${n}"
+      case None    ⇒
+    }
+
+    buffer += s"#SBATCH --cpus-per-task=${coresByNode.getOrElse(1)}"
+
     wallTime match {
       case Some(t) ⇒
         buffer += "#SBATCH --time=" + t.toHHmmss
@@ -82,12 +91,13 @@ trait SLURMJobDescription extends JobDescription {
       case List() ⇒
       case _      ⇒ buffer += gres.mkString("#SBATCH --gres=", "--gres=", "")
     }
+
     constraints match {
       case List() ⇒
       case _      ⇒ buffer += constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
     }
 
-    // FIXME workDirectory should be an option
+    // FIXME workDirectory should be an option to force a value (can't be empty)
     buffer += "#SBATCH -D " + workDirectory + "\n"
 
     // TODO: handle several srun and split gres accordingly

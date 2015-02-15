@@ -21,7 +21,6 @@ trait FeatureSpecStateBehaviours { this: FeatureSpec with GivenWhenThen ⇒
   }
 }
 
-//@RunWith(classOf[JUnitRunner])
 class SLURMJobServiceFeatureSpec extends FeatureSpec with GivenWhenThen with FeatureSpecStateBehaviours {
 
   feature("States returned by the remote SLURM scheduler are analyzed correctly") {
@@ -78,6 +77,8 @@ class SLURMJobDescriptionTests extends FunSuite {
     override def queue = Some("myPartition")
     override def wallTime = Some(20 minutes)
     override def memory = Some(2048)
+    override def nodes = Some(4)
+    override def coresByNode = Some(8)
     override def output = "foo.out"
     override def error = "foo.err"
     override def qos = Some("SuperQoS")
@@ -127,6 +128,26 @@ class SLURMJobDescriptionTests extends FunSuite {
   test("Memory empty") {
     val expectedDescription = (memoryPattern).r
     assert(expectedDescription.findFirstIn(emptyDescription.toSLURM) === None)
+  }
+
+  val nodesPattern = s"${slurmPrefix} --nodes="
+  test("Nodes specified") {
+    val expectedDescription = (nodesPattern + "4").r
+    assert(expectedDescription.findFirstIn(completeDescription.toSLURM) != None)
+  }
+  test("Nodes empty") {
+    val expectedDescription = (nodesPattern).r
+    assert(expectedDescription.findFirstIn(emptyDescription.toSLURM) === None)
+  }
+
+  val coresByNodePattern = s"${slurmPrefix} --cpus-per-task="
+  test("CoresByNode specified") {
+    val expectedDescription = (coresByNodePattern + "8").r
+    assert(expectedDescription.findFirstIn(completeDescription.toSLURM) != None)
+  }
+  test("CoresByNode empty") {
+    val expectedDescription = (coresByNodePattern + "1").r
+    assert(expectedDescription.findFirstIn(emptyDescription.toSLURM) != None)
   }
 
   val outputPattern = s"${slurmPrefix} -o "
