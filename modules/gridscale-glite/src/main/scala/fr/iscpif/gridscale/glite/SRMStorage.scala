@@ -63,6 +63,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   def lsSizeMax = 500
   def SERVICE_PROTOCOL = "httpg"
   def transferProtocols = ArrayOfString(Some("gsiftp"))
+
   @transient lazy val transferParameters =
     TTransferParameters(
       accessPattern = Some(Some(TRANSFER_MODE)),
