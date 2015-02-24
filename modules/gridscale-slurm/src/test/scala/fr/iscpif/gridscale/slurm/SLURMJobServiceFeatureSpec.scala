@@ -120,7 +120,7 @@ class SLURMJobDescriptionTests extends FunSuite {
     assert(expectedDescription.findFirstIn(emptyDescription.toSLURM) === None)
   }
 
-  val memoryPattern = s"${slurmPrefix} --mem-per-cpu="
+  val memoryPattern = s"${slurmPrefix} --mem="
   test("Memory specified") {
     val expectedDescription = (memoryPattern + "2048").r
     assert(expectedDescription.findFirstIn(completeDescription.toSLURM) != None)

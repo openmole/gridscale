@@ -64,7 +64,7 @@ trait SLURMJobDescription extends JobDescription {
     }
 
     memory match {
-      case Some(m) ⇒ buffer += "#SBATCH --mem-per-cpu=" + m
+      case Some(m) ⇒ buffer += "#SBATCH --mem=" + m
       case None    ⇒
     }
 
