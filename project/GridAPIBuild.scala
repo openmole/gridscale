@@ -13,8 +13,8 @@ object GridAPIBuild extends Build with Libraries with Modules with Examples with
 trait Settings <: Build {
 
   override def settings = super.settings ++ Seq (
-    scalaVersion := "2.11.5",
-    crossScalaVersions := Seq("2.10.4", "2.11.5"),
+    scalaVersion := "2.11.6",
+    crossScalaVersions := Seq("2.10.4", "2.11.6"),
     javacOptions in (Compile, compile) ++= Seq("-source", "1.7", "-target", "1.7"),
     scalacOptions += "-target:jvm-1.7"
   )
