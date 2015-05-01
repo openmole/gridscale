@@ -96,24 +96,20 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   def toScript(description: D, background: Boolean = true) = {
     val jobId = UUID.randomUUID.toString
-    val command = new ScriptBuffer
 
     def absolute(path: String) = description.workDirectory + "/" + path
 
-    //command += "mkdir -p " + absolute(rootDir)
-    command += "mkdir -p " + description.workDirectory
-    command += "cd " + description.workDirectory
+    def executable = description.executable + " " + description.arguments
 
-    val executable = description.executable + " " + description.arguments
+    val command =
+      s"""
+         |mkdir -p ${description.workDirectory}
+         |cd ${description.workDirectory}
+         |($executable >${outFile(description.workDirectory, jobId)} 2>${errFile(description.workDirectory, jobId)} ; echo \\$$? >${endCodeFile(description.workDirectory, jobId)}) ${if (background) "&" else ""}
+         |echo \\$$! >${pidFile(description.workDirectory, jobId)}
+       """.stripMargin
 
-    val jobDir =
-      command += s"((" +
-        executable +
-        " >" + outFile(description.workDirectory, jobId) + " 2>" + errFile(description.workDirectory, jobId) + " ; " +
-        " echo $? >" + endCodeFile(description.workDirectory, jobId) + s") ${if (background) "&" else ";"} " +
-        "echo $! >" + pidFile(description.workDirectory, jobId) + " )"
-
-    (command.toString, jobId)
+    (command, jobId)
   }
 
   def execute(description: D) = withConnection { implicit c ⇒

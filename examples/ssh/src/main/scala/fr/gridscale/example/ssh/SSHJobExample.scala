@@ -19,25 +19,21 @@ package fr.gridscale.example.ssh
 
 import java.io.File
 
-import fr.iscpif.gridscale.ssh.{ SSHJobDescription, SSHPrivateKeyAuthentication, SSHJobService }
+import fr.iscpif.gridscale.ssh.{ SSHUserPasswordAuthentication, SSHJobDescription, SSHPrivateKeyAuthentication, SSHJobService }
 import fr.iscpif.gridscale._
 
 object SSHJobExample extends App {
 
-  val js = new SSHJobService with SSHPrivateKeyAuthentication {
-    override def privateKey: File = new File("/path/to/.ssh/id_dsa")
-
-    override def user: String = "login"
-
-    override def password: String = "keypassword"
-
-    override def host: String = "machine.domain"
+  val js = new SSHJobService with SSHUserPasswordAuthentication {
+    override def user: String = "test"
+    override def password: String = "test"
+    override def host: String = "localhost"
   }
 
   val description = new SSHJobDescription {
-    override def workDirectory: String = "/tmp"
-    override def arguments: String = "hello world"
-    override def executable: String = "echo"
+    override def workDirectory: String = "/tmp/"
+    override def arguments: String = "30"
+    override def executable: String = "sleep"
   }
 
   val id = js.submit(description)

@@ -29,8 +29,11 @@ trait BashShell <: Shell {
     // => bash -ci ensures that .bashrc is loaded
     // => bash << EOF prevents the defaut shell (which might not be bash) to process the command
     // resulting in is this combination...
-    override def toString = "bash -ci bash << EOF \n" +
-      cmd + "\n" +
-      "EOF"
+    override def toString =
+      s"""
+        |bash -ci bash <<EOF
+        |$cmd
+        |EOF
+      """.stripMargin
   }
 }
