@@ -82,7 +82,12 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
 
   }
 
-  def cancel(job: J) = withConnection { exec("scancel " + job.slurmId)(_) }
+  def cancel(job: J) = withConnection {
+    execReturnCodeOutput("scancel " + job.slurmId)(_) match {
+      case (1, _, error) if (error.matches(".*Invalid job id specified")) ⇒
+      case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}")
+    }
+  }
 
   //Purge output error job script
   def purge(job: J) = withSftpClient { c ⇒
