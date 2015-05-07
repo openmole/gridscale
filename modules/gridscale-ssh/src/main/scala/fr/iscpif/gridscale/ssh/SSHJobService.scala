@@ -68,7 +68,7 @@ object SSHJobService {
     val cmd = session.exec(cde.toString)
     try {
       cmd.join
-      (cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
+      (cmd.getExitStatus.toInt, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
   }
 
