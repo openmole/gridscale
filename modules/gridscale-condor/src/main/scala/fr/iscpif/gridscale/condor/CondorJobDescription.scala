@@ -77,7 +77,7 @@ trait CondorJobDescription extends JobDescription {
       case None    ⇒
     }
 
-    for (req ← requirements) yield buffer += "requirements = " + req.toString
+    for (req ← requirements) yield buffer += "requirements = " + req.toCondor
 
     buffer += "initialdir = " + workDirectory
 

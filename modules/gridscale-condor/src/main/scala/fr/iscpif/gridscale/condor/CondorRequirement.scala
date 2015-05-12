@@ -20,7 +20,8 @@ package fr.iscpif.gridscale.condor
 class CondorRequirement(val requirement: String) {
   def ||(otherReq: CondorRequirement) = CondorRequirement(s"( ${requirement} ) || ( ${otherReq} )")
   def &&(otherReq: CondorRequirement) = CondorRequirement(s"( ${requirement} ) && ( ${otherReq} )")
-  override def toString = requirement
+  override def toString = s"${requirement}"
+  def toCondor = s"( ${this} )"
 }
 
 object CondorRequirement {
