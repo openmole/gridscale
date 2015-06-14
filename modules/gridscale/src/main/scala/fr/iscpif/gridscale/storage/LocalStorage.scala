@@ -25,7 +25,7 @@ trait LocalStorage extends Storage {
   def credential = Unit
 
   override def child(parent: String, child: String) =
-    Paths.get(parent, child).toString
+    new File(parent, child).getPath
 
   override def exists(path: String) =
     new File(path).exists
