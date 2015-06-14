@@ -63,8 +63,8 @@ trait Settings <: Build {
 
 
 trait Examples <: Modules with Settings{
-  lazy val glitesrmExample  = Project(id = "glitewmsexample", base = file("examples/glite/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
-  lazy val glitewmsExample  = Project(id = "glitesrmexample", base = file("examples/glite/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
+  lazy val glitesrmExample  = Project(id = "glitesrmexample", base = file("examples/glite/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
+  lazy val glitewmsExample  = Project(id = "glitewmsexample", base = file("examples/glite/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
   lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleDIRAC)
   lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleCondor)
   lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSLURM)
