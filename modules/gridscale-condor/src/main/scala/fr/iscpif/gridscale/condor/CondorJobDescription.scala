@@ -35,7 +35,7 @@ trait CondorJobDescription extends JobDescription {
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
 
-  def requirements: Option[String] = None
+  def requirements: Option[CondorRequirement] = None
 
   def toCondor = {
     val buffer = new ScriptBuffer
@@ -77,7 +77,8 @@ trait CondorJobDescription extends JobDescription {
       case None    ⇒
     }
 
-    requirements.foreach(buffer += "requirements = " + _)
+    for (req ← requirements) yield buffer += "requirements = " + req.toCondor
+
     buffer += "initialdir = " + workDirectory
 
     buffer += "executable = " + executable

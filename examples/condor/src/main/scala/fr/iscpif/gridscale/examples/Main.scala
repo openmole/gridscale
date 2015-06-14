@@ -112,7 +112,10 @@ object Main {
       def executable = "/usr/bin/java"
       def arguments = "-version"
       def workDirectory = "/homes/jpassera/toto"
-      override def requirements = Some("JavaVersion == \"1.7.0_03\"")
+      override def requirements = """JavaVersion == "1.7.0_03"""" &&
+        ("""OpSysShortName == "Ubuntu"""" &&
+          ("OpSysMajorVer == 14" || "OpSysMajorVer == 12" || "OpSysMajorVer == 13")
+        )
     }
 
     println("then the job has been submitted")

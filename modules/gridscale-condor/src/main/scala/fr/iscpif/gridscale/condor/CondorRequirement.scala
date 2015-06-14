@@ -1,5 +1,4 @@
 /*
- * Copyright (C) 2015 Romain Reuillon
  * Copyright (C) 2015 Jonathan Passerat-Palmbach
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,9 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.iscpif.gridscale
 
-package object condor {
-  implicit def string2CondorRequirement(plainRequirement: String) = CondorRequirement(plainRequirement)
-  implicit def option2Requirement(nonOptRequirement: CondorRequirement) = Some(nonOptRequirement)
+package fr.iscpif.gridscale.condor
+
+class CondorRequirement(val requirement: String) {
+  def ||(otherReq: CondorRequirement) = CondorRequirement(s"( ${requirement} ) || ( ${otherReq} )")
+  def &&(otherReq: CondorRequirement) = CondorRequirement(s"( ${requirement} ) && ( ${otherReq} )")
+  override def toString = s"${requirement}"
+  def toCondor = s"( ${this} )"
+}
+
+object CondorRequirement {
+  def apply(requirement: String) = new CondorRequirement(requirement)
 }

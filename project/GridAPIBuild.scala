@@ -167,7 +167,9 @@ trait Modules <: Libraries with Settings {
     libraryDependencies += "net.schmizz" % "sshj" % "0.10.0"
     )
 
-  lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH) settings (
+    libraryDependencies ++= Seq(scalaTest, mockito)
+    )
 
   lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 

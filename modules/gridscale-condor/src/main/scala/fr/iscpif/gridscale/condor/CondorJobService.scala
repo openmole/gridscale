@@ -25,6 +25,20 @@ import fr.iscpif.gridscale.tools.shell.BashShell
 
 object CondorJobService {
   class CondorJob(val description: CondorJobDescription, val condorId: String)
+
+  object CondorJob {
+    def apply(condorDescription: CondorJobDescription, condorId: String) = new CondorJob(condorDescription, condorId)
+  }
+
+  def translateStatus(status: String) =
+    status match {
+      case "3" | "4"       ⇒ Done
+      case "2"             ⇒ Running
+      // choice was made to characterize held jobs (status=5) as submitted instead of Running
+      case "0" | "1" | "5" ⇒ Submitted
+      case "6"             ⇒ Failed
+      case _               ⇒ throw new RuntimeException("Unrecognized state " + status)
+    }
 }
 
 import CondorJobService._
@@ -47,8 +61,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
     val jobId = output.trim.reverse.tail.takeWhile(_ != ' ').reverse
     if (jobId.isEmpty) throw exception(ret, command, output, error)
 
-    new CondorJob(description, jobId)
-
+    CondorJob(description, jobId)
   }
 
   def state(job: J): JobState = withConnection { implicit connection ⇒
@@ -96,15 +109,4 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
   }
 
   def condorScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".condor"
-
-  def translateStatus(status: String) =
-    status match {
-      case "3" | "4"       ⇒ Done
-      case "2"             ⇒ Running
-      // choice was made to characterize held jobs (status=5) as submitted instead of Running
-      case "0" | "1" | "5" ⇒ Submitted
-      case "6"             ⇒ Failed
-      case _               ⇒ throw new RuntimeException("Unrecognized state " + status)
-    }
-
 }
