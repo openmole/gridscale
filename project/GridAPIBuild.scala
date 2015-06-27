@@ -148,22 +148,22 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
-  lazy val gridscaleGlite = Project(id = "gridscaleglite", base = file("modules/gridscale-glite"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
+  lazy val gridscaleGlite = Project(id = "glite", base = file("modules/gridscale-glite"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion
     )
 
-  lazy val gridscaleHttp = Project(id = "gridscalehttp", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
+  lazy val gridscaleHttp = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1"
     )
 
-  lazy val gridscaleDIRAC = Project(id = "gridscaledirac", base = file("modules/gridscale-dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings(
+  lazy val gridscaleDIRAC = Project(id = "dirac", base = file("modules/gridscale-dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings(
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
     libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1"
     )
 
-  lazy val gridscaleSSH = Project(id = "gridscalessh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
+  lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "net.schmizz" % "sshj" % "0.10.0"
     )
 
@@ -171,19 +171,19 @@ trait Modules <: Libraries with Settings {
     libraryDependencies ++= Seq(scalaTest, mockito)
     )
 
-  lazy val gridscalePBS = Project(id = "gridscalepbs", base = file("modules/gridscale-pbs"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscalePBS = Project(id = "pbs", base = file("modules/gridscale-pbs"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
-  lazy val gridscaleSLURM = Project(id = "gridscaleslurm", base = file("modules/gridscale-slurm"), settings = defaultSettings ++ exportSettings)
+  lazy val gridscaleSLURM = Project(id = "slurm", base = file("modules/gridscale-slurm"), settings = defaultSettings ++ exportSettings)
                           .dependsOn(gridscale, gridscaleSSH)  settings (
     libraryDependencies ++= Seq(scalaTest, mockito)
     )
 
-  lazy val gridscaleSGE = Project(id = "gridscalesge", base = file("modules/gridscale-sge"), settings = defaultSettings ++ exportSettings)
+  lazy val gridscaleSGE = Project(id = "sge", base = file("modules/gridscale-sge"), settings = defaultSettings ++ exportSettings)
                           .dependsOn(gridscale, gridscaleSSH)  settings (
     libraryDependencies ++= Seq(scalaTest, mockito)
     )
 
-  lazy val gridscaleOAR = Project(id = "gridscaleoar", base = file("modules/gridscale-oar"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
+  lazy val gridscaleOAR = Project(id = "oar", base = file("modules/gridscale-oar"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
 
 }
