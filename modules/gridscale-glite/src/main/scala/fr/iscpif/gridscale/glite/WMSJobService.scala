@@ -76,7 +76,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
 
   def purge(jobId: J) = wmsService.jobPurge(jobId.id).get
 
-  def state(jobId: J) = translateState(rawState(jobId))
+  def state(jobId: J) = translateState(rawState(jobId).state)
 
   def downloadOutputSandbox(desc: D, jobId: J) = {
     val indexed = desc.outputSandbox.groupBy(_._1).map { case (k, v) ⇒ k -> v.head }
@@ -127,10 +127,10 @@ trait WMSJobService extends JobService with DefaultTimeout {
       case WAITING        ⇒ Submitted
     }
 
-  private def rawState(jobId: WMSJobId) = {
+  def rawState(jobId: WMSJobId) = {
     val jobUrl = new URL(jobId.id)
     val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
-    lbServiceCache(lbServiceURL.toString).jobStatus(jobId.id, flags).get.state
+    lbServiceCache(lbServiceURL.toString).jobStatus(jobId.id, flags).get
   }
 
   private lazy val flags = JobFlags(CLASSADS, CHILDREN, CHILDSTAT)
