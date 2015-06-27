@@ -78,6 +78,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
             case FileType      ⇒ rmFileWithClient(child)(c)
             case LinkType      ⇒ rmFileWithClient(child)(c)
             case DirectoryType ⇒ rmDirWithClient(child)(c)
+            case UnknownType   ⇒ rmFileWithClient(child)(c)
           }
         } catch {
           case t: Throwable ⇒ Logger.getLogger(classOf[SSHStorage].getName).log(Level.FINE, "Error in recursive rm", t)
