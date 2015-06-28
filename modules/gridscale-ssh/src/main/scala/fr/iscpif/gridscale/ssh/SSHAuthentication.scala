@@ -19,6 +19,7 @@ package fr.iscpif.gridscale.ssh
 
 import fr.iscpif.gridscale.authentication.Credential
 import net.schmizz.sshj._
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 
 trait SSHAuthentication <: Credential {
   type A >: SSHAuthentication
@@ -27,6 +28,8 @@ trait SSHAuthentication <: Credential {
   def connect(host: String, port: Int) = {
     val ssh = new SSHClient
     ssh.connect(host, port)
+    // disable strict host key checking
+    ssh.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
     try authenticate(ssh)
     catch {
       case t: Throwable ⇒

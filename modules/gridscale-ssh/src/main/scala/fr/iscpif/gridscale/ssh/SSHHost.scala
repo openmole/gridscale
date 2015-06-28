@@ -21,6 +21,7 @@ import fr.iscpif.gridscale.authentication.Credential
 import fr.iscpif.gridscale.tools.DefaultTimeout
 import net.schmizz.sshj._
 import net.schmizz.sshj.sftp._
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import transport.verification.HostKeyVerifier
 import java.security.PublicKey
 
@@ -46,9 +47,9 @@ trait SSHHost <: DefaultTimeout with Credential {
     val ssh = new SSHClient
     ssh.setConnectTimeout(timeout.toMillis.toInt)
     ssh.setTimeout(timeout.toMillis.toInt)
-    ssh.addHostKeyVerifier(new HostKeyVerifier {
-      def verify(p1: String, p2: Int, p3: PublicKey) = true
-    })
+    // disable strict host key checking
+    ssh.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
+
     ssh.connect(host, port)
     credential.authenticate(ssh)
     ssh
