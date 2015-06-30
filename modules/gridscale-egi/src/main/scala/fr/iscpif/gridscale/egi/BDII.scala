@@ -30,8 +30,8 @@ import scala.util._
 
 class BDII(location: String) {
 
-  val srmServiceType = Array("srm", "SRM" /*, "srm_v1"*/ )
-  val wmsServiceType = Array("org.glite.wms.WMProxy" /*, "org.glite.wms"*/ )
+  val srmServiceType = Array("SRM")
+  val wmsServiceType = Array("org.glite.wms.WMProxy")
 
   case class SRMLocation(host: String, port: Int, basePath: String) { self ⇒
     def toSRM(implicit auth: SRMStorage#A) =
@@ -64,15 +64,7 @@ class BDII(location: String) {
 
     }
 
-    var searchPhrase =
-      "(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=" + vo + ")"
-
-    searchPhrase += "(|"
-    for (t ← srmServiceType) {
-      searchPhrase += "(GlueServiceType=" + t + ")"
-    }
-    searchPhrase += "))"
-
+    def searchPhrase = searchService(vo, srmServiceType)
     res = q.query(searchPhrase, timeOut)
 
     val srms = new mutable.HashMap[(String, Int), SRMLocation]
@@ -136,20 +128,12 @@ class BDII(location: String) {
 
   def queryWMSLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
 
-    var searchPhrase =
-      "(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=" + vo + ")"
-    searchPhrase += "(|"
-    for (t ← wmsServiceType) {
-      searchPhrase += "(GlueServiceType=" + t + ")"
-    }
-    searchPhrase += "))"
-
+    def searchPhrase = searchService(vo, wmsServiceType)
     val res = q.query(searchPhrase, timeOut)
 
     val wmsURIs = new mutable.HashSet[URI]
 
     for (r ← res) {
-
       try {
         val wmsURI = new URI(r.getAttributes.get("GlueServiceEndpoint").get().toString)
         wmsURIs += wmsURI
@@ -163,4 +147,9 @@ class BDII(location: String) {
   }
 
   def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
+
+  def searchService(vo: String, serviceType: Seq[String]) = {
+    def serviceTypeQuery = serviceType.map(t ⇒ s"(GlueServiceType=$t)").mkString("")
+    s"(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=$vo)(|$serviceTypeQuery))"
+  }
 }
