@@ -63,8 +63,8 @@ trait Settings <: Build {
 
 
 trait Examples <: Modules with Settings{
-  lazy val glitesrmExample  = Project(id = "glitesrmexample", base = file("examples/glite/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
-  lazy val glitewmsExample  = Project(id = "glitewmsexample", base = file("examples/glite/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleGlite)
+  lazy val egisrmExample  = Project(id = "egisrmexample", base = file("examples/egi/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
+  lazy val egiwmsExample  = Project(id = "egiwmsexample", base = file("examples/egi/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleDIRAC)
   lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleCondor)
   lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSLURM)
@@ -98,8 +98,8 @@ trait Bundles <: Modules with Settings {
     name := "gridscale"
     )
 
-  lazy val gliteBundle = Project(id = "glitebundle", base = file("bundles/glite"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleGlite) settings(
-    name := "glite",
+  lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleEGI) settings(
+    name := "egi",
     importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "*"),
     privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
@@ -148,7 +148,7 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
-  lazy val gridscaleGlite = Project(id = "glite", base = file("modules/gridscale-glite"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion
     )
 
