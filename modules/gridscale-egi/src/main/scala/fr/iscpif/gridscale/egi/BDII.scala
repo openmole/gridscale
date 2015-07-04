@@ -30,8 +30,9 @@ import scala.util._
 
 class BDII(location: String) {
 
-  val srmServiceType = Array("SRM")
-  val wmsServiceType = Array("org.glite.wms.WMProxy")
+  val srmServiceType = "SRM"
+  val wmsServiceType = "org.glite.wms.WMProxy"
+  val creamCEServiceType = "org.glite.ce.CREAM"
 
   case class SRMLocation(host: String, port: Int, basePath: String) { self ⇒
     def toSRM(implicit auth: SRMStorage#A) =
@@ -43,76 +44,30 @@ class BDII(location: String) {
       }
   }
 
-  def querySRMLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
-    var res = q.query("(&(objectClass=GlueSA)(GlueSAAccessControlBaseRule=VO:" + vo + "))", timeOut)
-
-    val basePaths = new TreeMap[String, String]
-
-    for (r ← res) {
-
-      try {
-        var id = r.getAttributes().get("GlueChunkKey").get().toString
-        id = id.substring(id.indexOf('=') + 1)
-        val resForPath = q.query("(&(GlueChunkKey=GlueSEUniqueID=" + id + ")(GlueVOInfoAccessControlBaseRule=VO:" + vo + "))", timeOut)
-        if (!resForPath.isEmpty) {
-          val path = resForPath.get(0).getAttributes().get("GlueVOInfoPath").get().toString
-          basePaths.put(id, path)
-        }
-      } catch {
-        case ex: NamingException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error when quering BDII", ex);
-      }
-
-    }
-
+  def querySRMLocations(vo: String, timeOut: Duration): Seq[SRMLocation] = BDIIQuery.withBDIIQuery(location) { q ⇒
     def searchPhrase = searchService(vo, srmServiceType)
-    res = q.query(searchPhrase, timeOut)
+    val res = q.query(searchPhrase, timeOut)
 
-    val srms = new mutable.HashMap[(String, Int), SRMLocation]
-
-    for (r ← res) {
-
-      try {
-        val serviceEndPoint = r.getAttributes().get("GlueServiceEndpoint").get().toString();
-
+    val srms =
+      for (r ← res) yield {
+        val serviceEndPoint = r.getAttributes().get("GlueServiceEndpoint").get().toString()
         val httpgURI = new URI(serviceEndPoint)
+        val host = httpgURI.getHost
+        val port = httpgURI.getPort
 
-        if (basePaths.containsKey(httpgURI.getHost)) {
-          val host = httpgURI.getHost
-          val port = httpgURI.getPort
-          val basePath = basePaths.get(host)
-
-          srms += ((host, port) -> SRMLocation(host, port, basePath))
-
-          //          val srmURI = new StringBuilder();
-          //
-          //          
-          //          
-          //          srmURI.append("srm");
-          //          srmURI.append("://");
-          //          srmURI.append(httpgURI.getHost());
-          //          if (httpgURI.getPort() != -1) {
-          //            srmURI.append(':');
-          //            srmURI.append(httpgURI.getPort());
-          //          }
-          //
-          //          //System.outt.println();
-          //          srmURI.append(ids.get(httpgURI.getHost()));
-          //
-          //          val srmURIString = srmURI.toString();
-          //          srmURIs.add(URI.create(srmURIString));
-
-          //srm  srmIds.add(httpgURI.getHost());
-        } else {
-          Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "No path found in BDII for host {0}", httpgURI.getHost());
+        Try {
+          val resForPath = q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
+          val path = resForPath.get(0).getAttributes().get("GlueVOInfoPath").get().toString
+          SRMLocation(host, port, path)
+        } match {
+          case Success(s) ⇒ Some(s)
+          case Failure(ex) ⇒
+            Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error interrogating the BDII.", ex)
+            None
         }
-
-      } catch {
-        case ex: NamingException   ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error interrogating the BDII.", ex);
-        case e: URISyntaxException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error creating URI for a storge element.", e);
       }
-    }
 
-    srms.values.toSeq
+    srms.flatten.toSeq
   }
 
   def querySRMs(vo: String, timeOut: Duration)(implicit auth: SRMStorage#A) =
@@ -148,8 +103,53 @@ class BDII(location: String) {
 
   def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
 
-  def searchService(vo: String, serviceType: Seq[String]) = {
-    def serviceTypeQuery = serviceType.map(t ⇒ s"(GlueServiceType=$t)").mkString("")
-    s"(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=$vo)(|$serviceTypeQuery))"
+  case class CREAMCELocation(host: String, port: Int, uniqueId: String, memory: Int, maxWallTime: Int, maxCPUTime: Int)
+
+  def queryCREAMCELocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
+    def searchPhrase = searchService(vo, creamCEServiceType)
+    val res = q.query(searchPhrase, timeOut)
+
+    case class CE(host: String, port: Int, uniqueId: String, maxWallTime: Int, maxCpuTime: Int)
+    def cesOnHost(host: String) = {
+      val foreignKey = s"GlueClusterUniqueID=$host"
+      val infos = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueForeignKey=$foreignKey))", timeOut)
+      for {
+        info ← infos
+      } yield {
+        val wallClockTime = info.getAttributes().get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
+        val cpuTime = info.getAttributes().get("GlueCEPolicyMaxCPUTime").get.toString.toInt
+        val port = info.getAttributes().get("GlueCEInfoGatekeeperPort").get.toString.toInt
+        val uniqId = info.getAttributes().get("GlueCEUniqueID").get.toString
+        CE(host, port, uniqId, wallClockTime, cpuTime)
+      }
+    }
+
+    case class Machine(memory: Int)
+    def machineInfo(host: String) = {
+      val info = q.query(s"(GlueChunkKey=GlueClusterUniqueID=$host)", timeOut).get(0)
+      Machine(memory = info.getAttributes().get("GlueHostMainMemoryRAMSize").get().toString.toInt)
+    }
+
+    for {
+      r ← res
+      uri = new URI(r.getAttributes().get("GlueServiceEndpoint").get().toString())
+      host = uri.getHost
+      ce ← cesOnHost(host)
+      memory = machineInfo(host).memory
+    } yield {
+      CREAMCELocation(
+        host = host,
+        port = ce.port,
+        uniqueId = ce.uniqueId,
+        memory = memory,
+        maxCPUTime = ce.maxCpuTime,
+        maxWallTime = ce.maxWallTime
+      )
+    }
+  }
+
+  def searchService(vo: String, serviceType: String) = {
+    def serviceTypeQuery = s"(GlueServiceType=$serviceType)"
+    s"(&(objectClass=GlueService)(GlueServiceUniqueID=*)(GlueServiceAccessControlRule=$vo)($serviceTypeQuery))"
   }
 }

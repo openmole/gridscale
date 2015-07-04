@@ -66,7 +66,8 @@ class BDIIQuery(val bdii: String) {
 
     val bindDN = "o=grid"
     // Perform the search
-    val results = dirContext.search(bindDN,
+    val results = dirContext.search(
+      bindDN,
       searchPhrase,
       constraints)
     java.util.Collections.list(results)
