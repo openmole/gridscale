@@ -129,7 +129,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
 
   def rawState(jobId: WMSJobId) = {
     val jobUrl = new URL(jobId.id)
-    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, 9003, "")
+    val lbServiceURL = new URL(jobUrl.getProtocol, jobUrl.getHost, jobUrl.getPort, "")
     lbServiceCache(lbServiceURL.toString).jobStatus(jobId.id, flags).get
   }
 

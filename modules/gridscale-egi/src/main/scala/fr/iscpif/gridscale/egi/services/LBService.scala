@@ -20,16 +20,25 @@ package fr.iscpif.gridscale.egi.services
 import fr.iscpif.gridscale.libraries.lbstub._
 import scala.concurrent.duration.Duration
 import scalaxb.HttpClients
-import java.net.URI
+import java.net.{ Socket, URI }
 import fr.iscpif.gridscale.egi.GlobusAuthentication
 import fr.iscpif.gridscale.globushttp.{ CompleteSocketFactory, GlobusHttpClient }
 import org.apache.commons.httpclient.methods.{ PostMethod, StringRequestEntity }
+import scala.util.{ Try, Success, Failure }
 
 object LBService {
 
   def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration, _maxConnections: Int) =
     new LBService {
       @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with CompleteSocketFactory {
+        def defaultPort = 9003
+
+        override def socket(host: String, port: Int): Socket =
+          Try(super.socket(host, port)) match {
+            case Success(s) ⇒ s
+            case Failure(e) ⇒ super.socket(host, defaultPort)
+          }
+
         def proxyBytes = credential().proxyBytes
         val timeout = _timeout
         val address = uri
