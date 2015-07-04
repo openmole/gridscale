@@ -49,8 +49,12 @@ class BDII(location: String) {
     val res = q.query(searchPhrase, timeOut)
 
     val srms =
-      for (r ← res) yield {
-        val serviceEndPoint = r.getAttributes().get("GlueServiceEndpoint").get().toString()
+      for {
+        r ← res
+        attributes = r.getAttributes()
+        if attributes.get("GlueServiceVersion").get().toString.takeWhile(_ != '.').toInt >= 2
+      } yield {
+        val serviceEndPoint = attributes.get("GlueServiceEndpoint").get().toString()
         val httpgURI = new URI(serviceEndPoint)
         val host = httpgURI.getHost
         val port = httpgURI.getPort

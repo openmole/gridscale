@@ -22,7 +22,7 @@ import concurrent.duration._
 object CREAMExample extends App {
 
   val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-  val creams = bdii.queryCREAMCELocations("vo.complex-systems.eu", 2 minutes)
+  val creams = bdii.querySRMLocations("vo.complex-systems.eu", 2 minutes)
 
   creams.foreach(println)
 
