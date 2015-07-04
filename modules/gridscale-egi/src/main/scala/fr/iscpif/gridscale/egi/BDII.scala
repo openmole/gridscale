@@ -103,26 +103,10 @@ class BDII(location: String) {
 
   def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
 
-  case class CREAMCELocation(host: String, port: Int, uniqueId: String, memory: Int, maxWallTime: Int, maxCPUTime: Int)
+  case class CREAMCELocation(host: String, port: Int, uniqueId: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
 
   def queryCREAMCELocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
-    def searchPhrase = searchService(vo, creamCEServiceType)
-    val res = q.query(searchPhrase, timeOut)
-
-    case class CE(host: String, port: Int, uniqueId: String, maxWallTime: Int, maxCpuTime: Int)
-    def cesOnHost(host: String) = {
-      val foreignKey = s"GlueClusterUniqueID=$host"
-      val infos = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueForeignKey=$foreignKey))", timeOut)
-      for {
-        info ← infos
-      } yield {
-        val wallClockTime = info.getAttributes().get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
-        val cpuTime = info.getAttributes().get("GlueCEPolicyMaxCPUTime").get.toString.toInt
-        val port = info.getAttributes().get("GlueCEInfoGatekeeperPort").get.toString.toInt
-        val uniqId = info.getAttributes().get("GlueCEUniqueID").get.toString
-        CE(host, port, uniqId, wallClockTime, cpuTime)
-      }
-    }
+    val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))", timeOut)
 
     case class Machine(memory: Int)
     def machineInfo(host: String) = {
@@ -131,19 +115,26 @@ class BDII(location: String) {
     }
 
     for {
-      r ← res
-      uri = new URI(r.getAttributes().get("GlueServiceEndpoint").get().toString())
-      host = uri.getHost
-      ce ← cesOnHost(host)
+      info ← res
+      attributes = info.getAttributes()
+      maxWallTime = attributes.get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
+      maxCpuTime = attributes.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
+      port = attributes.get("GlueCEInfoGatekeeperPort").get.toString.toInt
+      uniqueId = attributes.get("GlueCEUniqueID").get.toString
+      status = attributes.get("GlueCEStateStatus").get.toString
+      host = attributes.get("GlueCEHostingCluster").get.toString
       memory = machineInfo(host).memory
     } yield {
+      //println(uniqueId -> attributes.get("GlueCECapability"))
+
       CREAMCELocation(
         host = host,
-        port = ce.port,
-        uniqueId = ce.uniqueId,
+        port = port,
+        uniqueId = uniqueId,
         memory = memory,
-        maxCPUTime = ce.maxCpuTime,
-        maxWallTime = ce.maxWallTime
+        maxCPUTime = maxCpuTime,
+        maxWallTime = maxWallTime,
+        status = status
       )
     }
   }
