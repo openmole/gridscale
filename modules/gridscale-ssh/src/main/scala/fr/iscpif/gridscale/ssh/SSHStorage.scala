@@ -40,6 +40,16 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.statExistence(path) != null
   }
 
+  override def wrapException[T](operation: String)(f: ⇒ T): T = {
+    try f
+    catch {
+      case e: net.schmizz.sshj.sftp.SFTPException if (e.getMessage == "No such file") ⇒
+        throw new SSHException.NoSuchFileException(e.getMessage)
+      case t: Throwable ⇒
+        throw new IOException(s"Error $operation", t)
+    }
+  }
+
   def chmod(path: String, perms: FilePermission*) = withSftpClient {
     _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission]))
   }
@@ -81,6 +91,9 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
             case UnknownType   ⇒ rmFileWithClient(child)(c)
           }
         } catch {
+          // some err/out files might not have been created, so this error should be harmless
+          case e: SSHException.NoSuchFileException ⇒ Logger.getLogger(
+            classOf[SSHStorage].getName).log(Level.FINEST, e.msg)
           case t: Throwable ⇒ Logger.getLogger(classOf[SSHStorage].getName).log(Level.FINE, "Error in recursive rm", t)
         }
     }
