@@ -107,7 +107,7 @@ class BDII(location: String) {
 
   def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
 
-  case class CREAMCELocation(host: String, port: Int, uniqueId: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
+  case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
 
   def queryCREAMCELocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
     val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))", timeOut)
@@ -125,16 +125,18 @@ class BDII(location: String) {
       maxCpuTime = attributes.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
       port = attributes.get("GlueCEInfoGatekeeperPort").get.toString.toInt
       uniqueId = attributes.get("GlueCEUniqueID").get.toString
+      contact = attributes.get("GlueCEInfoContactString").get.toString
       status = attributes.get("GlueCEStateStatus").get.toString
-      host = attributes.get("GlueCEHostingCluster").get.toString
-      memory = machineInfo(host).memory
+      hostingCluster = attributes.get("GlueCEHostingCluster").get.toString
+      memory = machineInfo(hostingCluster).memory
     } yield {
       //println(uniqueId -> attributes.get("GlueCECapability"))
 
       CREAMCELocation(
-        host = host,
+        hostingCluster = hostingCluster,
         port = port,
         uniqueId = uniqueId,
+        contact = contact,
         memory = memory,
         maxCPUTime = maxCpuTime,
         maxWallTime = maxWallTime,

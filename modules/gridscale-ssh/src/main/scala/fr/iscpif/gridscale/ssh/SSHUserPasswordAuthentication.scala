@@ -17,11 +17,15 @@
 
 package fr.iscpif.gridscale.ssh
 
-import fr.iscpif.gridscale.authentication.UserPassword
+import fr.iscpif.gridscale.authentication.{ AuthenticationException, UserPassword }
 import net.schmizz.sshj.SSHClient
 
 trait SSHUserPasswordAuthentication extends SSHAuthentication with UserPassword {
 
-  def authenticate(c: SSHClient) = c.authPassword(user, password)
+  def authenticate(c: SSHClient) =
+    try c.authPassword(user, password)
+    catch {
+      case e: Throwable ⇒ throw AuthenticationException("Error during ssh login/password authentication", e)
+    }
 
 }

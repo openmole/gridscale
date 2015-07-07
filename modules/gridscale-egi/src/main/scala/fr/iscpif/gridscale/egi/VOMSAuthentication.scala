@@ -20,6 +20,7 @@ package fr.iscpif.gridscale.egi
 import java.io.{ ByteArrayOutputStream, File }
 import java.net.MalformedURLException
 import java.net.URI
+import fr.iscpif.gridscale.authentication.AuthenticationException
 import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import collection.JavaConversions._
@@ -45,37 +46,41 @@ trait VOMSAuthentication extends GlobusAuthentication {
   def lifeTime: Duration
   def proxySize = 1024
 
-  def apply() = synchronized {
-    val uri = new URI(serverURL.replaceAll(" ", "%20"))
-    if (uri.getHost == null)
-      throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
+  def apply() = try {
+    synchronized {
+      val uri = new URI(serverURL.replaceAll(" ", "%20"))
+      if (uri.getHost == null)
+        throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
 
-    val server = new VOMSServerInfo
-    server.setHostName(uri.getHost)
-    server.setPort(uri.getPort)
-    server.setHostDn(uri.getPath)
-    server.setVoName(voName)
+      val server = new VOMSServerInfo
+      server.setHostName(uri.getHost)
+      server.setPort(uri.getPort)
+      server.setHostDn(uri.getPath)
+      server.setVoName(voName)
 
-    val proxy = proxyInit
-    proxy.addVomsServer(server)
+      val proxy = proxyInit
+      proxy.addVomsServer(server)
 
-    val requestOption = new VOMSRequestOptions
-    requestOption.setVoName(voName)
+      val requestOption = new VOMSRequestOptions
+      requestOption.setVoName(voName)
 
-    fqan match {
-      case Some(s) ⇒ requestOption.addFQAN(s)
-      case None    ⇒
+      fqan match {
+        case Some(s) ⇒ requestOption.addFQAN(s)
+        case None    ⇒
+      }
+
+      proxy.setProxyLifetime(lifeTime.toSeconds.toInt)
+      proxy.setProxySize(proxySize)
+      requestOption.setLifetime(lifeTime.toSeconds.toInt)
+
+      val globusProxy = proxy.getVomsProxy(List(requestOption))
+
+      val os = new ByteArrayOutputStream()
+      VOMSProxyBuilder.saveProxy(globusProxy, os)
+
+      GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), os.toByteArray, delegationID.toString)
     }
-
-    proxy.setProxyLifetime(lifeTime.toSeconds.toInt)
-    proxy.setProxySize(proxySize)
-    requestOption.setLifetime(lifeTime.toSeconds.toInt)
-
-    val globusProxy = proxy.getVomsProxy(List(requestOption))
-
-    val os = new ByteArrayOutputStream()
-    VOMSProxyBuilder.saveProxy(globusProxy, os)
-
-    GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), os.toByteArray, delegationID.toString)
+  } catch {
+    case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
   }
 }

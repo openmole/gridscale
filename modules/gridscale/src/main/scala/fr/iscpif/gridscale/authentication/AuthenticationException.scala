@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2015 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,19 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package fr.iscpif.gridscale.authentication
 
-package fr.iscpif.gridscale.ssh
-
-import fr.iscpif.gridscale.authentication.{ AuthenticationException, PrivateKey }
-import net.schmizz.sshj.SSHClient
-
-trait SSHPrivateKeyAuthentication extends SSHAuthentication with PrivateKey {
-
-  def authenticate(c: SSHClient) =
-    try {
-      val kp = c.loadKeys(privateKey.getAbsolutePath, password)
-      c.authPublickey(user, kp)
-    } catch {
-      case e: Throwable ⇒ throw AuthenticationException("Error during ssh key authentication", e)
-    }
-}
+case class AuthenticationException(msg: String, cause: Throwable) extends Exception(msg, cause)
