@@ -145,7 +145,7 @@ trait Bundles <: Modules with Settings {
 
 trait Modules <: Libraries with Settings {
 
-  lazy val httpComponentsVersion = "4.3.5"
+  lazy val httpComponentsVersion = "4.5"
 
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
