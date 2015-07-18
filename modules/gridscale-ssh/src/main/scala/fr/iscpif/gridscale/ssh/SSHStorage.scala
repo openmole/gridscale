@@ -40,15 +40,12 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.statExistence(path) != null
   }
 
-  override def wrapException[T](operation: String)(f: ⇒ T): T = {
-    try f
-    catch {
+  override def errorWrapping(operation: String, t: Throwable) =
+    t match {
       case e: net.schmizz.sshj.sftp.SFTPException if (e.getMessage == "No such file") ⇒
-        throw new SSHException.NoSuchFileException(e.getMessage)
-      case t: Throwable ⇒
-        throw new IOException(s"Error $operation", t)
+        new SSHException.NoSuchFileException(s"$operation: " + e.getMessage)
+      case t: Throwable ⇒ super.errorWrapping(operation, t)
     }
-  }
 
   def chmod(path: String, perms: FilePermission*) = withSftpClient {
     _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission]))

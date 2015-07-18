@@ -59,9 +59,11 @@ trait Storage <: Credential {
   protected def _openInputStream(path: String): InputStream
   protected def _openOutputStream(path: String): OutputStream
 
+  def errorWrapping(operation: String, t: Throwable): Throwable = new IOException(s"Error $operation", t)
+
   def wrapException[T](operation: String)(f: ⇒ T): T =
     try f
     catch {
-      case e: Throwable ⇒ throw new IOException(s"Error $operation", e)
+      case e: Throwable ⇒ throw errorWrapping(operation, e)
     }
 }
