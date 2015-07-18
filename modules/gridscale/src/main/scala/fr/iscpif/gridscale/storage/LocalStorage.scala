@@ -31,7 +31,7 @@ trait LocalStorage extends Storage {
     new File(path).exists
 
   override def parent(path: String) =
-    Option(new File(path).getCanonicalFile().getParentFile().getName)
+    Option(new File(path).getCanonicalFile().getParentFile()).map(_.getName)
 
   override def name(path: String) =
     new File(path).getName
