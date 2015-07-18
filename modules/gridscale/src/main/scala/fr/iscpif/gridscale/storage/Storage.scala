@@ -28,17 +28,21 @@ object Storage {
 trait Storage <: Credential {
 
   def exists(path: String) =
-    if (isRoot(path)) true
-    else listNames(parent(path)).toSet.contains(name(path))
+    parent(path).
+      map(parentPath ⇒ listNames(parentPath).exists(_ == name(path))).
+      getOrElse(true)
 
   def child(parent: String, child: String) = Storage.child(parent, child)
 
-  def parent(path: String) =
-    path.reverse.dropWhile(c ⇒ c == '/' || c == '\\').drop(name(path).length).reverse
+  def parent(path: String): Option[String] = {
+    val cleaned = path.reverse.dropWhile(c ⇒ c == '/' || c == '\\').reverse
+    cleaned match {
+      case "" ⇒ None
+      case _  ⇒ Some(cleaned.dropRight(name(path).length))
+    }
+  }
 
   def name(path: String) = new File(path).getName
-  def isRoot(path: String) = parent(path) == path
-
   def listNames(path: String) = _list(path).unzip._1
 
   def openInputStream(path: String): InputStream = new BufferedInputStream(_openInputStream(path))
