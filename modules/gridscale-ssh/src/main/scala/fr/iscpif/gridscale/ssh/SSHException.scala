@@ -18,5 +18,5 @@
 package fr.iscpif.gridscale.ssh
 
 object SSHException {
-  case class NoSuchFileException(msg: String) extends Throwable
+  case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
 }
