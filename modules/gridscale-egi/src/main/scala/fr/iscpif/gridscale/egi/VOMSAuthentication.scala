@@ -58,7 +58,7 @@ trait VOMSAuthentication extends GlobusAuthentication {
   def generate(file: File) = {
     val os = new FileOutputStream(file)
     try VOMSProxyBuilder.saveProxy(proxy(), os)
-    os.close
+    finally os.close
   }
 
   def proxy() = synchronized {
