@@ -39,3 +39,10 @@ Examples
 Up to date examples are available in the [example directory](examples/README.md).  
 Standalone runnable jars can be generated for each example with the `one-jar` task (please note that this can only be done after the task `package` has been run.
 
+Development
+--------
+GridScale can be generated locally using:
+`sbt publish-local`
+
+To release in one step, use:
+`sbt 'release with-defaults'`
