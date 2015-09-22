@@ -25,6 +25,8 @@ object Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
 }
 
+case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Long] = None)
+
 trait Storage <: Credential {
 
   def exists(path: String) =
@@ -43,18 +45,18 @@ trait Storage <: Credential {
   }
 
   def name(path: String) = new File(path).getName
-  def listNames(path: String) = _list(path).unzip._1
+  def listNames(path: String) = _list(path).map(_.name)
 
   def openInputStream(path: String): InputStream = new BufferedInputStream(_openInputStream(path))
   def openOutputStream(path: String): OutputStream = new BufferedOutputStream(_openOutputStream(path))
 
-  def list(path: String): Seq[(String, FileType)] = wrapException(s"list $path")(_list(path))
+  def list(path: String): Seq[ListEntry] = wrapException(s"list $path")(_list(path))
   def makeDir(path: String) = wrapException(s"make dir $path")(_makeDir(path))
   def rmDir(path: String) = wrapException(s"rm dir $path")(_rmDir(path))
   def rmFile(path: String) = wrapException(s"rm file $path")(_rmFile(path))
   def mv(from: String, to: String) = wrapException(s"move $from to $to")(_mv(from, to))
 
-  def _list(path: String): Seq[(String, FileType)]
+  def _list(path: String): Seq[ListEntry]
   def _makeDir(path: String)
   def _rmDir(path: String)
   def _rmFile(path: String)

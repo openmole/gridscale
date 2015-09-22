@@ -64,7 +64,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
             case FileMode.Type.SYMKLINK  ⇒ LinkType
             case _                       ⇒ FileType
           }
-        e.getName -> t
+        ListEntry(e.getName, t, Some(e.getAttributes.getMtime))
     }
   }
 
@@ -78,10 +78,10 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
 
   private def rmDirWithClient(path: String)(c: SFTPClient): Unit = wrapException(s"rm dir $path") {
     listWithClient(path)(c).foreach {
-      case (p, t) ⇒
+      entry ⇒
         try {
-          val child = path + "/" + p
-          t match {
+          val child = path + "/" + entry.name
+          entry.`type` match {
             case FileType      ⇒ rmFileWithClient(child)(c)
             case LinkType      ⇒ rmFileWithClient(child)(c)
             case DirectoryType ⇒ rmDirWithClient(child)(c)

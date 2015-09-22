@@ -54,7 +54,7 @@ trait HTTPStorage extends Storage with DefaultTimeout {
 
   def bufferSize = 64000
 
-  def _list(path: String): Seq[(String, FileType)] = {
+  def _list(path: String) = {
     val is = openInputStream(path)
     try {
       val parser = new Parser
@@ -69,7 +69,12 @@ trait HTTPStorage extends Storage with DefaultTimeout {
           if (!name.isEmpty && !name.contains("/") && !name.contains("?") && !name.contains("#")) {
             val ret = name.replaceAll("&amp;", "%26")
             Some(
-              (new File(java.net.URLDecoder.decode(ret, "utf-8")).getPath, if (isDir) DirectoryType else FileType))
+              ListEntry(
+                new File(java.net.URLDecoder.decode(ret, "utf-8")).getPath,
+                if (isDir) DirectoryType else FileType,
+                None
+              )
+            )
           } else None
       }
     } finally is.close

@@ -73,8 +73,8 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
 
   def version = stub.srmPing(new SrmPingRequest).get.versionInfo
 
-  def _list(absolutePath: String): Seq[(String, FileType)] = {
-    def recList(offset: Int, res: List[Seq[(String, FileType)]] = List.empty): Seq[(String, FileType)] = {
+  def _list(absolutePath: String) = {
+    def recList(offset: Int, res: List[Seq[ListEntry]] = List.empty): Seq[ListEntry] = {
       val ls = list(absolutePath, offset, lsSizeMax)
       if (ls.size < lsSizeMax) (ls :: res).reverse.flatten
       else recList(offset + lsSizeMax, ls :: res)
@@ -119,7 +119,10 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
         case Some(Some(LINK))      ⇒ LinkType
         case _                     ⇒ UnknownType
       }
-      new File(pd.path).getName -> t
+      ListEntry(
+        new File(pd.path).getName,
+        t,
+        pd.lastModificationTime.flatten.map(_.toGregorianCalendar.getTimeInMillis))
     }).toSeq
   }
 

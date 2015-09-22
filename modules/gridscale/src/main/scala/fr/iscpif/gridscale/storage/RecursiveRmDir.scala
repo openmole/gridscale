@@ -27,15 +27,15 @@ trait RecursiveRmDir extends Storage {
     val subfiles = _list(path)
     if (subfiles.isEmpty) rmEmptyDir(path)
     else subfiles.foreach {
-      case (name, t) ⇒
-        val childPath = child(path, name)
+      l ⇒
+        val childPath = child(path, l.name)
         try {
-          t match {
+          l.`type` match {
             case DirectoryType ⇒ _rmDir(childPath)
             case LinkType      ⇒ _rmFile(childPath)
             case FileType      ⇒ _rmFile(childPath)
             case UnknownType ⇒
-              try _rmFile(child(path, name))
+              try _rmFile(childPath)
               catch {
                 case t: Throwable ⇒ _rmDir(childPath)
               }

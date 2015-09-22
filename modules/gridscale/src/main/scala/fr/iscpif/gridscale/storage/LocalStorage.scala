@@ -36,7 +36,7 @@ trait LocalStorage extends Storage {
   override def name(path: String) =
     new File(path).getName
 
-  def _list(path: String): Seq[(String, FileType)] =
+  def _list(path: String) =
     new File(path).listFiles.map {
       f ⇒
         val ftype =
@@ -44,7 +44,7 @@ trait LocalStorage extends Storage {
           else if (f.isDirectory) DirectoryType
           else FileType
 
-        f.getName -> ftype
+        ListEntry(name = f.getName, `type` = ftype, modificationTime = Some(f.lastModified()))
     }
 
   def _makeDir(path: String) =
