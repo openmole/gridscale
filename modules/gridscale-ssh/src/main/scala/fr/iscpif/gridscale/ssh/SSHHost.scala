@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2015 Jonathan Passerat-Palmbach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,7 +32,6 @@ trait SSHHost <: DefaultTimeout with Credential {
   def user: String
   def host: String
   def port: Int = 22
-  lazy val sshDefaultConfigH = new DefaultConfig()
 
   def withConnection[T](f: SSHClient ⇒ T) = {
     val connection = getConnection
@@ -45,14 +45,9 @@ trait SSHHost <: DefaultTimeout with Credential {
   def release(c: SSHClient) = c.close
 
   def connect = {
-    val ssh = new SSHClient(sshDefaultConfigH)
+    val ssh = credential.connect(host, port)
     ssh.setConnectTimeout(timeout.toMillis.toInt)
     ssh.setTimeout(timeout.toMillis.toInt)
-    // disable strict host key checking
-    ssh.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
-
-    ssh.connect(host, port)
-    credential.authenticate(ssh)
     ssh
   }
 
