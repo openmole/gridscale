@@ -26,7 +26,8 @@ trait SSHHost <: DefaultTimeout {
 
   def credential: SSHAuthentication
   def host: String
-  def port: Int
+  def port: Int = 22
+  lazy val sshDefaultConfigH = new DefaultConfig()
 
   def withConnection[T](f: SSHClient ⇒ T) = {
     val connection = getConnection
@@ -40,7 +41,7 @@ trait SSHHost <: DefaultTimeout {
   def release(c: SSHClient) = c.close
 
   def connect = {
-    val ssh = new SSHClient
+    val ssh = new SSHClient(sshDefaultConfigH)
     ssh.setConnectTimeout(timeout.toMillis.toInt)
     ssh.setTimeout(timeout.toMillis.toInt)
     // disable strict host key checking
