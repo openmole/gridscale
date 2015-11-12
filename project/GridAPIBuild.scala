@@ -7,7 +7,7 @@ import com.typesafe.sbt.SbtScalariform._
 import scalariform.formatter.preferences._
 import com.github.retronym.SbtOneJar
 
-object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles
+object GridAPIBuild extends Build with Libraries with Modules with Examples with Benchmarks with Bundles
 
 
 trait Settings <: Build {
@@ -75,6 +75,21 @@ trait Examples <: Modules with Settings{
 
   mainClass in SbtOneJar.oneJar := Some("fr.iscpif.gridscale.examples.Main")
 }
+
+trait Benchmarks <: Modules with Settings {
+
+  lazy val benchmarkBundleSettings = defaultSettings ++ exportSettings
+
+  lazy val utilBenchmark = Project(id = "utilbenchmark", base = file("benchmark/util"), settings = benchmarkBundleSettings) dependsOn (gridscale)
+  lazy val condorBenchmark = Project(id = "condorbenchmark", base = file("benchmark/condor"), settings = benchmarkBundleSettings) dependsOn (gridscaleCondor, utilBenchmark)
+  lazy val pbsBenchmark = Project(id = "pbsbenchmark", base = file("benchmark/pbs"), settings = benchmarkBundleSettings) dependsOn (gridscalePBS, utilBenchmark)
+  lazy val slurmBenchmark = Project(id = "slurmbenchmark", base = file("benchmark/slurm"), settings = benchmarkBundleSettings) dependsOn (gridscaleSLURM, utilBenchmark)
+  lazy val wmsBenchmark   = Project(id = "wmsbenchmark", base = file("benchmark/egi/wms"), settings = benchmarkBundleSettings) dependsOn (gridscaleEGI, utilBenchmark)
+
+  lazy val mainBenchmark = Project(id = "mainbenchmark", base = file("benchmark/app"), settings = benchmarkBundleSettings) dependsOn (slurmBenchmark, wmsBenchmark)
+  mainClass in SbtOneJar.oneJar := Some("fr.iscpif.gridscale.benchmark.Main")
+}
+
 
 trait Bundles <: Modules with Settings {
   self: Build =>
