@@ -27,7 +27,7 @@ import concurrent.duration._
 class WMSBenchmark(val voName: String, val certificateLocation: String, val password: String)(val nbJobs: Int)
     extends Benchmark with WMSJobService with P12VOMSAuthentication { wmsBenchmarkService ⇒
 
-  VOMSAuthentication.setCARepository(new File("~/.openmole/CACertificates"))
+  VOMSAuthentication.setCARepository(new File("/home/jopasserat/.openmole/dantalion/CACertificates"))
 
   implicit val auth = wmsBenchmarkService.cache(1 hour)
 
