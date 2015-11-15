@@ -32,6 +32,7 @@ trait SSHAuthentication {
     val ssh = new SSHClient(sshDefaultConfig)
     // disable strict host key checking
     ssh.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
+    ssh.useCompression()
     ssh.connect(host, port)
 
     try authenticate(ssh)
