@@ -22,12 +22,16 @@ import fr.iscpif.gridscale.jobservice.JobService
 
 trait BenchmarkUtils {
 
-  def withTimer[T](f: ⇒ T) = {
-    val before = System.nanoTime()
-    val res = f
-    val after = System.nanoTime()
-    val elapsed = (after - before)
-    (res, elapsed / 1000000d)
+  def withTimer[T](f: ⇒ T): Option[(T, Double)] = {
+    try {
+      val before = System.nanoTime()
+      val res = f
+      val after = System.nanoTime()
+      val elapsed = (after - before)
+      Some((res, elapsed / 1000000d))
+    } catch {
+      case _: Throwable ⇒ None
+    }
   }
 }
 
@@ -45,29 +49,32 @@ trait Benchmark extends BenchmarkConfig with BenchmarkUtils {
 
   val jobDescription: JobDescription
   val nbJobs: Int
+  val missingValue = -1.0
 
   def benchmark(jd: JobDescription)(nbJobs: Int) = {
 
     println("Submitting jobs...")
     val (jobs, submitTime) = withTimer {
-      (1 to nbJobs).par.map(x ⇒ this.submit(jobDescription))
-    }
+      (1 to nbJobs).map(x ⇒ this.submit(jobDescription))
+    }.getOrElse(Seq.empty, missingValue)
 
     println(s"Submitted ${nbJobs} jobs in ${submitTime}")
 
     println("Querying state for jobs...")
     val (states, queryTime) = withTimer {
-      jobs.par.map(this.state)
-    }
-    println(s"Queried state for ${nbJobs} jobs in ${queryTime}")
+      jobs.map(this.state)
+    }.getOrElse(Seq.empty, missingValue)
+
+    println(s"Queried state for ${states.length} jobs in ${queryTime}")
 
     println("Cancelling jobs...")
-    val (_, cancelTime) = withTimer(jobs.par.map(this.cancel))
+    val (_, cancelTime) = withTimer(jobs.map(this.cancel)).getOrElse(Seq.empty, missingValue)
     println(s"Cancelled ${nbJobs} jobs in ${cancelTime}")
 
     println("Purging jobs...")
     // only purging one job, they're all the same
-    this.purge(jobs.head)
+    try this.purge(jobs.head)
+    catch { case _: Throwable ⇒ }
 
     println("Done")
 
@@ -78,7 +85,7 @@ trait Benchmark extends BenchmarkConfig with BenchmarkUtils {
 
   def avgBenchmark(runs: Int) = {
     val res = runBenchmark(runs)
-    res.transpose.map(l ⇒ l.foldLeft(0.0)(_ + _)).map(_ / runs)
+    res.transpose.map(l ⇒ l.filter(_ != missingValue).foldLeft(0.0)(_ + _)).map(_ / runs)
   }
 
 }
