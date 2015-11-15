@@ -180,7 +180,7 @@ trait Modules <: Libraries with Settings {
     )
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
-    libraryDependencies += "net.schmizz" % "sshj" % "0.10.0"
+    libraryDependencies += "com.hierynomus" % "sshj" % "0.14.0"
     )
 
   lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH) settings (
