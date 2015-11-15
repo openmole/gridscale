@@ -22,16 +22,12 @@ import fr.iscpif.gridscale.benchmark.pbs._
 object Main {
   def main(argv: Array[String]): Unit = {
 
-    val (host, username, password, privateKeyPath) = argv match {
-      case Array(h, u, p, pKP)        ⇒ (h, u, p, pKP)
-      case Array(h, u, p, null)       ⇒ (h, u, p, null)
-      case Array(h, u, null, null)    ⇒ (h, u, null, null)
-      case Array(h, null, null, null) ⇒ (h, null, null, null)
-      case _                          ⇒ throw new RuntimeException("Bad arguments")
+    val (host, username, password, privateKeyPath, nbJobs, nbRuns) = argv match {
+      case Array(h, u, p, pKP, nbJ, nbR) ⇒ (h, u, p, pKP, nbJ.toInt, nbR.toInt)
+      case Array(h, u, p, pKP)           ⇒ (h, u, p, pKP, 10, 10)
+      case _                             ⇒ throw new RuntimeException("Bad arguments")
     }
 
-    val nbJobs = 1
-    val nbRuns = 2
     val b = new PBSBenchmark(host, username, password, privateKeyPath)(nbJobs)
     val (avgSubmit, avgQuery, avgCancel) = b.avgBenchmark(nbRuns).toList match {
       case List(a, b, c) ⇒ (a, b, c)

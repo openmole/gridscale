@@ -22,16 +22,13 @@ import fr.iscpif.gridscale.benchmark.egi.wms._
 object Main {
   def main(argv: Array[String]): Unit = {
 
-    val (voName, certificateLocation, password) = argv match {
-      case Array(h, u, p)       ⇒ (h, u, p)
-      case Array(h, u, null)    ⇒ (h, u, null)
-      case Array(h, null, null) ⇒ (h, null, null)
-      case _                    ⇒ throw new RuntimeException("Bad arguments")
+    val (voName, certificateLocation, password, nbJobs, nbRuns) = argv match {
+      case Array(h, u, p, nbJ, nbR) ⇒ (h, u, p, nbJ.toInt, nbR.toInt)
+      case Array(h, u, p)           ⇒ (h, u, p, 10, 10)
+      case _                        ⇒ throw new RuntimeException("Bad arguments")
     }
 
-    val nbJobs = 1
-    val nbRuns = 2
-    val b = new WMSBenchmark(voName, password, certificateLocation)(nbJobs)
+    val b = new WMSBenchmark(voName, certificateLocation, password)(nbJobs)
     val (avgSubmit, avgQuery, avgCancel) = b.avgBenchmark(nbRuns).toList match {
       case List(a, b, c) ⇒ (a, b, c)
     }
