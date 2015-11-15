@@ -31,29 +31,6 @@ class WMSBenchmark(val voName: String, val certificateLocation: String, val pass
 
   implicit val auth = wmsBenchmarkService.cache(1 hour)
 
-  //  implicit val auth = new P12VOMSAuthentication {
-  //    def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
-  //
-  //    def voName = "biomed"
-  //
-  //    def fquan = None
-  //
-  //    def lifeTime = 24 hours
-  //
-  //    def certificate = new File("~/.globus/grid_certificate_uk_LeSC.p12")
-  //
-  //    def password = "openmole"
-  //
-  //    //  }.cache(1 hour)
-  //  }
-
-  //  def serverURL = auth.serverURL
-  //  def voName = auth.voName
-  //  def fquan = auth.fquan
-  //  def lifeTime = auth.lifeTime
-  //  def certificate = auth.certificate
-  //  def password = auth.password
-
   def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
   def fquan = None
   def lifeTime = 24 hours
