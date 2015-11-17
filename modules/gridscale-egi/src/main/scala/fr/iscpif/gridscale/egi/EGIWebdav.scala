@@ -16,17 +16,16 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.{ OutputStream, InputStream }
+import java.io.{ InputStream, OutputStream }
 
 import com.github.sardine.impl.SardineImpl
-import com.github.sardine.impl.methods.HttpMkCol
 import fr.iscpif.gridscale.egi.https._
+import fr.iscpif.gridscale.storage._
 import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.apache.http.client.methods.HttpDelete
 import org.apache.http.conn.socket.ConnectionSocketFactory
-import collection.JavaConversions._
-import fr.iscpif.gridscale.storage._
 
+import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration
 
 object EGIWebdav {

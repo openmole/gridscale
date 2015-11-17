@@ -14,26 +14,18 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-
 import org.apache.log4j.Logger;
 import org.glite.voms.PKIVerifier;
 import org.glite.voms.ac.AttributeCertificate;
 import org.globus.gsi.CredentialException;
-import org.globus.gsi.GSIConstants;
 import org.globus.gsi.GSIConstants.CertificateType;
 import org.globus.gsi.GSIConstants.DelegationType;
 import org.globus.gsi.X509Credential;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.*;
 
 
 /**

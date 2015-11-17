@@ -17,22 +17,20 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.net.URI
-import java.net.URL
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
+import java.io.{ ByteArrayInputStream, File }
+import java.net.{ URI, URL }
+import java.security.cert.{ CertificateFactory, X509Certificate }
 import java.util.Date
-import fr.iscpif.gridscale.cache.{ SingleValueCache, Cache }
-import org.glite.security.delegation.GrDProxyGenerator
-import org.globus.io.streams.GridFTPInputStream
-import org.globus.io.streams.GridFTPOutputStream
-import fr.iscpif.gridscale.tools._
+
+import fr.iscpif.gridscale.cache.{ Cache, SingleValueCache }
+import fr.iscpif.gridscale.egi.services._
 import fr.iscpif.gridscale.jobservice._
-import services._
 import fr.iscpif.gridscale.libraries.lbstub._
-import concurrent.duration._
+import fr.iscpif.gridscale.tools._
+import org.glite.security.delegation.GrDProxyGenerator
+import org.globus.io.streams.{ GridFTPInputStream, GridFTPOutputStream }
+
+import scala.concurrent.duration._
 
 case class WMSLocation(url: URI)
 

@@ -17,15 +17,9 @@ limitations under the License.
  */
 package org.glite.security.util.proxy;
 
-import java.io.IOException;
+import org.bouncycastle.asn1.*;
 
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.DERSequence;
+import java.io.IOException;
 
 /**
  * Proxy cert info extension ASN1 class.

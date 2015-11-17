@@ -17,10 +17,12 @@
 
 package fr.iscpif.gridscale.example.glite.srm
 
-import fr.iscpif.gridscale.egi._
 import java.io.File
+
 import fr.iscpif.gridscale.authentication._
-import concurrent.duration._
+import fr.iscpif.gridscale.egi._
+
+import scala.concurrent.duration._
 
 object SRMExample extends App {
 

@@ -1,7 +1,6 @@
 
 import com.typesafe.sbt.pgp.PgpKeys._
-
-import ReleaseTransformations._
+import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 
 organization := "fr.iscpif"
 

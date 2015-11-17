@@ -17,19 +17,14 @@ limitations under the License.
 */
 package org.glite.security.trustmanager;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Properties;
+import org.apache.log4j.Logger;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
-import org.apache.log4j.Logger;
+import java.io.IOException;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.Properties;
 
 
 /**

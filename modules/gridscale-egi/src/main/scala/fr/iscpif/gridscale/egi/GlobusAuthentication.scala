@@ -18,7 +18,6 @@
 package fr.iscpif.gridscale.egi
 
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
-import java.util.UUID
 
 object GlobusAuthenticationProvider {
 

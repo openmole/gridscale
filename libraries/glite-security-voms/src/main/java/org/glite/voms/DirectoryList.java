@@ -1,11 +1,13 @@
 package org.glite.voms;
 
 import org.apache.log4j.Logger;
-import org.glite.voms.FileEndingIterator;
 
-import java.util.*;
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
 /** This class lists all the files defined in the constructor.
  * The definitions can be in three forms.

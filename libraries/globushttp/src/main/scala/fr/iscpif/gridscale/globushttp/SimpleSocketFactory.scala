@@ -17,10 +17,11 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import org.globus.gsi.gssapi.net.{ GssSocketFactory, GssSocket }
-import java.net.{ InetSocketAddress, SocketAddress, Socket, InetAddress }
-import org.gridforum.jgss.ExtendedGSSManager
+import java.net.{ InetSocketAddress, Socket }
+
 import org.globus.gsi.gssapi.GSSConstants
+import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
+import org.gridforum.jgss.ExtendedGSSManager
 import org.ietf.jgss.GSSContext
 
 trait SimpleSocketFactory <: SocketFactory {

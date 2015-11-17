@@ -16,6 +16,11 @@
  */
 package org.glite.security.util;
 
+import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.x509.GeneralName;
+
+import javax.net.ssl.SSLSocket;
+import javax.security.auth.x500.X500Principal;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,12 +31,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import javax.net.ssl.SSLSocket;
-import javax.security.auth.x500.X500Principal;
-
-import org.apache.log4j.Logger;
-import org.bouncycastle.asn1.x509.GeneralName;
 
 /**
  * A class to do hostname checking against a certificate to check whether the server answers with a certificate that is

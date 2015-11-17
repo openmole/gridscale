@@ -16,31 +16,12 @@
  */
 package fr.iscpif.gridscale.example.egi.dpm
 
-import java.io.{ FileInputStream, InputStream, FileOutputStream, File }
-import java.net.{ URL, URI }
-import java.security.{ KeyStore, Security }
-import javax.net.ssl.{ HttpsURLConnection, SSLSocket, KeyManagerFactory, SSLSocketFactory }
+import java.io.File
 
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi._
-import fr.iscpif.gridscale.egi.https.P12HTTPSAuthentication
-import fr.iscpif.gridscale.egi.services.GlobusHttpRequest
-import fr.iscpif.gridscale.globushttp.SimpleSocketFactory
-import org.apache.commons.logging.impl.SimpleLog
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.client.methods.{ HttpGet, HttpRequestBase }
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.client.utils.URIBuilder
-import org.apache.http.config.RegistryBuilder
-import org.apache.http.conn.socket.ConnectionSocketFactory
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
-import org.apache.http.{ HttpRequest, HttpHost }
-import concurrent.duration._
-import fr.iscpif.gridscale._
 
-import scala.io.Source
+import scala.concurrent.duration._
 import scala.util.Try
 
 object WebDavExample extends App {

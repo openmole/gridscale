@@ -18,6 +18,7 @@ package fr.iscpif.gridscale.egi.https
 
 import java.security.KeyStore
 import javax.net.ssl.SSLContext
+
 import fr.iscpif.gridscale.egi._
 import org.globus.gsi.jsse.SSLConfigurator
 import org.globus.gsi.stores.Stores

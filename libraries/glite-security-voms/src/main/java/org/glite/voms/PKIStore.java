@@ -15,6 +15,12 @@
 
 package org.glite.voms;
 
+import org.apache.log4j.Logger;
+import org.bouncycastle.jce.X509Principal;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.glite.voms.ac.VOMSTrustStore;
+
+import javax.security.auth.x500.X500Principal;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -23,22 +29,7 @@ import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.Vector;
-
-import javax.security.auth.x500.X500Principal;
-
-import org.apache.log4j.Logger;
-import org.bouncycastle.jce.X509Principal;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.glite.voms.ac.VOMSTrustStore;
+import java.util.*;
 
 /**
  * PKIStore is the class serving to store all the components of a common PKI

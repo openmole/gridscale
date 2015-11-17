@@ -17,10 +17,8 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import java.net.{ SocketTimeoutException, Socket, InetAddress }
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.net.{ InetAddress, Socket }
 
-import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.params.HttpConnectionParams
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 

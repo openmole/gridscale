@@ -18,6 +18,12 @@ limitations under the License.
 
 package org.glite.security.util;
 
+import org.apache.log4j.Logger;
+import org.glite.security.trustmanager.ContextWrapper;
+import org.glite.security.util.namespace.EUGridNamespaceFormat;
+import org.glite.security.util.namespace.LegacyNamespaceFormat;
+import org.glite.security.util.namespace.NamespaceFormat;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -28,12 +34,6 @@ import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.glite.security.trustmanager.ContextWrapper;
-import org.glite.security.util.namespace.EUGridNamespaceFormat;
-import org.glite.security.util.namespace.LegacyNamespaceFormat;
-import org.glite.security.util.namespace.NamespaceFormat;
 
 /**
  * A class for representing and handling a trust anchor. This class will maintain the trust anchor data and can be used

@@ -1,19 +1,16 @@
 package org.glite.voms.contact;
 
 
-
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.security.cert.X509Certificate;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.log4j.PropertyConfigurator;
 import org.globus.gsi.X509Credential;
 import org.ietf.jgss.GSSException;
+
+import javax.xml.transform.TransformerException;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class Test {

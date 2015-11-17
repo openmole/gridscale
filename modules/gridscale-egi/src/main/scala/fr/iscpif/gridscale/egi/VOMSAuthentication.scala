@@ -17,16 +17,17 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.io.{ FileOutputStream, ByteArrayOutputStream, File }
-import java.net.MalformedURLException
-import java.net.URI
+import java.io.{ ByteArrayOutputStream, File, FileOutputStream }
+import java.net.{ MalformedURLException, URI }
 import java.util.UUID
+
 import fr.iscpif.gridscale.authentication.AuthenticationException
+import fr.iscpif.gridscale.cache._
 import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
-import collection.JavaConversions._
 import org.ietf.jgss.GSSCredential
-import fr.iscpif.gridscale.cache._
+
+import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration
 
 object VOMSAuthentication {

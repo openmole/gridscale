@@ -19,12 +19,13 @@ package fr.iscpif.gridscale.egi
 
 import java.io.File
 import java.net.URI
-import fr.iscpif.gridscale.tools.DefaultTimeout
 import java.util.concurrent.TimeoutException
-import org.globus.io.streams._
-import fr.iscpif.gridscale.storage._
+
 import fr.iscpif.gridscale.egi.services._
 import fr.iscpif.gridscale.libraries.srmstub._
+import fr.iscpif.gridscale.storage._
+import fr.iscpif.gridscale.tools.DefaultTimeout
+import org.globus.io.streams._
 
 case class SRMLocation(host: String, port: Int, basePath: String)
 
@@ -60,7 +61,7 @@ object SRMStorage {
 
 }
 
-import SRMStorage._
+import fr.iscpif.gridscale.egi.SRMStorage._
 
 trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
 
@@ -281,7 +282,6 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   private def status[R <: RequestStatusWithToken](request: R) = {
-    import TStatusCode._
 
     if (request.returnStatus.statusCode == SRM_SUCCESS) Left(request)
     else if (request.returnStatus.statusCode == SRM_REQUEST_QUEUED || request.returnStatus.statusCode == SRM_REQUEST_INPROGRESS) Right(request.requestToken)

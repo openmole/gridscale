@@ -17,18 +17,15 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import java.net.SocketTimeoutException
-import java.util.concurrent.{ ConcurrentLinkedQueue, Executors }
+import java.util.concurrent.Executors
 
-import org.apache.commons.httpclient.params.{ HttpMethodParams, HttpClientParams, HttpConnectionManagerParams }
+import org.apache.commons.httpclient.methods.{ GetMethod, PostMethod, StringRequestEntity }
+import org.apache.commons.httpclient.params.{ HttpClientParams, HttpConnectionManagerParams, HttpMethodParams }
+import org.apache.commons.httpclient.protocol.Protocol
 import org.apache.commons.httpclient.{ HttpClient, MultiThreadedHttpConnectionManager }
-import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSCredential, ExtendedGSSManager }
-import org.ietf.jgss.{ GSSContext, GSSCredential }
-import org.globus.gsi.gssapi.{ GSSConstants, GlobusGSSCredentialImpl }
-import org.apache.commons.httpclient.protocol.{ Protocol, ProtocolSocketFactory }
-import org.apache.commons.httpclient.methods.{ PutMethod, GetMethod, PostMethod, StringRequestEntity }
-
-import collection.JavaConversions._
+import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
+import org.gridforum.jgss.{ ExtendedGSSCredential, ExtendedGSSManager }
+import org.ietf.jgss.GSSCredential
 
 object GlobusHttpClient {
 
@@ -41,8 +38,6 @@ object GlobusHttpClient {
       GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
 
 }
-
-import GlobusHttpClient._
 
 trait GlobusHttpClient <: SocketFactory {
   def proxyBytes: Array[Byte]

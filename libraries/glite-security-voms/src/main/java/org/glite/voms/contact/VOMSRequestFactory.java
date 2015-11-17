@@ -1,12 +1,14 @@
 package org.glite.voms.contact;
 
-import org.apache.log4j.Logger;
 import org.apache.commons.lang.StringUtils;
-import org.glite.voms.contact.VOMSRequestFragment;
-import org.glite.voms.contact.VOMSRequestOptions;
-import org.w3c.dom.*;
+import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+import org.w3c.dom.Element;
 
-import javax.xml.parsers.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.Iterator;
 
 /**

@@ -1,11 +1,12 @@
 
-import sbt._
-import sbt.Keys._
+import com.github.retronym.SbtOneJar
+import com.typesafe.sbt.SbtScalariform._
 import com.typesafe.sbt.osgi.OsgiKeys._
 import com.typesafe.sbt.osgi.SbtOsgi._
-import com.typesafe.sbt.SbtScalariform._
+import sbt.Keys._
+import sbt._
+
 import scalariform.formatter.preferences._
-import com.github.retronym.SbtOneJar
 
 object GridAPIBuild extends Build with Libraries with Modules with Examples with Bundles
 
@@ -199,9 +200,9 @@ trait Modules <: Libraries with Settings {
 
 trait Libraries <: Settings {
 
-  import Keys._
+  import sbt.Keys._
+  import sbtscalaxb.Plugin.ScalaxbKeys._
   import sbtscalaxb.Plugin._
-  import ScalaxbKeys._
 
   lazy val jglobusVersion = "2.2.0-20150814"
 

@@ -19,10 +19,8 @@ package fr.iscpif.gridscale.oar
 
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh.SSHJobService._
-import fr.iscpif.gridscale.ssh.{ SSHAuthentication, SSHStorage, SSHHost }
+import fr.iscpif.gridscale.ssh.{ SSHAuthentication, SSHHost, SSHStorage }
 import fr.iscpif.gridscale.tools.shell.BashShell
-import fr.iscpif.gridscale.tools._
-import net.schmizz.sshj.sftp.{ FileMode, SFTPClient }
 import net.schmizz.sshj.xfer.FilePermission
 
 object OARJobService {
@@ -50,7 +48,7 @@ object OARJobService {
 
 }
 
-import OARJobService._
+import fr.iscpif.gridscale.oar.OARJobService._
 
 trait OARJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = OARJob

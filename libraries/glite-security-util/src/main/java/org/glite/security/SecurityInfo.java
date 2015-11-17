@@ -17,9 +17,9 @@ limitations under the License.
 */
 package org.glite.security;
 
-import java.security.cert.X509Certificate;
-
 import org.glite.security.util.X500Principal;
+
+import java.security.cert.X509Certificate;
 
 
 /**

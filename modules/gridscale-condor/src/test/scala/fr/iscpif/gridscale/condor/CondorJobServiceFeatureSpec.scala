@@ -17,11 +17,7 @@
 
 package fr.iscpif.gridscale.condor
 
-import fr.iscpif.gridscale.jobservice._
-import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed }
-
-import scala.concurrent.duration._
-
+import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed, _ }
 import org.mockito.Mockito._
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar

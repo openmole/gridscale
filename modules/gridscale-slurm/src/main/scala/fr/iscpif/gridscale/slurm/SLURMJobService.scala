@@ -19,8 +19,8 @@
 package fr.iscpif.gridscale.slurm
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 object SLURMJobService {
@@ -54,7 +54,7 @@ object SLURMJobService {
     }
 }
 
-import SLURMJobService._
+import fr.iscpif.gridscale.slurm.SLURMJobService._
 
 trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = SLURMJob

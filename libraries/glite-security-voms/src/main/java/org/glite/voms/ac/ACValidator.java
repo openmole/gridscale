@@ -6,14 +6,14 @@
 
 package org.glite.voms.ac;
 
+import org.apache.log4j.Logger;
+import org.glite.voms.BasicVOMSTrustStore;
+import org.glite.voms.PKIVerifier;
+
 import java.io.IOException;
 import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
-import org.apache.log4j.Logger;
-import org.glite.voms.PKIVerifier;
-import org.glite.voms.BasicVOMSTrustStore;
 
 /**
  * Validator class capable of validating an Attribute Certificate

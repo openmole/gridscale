@@ -17,12 +17,14 @@
 
 package fr.iscpif.gridscale.egi.services
 
+import java.net.URI
+
+import fr.iscpif.gridscale.egi.GlobusAuthentication
+import fr.iscpif.gridscale.globushttp.SimpleSocketFactory
 import fr.iscpif.gridscale.libraries.wmsstub._
+
 import scala.concurrent.duration.Duration
 import scalaxb.HttpClients
-import fr.iscpif.gridscale.globushttp.{ SimpleSocketFactory, GlobusHttpClient }
-import java.net.URI
-import fr.iscpif.gridscale.egi.GlobusAuthentication
 
 object DelegationService {
 

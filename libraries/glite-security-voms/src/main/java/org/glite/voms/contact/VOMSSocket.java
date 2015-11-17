@@ -17,17 +17,9 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.GeneralSecurityException;
-import java.security.Security;
-import java.security.cert.X509Certificate;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.globus.gsi.GSIConstants;
-import org.globus.gsi.GSIConstants.DelegationType;
 import org.globus.gsi.X509Credential;
 import org.globus.gsi.gssapi.GSSConstants;
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl;
@@ -41,6 +33,12 @@ import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.GeneralSecurityException;
+import java.security.Security;
 
 /**
  * The {@link VOMSSocket} class is used to manage the creation of the gsi socket used for communication with

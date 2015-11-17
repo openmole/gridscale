@@ -17,15 +17,14 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import org.globus.gsi.gssapi.auth.HostOrSelfAuthorization
-import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSManager }
-import org.globus.gsi.gssapi.GSSConstants
-import org.ietf.jgss.GSSContext
-import org.globus.gsi.GSIConstants
-import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
 import java.net.{ InetSocketAddress, Socket }
 
-import scala.concurrent.duration.Duration
+import org.globus.gsi.GSIConstants
+import org.globus.gsi.gssapi.GSSConstants
+import org.globus.gsi.gssapi.auth.HostOrSelfAuthorization
+import org.globus.gsi.gssapi.net.{ GssSocket, GssSocketFactory }
+import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSManager }
+import org.ietf.jgss.GSSContext
 
 trait CompleteSocketFactory <: SocketFactory {
   def proxyBytes: Array[Byte]

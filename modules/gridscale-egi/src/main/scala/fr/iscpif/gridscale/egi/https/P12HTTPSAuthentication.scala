@@ -18,12 +18,9 @@ package fr.iscpif.gridscale.egi.https
 
 import java.io.FileInputStream
 import java.security.KeyStore
-import java.security.cert.X509Certificate
 import javax.net.ssl._
 
-import fr.iscpif.gridscale.authentication.{ P12Authentication }
-import fr.iscpif.gridscale.tools.DefaultTimeout
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory
+import fr.iscpif.gridscale.authentication.P12Authentication
 
 trait P12HTTPSAuthentication {
 

@@ -17,13 +17,11 @@
 package org.glite.security.util;
 
 import org.apache.log4j.Logger;
-
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.x509.X509Name;
-
 import org.bouncycastle.jce.X509Principal;
-import javax.security.auth.x500.X500Principal;
 
+import javax.security.auth.x500.X500Principal;
 import java.security.Principal;
 import java.util.Hashtable;
 import java.util.Vector;

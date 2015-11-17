@@ -6,30 +6,23 @@
 
 package org.glite.voms;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.security.Security;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.StringTokenizer;
-import java.util.Vector;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.glite.voms.ac.ACTrustStore;
-import org.glite.voms.ac.*;
+import org.glite.voms.ac.ACValidator;
 import org.glite.voms.ac.AttributeCertificate;
 import org.glite.voms.ac.VOMSTrustStore;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.security.Security;
+import java.security.cert.CRLException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.*;
 
 /**
  * The main (top) class to use for extracting VOMS information from

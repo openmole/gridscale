@@ -18,14 +18,13 @@
 package org.glite.security;
 
 import org.apache.log4j.Logger;
-
 import org.glite.security.util.CertUtil;
-import org.glite.security.util.DNHandler;
 import org.glite.security.util.DN;
+import org.glite.security.util.DNHandler;
 import org.glite.security.util.X500Principal;
+
 import java.security.Principal;
 import java.security.cert.X509Certificate;
-
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;

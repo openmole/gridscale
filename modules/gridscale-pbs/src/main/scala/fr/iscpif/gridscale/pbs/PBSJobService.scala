@@ -18,8 +18,8 @@
 package fr.iscpif.gridscale.pbs
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 object PBSJobService {
@@ -38,7 +38,7 @@ object PBSJobService {
   val jobStateAttribute = "JOB_STATE"
 }
 
-import PBSJobService._
+import fr.iscpif.gridscale.pbs.PBSJobService._
 
 trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = PBSJob

@@ -19,8 +19,8 @@
 package fr.iscpif.gridscale.sge
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.util.Try
@@ -62,7 +62,7 @@ object SGEJobService {
     }
 }
 
-import SGEJobService._
+import fr.iscpif.gridscale.sge.SGEJobService._
 
 trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = SGEJob

@@ -1,16 +1,15 @@
 <?xml version="1.0"?>
 <definitions
-	xmlns="http://schemas.xmlsoap.org/wsdl/" 
-	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
-	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
-	xmlns:lb="http://glite.org/wsdl/services/lb" 
-	xmlns:lbe="http://glite.org/wsdl/elements/lb" 
-	xmlns:lb4ague="http://glite.org/wsdl/elements/lb4agu" 
-	xmlns:lb4agu="http://glite.org/wsdl/services/lb4agu" 
-	xmlns:glue="http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01"
-	name="LoggingAndBookkeeping" 
-	targetNamespace="http://glite.org/wsdl/services/lb4agu">
+		xmlns="http://schemas.xmlsoap.org/wsdl/"
+		xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+		xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+		xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+		xmlns:lbe="http://glite.org/wsdl/elements/lb"
+		xmlns:lb4ague="http://glite.org/wsdl/elements/lb4agu"
+		xmlns:lb4agu="http://glite.org/wsdl/services/lb4agu"
+		xmlns:glue="http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01"
+		name="LoggingAndBookkeeping"
+		targetNamespace="http://glite.org/wsdl/services/lb4agu">
 <documentation>CVS revision: $Header: /cvs/glite/org.glite.lb.ws-interface/src/lb4agu.wsdl,v 1.5 2010/02/19 14:58:31 akrenek Exp $</documentation>
 
 <wsdl:types>

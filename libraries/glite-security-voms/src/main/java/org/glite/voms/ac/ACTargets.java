@@ -13,16 +13,12 @@
  *********************************************************************/
 package org.glite.voms.ac;
 
+import org.bouncycastle.asn1.*;
+
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1Primitive;
-
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DEREncodableVector;
-import org.bouncycastle.asn1.DERSequence;
 
 /**
  * The intent of this class is to represent the ACTargets extension which

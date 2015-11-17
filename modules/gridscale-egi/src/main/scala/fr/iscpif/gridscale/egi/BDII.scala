@@ -17,14 +17,12 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.net.URI
-import java.net.URISyntaxException
-import java.util.TreeMap
-import java.util.logging.Level
-import java.util.logging.Logger
+import java.net.{ URI, URISyntaxException }
+import java.util.logging.{ Level, Logger }
 import javax.naming.NamingException
-import collection.mutable
-import collection.JavaConversions._
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.util._
 
