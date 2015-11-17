@@ -5,7 +5,7 @@ Standalone runnable jars can be generated for each example with the `one-jar` ta
 
 [Condor](condor/README.md)  
 [DIRAC](dirac/README.md)  
-[GLite/EMI](glite/README.md)  
+[GLite/EMI (EGI grid)](egi/README.md)  
 [OAR](oar/README.md)  
 [PBS](pbs/README.md)  
 [SGE](sge/README.md)  
