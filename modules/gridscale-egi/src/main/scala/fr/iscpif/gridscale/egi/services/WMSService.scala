@@ -26,7 +26,7 @@ import fr.iscpif.gridscale.egi.GlobusAuthentication
 
 object WMSService {
 
-  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration, _maxConnections: Int) =
+  def apply(uri: URI, credential: () ⇒ GlobusAuthentication.Proxy, _timeout: Duration, _maxConnections: Int) =
     new WMSService {
       @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with SimpleSocketFactory {
         def proxyBytes = credential().proxyBytes

@@ -19,4 +19,5 @@ package fr.iscpif.gridscale
 
 package object egi {
   implicit def stringToJobId(s: String) = WMSJobId(s)
+
 }

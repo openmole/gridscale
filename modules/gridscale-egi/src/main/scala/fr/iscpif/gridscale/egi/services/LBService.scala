@@ -28,7 +28,7 @@ import scala.util.{ Try, Success, Failure }
 
 object LBService {
 
-  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration, _maxConnections: Int) =
+  def apply(uri: URI, credential: () ⇒ GlobusAuthentication.Proxy, _timeout: Duration, _maxConnections: Int) =
     new LBService {
       @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with CompleteSocketFactory {
         def defaultPort = 9003

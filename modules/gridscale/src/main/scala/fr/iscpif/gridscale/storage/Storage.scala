@@ -19,15 +19,13 @@ package fr.iscpif.gridscale.storage
 
 import java.io._
 
-import fr.iscpif.gridscale.authentication.Credential
-
 object Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
 }
 
 case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Long] = None)
 
-trait Storage <: Credential {
+trait Storage {
 
   def exists(path: String) =
     parent(path).

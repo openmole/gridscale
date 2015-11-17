@@ -17,20 +17,16 @@
 
 package fr.iscpif.gridscale.ssh
 
-import fr.iscpif.gridscale.authentication.Credential
 import fr.iscpif.gridscale.tools.DefaultTimeout
 import net.schmizz.sshj._
 import net.schmizz.sshj.sftp._
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
-import transport.verification.HostKeyVerifier
-import java.security.PublicKey
 
-trait SSHHost <: DefaultTimeout with Credential {
-  type A = SSHAuthentication
+trait SSHHost <: DefaultTimeout {
 
-  def user: String
+  def credential: SSHAuthentication
   def host: String
-  def port: Int = 22
+  def port: Int
 
   def withConnection[T](f: SSHClient ⇒ T) = {
     val connection = getConnection

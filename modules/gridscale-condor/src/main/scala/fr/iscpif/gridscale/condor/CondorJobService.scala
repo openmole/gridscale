@@ -24,6 +24,16 @@ import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 object CondorJobService {
+
+  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential) = (host, port, credential)
+    new CondorJobService {
+      override def credential = _credential
+      override def host = _host
+      override def port = _port
+    }
+  }
+
   class CondorJob(val description: CondorJobDescription, val condorId: String)
 
   object CondorJob {

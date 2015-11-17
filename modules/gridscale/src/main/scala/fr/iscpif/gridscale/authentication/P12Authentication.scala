@@ -19,6 +19,19 @@ package fr.iscpif.gridscale.authentication
 
 import java.io.File
 
+object P12Authentication {
+
+  def apply(certificate: File, password: String) = {
+    val (_certificate, _password) = (certificate, password)
+
+    new P12Authentication {
+      override def certificate: File = _certificate
+      override def password: String = _password
+    }
+  }
+
+}
+
 trait P12Authentication {
   def certificate: File
   def password: String

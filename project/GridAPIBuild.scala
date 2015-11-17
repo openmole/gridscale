@@ -31,6 +31,7 @@ trait Settings <: Build {
         .setPreference(AlignSingleLineCaseStatements, true)
         .setPreference(RewriteArrowSymbols, true),
     organization := "fr.iscpif.gridscale",
+    resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
     publishTo <<= isSnapshot { snapshot =>
       val nexus = "https://oss.sonatype.org/"
@@ -66,7 +67,8 @@ trait Examples <: Modules with Settings{
   lazy val egicreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val egisrmExample  = Project(id = "egisrmexample", base = file("examples/egi/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val egiwmsExample  = Project(id = "egiwmsexample", base = file("examples/egi/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
-  lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleDIRAC)
+  lazy val egiwebdavExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
+  lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleCondor)
   lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSLURM)
   lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSGE)
@@ -101,7 +103,7 @@ trait Bundles <: Modules with Settings {
 
   lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleEGI) settings(
     name := "egi",
-    importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "*"),
+    importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "org.tukaani.xz.*;resolution:=optional", "*"),
     privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
@@ -110,10 +112,10 @@ trait Bundles <: Modules with Settings {
     name := "http"
     )
 
-  lazy val diracBundle = Project(id = "diracbundle", base = file("bundles/dirac"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleDIRAC) settings (
+ /* lazy val diracBundle = Project(id = "diracbundle", base = file("bundles/dirac"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleDIRAC) settings (
     name := "dirac",
     importPackage := Seq("org.tukaani.xz.*;resolution:=optional") ++ importPackage.value
-    )
+    )*/
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
     name := "ssh",
@@ -149,20 +151,25 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
-  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
-    libraryDependencies += "org.jglobus" % "io" % jglobusVersion
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms) settings (
+    libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
+    libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
+    libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
+    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
+    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1",
+    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6"
     )
 
   lazy val gridscaleHttp = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1"
     )
 
-  lazy val gridscaleDIRAC = Project(id = "dirac", base = file("modules/gridscale-dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings(
+ /* lazy val gridscaleDIRAC = Project(id = "dirac", base = file("modules/gridscale-dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings(
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
     libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1"
-    )
+    )*/
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "net.schmizz" % "sshj" % "0.10.0"

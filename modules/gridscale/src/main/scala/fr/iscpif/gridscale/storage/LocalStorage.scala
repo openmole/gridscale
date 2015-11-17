@@ -20,10 +20,11 @@ package fr.iscpif.gridscale.storage
 import java.io._
 import java.nio.file.{ Paths, Path, FileSystems, Files }
 
-trait LocalStorage extends Storage {
-  type A = Unit
-  def credential = Unit
+object LocalStorage {
+  def apply() = new LocalStorage {}
+}
 
+trait LocalStorage extends Storage {
   override def child(parent: String, child: String) =
     new File(parent, child).getPath
 

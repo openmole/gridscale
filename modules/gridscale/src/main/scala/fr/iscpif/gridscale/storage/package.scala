@@ -23,4 +23,8 @@ package object storage {
   case object FileType extends FileType
   case object LinkType extends FileType
   case object UnknownType extends FileType
+
+  def trimSlashes(path: String) =
+    path.reverse.dropWhile(_ == '/').reverse.dropWhile(_ == '/')
+
 }

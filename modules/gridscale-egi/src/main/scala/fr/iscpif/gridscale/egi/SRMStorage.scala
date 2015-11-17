@@ -26,7 +26,21 @@ import fr.iscpif.gridscale.storage._
 import fr.iscpif.gridscale.egi.services._
 import fr.iscpif.gridscale.libraries.srmstub._
 
+case class SRMLocation(host: String, port: Int, basePath: String)
+
 object SRMStorage {
+
+  def apply[P: GlobusAuthenticationProvider](location: SRMLocation, connections: Int = 5)(proxy: P): SRMStorage = {
+    val (_connections, _proxy) = (connections, proxy)
+
+    new SRMStorage {
+      override def proxy(): GlobusAuthentication.Proxy = implicitly[GlobusAuthenticationProvider[P]].apply(_proxy)
+      override def host = location.host
+      override def basePath = location.basePath
+      override def port = location.port
+      override def connections = _connections
+    }
+  }
 
   def SERVICE_PATH = "/srm/managerv2"
 
@@ -50,7 +64,7 @@ import SRMStorage._
 
 trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
 
-  type A = () ⇒ GlobusAuthentication.Proxy
+  def proxy(): GlobusAuthentication.Proxy
 
   override def toString = s"srm://$host:$port$basePath"
 
@@ -58,7 +72,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   def port: Int
   def basePath: String
 
-  def connections = 5
+  def connections: Int
   def sleepTime = 1
   def lsSizeMax = 500
   def SERVICE_PROTOCOL = "httpg"
@@ -174,7 +188,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   protected def _openInputStream(path: String) = {
     val (token, url) = prepareToGet(path)
 
-    new GridFTPInputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
+    new GridFTPInputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
       override def close = {
         try freeInputStream(token, path)
         finally super.close
@@ -185,7 +199,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   protected def _openOutputStream(path: String) = {
     val (token, url) = prepareToPut(path)
 
-    new GridFTPOutputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
+    new GridFTPOutputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
       override def close = {
         try freeOutputStream(token, path)
         finally super.close
@@ -308,6 +322,6 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   def fullEndPoint(absolutePath: String) = fullEndpoint(host, port, basePath + absolutePath)
 
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler).toURI
-  @transient lazy val stub = SRMService(serviceUrl, credential, timeout, connections)
+  @transient lazy val stub = SRMService(serviceUrl, proxy, timeout, connections)
 
 }

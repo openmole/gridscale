@@ -16,8 +16,28 @@
  */
 package fr.iscpif.gridscale.egi
 
+import java.io.File
+
 import fr.iscpif.gridscale.authentication.P12Authentication
 import org.glite.voms.contact.VOMSProxyInit
+
+import scala.concurrent.duration.Duration
+
+object P12VOMSAuthentication {
+
+  def apply(p12Authentication: P12Authentication, lifeTime: Duration, serverURL: String, voName: String) = {
+    val (_lifeTime, _serverURL, _voName) = (lifeTime, serverURL, voName)
+
+    new P12VOMSAuthentication {
+      override def certificate: File = p12Authentication.certificate
+      override def password: String = p12Authentication.password
+      override def lifeTime: Duration = _lifeTime
+      override def voName: String = _voName
+      override def serverURL: String = _serverURL
+    }
+  }
+
+}
 
 trait P12VOMSAuthentication extends VOMSAuthentication with P12Authentication {
   def proxyInit = VOMSProxyInit.instance(certificate, password)

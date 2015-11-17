@@ -17,13 +17,11 @@
 
 package fr.iscpif.gridscale.ssh
 
-import fr.iscpif.gridscale.authentication.Credential
+import fr.iscpif.gridscale.authentication._
 import net.schmizz.sshj._
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 
-trait SSHAuthentication <: Credential {
-  type A >: SSHAuthentication
-  def credential = this
+trait SSHAuthentication {
 
   def connect(host: String, port: Int) = {
     val ssh = new SSHClient

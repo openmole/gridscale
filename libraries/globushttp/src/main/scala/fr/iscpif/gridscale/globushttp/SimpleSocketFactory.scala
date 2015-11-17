@@ -17,15 +17,11 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import org.apache.commons.httpclient.protocol.ProtocolSocketFactory
 import org.globus.gsi.gssapi.net.{ GssSocketFactory, GssSocket }
 import java.net.{ InetSocketAddress, SocketAddress, Socket, InetAddress }
-import org.apache.commons.httpclient.params.HttpConnectionParams
 import org.gridforum.jgss.ExtendedGSSManager
 import org.globus.gsi.gssapi.GSSConstants
 import org.ietf.jgss.GSSContext
-
-import scala.concurrent.duration.Duration
 
 trait SimpleSocketFactory <: SocketFactory {
 
@@ -40,15 +36,21 @@ trait SimpleSocketFactory <: SocketFactory {
       GSSContext.DEFAULT_LIFETIME)
   }
 
-  def socket(host: String, port: Int): Socket = {
+  def socket(host: String, port: Int): Socket = connect(host, port, newSocket)
+
+  def newSocket = {
     val socket = new Socket()
     socket.setSoTimeout(timeout.toMillis.toInt)
+    socket
+  }
+
+  def connect(host: String, port: Int, socket: Socket) = {
     socket.connect(new InetSocketAddress(host, port), timeout.toMillis.toInt)
     val gssSocket = GssSocketFactory.getDefault.createSocket(socket, host, port, sslContext(proxyBytes)).asInstanceOf[GssSocket]
-    gssSocket.setAuthorization(null)
     gssSocket.setUseClientMode(true)
     gssSocket.setAuthorization(null)
     gssSocket.setSoTimeout(timeout.toMillis.toInt)
+    //gssSocket.connect(new InetSocketAddress(host, port), timeout.toMillis.toInt)
     gssSocket
   }
 

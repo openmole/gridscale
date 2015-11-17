@@ -47,6 +47,7 @@ import GlobusHttpClient._
 trait GlobusHttpClient <: SocketFactory {
   def proxyBytes: Array[Byte]
   def address: java.net.URI
+  def defaultProtocolPort = 8446
 
   def maxConnections: Int
 
@@ -62,7 +63,7 @@ trait GlobusHttpClient <: SocketFactory {
   }
 
   @transient lazy val httpclient = {
-    val myHttpg = new Protocol("https", factory, 8446)
+    val myHttpg = new Protocol("https", factory, defaultProtocolPort)
     val httpclient = new HttpClient(manager)
     val param = new HttpClientParams()
     param.setSoTimeout(timeout.toMillis.toInt)
@@ -84,6 +85,20 @@ trait GlobusHttpClient <: SocketFactory {
       post.getResponseBodyAsString
     } finally {
       post.releaseConnection
+    }
+  }
+
+  def get(address: java.net.URI, headers: Map[String, String]): String = {
+    val get = new GetMethod(address.getPath)
+    try {
+      val params = new HttpMethodParams()
+      params.setSoTimeout(timeout.toMillis.toInt)
+      get.setParams(params)
+      headers.foreach { case (k, v) ⇒ get.setRequestHeader(k, v) }
+      httpclient.executeMethod(get)
+      get.getResponseBodyAsString
+    } finally {
+      get.releaseConnection
     }
   }
 

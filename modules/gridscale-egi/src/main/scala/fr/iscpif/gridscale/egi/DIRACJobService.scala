@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 05/06/13 Romain Reuillon
+ * Copyright (C) 2015 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -9,17 +9,17 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package fr.iscpif.gridscale.dirac
+package fr.iscpif.gridscale.egi
 
 import java.io.{ BufferedOutputStream, FileOutputStream, BufferedInputStream, InputStream }
 import java.net.{ URI, URL }
 import fr.iscpif.gridscale.cache.SingleValueCache
+import fr.iscpif.gridscale.egi.https.HTTPSAuthentication
 import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.http.client.protocol.HttpClientContext
@@ -39,9 +39,21 @@ import scala.io.Source
 import fr.iscpif.gridscale.jobservice._
 import concurrent.duration._
 
-trait DIRACJobService extends JobService with DefaultTimeout {
+object DIRACJobService {
 
-  type A = P12HTTPSAuthentication
+  def apply[A: HTTPSAuthentication](service: String, group: String)(authentication: A) = {
+    val (_service, _group) = (service, group)
+    new DIRACJobService {
+      override def group: String = _group
+      override def factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
+      override def service: String = _service
+    }
+  }
+
+}
+
+trait DIRACJobService extends JobService with DefaultTimeout with HTTPSClient {
+
   type J = String
   type D = DIRACJobDescription
 
@@ -49,59 +61,13 @@ trait DIRACJobService extends JobService with DefaultTimeout {
 
   private implicit def strToURL(s: String) = new URL(s)
 
-  def service: String
   def group: String
   def setup = "Dirac-Production"
   def auth2Auth = service + "/oauth2/token"
   def jobs = service + "/jobs"
+  def factory: Duration ⇒ ConnectionSocketFactory
 
   def tokenExpirationMargin = 10 -> MINUTES
-  def maxConnections = 20
-
-  @transient lazy val pool = {
-    val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", credential.factory).build()
-    val pool = new PoolingHttpClientConnectionManager(registry)
-    pool.setMaxTotal(maxConnections)
-    pool.setDefaultMaxPerRoute(maxConnections)
-    pool
-  }
-
-  @transient lazy val httpContext = HttpClientContext.create
-
-  def requestConfig = {
-    RequestConfig.custom()
-      .setSocketTimeout(timeout.toMillis.toInt)
-      .setConnectTimeout(timeout.toMillis.toInt)
-      .build()
-  }
-
-  def httpHost: HttpHost = {
-    val uri = new URI(service)
-    new HttpHost(uri.getHost, uri.getPort, uri.getScheme)
-  }
-
-  def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = {
-    val client = HttpClients.custom()
-      .setConnectionManager(pool)
-      .build()
-
-    request.setConfig(requestConfig)
-
-    def close[T <: { def close(): Unit }, R](c: T)(f: T ⇒ R) =
-      try f(c)
-      finally c.close
-
-    close(client.execute(httpHost, request, httpContext)) { response ⇒
-      close(response.getEntity.getContent) { is ⇒
-        f(is)
-      }
-    }
-  }
-
-  def request[T](request: HttpRequestBase with HttpRequest)(f: String ⇒ T): T =
-    requestContent(request) { is ⇒
-      f(Source.fromInputStream(is).mkString)
-    }
 
   @transient lazy val tokenCache =
     new SingleValueCache[Token] {
@@ -171,7 +137,7 @@ trait DIRACJobService extends JobService with DefaultTimeout {
     }
   }
 
-  def downloadOutputSandbox(desc: D, jobId: J)(implicit credential: A) = {
+  def downloadOutputSandbox(desc: D, jobId: J) = {
     val outputSandboxMap = desc.outputSandbox.toMap
 
     val uri =

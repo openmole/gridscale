@@ -20,12 +20,13 @@ package fr.iscpif.gridscale.egi
 import java.io.{ FileOutputStream, ByteArrayOutputStream, File }
 import java.net.MalformedURLException
 import java.net.URI
+import java.util.UUID
 import fr.iscpif.gridscale.authentication.AuthenticationException
 import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import collection.JavaConversions._
 import org.ietf.jgss.GSSCredential
-
+import fr.iscpif.gridscale.cache._
 import scala.concurrent.duration.Duration
 
 object VOMSAuthentication {
@@ -37,23 +38,31 @@ object VOMSAuthentication {
 
 }
 
-trait VOMSAuthentication extends GlobusAuthentication {
+trait VOMSAuthentication {
 
   def serverURL: String
   def voName: String
   def proxyInit: VOMSProxyInit
   def fqan: Option[String] = None
   def lifeTime: Duration
+  def renewRation = 0.2
   def proxySize = 1024
 
-  def apply() = try {
-    val globusProxy = proxy()
-    val os = new ByteArrayOutputStream()
-    VOMSProxyBuilder.saveProxy(globusProxy, os)
-    GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), os.toByteArray, delegationID.toString)
-  } catch {
-    case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
-  }
+  @transient lazy val delegationID = UUID.randomUUID
+
+  def apply() = cached()
+
+  @transient lazy val cached = cache(() ⇒ generateProxy)(lifeTime * renewRation)
+
+  def generateProxy =
+    try {
+      val globusProxy = proxy()
+      val os = new ByteArrayOutputStream()
+      VOMSProxyBuilder.saveProxy(globusProxy, os)
+      GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), os.toByteArray, delegationID.toString)
+    } catch {
+      case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
+    }
 
   def generate(file: File) = {
     val os = new FileOutputStream(file)

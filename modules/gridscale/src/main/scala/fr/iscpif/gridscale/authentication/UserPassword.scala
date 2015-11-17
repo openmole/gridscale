@@ -17,6 +17,17 @@
 
 package fr.iscpif.gridscale.authentication
 
+object UserPassword {
+  def apply(user: String, password: String) = {
+    val (_user, _password) = (user, password)
+    new UserPassword {
+      def user = _user
+      def password = _password
+    }
+  }
+
+}
+
 trait UserPassword {
   def user: String
   def password: String

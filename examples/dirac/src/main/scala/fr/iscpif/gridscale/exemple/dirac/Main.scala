@@ -17,27 +17,25 @@
 
 package fr.iscpif.gridscale.exemple.dirac
 
-import fr.iscpif.gridscale.dirac._
+import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale._
 import java.io.File
+import fr.iscpif.gridscale.egi._
+
 import concurrent.duration._
 
 object Main extends App {
+
+  val p12 = P12Authentication(new File("/path/to/certificate.p12"), "password")
 
   val jobDesc = new DIRACJobDescription {
     def executable = "/bin/echo"
     def arguments = "hello"
   }
 
-  val js = new DIRACJobService with P12HTTPSAuthentication {
-    def group = "biomed_user"
-    def service = "https://ccdirac06.in2p3.fr:9178"
-    def certificate = new File("/path/to/certificate.p12")
-    def password = "password"
-  }
+  val js = DIRACJobService(group = "complex_user", service = "https://ccdiracli06.in2p3.fr:9178")(p12)
 
   println(js.token)
-  //println(js.submit(jobDesc))
 
   val j = js.submit(jobDesc)
 

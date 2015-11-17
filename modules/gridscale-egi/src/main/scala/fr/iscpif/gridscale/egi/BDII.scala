@@ -34,14 +34,41 @@ class BDII(location: String) {
   val wmsServiceType = "org.glite.wms.WMProxy"
   val creamCEServiceType = "org.glite.ce.CREAM"
 
-  case class SRMLocation(host: String, port: Int, basePath: String) { self ⇒
-    def toSRM(implicit auth: SRMStorage#A) =
-      new SRMStorage {
-        val host = self.host
-        val port = self.port
-        val basePath = self.basePath
-        val credential = auth
-      }
+  case class DPMLocation(host: String, port: Int, basePath: String)
+
+  def queryGridFTPLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
+    def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(|(GlueSEAccessProtocolType=webdav)(GlueSEAccessProtocolType=https)))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
+    //def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(GlueSEAccessProtocolType=https))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
+    //def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(GlueSEAccessProtocolType=gsiftp))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
+
+    for {
+      webdavService ← q.query(searchPhrase, timeOut).toSeq
+      //t ← webdavService.getAttributes.getAll
+      id = webdavService.getAttributes.get("GlueChunkKey").get()
+      //t ← q.query(s"($id)", timeOut)
+      // id = webdavService.getAttributes.get("GlueSEUniqueID").get().toString
+      //id ← Option(dpm.getAttributes().get("GlueSEUniqueID")).map(_.get().toString())
+      //val resForPath = q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
+
+      //t = println(s"(&($id)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
+      //accessible ← q.query(s"(&($id))", timeOut) //(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut) //(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
+    } yield id
+
+    /*def searchService(vo: String, serviceType: String) = {
+      def serviceTypeQuery = s"(GlueSEAccessProtocolType=$serviceType)"
+      s"(&(objectClass=GlueSEAccessProtocol)($serviceTypeQuery))"
+    }
+
+    for {
+      gsi ← q.query(searchService(vo, "gsiftp"), timeOut).toSeq
+      chunk = gsi.getAttributes.get("GlueChunkKey").get()
+      accessible ← q.query(s"(&(GlueChunkKey=$chunk)(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
+      path = accessible.getAttributes().get("GlueVOInfoPath").get().toString
+    } yield new GridFTPStorage {
+      override def host: String = ???
+      override def basePath: String = ???
+    }*/
+
   }
 
   def querySRMLocations(vo: String, timeOut: Duration): Seq[SRMLocation] = BDIIQuery.withBDIIQuery(location) { q ⇒
@@ -74,17 +101,6 @@ class BDII(location: String) {
     srms.flatten.toSeq
   }
 
-  def querySRMs(vo: String, timeOut: Duration)(implicit auth: SRMStorage#A) =
-    querySRMLocations(vo, timeOut).map(_.toSRM(auth))
-
-  case class WMSLocation(url: URI) { self ⇒
-    def toWMS(auth: WMSJobService#A) =
-      new WMSJobService {
-        val url = self.url
-        val credential = auth
-      }
-  }
-
   def queryWMSLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
 
     def searchPhrase = searchService(vo, wmsServiceType)
@@ -104,8 +120,6 @@ class BDII(location: String) {
 
     wmsURIs.toSeq.map { WMSLocation(_) }
   }
-
-  def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
 
   case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
 

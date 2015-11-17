@@ -18,18 +18,15 @@
 package fr.iscpif.gridscale.example.oar
 
 import fr.iscpif.gridscale.oar._
-import fr.iscpif.gridscale.ssh.{ SSHUserPasswordAuthentication, SSHPrivateKeyAuthentication }
+import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale._
+import authentication._
 
 import scala.concurrent.duration._
 
 object SubmitEcho extends App {
 
-  val service = new OARJobService with SSHUserPasswordAuthentication {
-    def host = "172.17.0.4"
-    def user = "docker"
-    def password = "docker"
-  }
+  val service = OARJobService("172.17.0.4")(UserPassword("docker", "docker"))
 
   val description = new OARJobDescription {
     def executable = "/bin/echo"

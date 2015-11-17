@@ -43,22 +43,25 @@ object HTTPStorage {
     else f(cnx)
   }
 
+  def apply(url: String) = {
+    val _url = url
+    new HTTPStorage {
+      override def url: String = _url
+    }
+  }
+
 }
 
 trait HTTPStorage extends Storage with DefaultTimeout {
 
-  type A = Unit
-  def credential = Unit
-
   def url: String
-
   def bufferSize = 64000
 
   def _list(path: String) = {
     val is = openInputStream(path)
     try {
       val parser = new Parser
-      parser.setInputHTML(new String(getBytes(is, 64000, timeout)))
+      parser.setInputHTML(new String(getBytes(is, bufferSize, timeout)))
       val list = parser.extractAllNodesThatMatch(new NodeClassFilter(classOf[LinkTag]))
 
       list.toNodeArray.flatMap {

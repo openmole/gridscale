@@ -22,20 +22,13 @@ import fr.iscpif.gridscale._
 import java.io.File
 import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale.condor._
+import authentication._
 
 object Main {
 
-  def submitEchoAndDone(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
+  def submitEchoAndDone(condorService: CondorJobService) = {
 
     println("a job is successfully submitted, runs then its results are retrieved normally")
-
-    println("a condor environment using an SSH private-key authentication")
-    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
-      def host = inHost
-      def user = inUsername
-      def password = inPassword
-      def privateKey = new File(inPrivateKeyPath)
-    }
 
     println("a simple job")
     val description = new CondorJobDescription {
@@ -60,17 +53,9 @@ object Main {
     condorService.purge(j)
   }
 
-  def submitAndCancel(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
+  def submitAndCancel(condorService: CondorJobService) = {
 
     println("a job is successfully submitted, then cancelled")
-
-    println("a condor environment using an SSH private-key authentication")
-    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
-      def host = inHost
-      def user = inUsername
-      def password = inPassword
-      def privateKey = new File(inPrivateKeyPath)
-    }
 
     println("an infinite job")
     val description = new CondorJobDescription {
@@ -95,17 +80,9 @@ object Main {
     condorService.purge(j)
   }
 
-  def submitWithRequirements(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
+  def submitWithRequirements(condorService: CondorJobService) = {
 
     println("a job is successfully submitted, requesting a tesla&fermi node")
-
-    println("a condor environment using an SSH private-key authentication")
-    val condorService = new CondorJobService with SSHPrivateKeyAuthentication {
-      def host = inHost
-      def user = inUsername
-      def password = inPassword
-      def privateKey = new File(inPrivateKeyPath)
-    }
 
     println("a Java job")
     val description = new CondorJobDescription {
@@ -141,15 +118,19 @@ object Main {
       case _                          ⇒ throw new RuntimeException("Bad arguments")
     }
 
+    def credential = PrivateKey(username, new File(privateKeyPath), password)
+
     println("Condor example with:\n" +
       "host = " + host + "\n" +
       "username = " + username + "\n" +
       "password = " + password + "\n" +
       "privateKeyPath = " + privateKeyPath + "\n")
 
-    submitEchoAndDone(host, username, password, privateKeyPath)
-    submitAndCancel(host, username, password, privateKeyPath)
-    submitWithRequirements(host, username, password, privateKeyPath)
+    val condorService = CondorJobService(host)(credential)
+
+    submitEchoAndDone(condorService)
+    submitAndCancel(condorService)
+    submitWithRequirements(condorService)
   }
 
 }

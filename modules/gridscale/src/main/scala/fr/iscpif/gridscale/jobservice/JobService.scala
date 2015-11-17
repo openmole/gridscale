@@ -17,9 +17,7 @@
 
 package fr.iscpif.gridscale.jobservice
 
-import fr.iscpif.gridscale.authentication._
-
-trait JobService <: Credential {
+trait JobService {
   type J
   type D
 
@@ -27,5 +25,4 @@ trait JobService <: Credential {
   def state(job: J): JobState
   def cancel(job: J)
   def purge(job: J)
-
 }

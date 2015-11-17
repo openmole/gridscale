@@ -19,13 +19,23 @@ package fr.iscpif.gridscale.oar
 
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh.SSHJobService._
-import fr.iscpif.gridscale.ssh.{ SSHStorage, SSHHost }
+import fr.iscpif.gridscale.ssh.{ SSHAuthentication, SSHStorage, SSHHost }
 import fr.iscpif.gridscale.tools.shell.BashShell
 import fr.iscpif.gridscale.tools._
 import net.schmizz.sshj.sftp.{ FileMode, SFTPClient }
 import net.schmizz.sshj.xfer.FilePermission
 
 object OARJobService {
+
+  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential) = (host, port, credential)
+    new OARJobService {
+      override def credential = _credential
+      override def host = _host
+      override def port = _port
+    }
+  }
+
   case class OARJob(val description: OARJobDescription, val id: String)
   val oarJobId = "OAR_JOB_ID"
 

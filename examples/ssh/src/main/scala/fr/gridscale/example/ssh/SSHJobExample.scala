@@ -17,18 +17,13 @@
 
 package fr.gridscale.example.ssh
 
-import java.io.File
-
-import fr.iscpif.gridscale.ssh.{ SSHUserPasswordAuthentication, SSHJobDescription, SSHPrivateKeyAuthentication, SSHJobService }
+import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale._
+import authentication._
 
 object SSHJobExample extends App {
 
-  val js = new SSHJobService with SSHUserPasswordAuthentication {
-    override def user: String = "test"
-    override def password: String = "test"
-    override def host: String = "localhost"
-  }
+  val js = SSHJobService("localhost")(UserPassword("test", "test"))
 
   val description = new SSHJobDescription {
     override def workDirectory: String = "/tmp/"

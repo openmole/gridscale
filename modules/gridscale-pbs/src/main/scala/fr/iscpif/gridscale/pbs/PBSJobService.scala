@@ -23,6 +23,16 @@ import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 object PBSJobService {
+
+  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential) = (host, port, credential)
+    new PBSJobService {
+      override def credential = _credential
+      override def host = _host
+      override def port = _port
+    }
+  }
+
   class PBSJob(val description: PBSJobDescription, val pbsId: String)
 
   val jobStateAttribute = "JOB_STATE"

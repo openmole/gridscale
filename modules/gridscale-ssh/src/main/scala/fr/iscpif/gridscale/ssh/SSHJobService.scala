@@ -31,6 +31,16 @@ import scala.util.Try
 
 object SSHJobService {
 
+  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
+    val (_port, _host, _credential) = (port, host, credential)
+
+    new SSHJobService {
+      override def credential = _credential
+      override def port = _port
+      override def host = _host
+    }
+  }
+
   // val rootDir = ".gridscale/ssh"
 
   def file(dir: String, jobId: String, suffix: String) = dir + "/" + jobId + "." + suffix

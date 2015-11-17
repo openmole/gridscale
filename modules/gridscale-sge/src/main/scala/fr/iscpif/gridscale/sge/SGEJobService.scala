@@ -26,6 +26,16 @@ import fr.iscpif.gridscale.tools.shell.BashShell
 import scala.util.Try
 
 object SGEJobService {
+
+  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential) = (host, port, credential)
+    new SGEJobService {
+      override def credential = _credential
+      override def host = _host
+      override def port = _port
+    }
+  }
+
   class SGEJob(val description: SGEJobDescription, val sgeId: String)
 
   object SGEJob {

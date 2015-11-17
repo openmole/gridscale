@@ -18,6 +18,7 @@
 package fr.iscpif.gridscale.egi
 
 import java.io.{ BufferedInputStream, File, FileInputStream }
+import java.util.UUID
 import fr.iscpif.gridscale.authentication.AuthenticationException
 import org.glite.voms.contact.VOMSProxyInit
 import org.gridforum.jgss.ExtendedGSSManager
@@ -27,9 +28,10 @@ import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 
 import scala.io.Source
 
-trait ProxyFileAuthentication extends GlobusAuthentication {
+trait ProxyFileAuthentication {
 
   def proxy: File
+  @transient lazy val delegationID = UUID.randomUUID
 
   def apply() =
     try {

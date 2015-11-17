@@ -22,20 +22,13 @@ import fr.iscpif.gridscale._
 import java.io.File
 import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale.slurm._
+import authentication._
 
 object Main {
 
-  def submitEchoAndDone(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
+  def submitEchoAndDone(slurmService: SLURMJobService) = {
 
     println("a job is successfully submitted, runs then its results are retrived normally")
-
-    println("a slurm environment using an SSH privatekey authentication")
-    val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-      def host = inHost
-      def user = inUsername
-      def password = inPassword
-      def privateKey = new File(inPrivateKeyPath)
-    }
 
     println("a simple job")
     val description = new SLURMJobDescription {
@@ -60,17 +53,9 @@ object Main {
     slurmService.purge(j)
   }
 
-  def submitAndCancel(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
+  def submitAndCancel(slurmService: SLURMJobService) = {
 
     println("a job is successfully submitted, then cancelled")
-
-    println("a slurm environment using an SSH privatekey authentication")
-    val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-      def host = inHost
-      def user = inUsername
-      def password = inPassword
-      def privateKey = new File(inPrivateKeyPath)
-    }
 
     println("an infinite job")
     val description = new SLURMJobDescription {
@@ -95,17 +80,9 @@ object Main {
     slurmService.purge(j)
   }
 
-  def submitWithGres(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
+  def submitWithGres(slurmService: SLURMJobService) = {
 
     println("a CUDA job is successfully submitted, requesting a gres")
-
-    println("a slurm environment using an SSH privatekey authentication")
-    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-      def host = inHost
-      def user = inUsername
-      def password = inPassword
-      def privateKey = new File(inPrivateKeyPath)
-    }
 
     println("a CUDA job")
     val description = new SLURMJobDescription {
@@ -128,17 +105,9 @@ object Main {
     slurmService.purge(j)
   }
 
-  def submitWithConstraints(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String) = {
+  def submitWithConstraints(slurmService: SLURMJobService) = {
 
     println("a job is successfully submitted, requesting a tesla&fermi node")
-
-    println("a slurm environment using an SSH privatekey authentication")
-    implicit val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
-      def host = inHost
-      def user = inUsername
-      def password = inPassword
-      def privateKey = new File(inPrivateKeyPath)
-    }
 
     println("a CUDA job")
     val description = new SLURMJobDescription {
@@ -171,16 +140,20 @@ object Main {
       case _                          ⇒ throw new RuntimeException("Bad arguments")
     }
 
+    def credential = PrivateKey(username, new File(privateKeyPath), password)
+
+    val slurmService = SLURMJobService(host)(credential)
+
     println("SLURM example with:\n" +
       "host = " + host + "\n" +
       "username = " + username + "\n" +
       "password = " + password + "\n" +
       "privateKeyPath = " + privateKeyPath + "\n")
 
-    submitEchoAndDone(host, username, password, privateKeyPath)
-    submitAndCancel(host, username, password, privateKeyPath)
-    submitWithGres(host, username, password, privateKeyPath)
-    submitWithConstraints(host, username, password, privateKeyPath)
+    submitEchoAndDone(slurmService)
+    submitAndCancel(slurmService)
+    submitWithGres(slurmService)
+    submitWithConstraints(slurmService)
   }
 
 }
