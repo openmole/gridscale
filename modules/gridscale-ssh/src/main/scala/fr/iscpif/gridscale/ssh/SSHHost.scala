@@ -21,7 +21,6 @@ package fr.iscpif.gridscale.ssh
 import fr.iscpif.gridscale.tools.DefaultTimeout
 import net.schmizz.sshj._
 import net.schmizz.sshj.sftp._
-import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 
 trait SSHHost <: DefaultTimeout {
 

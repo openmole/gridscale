@@ -18,12 +18,11 @@
 
 package fr.iscpif.gridscale.ssh
 
-import fr.iscpif.gridscale.authentication._
 import net.schmizz.sshj._
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 
 trait SSHAuthentication {
-  def credential = this
+
   // instantiated only once and not for each sshj SSHClient
   // see https://groups.google.com/d/msg/sshj-users/p-cjao1MiHg/nFZ99-WEf6IJ
   lazy val sshDefaultConfig = new DefaultConfig()
