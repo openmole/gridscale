@@ -16,17 +16,18 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.{ OutputStream, InputStream }
+import java.io.{InputStream, OutputStream, PipedInputStream, PipedOutputStream}
 
-import com.github.sardine.impl.SardineImpl
-import com.github.sardine.impl.methods.HttpMkCol
+import com.github.sardine.impl._
 import fr.iscpif.gridscale.egi.https._
-import fr.iscpif.gridscale.tools.DefaultTimeout
-import org.apache.http.client.methods.HttpDelete
-import org.apache.http.conn.socket.ConnectionSocketFactory
-import collection.JavaConversions._
 import fr.iscpif.gridscale.storage._
+import fr.iscpif.gridscale.tools.DefaultTimeout
+import org.apache.http.client.methods.{HttpDelete, HttpPut, HttpUriRequest}
+import org.apache.http.conn.socket.ConnectionSocketFactory
+import org.apache.http.protocol.HttpContext
+import org.apache.http.{HttpRequest, HttpResponse}
 
+import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration
 
 object EGIWebdav {
@@ -38,25 +39,50 @@ object EGIWebdav {
       override def service: String = _service
     }
   }
+
+  class RedirectStrategy extends SardineRedirectStrategy {
+    override def isRedirectable(method: String): Boolean =
+      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) true else super.isRedirectable(method)
+
+    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
+      val method = request.getRequestLine().getMethod()
+      val uri = getLocationURI(request, response, context)
+      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) new HttpPut(uri)
+      else super.getRedirect(request, response, context)
+    }
+  }
+
 }
 
 trait EGIWebdav <: DefaultTimeout with HTTPSClient with Storage {
 
+  def service: String
   def basePath: String
 
-  lazy val webdavClient = new SardineImpl(clientBuilder)
+  lazy val webdavClient = {
+    val client = clientBuilder
+    client.setRedirectStrategy(new EGIWebdav.RedirectStrategy)
+    new SardineImpl(client)
+  }
 
   def fullUrl(path: String) =
     trimSlashes(service) + "/" + trimSlashes(basePath) + "/" + trimSlashes(path)
 
-  override protected def _openOutputStream(path: String): OutputStream = ???
+  override protected def _openOutputStream(path: String): OutputStream = {
+    val in = new PipedInputStream
+    val out = new PipedOutputStream(in)
+    webdavClient.put(fullUrl(path), in)
+    out
+  }
+
+  override protected def _openInputStream(path: String): InputStream =
+    webdavClient.get(fullUrl(path))
 
   override def _makeDir(path: String): Unit =
     webdavClient.createDirectory(fullUrl(path))
 
-  override protected def _openInputStream(path: String): InputStream = ???
-
-  override def _mv(from: String, to: String): Unit = ???
+  override def _mv(from: String, to: String): Unit =
+    webdavClient.move(fullUrl(from), fullUrl(to))
 
   override def _rmDir(path: String): Unit = {
     val delete = new HttpDelete(fullUrl(path))
@@ -70,6 +96,6 @@ trait EGIWebdav <: DefaultTimeout with HTTPSClient with Storage {
     }
   }
 
-  override def _rmFile(path: String): Unit = ???
-
+  override def _rmFile(path: String): Unit = webdavClient.delete(fullUrl(path))
+  override def exists(path: String): Boolean = webdavClient.exists(fullUrl(path))
 }

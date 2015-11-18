@@ -35,7 +35,6 @@ trait HTTPSClient {
 
   def maxConnections = 20
   def timeout: Duration
-  def service: String
   def factory: Duration ⇒ ConnectionSocketFactory
 
   @transient lazy val pool = {
@@ -55,32 +54,6 @@ trait HTTPSClient {
       .build()
   }
 
-  def httpHost: HttpHost = {
-    val uri = new URI(service)
-    new HttpHost(uri.getHost, uri.getPort, uri.getScheme)
-  }
-
   def clientBuilder = HttpClients.custom().setConnectionManager(pool)
-
-  def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = {
-    val client = clientBuilder.build()
-
-    request.setConfig(requestConfig)
-
-    def close[T <: { def close(): Unit }, R](c: T)(f: T ⇒ R) =
-      try f(c)
-      finally c.close
-
-    close(client.execute(httpHost, request, httpContext)) { response ⇒
-      close(response.getEntity.getContent) { is ⇒
-        f(is)
-      }
-    }
-  }
-
-  def request[T](request: HttpRequestBase with HttpRequest)(f: String ⇒ T): T =
-    requestContent(request) { is ⇒
-      f(Source.fromInputStream(is).mkString)
-    }
 
 }

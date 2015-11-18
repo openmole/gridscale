@@ -61,6 +61,7 @@ trait DIRACJobService extends JobService with DefaultTimeout with HTTPSClient {
 
   private implicit def strToURL(s: String) = new URL(s)
 
+  def service: String
   def group: String
   def setup = "Dirac-Production"
   def auth2Auth = service + "/oauth2/token"
@@ -174,4 +175,30 @@ trait DIRACJobService extends JobService with DefaultTimeout with HTTPSClient {
   }
 
   def purge(job: J) = {}
+
+  def httpHost: HttpHost = {
+    val uri = new URI(service)
+    new HttpHost(uri.getHost, uri.getPort, uri.getScheme)
+  }
+
+  def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = {
+    val client = clientBuilder.build()
+
+    request.setConfig(requestConfig)
+
+    def close[T <: { def close(): Unit }, R](c: T)(f: T ⇒ R) =
+      try f(c)
+      finally c.close
+
+    close(client.execute(httpHost, request, httpContext)) { response ⇒
+      close(response.getEntity.getContent) { is ⇒
+        f(is)
+      }
+    }
+  }
+
+  def request[T](request: HttpRequestBase with HttpRequest)(f: String ⇒ T): T =
+    requestContent(request) { is ⇒
+      f(Source.fromInputStream(is).mkString)
+    }
 }

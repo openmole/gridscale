@@ -14,39 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.iscpif.gridscale.example.egi.dpm
+package fr.iscpif.gridscale.example.egi
 
-import java.io.{ FileInputStream, InputStream, FileOutputStream, File }
-import java.net.{ URL, URI }
-import java.security.{ KeyStore, Security }
-import javax.net.ssl.{ HttpsURLConnection, SSLSocket, KeyManagerFactory, SSLSocketFactory }
+import java.io.File
 
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi._
-import fr.iscpif.gridscale.egi.https.P12HTTPSAuthentication
-import fr.iscpif.gridscale.egi.services.GlobusHttpRequest
-import fr.iscpif.gridscale.globushttp.SimpleSocketFactory
-import org.apache.commons.logging.impl.SimpleLog
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.client.methods.{ HttpGet, HttpRequestBase }
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.client.utils.URIBuilder
-import org.apache.http.config.RegistryBuilder
-import org.apache.http.conn.socket.ConnectionSocketFactory
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
-import org.apache.http.{ HttpRequest, HttpHost }
-import concurrent.duration._
-import fr.iscpif.gridscale._
 
-import scala.io.Source
+import scala.concurrent.duration._
 import scala.util.Try
 
 object WebDavExample extends App {
 
   val p12 = P12Authentication(new File("/path/to/certificate.p12"), "password")
   val authentication = P12VOMSAuthentication(p12, 24 hours, "voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "vo.complex-systems.eu")
+
   val dav = EGIWebdav(service = "https://grid05.lal.in2p3.fr:443", basePath = "/dpm/lal.in2p3.fr/home/vo.complex-systems.eu/")(authentication)
 
   def dir = "blalalalal"
@@ -57,5 +39,11 @@ object WebDavExample extends App {
   dav.makeDir(dir)
   println(list)
   dav.rmDir(dir)
+
+  Try(dav.rmFile("testdav.txt"))
+
+  val out = dav.openOutputStream("testdav.txt")
+  out.write("ebeaeau".getBytes)
+  out.close
 
 }
