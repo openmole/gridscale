@@ -26,8 +26,16 @@ import scala.concurrent.duration.Duration
 
 object PEMVOMSAuthentication {
 
-  def apply(pem: PEMAuthentication, lifeTime: Duration, serverURL: String, voName: String, renewRatio: Double = 0.2) = {
-    val (_lifeTime, _serverURL, _voName, _renewRatio) = (lifeTime, serverURL, voName, renewRatio)
+  def apply(
+    pem: PEMAuthentication,
+    lifeTime: Duration,
+    serverURL: String,
+    voName: String,
+    renewRatio: Double = 0.2,
+    fqan: Option[String] = None,
+    proxySize: Int = 1024) = {
+    val (_lifeTime, _serverURL, _voName, _renewRatio, _fqan, _proxySize) =
+      (lifeTime, serverURL, voName, renewRatio, fqan, proxySize)
 
     new PEMVOMSAuthentication {
       override def key: File = pem.key
@@ -37,6 +45,8 @@ object PEMVOMSAuthentication {
       override def lifeTime: Duration = _lifeTime
       override def voName: String = _voName
       override def serverURL: String = _serverURL
+      override def fqan = _fqan
+      override def proxySize = _proxySize
     }
   }
 

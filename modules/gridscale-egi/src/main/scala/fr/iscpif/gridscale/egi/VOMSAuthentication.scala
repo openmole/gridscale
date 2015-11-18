@@ -44,10 +44,10 @@ trait VOMSAuthentication {
   def serverURL: String
   def voName: String
   def proxyInit: VOMSProxyInit
-  def fqan: Option[String] = None
+  def fqan: Option[String]
   def lifeTime: Duration
   def renewRation: Double
-  def proxySize = 1024
+  def proxySize: Int
 
   @transient lazy val delegationID = UUID.randomUUID
 
