@@ -24,9 +24,9 @@ object PrivateKey {
     val (_user, _privateKey, _password) = (user, privateKey, password)
 
     new PrivateKey {
-      override def privateKey: File = _privateKey
-      override def user: String = _user
-      override def password: String = _password
+      override val privateKey: File = _privateKey
+      override val user: String = _user
+      override val password: String = _password
     }
   }
 }

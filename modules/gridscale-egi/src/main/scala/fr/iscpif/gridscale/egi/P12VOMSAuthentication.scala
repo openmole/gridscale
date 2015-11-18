@@ -37,14 +37,14 @@ object P12VOMSAuthentication {
       (lifeTime, serverURL, voName, renewRatio, fqan, proxySize)
 
     new P12VOMSAuthentication {
-      override def certificate: File = p12Authentication.certificate
-      override def password: String = p12Authentication.password
-      override def lifeTime: Duration = _lifeTime
-      override def voName: String = _voName
-      override def serverURL: String = _serverURL
-      override def renewRation: Double = _renewRatio
-      override def fqan = _fqan
-      override def proxySize = _proxySize
+      override val certificate: File = p12Authentication.certificate
+      override val password: String = p12Authentication.password
+      override val lifeTime: Duration = _lifeTime
+      override val voName: String = _voName
+      override val serverURL: String = _serverURL
+      override val renewRation: Double = _renewRatio
+      override val fqan = _fqan
+      override val proxySize = _proxySize
     }
   }
 

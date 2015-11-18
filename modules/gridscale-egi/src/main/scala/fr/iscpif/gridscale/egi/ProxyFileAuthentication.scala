@@ -25,6 +25,15 @@ import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.gridforum.jgss.{ ExtendedGSSCredential, ExtendedGSSManager }
 import org.ietf.jgss.GSSCredential
 
+object ProxyFileAuthentication {
+  def apply(proxy: File) = {
+    val _proxy = proxy
+    new ProxyFileAuthentication {
+      override val proxy: File = _proxy
+    }
+  }
+}
+
 trait ProxyFileAuthentication {
 
   def proxy: File

@@ -38,15 +38,15 @@ object PEMVOMSAuthentication {
       (lifeTime, serverURL, voName, renewRatio, fqan, proxySize)
 
     new PEMVOMSAuthentication {
-      override def key: File = pem.key
-      override def certificate: File = pem.certificate
-      override def password: String = pem.password
-      override def renewRation: Double = _renewRatio
-      override def lifeTime: Duration = _lifeTime
-      override def voName: String = _voName
-      override def serverURL: String = _serverURL
-      override def fqan = _fqan
-      override def proxySize = _proxySize
+      override val key: File = pem.key
+      override val certificate: File = pem.certificate
+      override val password: String = pem.password
+      override val renewRation: Double = _renewRatio
+      override val lifeTime: Duration = _lifeTime
+      override val voName: String = _voName
+      override val serverURL: String = _serverURL
+      override val fqan = _fqan
+      override val proxySize = _proxySize
     }
   }
 

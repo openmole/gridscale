@@ -21,8 +21,8 @@ object UserPassword {
   def apply(user: String, password: String) = {
     val (_user, _password) = (user, password)
     new UserPassword {
-      def user = _user
-      def password = _password
+      val user = _user
+      val password = _password
     }
   }
 

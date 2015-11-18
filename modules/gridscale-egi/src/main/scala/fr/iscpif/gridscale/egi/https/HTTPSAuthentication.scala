@@ -45,6 +45,6 @@ object HTTPSAuthentication {
 
 }
 
-trait HTTPSAuthentication[T] {
+trait HTTPSAuthentication[-T] {
   def factory(t: T): Duration ⇒ SSLConnectionSocketFactory
 }

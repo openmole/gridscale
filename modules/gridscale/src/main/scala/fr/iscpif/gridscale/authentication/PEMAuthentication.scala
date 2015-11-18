@@ -25,9 +25,9 @@ object PEMAuthentication {
     val (_certificate, _key, _password) = (certificate, key, password)
 
     new PEMAuthentication {
-      override def key: File = _key
-      override def certificate: File = _certificate
-      override def password: String = _password
+      override val key: File = _key
+      override val certificate: File = _certificate
+      override val password: String = _password
     }
   }
 

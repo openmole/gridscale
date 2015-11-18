@@ -39,7 +39,7 @@ object GlobusAuthenticationProvider {
 
 }
 
-trait GlobusAuthenticationProvider[T] {
+trait GlobusAuthenticationProvider[-T] {
   def apply(t: T): GlobusAuthentication.Proxy
 }
 

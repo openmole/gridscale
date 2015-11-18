@@ -25,8 +25,8 @@ object P12Authentication {
     val (_certificate, _password) = (certificate, password)
 
     new P12Authentication {
-      override def certificate: File = _certificate
-      override def password: String = _password
+      override val certificate: File = _certificate
+      override val password: String = _password
     }
   }
 
