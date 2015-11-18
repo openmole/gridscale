@@ -19,19 +19,13 @@ limitations under the License.
 package org.glite.security.trustmanager;
 
 import org.apache.log4j.Logger;
-
 import org.glite.security.SecurityContext;
 
 import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.security.cert.PKIXCertPathChecker;
 import java.security.cert.X509Certificate;
-
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 /** The CRLFileTrustManager meks the decisions whether the

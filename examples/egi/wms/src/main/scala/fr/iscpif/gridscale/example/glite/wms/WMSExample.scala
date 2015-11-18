@@ -17,12 +17,14 @@
 
 package fr.iscpif.gridscale.example.glite.wms
 
-import fr.iscpif.gridscale.egi._
-import fr.iscpif.gridscale.authentication._
-import fr.iscpif.gridscale._
-import fr.iscpif.gridscale.jobservice._
 import java.io.File
-import concurrent.duration._
+
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.authentication._
+import fr.iscpif.gridscale.egi._
+import fr.iscpif.gridscale.jobservice._
+
+import scala.concurrent.duration._
 
 object WMSExample extends App {
 

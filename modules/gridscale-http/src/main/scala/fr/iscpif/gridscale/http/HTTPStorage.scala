@@ -17,18 +17,15 @@
 
 package fr.iscpif.gridscale.http
 
-import java.io.File
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.HttpURLConnection
-import java.net.URI
-import fr.iscpif.gridscale.tools.DefaultTimeout
+import java.io.{ File, InputStream, OutputStream }
+import java.net.{ HttpURLConnection, URI }
+
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.storage._
+import fr.iscpif.gridscale.tools.{ DefaultTimeout, _ }
 import org.htmlparser.Parser
 import org.htmlparser.filters.NodeClassFilter
 import org.htmlparser.tags.LinkTag
-import fr.iscpif.gridscale._
-import storage._
-import tools._
 
 import scala.concurrent.duration.Duration
 

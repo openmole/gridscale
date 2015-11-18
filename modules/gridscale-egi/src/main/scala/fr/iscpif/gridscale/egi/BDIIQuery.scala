@@ -18,10 +18,9 @@
 package fr.iscpif.gridscale.egi
 
 import java.util.Hashtable
-
 import javax.naming.Context
-import javax.naming.directory.InitialDirContext
-import javax.naming.directory.SearchControls
+import javax.naming.directory.{ InitialDirContext, SearchControls }
+
 import scala.concurrent.duration.Duration
 
 object BDIIQuery {

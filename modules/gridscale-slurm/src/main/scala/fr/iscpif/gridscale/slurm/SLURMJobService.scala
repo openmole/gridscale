@@ -19,8 +19,8 @@
 package fr.iscpif.gridscale.slurm
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 object SLURMJobService {
@@ -54,7 +54,7 @@ object SLURMJobService {
     }
 }
 
-import SLURMJobService._
+import fr.iscpif.gridscale.slurm.SLURMJobService._
 
 trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = SLURMJob
@@ -92,9 +92,10 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
 
   }
 
-  def cancel(job: J) = withConnection {
-    execReturnCodeOutput("scancel " + job.slurmId)(_) match {
-      case (1, _, error) if (error.matches(".*Invalid job id specified")) ⇒
+  def cancel(job: J): Unit = withConnection { implicit connection ⇒
+    execReturnCodeOutput("scancel " + job.slurmId) match {
+      case (0, _, _) ⇒
+      case (1, _, error) if (error.matches(".*Invalid job id specified")) ⇒ throw new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id")
       case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}")
     }
   }

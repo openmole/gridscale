@@ -3,12 +3,15 @@ package org.glite.voms;
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import java.security.Security;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.Provider;
+import java.security.Security;
 import java.security.cert.*;
-import java.util.Vector;
 import java.util.Iterator;
-import java.io.*;
+import java.util.Vector;
 
 /** Reads all certificates from given files, accepts binary form of DER encoded certs and
  * the Base64 form of the DER encoded certs (PEM). The base64 certs can contain garbage in front of

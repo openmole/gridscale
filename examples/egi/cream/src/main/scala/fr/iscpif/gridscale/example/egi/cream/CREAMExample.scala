@@ -17,7 +17,8 @@
 package fr.iscpif.gridscale.example.egi.cream
 
 import fr.iscpif.gridscale.egi.BDII
-import concurrent.duration._
+
+import scala.concurrent.duration._
 
 object CREAMExample extends App {
 

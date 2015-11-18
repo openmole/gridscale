@@ -17,12 +17,10 @@
 
 package fr.iscpif.gridscale.sge
 
-import fr.iscpif.gridscale.jobservice._
-import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed }
-import org.scalatest._
-
-import org.scalatest.mock.MockitoSugar
+import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed, _ }
 import org.mockito.Mockito._
+import org.scalatest._
+import org.scalatest.mock.MockitoSugar
 
 // must do a mock per jobservice because of type alias JobService.D :(
 class SGEJobServiceTests extends FunSuite with MockitoSugar {

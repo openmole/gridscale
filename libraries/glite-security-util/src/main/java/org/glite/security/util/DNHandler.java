@@ -17,7 +17,6 @@
 package org.glite.security.util;
 
 import org.apache.log4j.Logger;
-
 import org.bouncycastle.asn1.x509.X509Name;
 
 import java.security.Principal;

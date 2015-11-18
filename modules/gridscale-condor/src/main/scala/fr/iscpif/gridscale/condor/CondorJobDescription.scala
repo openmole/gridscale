@@ -19,7 +19,7 @@
 package fr.iscpif.gridscale.condor
 
 import java.util.UUID
-import fr.iscpif.gridscale._
+
 import fr.iscpif.gridscale.jobservice.JobDescription
 import fr.iscpif.gridscale.tools.ScriptBuffer
 

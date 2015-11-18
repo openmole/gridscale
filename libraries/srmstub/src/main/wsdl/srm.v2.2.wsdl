@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<wsdl:definitions name="StorageResourceManager" targetNamespace="http://srm.lbl.gov/StorageResourceManager" xmlns:apachesoap="http://xml.apache.org/xml-soap" xmlns:impl="http://srm.lbl.gov/StorageResourceManager" xmlns:intf="http://srm.lbl.gov/StorageResourceManager" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<wsdl:definitions name="StorageResourceManager" targetNamespace="http://srm.lbl.gov/StorageResourceManager"
+                  xmlns:impl="http://srm.lbl.gov/StorageResourceManager"
+                  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <wsdl:documentation>
 
     srm.v2.2.wsdl

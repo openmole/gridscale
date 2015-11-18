@@ -18,16 +18,13 @@
 package fr.iscpif.gridscale.ssh
 
 import java.util.UUID
-import java.util.logging.Logger
+
+import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.tools._
 import fr.iscpif.gridscale.tools.shell._
 import net.schmizz.sshj.SSHClient
-import net.schmizz.sshj.connection.channel.direct.Session
 import net.schmizz.sshj.common.IOUtils
-import fr.iscpif.gridscale._
-import tools._
-import jobservice._
-
-import scala.util.Try
+import net.schmizz.sshj.connection.channel.direct.Session
 
 object SSHJobService {
 
@@ -96,7 +93,7 @@ object SSHJobService {
   case class JobId(jobId: String, workDirectory: String)
 }
 
-import SSHJobService._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 
 trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShell { js ⇒
   type J = JobId

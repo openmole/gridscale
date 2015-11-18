@@ -6,23 +6,8 @@
 
 package org.glite.voms;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.security.Principal;
-import java.security.cert.X509Certificate;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.SimpleTimeZone;
-import java.util.Vector;
-
-import javax.security.auth.x500.X500Principal;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DEROutputStream;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
@@ -30,6 +15,15 @@ import org.glite.voms.ac.ACCerts;
 import org.glite.voms.ac.ACTargets;
 import org.glite.voms.ac.AttributeCertificate;
 import org.glite.voms.ac.FullAttributes;
+
+import javax.security.auth.x500.X500Principal;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.Principal;
+import java.security.cert.X509Certificate;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Representation of the authorization information (VO, server address

@@ -19,8 +19,8 @@
 package fr.iscpif.gridscale.sge
 
 import java.util.UUID
-import fr.iscpif.gridscale.jobservice.JobDescription
 
+import fr.iscpif.gridscale.jobservice.JobDescription
 import fr.iscpif.gridscale.tools.ScriptBuffer
 
 import scala.concurrent.duration.Duration

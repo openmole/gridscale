@@ -19,8 +19,7 @@ package fr.iscpif.gridscale.egi
 import java.io.File
 
 import fr.iscpif.gridscale.jobservice.JobDescription
-import spray.json.{ JsArray, JsString, JsObject }
-import java.io.File
+import spray.json.{ JsArray, JsObject, JsString }
 
 import scala.concurrent.duration.Duration
 

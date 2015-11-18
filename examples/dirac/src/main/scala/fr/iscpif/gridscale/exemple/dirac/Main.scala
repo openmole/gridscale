@@ -17,12 +17,13 @@
 
 package fr.iscpif.gridscale.exemple.dirac
 
-import fr.iscpif.gridscale.authentication.P12Authentication
-import fr.iscpif.gridscale._
 import java.io.File
+
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi._
 
-import concurrent.duration._
+import scala.concurrent.duration._
 
 object Main extends App {
 

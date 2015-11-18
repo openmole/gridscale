@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:lb="http://glite.org/wsdl/services/lb" xmlns:lb4agu="http://glite.org/wsdl/services/lb4agu" xmlns:lbe="http://glite.org/wsdl/elements/lb" xmlns:lbt="http://glite.org/wsdl/types/lb" name="LoggingAndBookkeeping" targetNamespace="http://glite.org/wsdl/services/lb">
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:lbt="http://glite.org/wsdl/types/lb" name="LoggingAndBookkeeping"
+             targetNamespace="http://glite.org/wsdl/services/lb">
   <documentation>CVS revision: $Header: /cvs/glite/org.glite.lb.ws-interface/src/LBTypes.xml.T,v 1.20 2013/01/04 14:06:59 jfilipov Exp $</documentation>
   <wsdl:types>
     <xsd:schema targetNamespace="http://glite.org/wsdl/types/lb" elementFormDefault="unqualified" attributeFormDefault="unqualified">

@@ -14,26 +14,23 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.Security;
-import java.security.cert.X509Certificate;
-import java.security.cert.CertificateException;
-import java.util.Enumeration;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import org.glite.voms.PKIUtils;
 import org.globus.gsi.CredentialException;
 import org.globus.gsi.X509Credential;
 import org.globus.gsi.bc.BouncyCastleOpenSSLKey;
-import org.globus.gsi.util.CertificateLoadUtil;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.Security;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Enumeration;
 
 /**
  * This class implements parsing and handling of X509 user credentials 

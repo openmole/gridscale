@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2012 Romain Reuillon
+ * Copyright (C) 2015 Jonathan Passerat-Palmbach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,17 +18,22 @@
 
 package fr.iscpif.gridscale.ssh
 
-import fr.iscpif.gridscale.authentication._
 import net.schmizz.sshj._
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 
 trait SSHAuthentication {
 
+  // instantiated only once and not for each sshj SSHClient
+  // see https://groups.google.com/d/msg/sshj-users/p-cjao1MiHg/nFZ99-WEf6IJ
+  lazy val sshDefaultConfig = new DefaultConfig()
+
   def connect(host: String, port: Int) = {
-    val ssh = new SSHClient
-    ssh.connect(host, port)
+    val ssh = new SSHClient(sshDefaultConfig)
     // disable strict host key checking
     ssh.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
+    ssh.useCompression()
+    ssh.connect(host, port)
+
     try authenticate(ssh)
     catch {
       case t: Throwable ⇒

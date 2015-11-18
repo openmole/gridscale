@@ -19,26 +19,14 @@ limitations under the License.
 package org.glite.security.trustmanager;
 
 import org.apache.log4j.Logger;
-
 import org.glite.security.util.DN;
 import org.glite.security.util.DNHandler;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-
 import java.security.NoSuchProviderException;
 import java.security.PublicKey;
-import java.security.cert.CRLException;
-import java.security.cert.CertPathValidatorException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.CertificateParsingException;
-import java.security.cert.TrustAnchor;
-import java.security.cert.X509Certificate;
-
+import java.security.cert.*;
 import java.util.Iterator;
 import java.util.Vector;
 

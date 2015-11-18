@@ -16,16 +16,15 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.{InputStream, OutputStream, PipedInputStream, PipedOutputStream}
-
+import java.io.{ InputStream, OutputStream, PipedInputStream, PipedOutputStream }
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.egi.https._
 import fr.iscpif.gridscale.storage._
 import fr.iscpif.gridscale.tools.DefaultTimeout
-import org.apache.http.client.methods.{HttpDelete, HttpPut, HttpUriRequest}
+import org.apache.http.client.methods.{ HttpDelete, HttpPut, HttpUriRequest }
 import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.protocol.HttpContext
-import org.apache.http.{HttpRequest, HttpResponse}
+import org.apache.http.{ HttpRequest, HttpResponse }
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration

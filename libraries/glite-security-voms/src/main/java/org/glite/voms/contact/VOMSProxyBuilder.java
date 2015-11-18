@@ -25,59 +25,28 @@
  */
 package org.glite.voms.contact;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-
-import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
-import java.security.InvalidKeyException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.KeyPairGenerator;
-import java.security.KeyPair;
-
-import java.security.cert.X509Certificate;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
-
-import java.math.BigInteger;
-import java.security.cert.CertificateEncodingException;
-import java.util.logging.Level;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-
 import org.bouncycastle.asn1.DEREncodableVector;
 import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.DERObjectIdentifier;
-
-import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
-
-
 import org.glite.voms.ac.AttributeCertificate;
-import org.globus.gsi.CredentialException;
 import org.globus.gsi.GSIConstants;
 import org.globus.gsi.GSIConstants.CertificateType;
 import org.globus.gsi.GSIConstants.DelegationType;
 import org.globus.gsi.X509Credential;
-
 import org.globus.gsi.bc.BouncyCastleCertProcessingFactory;
-
 import org.globus.gsi.proxy.ext.ProxyPolicy;
 import org.globus.gsi.util.ProxyCertificateUtil;
+
+import java.io.*;
+import java.math.BigInteger;
+import java.security.*;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.*;
 
 /**
  *

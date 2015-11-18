@@ -16,28 +16,25 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.{ BufferedOutputStream, FileOutputStream, BufferedInputStream, InputStream }
+import java.io.{ BufferedInputStream, BufferedOutputStream, FileOutputStream, InputStream }
 import java.net.{ URI, URL }
+
 import fr.iscpif.gridscale.cache.SingleValueCache
 import fr.iscpif.gridscale.egi.https.HTTPSAuthentication
+import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.client.methods._
 import org.apache.http.client.utils.URIBuilder
-import org.apache.http.config.{ RegistryBuilder }
 import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.{ HttpHost, HttpRequest }
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.client.methods._
-import org.apache.http.impl.client.{ HttpClients }
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+import spray.json.DefaultJsonProtocol._
 import spray.json._
-import DefaultJsonProtocol._
-import scala.sys.process.BasicIO
+
+import scala.concurrent.duration._
 import scala.io.Source
-import fr.iscpif.gridscale.jobservice._
-import concurrent.duration._
+import scala.sys.process.BasicIO
 
 object DIRACJobService {
 

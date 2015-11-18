@@ -18,11 +18,12 @@
 
 package fr.iscpif.gridscale.examples
 
-import fr.iscpif.gridscale._
 import java.io.File
-import fr.iscpif.gridscale.ssh._
+
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.slurm._
-import authentication._
+import fr.iscpif.gridscale.ssh._
 
 object Main {
 

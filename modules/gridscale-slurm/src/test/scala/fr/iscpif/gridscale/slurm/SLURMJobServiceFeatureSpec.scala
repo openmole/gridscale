@@ -1,13 +1,11 @@
 package fr.iscpif.gridscale.slurm
 
-import fr.iscpif.gridscale.jobservice._
-import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed }
-
-import scala.concurrent.duration._
-
+import fr.iscpif.gridscale.jobservice.{ Failed ⇒ GSFailed, _ }
 import org.mockito.Mockito._
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
+
+import scala.concurrent.duration._
 
 trait FeatureSpecStateBehaviours { this: FeatureSpec with GivenWhenThen ⇒
   def matchState(slurmRetCode: Int, slurmState: String, gridscaleState: JobState) {

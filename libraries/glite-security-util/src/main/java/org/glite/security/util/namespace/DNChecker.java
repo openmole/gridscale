@@ -18,12 +18,12 @@ limitations under the License.
 
 package org.glite.security.util.namespace;
 
+import org.glite.security.util.DN;
+
 import java.io.IOException;
+import java.security.cert.CertPathValidatorException;
 import java.text.ParseException;
 import java.util.List;
-import java.security.cert.CertPathValidatorException;
-
-import org.glite.security.util.DN;
 
 /**
  * Interface for DN namespace/policy checker.

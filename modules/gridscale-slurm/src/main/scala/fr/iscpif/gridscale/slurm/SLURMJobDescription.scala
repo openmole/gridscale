@@ -18,11 +18,11 @@
 
 package fr.iscpif.gridscale.slurm
 
-import fr.iscpif.gridscale.jobservice.JobDescription
-import fr.iscpif.gridscale.tools.ScriptBuffer
-import fr.iscpif.gridscale.tools._
-
 import java.util.UUID
+
+import fr.iscpif.gridscale.jobservice.JobDescription
+import fr.iscpif.gridscale.tools.{ ScriptBuffer, _ }
+
 import scala.concurrent.duration.Duration
 
 /** Represent Gres by extending Tuple2 in order to override toString */

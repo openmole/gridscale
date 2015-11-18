@@ -16,18 +16,17 @@
  */
 package org.glite.security.util;
 
+import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.openssl.PEMWriter;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
-
-import org.apache.log4j.Logger;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.openssl.PEMWriter;
 
 /**
  * Certificate utilities.

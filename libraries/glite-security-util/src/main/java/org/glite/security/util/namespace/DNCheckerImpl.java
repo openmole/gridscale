@@ -18,14 +18,14 @@ limitations under the License.
 
 package org.glite.security.util.namespace;
 
+import org.apache.log4j.Logger;
+import org.glite.security.util.DN;
+
 import java.io.IOException;
 import java.security.cert.CertPathValidatorException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import org.apache.log4j.Logger;
-import org.glite.security.util.DN;
 
 /**
  * Implements DNChecker interface. Checks a DN against a policy/namespace file.

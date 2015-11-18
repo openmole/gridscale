@@ -17,9 +17,9 @@
 
 package fr.gridscale.example.ssh
 
-import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale._
-import authentication._
+import fr.iscpif.gridscale.authentication._
+import fr.iscpif.gridscale.ssh._
 
 object SSHJobExample extends App {
 

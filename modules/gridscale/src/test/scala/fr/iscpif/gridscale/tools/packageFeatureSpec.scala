@@ -1,11 +1,8 @@
 package fr.iscpif.gridscale.tools
 
-import fr.iscpif.gridscale._
-import fr.iscpif.gridscale.tools._
-import scala.concurrent.duration._
-
-import org.scalatest.junit._
 import org.scalatest._
+
+import scala.concurrent.duration._
 
 class packageFeatureSpec extends FeatureSpec with GivenWhenThen {
 

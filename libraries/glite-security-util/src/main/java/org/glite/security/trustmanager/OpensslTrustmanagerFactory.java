@@ -16,13 +16,13 @@
  */
 package org.glite.security.trustmanager;
 
+import org.glite.security.util.CaseInsensitiveProperties;
+
 import java.io.IOException;
 import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.util.Calendar;
-
-import org.glite.security.util.CaseInsensitiveProperties;
 
 /**
  * A factory class for the OpensslTrustmanager. Avoids regenerating a trustmanager for each connection, provided that

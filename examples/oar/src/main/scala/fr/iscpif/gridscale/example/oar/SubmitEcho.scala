@@ -17,10 +17,10 @@
 
 package fr.iscpif.gridscale.example.oar
 
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.oar._
 import fr.iscpif.gridscale.ssh._
-import fr.iscpif.gridscale._
-import authentication._
 
 import scala.concurrent.duration._
 

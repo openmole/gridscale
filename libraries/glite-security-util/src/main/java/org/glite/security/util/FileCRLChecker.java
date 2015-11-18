@@ -16,6 +16,15 @@
  */
 package org.glite.security.util;
 
+import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Object;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.x509.IssuingDistributionPoint;
+import org.bouncycastle.asn1.x509.X509Extensions;
+import org.glite.security.trustmanager.ContextWrapper;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.SignatureException;
@@ -27,15 +36,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.x509.IssuingDistributionPoint;
-import org.bouncycastle.asn1.x509.X509Extensions;
-import org.glite.security.trustmanager.ContextWrapper;
 
 /**
  * The RevocationChecker implementation for checking the certificate revocation against file system stored CRLs with .r0

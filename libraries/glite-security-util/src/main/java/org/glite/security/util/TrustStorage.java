@@ -18,6 +18,8 @@ limitations under the License.
 
 package org.glite.security.util;
 
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.cert.CertificateException;
@@ -26,8 +28,6 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
 
 /**
  * A class that handles the information obtained from the trust directory.

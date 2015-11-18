@@ -6,17 +6,16 @@
 
 package org.glite.voms.ac;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
-import javax.security.auth.x500.X500Principal;
-
 import org.bouncycastle.asn1.DEREncodableVector;
 import org.bouncycastle.asn1.DEROutputStream;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.jce.X509Principal;
+
+import javax.security.auth.x500.X500Principal;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 
 /**

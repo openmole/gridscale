@@ -17,14 +17,15 @@
 
 package fr.iscpif.gridscale.egi.services
 
-import fr.iscpif.gridscale.libraries.lbstub._
-import scala.concurrent.duration.Duration
-import scalaxb.HttpClients
 import java.net.{ Socket, URI }
+
 import fr.iscpif.gridscale.egi.GlobusAuthentication
-import fr.iscpif.gridscale.globushttp.{ CompleteSocketFactory, GlobusHttpClient }
-import org.apache.commons.httpclient.methods.{ PostMethod, StringRequestEntity }
-import scala.util.{ Try, Success, Failure }
+import fr.iscpif.gridscale.globushttp.CompleteSocketFactory
+import fr.iscpif.gridscale.libraries.lbstub._
+
+import scala.concurrent.duration.Duration
+import scala.util.{ Failure, Success, Try }
+import scalaxb.HttpClients
 
 object LBService {
 

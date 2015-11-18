@@ -17,16 +17,13 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.io.{ BufferedInputStream, File, FileInputStream }
+import java.io.{ File, FileInputStream }
 import java.util.UUID
-import fr.iscpif.gridscale.authentication.AuthenticationException
-import org.glite.voms.contact.VOMSProxyInit
-import org.gridforum.jgss.ExtendedGSSManager
-import org.gridforum.jgss.ExtendedGSSCredential
-import org.ietf.jgss.GSSCredential
-import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 
-import scala.io.Source
+import fr.iscpif.gridscale.authentication.AuthenticationException
+import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
+import org.gridforum.jgss.{ ExtendedGSSCredential, ExtendedGSSManager }
+import org.ietf.jgss.GSSCredential
 
 trait ProxyFileAuthentication {
 

@@ -19,8 +19,8 @@
 package fr.iscpif.gridscale.condor
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 object CondorJobService {
@@ -51,7 +51,7 @@ object CondorJobService {
     }
 }
 
-import CondorJobService._
+import fr.iscpif.gridscale.condor.CondorJobService._
 
 trait CondorJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = CondorJob

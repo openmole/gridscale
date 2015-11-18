@@ -16,10 +16,10 @@
  */
 
 package fr.iscpif.gridscale.example.sge
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.sge.{ SGEJobDescription, SGEJobService }
 import fr.iscpif.gridscale.ssh._
-import fr.iscpif.gridscale._
-import authentication._
 
 object SubmitEcho extends App {
 
