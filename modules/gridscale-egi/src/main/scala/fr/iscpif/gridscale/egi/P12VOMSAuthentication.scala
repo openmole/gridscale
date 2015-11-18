@@ -25,8 +25,8 @@ import scala.concurrent.duration.Duration
 
 object P12VOMSAuthentication {
 
-  def apply(p12Authentication: P12Authentication, lifeTime: Duration, serverURL: String, voName: String) = {
-    val (_lifeTime, _serverURL, _voName) = (lifeTime, serverURL, voName)
+  def apply(p12Authentication: P12Authentication, lifeTime: Duration, serverURL: String, voName: String, renewRatio: Double = 0.2) = {
+    val (_lifeTime, _serverURL, _voName, _renewRatio) = (lifeTime, serverURL, voName, renewRatio)
 
     new P12VOMSAuthentication {
       override def certificate: File = p12Authentication.certificate
@@ -34,6 +34,7 @@ object P12VOMSAuthentication {
       override def lifeTime: Duration = _lifeTime
       override def voName: String = _voName
       override def serverURL: String = _serverURL
+      override def renewRation: Double = _renewRatio
     }
   }
 

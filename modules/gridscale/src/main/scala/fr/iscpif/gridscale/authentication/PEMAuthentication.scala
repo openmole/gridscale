@@ -19,6 +19,20 @@ package fr.iscpif.gridscale.authentication
 
 import java.io.File
 
+object PEMAuthentication {
+
+  def apply(certificate: File, key: File, password: String) = {
+    val (_certificate, _key, _password) = (certificate, key, password)
+
+    new PEMAuthentication {
+      override def key: File = _key
+      override def certificate: File = _certificate
+      override def password: String = _password
+    }
+  }
+
+}
+
 trait PEMAuthentication {
   def certificate: File
   def key: File

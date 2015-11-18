@@ -17,8 +17,30 @@
 
 package fr.iscpif.gridscale.egi
 
+import java.io.File
+
 import fr.iscpif.gridscale.authentication.PEMAuthentication
 import org.glite.voms.contact.VOMSProxyInit
+
+import scala.concurrent.duration.Duration
+
+object PEMVOMSAuthentication {
+
+  def apply(pem: PEMAuthentication, lifeTime: Duration, serverURL: String, voName: String, renewRatio: Double = 0.2) = {
+    val (_lifeTime, _serverURL, _voName, _renewRatio) = (lifeTime, serverURL, voName, renewRatio)
+
+    new PEMVOMSAuthentication {
+      override def key: File = pem.key
+      override def certificate: File = pem.certificate
+      override def password: String = pem.password
+      override def renewRation: Double = _renewRatio
+      override def lifeTime: Duration = _lifeTime
+      override def voName: String = _voName
+      override def serverURL: String = _serverURL
+    }
+  }
+
+}
 
 trait PEMVOMSAuthentication extends VOMSAuthentication with PEMAuthentication {
   def proxyInit = VOMSProxyInit.instance(certificate.getPath, key.getPath, password)

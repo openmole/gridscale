@@ -46,7 +46,7 @@ trait VOMSAuthentication {
   def proxyInit: VOMSProxyInit
   def fqan: Option[String] = None
   def lifeTime: Duration
-  def renewRation = 0.2
+  def renewRation: Double
   def proxySize = 1024
 
   @transient lazy val delegationID = UUID.randomUUID
