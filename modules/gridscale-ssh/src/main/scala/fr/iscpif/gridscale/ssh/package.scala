@@ -21,7 +21,9 @@ import net.schmizz.sshj.SSHClient
 
 package object ssh {
 
-  implicit def sshUserPassword(userPassword: UserPassword) = new SSHAuthentication {
+  implicit def sshUserPassword(userPassword: UserPassword) = new SSHAuthentication with User {
+    def user = userPassword.user
+
     override def authenticate(c: SSHClient): Unit =
       try c.authPassword(userPassword.user, userPassword.password)
       catch {
@@ -29,7 +31,9 @@ package object ssh {
       }
   }
 
-  implicit def sshPrivateKey(privateKey: PrivateKey) = new SSHAuthentication {
+  implicit def sshPrivateKey(privateKey: PrivateKey) = new SSHAuthentication with User {
+    def user = privateKey.user
+
     override def authenticate(c: SSHClient) =
       try {
         val kp = c.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)

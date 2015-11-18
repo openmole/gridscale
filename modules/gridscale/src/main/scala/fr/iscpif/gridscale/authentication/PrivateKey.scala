@@ -31,7 +31,7 @@ object PrivateKey {
   }
 }
 
-trait PrivateKey {
+trait PrivateKey <: User {
   def privateKey: File
   def password: String
   def user: String
