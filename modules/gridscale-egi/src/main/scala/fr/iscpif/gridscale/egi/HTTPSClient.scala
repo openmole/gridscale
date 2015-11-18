@@ -33,7 +33,7 @@ import scala.io.Source
 
 trait HTTPSClient {
 
-  def maxConnections = 20
+  def maxConnections: Int
   def timeout: Duration
   def factory: Duration ⇒ ConnectionSocketFactory
 

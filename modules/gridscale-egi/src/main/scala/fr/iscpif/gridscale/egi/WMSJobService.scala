@@ -36,27 +36,33 @@ case class WMSLocation(url: URI)
 
 object WMSJobService {
 
-  def apply[P: GlobusAuthenticationProvider](location: WMSLocation, connections: Int = 5)(proxy: P): WMSJobService = {
-    val (_connections, _proxy) = (connections, proxy)
+  def apply[P: GlobusAuthenticationProvider](
+    location: WMSLocation,
+    connections: Int = 5,
+    timeout: Duration = 1 minute,
+    delegationRenewal: Duration = 1 hour)(proxy: P): WMSJobService = {
+    val (_connections, _proxy, _timeout, _delegationRenewal) = (connections, proxy, timeout, delegationRenewal)
 
     new WMSJobService {
       override def proxy(): GlobusAuthentication.Proxy = implicitly[GlobusAuthenticationProvider[P]].apply(_proxy)
       def url: URI = location.url
       override def connections = _connections
+      override def delegationRenewal = _delegationRenewal
+      override def timeout = _timeout
     }
   }
 
 }
 
-trait WMSJobService extends JobService with DefaultTimeout {
+trait WMSJobService extends JobService {
   type J = WMSJobId
   type D = WMSJobDescription
 
   def url: URI
-  def connections = 5
-
-  def copyBufferSize = 64 * 1000
-  def delegationRenewal: Duration = 1 -> HOURS
+  def connections: Int
+  def delegationRenewal: Duration
+  def timeout: Duration
+  def copyBufferSize = 64 * 1024
 
   def proxy(): GlobusAuthentication.Proxy
 

@@ -25,6 +25,10 @@ import scala.concurrent.duration.Duration
 
 object HTTPSAuthentication {
 
+  implicit val functionAuthentication = new HTTPSAuthentication[Duration ⇒ SSLConnectionSocketFactory] {
+    override def factory(t: (Duration) ⇒ SSLConnectionSocketFactory): (Duration) ⇒ SSLConnectionSocketFactory = t
+  }
+
   implicit val p12Authentication = new HTTPSAuthentication[P12Authentication] {
     override def factory(t: P12Authentication) = {
       val auth = new P12HTTPSAuthentication {

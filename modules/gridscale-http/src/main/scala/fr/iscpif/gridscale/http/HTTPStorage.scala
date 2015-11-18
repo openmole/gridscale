@@ -22,12 +22,12 @@ import java.net.{ HttpURLConnection, URI }
 
 import fr.iscpif.gridscale._
 import fr.iscpif.gridscale.storage._
-import fr.iscpif.gridscale.tools.{ DefaultTimeout, _ }
+import fr.iscpif.gridscale.tools.{ _ }
 import org.htmlparser.Parser
 import org.htmlparser.filters.NodeClassFilter
 import org.htmlparser.tags.LinkTag
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 object HTTPStorage {
 
@@ -40,19 +40,21 @@ object HTTPStorage {
     else f(cnx)
   }
 
-  def apply(url: String) = {
-    val _url = url
+  def apply(url: String, timeout: Duration = 1 minute) = {
+    val (_url, _timeout) = (url, timeout)
     new HTTPStorage {
-      override def url: String = _url
+      override val url: String = _url
+      override val timeout = _timeout
     }
   }
 
 }
 
-trait HTTPStorage extends Storage with DefaultTimeout {
+trait HTTPStorage extends Storage {
 
   def url: String
   def bufferSize = 64000
+  def timeout: Duration
 
   def _list(path: String) = {
     val is = openInputStream(path)

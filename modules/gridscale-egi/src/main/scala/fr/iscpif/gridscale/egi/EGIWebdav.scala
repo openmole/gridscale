@@ -20,22 +20,23 @@ import java.io.{ InputStream, OutputStream, PipedInputStream, PipedOutputStream 
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.egi.https._
 import fr.iscpif.gridscale.storage._
-import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.apache.http.client.methods.{ HttpDelete, HttpPut, HttpUriRequest }
 import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.protocol.HttpContext
 import org.apache.http.{ HttpRequest, HttpResponse }
 
 import scala.collection.JavaConversions._
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 object EGIWebdav {
-  def apply[A: HTTPSAuthentication](service: String, basePath: String)(authentication: A) = {
-    val (_service, _basePath) = (service, basePath)
+  def apply[A: HTTPSAuthentication](service: String, basePath: String, connections: Int = 20, timeout: Duration = 1 minute)(authentication: A) = {
+    val (_service, _basePath, _connections, _timeout) = (service, basePath, connections, timeout)
     new EGIWebdav {
       override def basePath: String = _basePath
       override def factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def service: String = _service
+      override def timeout = _timeout
+      override def maxConnections = _connections
     }
   }
 
@@ -53,10 +54,11 @@ object EGIWebdav {
 
 }
 
-trait EGIWebdav <: DefaultTimeout with HTTPSClient with Storage {
+trait EGIWebdav <: HTTPSClient with Storage {
 
   def service: String
   def basePath: String
+  def timeout: Duration
 
   lazy val webdavClient = {
     val client = clientBuilder

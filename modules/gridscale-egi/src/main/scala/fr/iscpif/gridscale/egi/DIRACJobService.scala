@@ -22,7 +22,6 @@ import java.net.{ URI, URL }
 import fr.iscpif.gridscale.cache.SingleValueCache
 import fr.iscpif.gridscale.egi.https.HTTPSAuthentication
 import fr.iscpif.gridscale.jobservice._
-import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.http.client.methods._
 import org.apache.http.client.utils.URIBuilder
@@ -38,18 +37,24 @@ import scala.sys.process.BasicIO
 
 object DIRACJobService {
 
-  def apply[A: HTTPSAuthentication](service: String, group: String)(authentication: A) = {
-    val (_service, _group) = (service, group)
+  def apply[A: HTTPSAuthentication](
+    service: String,
+    group: String,
+    connections: Int = 20,
+    timeout: Duration = 1 minutes)(authentication: A) = {
+    val (_service, _group, _connections, _timeout) = (service, group, connections, timeout)
     new DIRACJobService {
-      override def group: String = _group
-      override def factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
-      override def service: String = _service
+      override val timeout = _timeout
+      override val maxConnections = _connections
+      override val group: String = _group
+      override val factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
+      override val service: String = _service
     }
   }
 
 }
 
-trait DIRACJobService extends JobService with DefaultTimeout with HTTPSClient {
+trait DIRACJobService extends JobService with HTTPSClient {
 
   type J = String
   type D = DIRACJobDescription
@@ -60,6 +65,7 @@ trait DIRACJobService extends JobService with DefaultTimeout with HTTPSClient {
 
   def service: String
   def group: String
+  def timeout: Duration
   def setup = "Dirac-Production"
   def auth2Auth = service + "/oauth2/token"
   def jobs = service + "/jobs"

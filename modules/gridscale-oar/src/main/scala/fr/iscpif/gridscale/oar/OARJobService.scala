@@ -23,14 +23,17 @@ import fr.iscpif.gridscale.ssh.{ SSHAuthentication, SSHHost, SSHStorage }
 import fr.iscpif.gridscale.tools.shell.BashShell
 import net.schmizz.sshj.xfer.FilePermission
 
+import scala.concurrent.duration._
+
 object OARJobService {
 
-  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
-    val (_host, _port, _credential) = (host, port, credential)
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential, _timeout) = (host, port, credential, timeout)
     new OARJobService {
-      override def credential = _credential
-      override def host = _host
-      override def port = _port
+      override val credential = _credential
+      override val host = _host
+      override val port = _port
+      override val timeout = _timeout
     }
   }
 

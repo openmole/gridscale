@@ -24,15 +24,16 @@ import java.util.concurrent.TimeoutException
 import fr.iscpif.gridscale.egi.services._
 import fr.iscpif.gridscale.libraries.srmstub._
 import fr.iscpif.gridscale.storage._
-import fr.iscpif.gridscale.tools.DefaultTimeout
 import org.globus.io.streams._
+
+import scala.concurrent.duration._
 
 case class SRMLocation(host: String, port: Int, basePath: String)
 
 object SRMStorage {
 
-  def apply[P: GlobusAuthenticationProvider](location: SRMLocation, connections: Int = 5)(proxy: P): SRMStorage = {
-    val (_connections, _proxy) = (connections, proxy)
+  def apply[P: GlobusAuthenticationProvider](location: SRMLocation, connections: Int = 5, timeout: Duration = 1 minute)(proxy: P): SRMStorage = {
+    val (_connections, _proxy, _timeout) = (connections, proxy, timeout)
 
     new SRMStorage {
       override def proxy(): GlobusAuthentication.Proxy = implicitly[GlobusAuthenticationProvider[P]].apply(_proxy)
@@ -40,6 +41,7 @@ object SRMStorage {
       override def basePath = location.basePath
       override def port = location.port
       override def connections = _connections
+      override def timeout = _timeout
     }
   }
 
@@ -63,7 +65,7 @@ object SRMStorage {
 
 import fr.iscpif.gridscale.egi.SRMStorage._
 
-trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
+trait SRMStorage <: Storage with RecursiveRmDir {
 
   def proxy(): GlobusAuthentication.Proxy
 
@@ -72,6 +74,7 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   def host: String
   def port: Int
   def basePath: String
+  def timeout: Duration
 
   def connections: Int
   def sleepTime = 1

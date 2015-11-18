@@ -23,16 +23,18 @@ import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
+import scala.concurrent.duration._
 import scala.util.Try
 
 object SGEJobService {
 
-  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
-    val (_host, _port, _credential) = (host, port, credential)
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential, _timeout) = (host, port, credential, timeout)
     new SGEJobService {
-      override def credential = _credential
-      override def host = _host
-      override def port = _port
+      override val credential = _credential
+      override val host = _host
+      override val port = _port
+      override val timeout = _timeout
     }
   }
 

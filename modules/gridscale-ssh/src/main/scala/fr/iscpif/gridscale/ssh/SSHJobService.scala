@@ -26,15 +26,18 @@ import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.IOUtils
 import net.schmizz.sshj.connection.channel.direct.Session
 
+import scala.concurrent.duration._
+
 object SSHJobService {
 
-  def apply(host: String, port: Int = 22)(implicit credential: SSHAuthentication) = {
-    val (_port, _host, _credential) = (port, host, credential)
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_port, _host, _credential, _timeout) = (port, host, credential, timeout)
 
     new SSHJobService {
-      override def credential = _credential
-      override def port = _port
-      override def host = _host
+      override val credential = _credential
+      override val port = _port
+      override val host = _host
+      override val timeout = _timeout
     }
   }
 
@@ -100,6 +103,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
   type D = SSHJobDescription
 
   def bufferSize = 65535
+  def timeout: Duration
 
   def toScript(description: D, background: Boolean = true) = {
     val jobId = UUID.randomUUID.toString
