@@ -113,11 +113,6 @@ trait Bundles <: Modules with Settings {
     name := "http"
     )
 
- /* lazy val diracBundle = Project(id = "diracbundle", base = file("bundles/dirac"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleDIRAC) settings (
-    name := "dirac",
-    importPackage := Seq("org.tukaani.xz.*;resolution:=optional") ++ importPackage.value
-    )*/
-
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
     name := "ssh",
     importPackage := Seq("!com.jcraft.jzlib", "!javax.*", "*"),
@@ -158,23 +153,13 @@ trait Modules <: Libraries with Settings {
     libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1",
-    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6"
-    )
+    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6")
 
   lazy val gridscaleHttp = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
-    libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1"
-    )
-
- /* lazy val gridscaleDIRAC = Project(id = "dirac", base = file("modules/gridscale-dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings(
-    libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
-    libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
-    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
-    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1"
-    )*/
+    libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1")
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
-    libraryDependencies += "net.schmizz" % "sshj" % "0.10.0"
-    )
+    libraryDependencies += "net.schmizz" % "sshj" % "0.10.0")
 
   lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH) settings (
     libraryDependencies ++= Seq(scalaTest, mockito)

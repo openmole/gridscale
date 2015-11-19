@@ -34,13 +34,11 @@ object PEMVOMSAuthentication {
     renewRatio: Double = 0.2,
     fqan: Option[String] = None,
     proxySize: Int = 1024) = {
-    val (_lifeTime, _serverURL, _voName, _renewRatio, _fqan, _proxySize) =
-      (lifeTime, serverURL, voName, renewRatio, fqan, proxySize)
+    val (_pem, _lifeTime, _serverURL, _voName, _renewRatio, _fqan, _proxySize) =
+      (pem, lifeTime, serverURL, voName, renewRatio, fqan, proxySize)
 
     new PEMVOMSAuthentication {
-      override val key: File = pem.key
-      override val certificate: File = pem.certificate
-      override val password: String = pem.password
+      override val pemAuthentication = _pem
       override val renewRation: Double = _renewRatio
       override val lifeTime: Duration = _lifeTime
       override val voName: String = _voName
@@ -52,6 +50,7 @@ object PEMVOMSAuthentication {
 
 }
 
-trait PEMVOMSAuthentication extends VOMSAuthentication with PEMAuthentication {
-  def proxyInit = VOMSProxyInit.instance(certificate.getPath, key.getPath, password)
+trait PEMVOMSAuthentication extends VOMSAuthentication {
+  def pemAuthentication: PEMAuthentication
+  def proxyInit = VOMSProxyInit.instance(pemAuthentication.certificate.getPath, pemAuthentication.key.getPath, pemAuthentication.password)
 }

@@ -16,14 +16,15 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.{ InputStream, OutputStream, PipedInputStream, PipedOutputStream }
+import java.io._
+import java.util.concurrent.{Executors, Future, ThreadFactory}
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.egi.https._
 import fr.iscpif.gridscale.storage._
-import org.apache.http.client.methods.{ HttpDelete, HttpPut, HttpUriRequest }
+import org.apache.http._
+import org.apache.http.client.methods.{HttpDelete, HttpPut, HttpUriRequest, RequestBuilder}
 import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.protocol.HttpContext
-import org.apache.http.{ HttpRequest, HttpResponse }
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
@@ -46,9 +47,12 @@ object EGIWebdav {
 
     override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
       val method = request.getRequestLine().getMethod()
-      val uri = getLocationURI(request, response, context)
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) new HttpPut(uri)
-      else super.getRedirect(request, response, context)
+      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
+        val uri = getLocationURI(request, response, context)
+        println("redirect to " + uri)
+        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
+        //RequestBuilder.copy(request).setUri(uri).build()
+      } else super.getRedirect(request, response, context)
     }
   }
 
@@ -70,10 +74,31 @@ trait EGIWebdav <: HTTPSClient with Storage {
     trimSlashes(service) + "/" + trimSlashes(basePath) + "/" + trimSlashes(path)
 
   override protected def _openOutputStream(path: String): OutputStream = {
-    val in = new PipedInputStream
-    val out = new PipedOutputStream(in)
-    webdavClient.put(fullUrl(path), in)
-    out
+    val executor = Executors.newSingleThreadExecutor(new ThreadFactory {
+      override def newThread(runnable: Runnable): Thread = {
+        val thread = new Thread(runnable)
+        thread.setDaemon(true)
+        thread
+      }
+    })
+
+    @volatile var future: Future[_] = null
+
+    val os = new PipedOutputStream() {
+      override def close() = {
+        super.close
+        future.get
+      }
+    }
+
+    val is = new PipedInputStream(os)
+
+    future = executor.submit(
+      new Runnable {
+        def run = webdavClient.put(fullUrl(path), is)
+      }
+    )
+    os
   }
 
   override protected def _openInputStream(path: String): InputStream =

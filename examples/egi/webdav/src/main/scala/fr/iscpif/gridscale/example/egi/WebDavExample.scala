@@ -16,34 +16,39 @@
  */
 package fr.iscpif.gridscale.example.egi
 
-import java.io.File
+import java.io.{ FileOutputStream, File }
 
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi._
 
 import scala.concurrent.duration._
+import scala.io.Source
 import scala.util.Try
 
 object WebDavExample extends App {
+  VOMSAuthentication.setCARepository(new File("/path/to/certificates/dir"))
 
   val p12 = P12Authentication(new File("/path/to/certificate.p12"), "password")
   val authentication = P12VOMSAuthentication(p12, 24 hours, "voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "vo.complex-systems.eu")
 
   val dav = EGIWebdav(service = "https://grid05.lal.in2p3.fr:443", basePath = "/dpm/lal.in2p3.fr/home/vo.complex-systems.eu/")(authentication)
 
-  def dir = "blalalalal"
+  def dir = "testDirectory"
   def list = dav.list("/").map(_.name).mkString("\n")
 
   Try(dav.rmDir(dir))
-  println(list)
+
   dav.makeDir(dir)
   println(list)
   dav.rmDir(dir)
 
-  Try(dav.rmFile("testdav.txt"))
+  val testFile = "testdav.txt"
+  Try(dav.rmFile(testFile))
+  val out = dav.openOutputStream(testFile)
+  try out.write("Life is great\n".getBytes)
+  finally out.close
 
-  val out = dav.openOutputStream("testdav.txt")
-  out.write("ebeaeau".getBytes)
-  out.close
+  val in = dav.openInputStream(testFile)
+  println(Source.fromInputStream(in).mkString)
 
 }
