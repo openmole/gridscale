@@ -37,7 +37,7 @@ package object https {
     def verify(hostname: String, session: SSLSession) = true
   }
 
-  def socketFactory(sslContext: SSLContext)(timeout: Duration) =
+  def socketFactory(sslContext: SSLContext)(timeout: Duration): SSLConnectionSocketFactory =
     new SSLConnectionSocketFactory(sslContext, hostVerifier) {
       override protected def prepareSocket(socket: SSLSocket) = {
         socket.setSoTimeout(timeout.toMillis.toInt)
