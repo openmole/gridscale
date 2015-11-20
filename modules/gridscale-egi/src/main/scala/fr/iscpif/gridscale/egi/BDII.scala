@@ -32,9 +32,7 @@ class BDII(location: String) {
   val wmsServiceType = "org.glite.wms.WMProxy"
   val creamCEServiceType = "org.glite.ce.CREAM"
 
-  case class DPMLocation(host: String, port: Int, basePath: String)
-
-  def queryGridFTPLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
+  def queryWebDAVLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
     def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(|(GlueSEAccessProtocolType=webdav)(GlueSEAccessProtocolType=https)))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
     //def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(GlueSEAccessProtocolType=https))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
     //def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(GlueSEAccessProtocolType=gsiftp))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"

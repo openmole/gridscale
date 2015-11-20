@@ -28,13 +28,14 @@ import org.apache.http.protocol.HttpContext
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 
+case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
+
 object WebDAVS {
-  def apply[A: HTTPSAuthentication](service: String, basePath: String, connections: Int = 20, timeout: Duration = 1 minute)(authentication: A) = {
-    val (_service, _basePath, _connections, _timeout) = (service, basePath, connections, timeout)
+  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Int = 20, timeout: Duration = 1 minute)(authentication: A) = {
+    val (_location, _connections, _timeout) = (location, connections, timeout)
     new WebDAVS {
-      override def basePath: String = _basePath
+      override def location = _location
       override def factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
-      override def service: String = _service
       override def timeout = _timeout
       override def maxConnections = _connections
     }
@@ -48,9 +49,7 @@ object WebDAVS {
       val method = request.getRequestLine().getMethod()
       if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
         val uri = getLocationURI(request, response, context)
-        println("redirect to " + uri)
         RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
-        //RequestBuilder.copy(request).setUri(uri).build()
       } else super.getRedirect(request, response, context)
     }
   }
@@ -59,8 +58,7 @@ object WebDAVS {
 
 trait WebDAVS <: HTTPSClient with Storage {
 
-  def service: String
-  def basePath: String
+  def location: WebDAVLocation
   def timeout: Duration
 
   lazy val webdavClient = {
@@ -70,7 +68,7 @@ trait WebDAVS <: HTTPSClient with Storage {
   }
 
   def fullUrl(path: String) =
-    trimSlashes(service) + "/" + trimSlashes(basePath) + "/" + trimSlashes(path)
+    trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
   override protected def _openOutputStream(path: String): OutputStream = {
     val executor = Executors.newSingleThreadExecutor(new ThreadFactory {
