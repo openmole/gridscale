@@ -14,12 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.iscpif.gridscale.egi
+package fr.iscpif.gridscale.http
 
 import java.io._
 import java.util.concurrent.{ Executors, Future, ThreadFactory }
 import com.github.sardine.impl._
-import fr.iscpif.gridscale.egi.https._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
 import org.apache.http.client.methods.{ HttpDelete, HttpPut, HttpUriRequest, RequestBuilder }
@@ -29,10 +28,10 @@ import org.apache.http.protocol.HttpContext
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 
-object EGIWebdav {
+object WebDAVS {
   def apply[A: HTTPSAuthentication](service: String, basePath: String, connections: Int = 20, timeout: Duration = 1 minute)(authentication: A) = {
     val (_service, _basePath, _connections, _timeout) = (service, basePath, connections, timeout)
-    new EGIWebdav {
+    new WebDAVS {
       override def basePath: String = _basePath
       override def factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def service: String = _service
@@ -58,7 +57,7 @@ object EGIWebdav {
 
 }
 
-trait EGIWebdav <: HTTPSClient with Storage {
+trait WebDAVS <: HTTPSClient with Storage {
 
   def service: String
   def basePath: String
@@ -66,7 +65,7 @@ trait EGIWebdav <: HTTPSClient with Storage {
 
   lazy val webdavClient = {
     val client = clientBuilder
-    client.setRedirectStrategy(new EGIWebdav.RedirectStrategy)
+    client.setRedirectStrategy(new WebDAVS.RedirectStrategy)
     new SardineImpl(client)
   }
 

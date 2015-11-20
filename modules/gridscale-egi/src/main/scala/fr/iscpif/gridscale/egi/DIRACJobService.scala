@@ -20,7 +20,7 @@ import java.io.{ BufferedInputStream, BufferedOutputStream, FileOutputStream, In
 import java.net.{ URI, URL }
 
 import fr.iscpif.gridscale.cache.SingleValueCache
-import fr.iscpif.gridscale.egi.https.HTTPSAuthentication
+import fr.iscpif.gridscale.http.{ HTTPSClient, HTTPSAuthentication }
 import fr.iscpif.gridscale.jobservice._
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.http.client.methods._

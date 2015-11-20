@@ -109,7 +109,7 @@ trait Bundles <: Modules with Settings {
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
 
-  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHttp) settings (
+  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHTTP) settings (
     name := "http"
     )
 
@@ -147,16 +147,17 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
-  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms) settings (
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
     libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
-    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1",
-    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6")
+    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1")
 
-  lazy val gridscaleHttp = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
-    libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1")
+  lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
+    libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
+    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6"
+    )
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "net.schmizz" % "sshj" % "0.10.0")

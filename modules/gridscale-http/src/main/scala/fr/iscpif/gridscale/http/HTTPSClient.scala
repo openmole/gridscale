@@ -14,22 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.iscpif.gridscale.egi
-
-import java.io.InputStream
-import java.net.URI
+package fr.iscpif.gridscale.http
 
 import org.apache.http.client.config.RequestConfig
-import org.apache.http.client.methods.HttpRequestBase
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.config.RegistryBuilder
-import org.apache.http.conn.socket.ConnectionSocketFactory
+import org.apache.http.conn.socket._
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
-import org.apache.http.{ HttpHost, HttpRequest }
 
 import scala.concurrent.duration._
-import scala.io.Source
 
 trait HTTPSClient {
 
