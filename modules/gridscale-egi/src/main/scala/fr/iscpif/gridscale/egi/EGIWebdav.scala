@@ -17,12 +17,12 @@
 package fr.iscpif.gridscale.egi
 
 import java.io._
-import java.util.concurrent.{Executors, Future, ThreadFactory}
+import java.util.concurrent.{ Executors, Future, ThreadFactory }
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.egi.https._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
-import org.apache.http.client.methods.{HttpDelete, HttpPut, HttpUriRequest, RequestBuilder}
+import org.apache.http.client.methods.{ HttpDelete, HttpPut, HttpUriRequest, RequestBuilder }
 import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.protocol.HttpContext
 
