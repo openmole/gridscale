@@ -21,6 +21,8 @@ import java.net.{ URI, URISyntaxException }
 import java.util.logging.{ Level, Logger }
 import javax.naming.NamingException
 
+import fr.iscpif.gridscale.http.WebDAVLocation
+
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
@@ -33,38 +35,22 @@ class BDII(location: String) {
   val creamCEServiceType = "org.glite.ce.CREAM"
 
   def queryWebDAVLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
-    def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(|(GlueSEAccessProtocolType=webdav)(GlueSEAccessProtocolType=https)))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
-    //def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(GlueSEAccessProtocolType=https))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
-    //def searchPhrase = "(&(objectclass=GlueSEAccessProtocol)(GlueSEAccessProtocolType=gsiftp))" // searchService(vo, "https") //"(&(objectClass=GlueSE)(GlueSEImplementationName=DPM))"
+    def searchPhrase = "(GLUE2EndpointInterfaceName=webdav)"
+
+    val services =
+      for {
+        webdavService ← q.query(searchPhrase, timeOut, bindDN = "o=glue").toSeq
+        id = webdavService.getAttributes.get("GLUE2EndpointID").get.toString
+        url = webdavService.getAttributes.get("GLUE2EndpointURL").get().toString
+      } yield (id, url)
 
     for {
-      webdavService ← q.query(searchPhrase, timeOut).toSeq
-      //t ← webdavService.getAttributes.getAll
-      id = webdavService.getAttributes.get("GlueChunkKey").get()
-      //t ← q.query(s"($id)", timeOut)
-      // id = webdavService.getAttributes.get("GlueSEUniqueID").get().toString
-      //id ← Option(dpm.getAttributes().get("GlueSEUniqueID")).map(_.get().toString())
-      //val resForPath = q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
-
-      //t = println(s"(&($id)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
-      //accessible ← q.query(s"(&($id))", timeOut) //(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut) //(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
-    } yield id
-
-    /*def searchService(vo: String, serviceType: String) = {
-      def serviceTypeQuery = s"(GlueSEAccessProtocolType=$serviceType)"
-      s"(&(objectClass=GlueSEAccessProtocol)($serviceTypeQuery))"
-    }
-
-    for {
-      gsi ← q.query(searchService(vo, "gsiftp"), timeOut).toSeq
-      chunk = gsi.getAttributes.get("GlueChunkKey").get()
-      accessible ← q.query(s"(&(GlueChunkKey=$chunk)(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
-      path = accessible.getAttributes().get("GlueVOInfoPath").get().toString
-    } yield new GridFTPStorage {
-      override def host: String = ???
-      override def basePath: String = ???
-    }*/
-
+      (id, url) ← services
+      urlObject = new URI(url)
+      host = urlObject.getHost
+      pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
+      path = pathQuery.getAttributes().get("GlueVOInfoPath").get.toString
+    } yield WebDAVLocation(urlObject.getHost, path, urlObject.getPort)
   }
 
   def querySRMLocations(vo: String, timeOut: Duration): Seq[SRMLocation] = BDIIQuery.withBDIIQuery(location) { q ⇒
@@ -140,8 +126,6 @@ class BDII(location: String) {
       hostingCluster = attributes.get("GlueCEHostingCluster").get.toString
       memory = machineInfo(hostingCluster).memory
     } yield {
-      //println(uniqueId -> attributes.get("GlueCECapability"))
-
       CREAMCELocation(
         hostingCluster = hostingCluster,
         port = port,

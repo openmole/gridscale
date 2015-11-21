@@ -51,7 +51,7 @@ class BDIIQuery(val bdii: String) {
    * @param searchPhrase the search phrase
    * @return an array list of SearchResult objects.
    */
-  def query(searchPhrase: String, timeOut: Duration, attributeList: List[String] = List.empty) = {
+  def query(searchPhrase: String, timeOut: Duration, attributeList: List[String] = List.empty, bindDN: String = "o=grid") = {
     //boolean hasError= false;
 
     /* specify search constraints to search subtree */
@@ -63,7 +63,6 @@ class BDIIQuery(val bdii: String) {
     if (attributeList.size > 0)
       constraints.setReturningAttributes(attributeList.toArray)
 
-    val bindDN = "o=grid"
     // Perform the search
     val results = dirContext.search(
       bindDN,
