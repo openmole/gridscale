@@ -102,15 +102,24 @@ trait Bundles <: Modules with Settings {
     name := "gridscale"
     )
 
-  lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleEGI) settings(
+  lazy val apacheHTTPBundle = Project(id = "apachehttpbundle", base = file("bundles/apache-http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (apacheHTTP) settings(
+    name := "http",
+    organization := "org.apache",
+    bundleSymbolicName := s"org.apache.http",
+    exportPackage := Seq("org.apache.http.*"),
+    version := httpComponentsVersion)
+
+  lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleEGI, apacheHTTPBundle) settings(
     name := "egi",
     importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "org.tukaani.xz.*;resolution:=optional", "org.apache.tools.ant.*;resolution:=optional", "*"),
-    privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*") ++ privatePackage.value,
+    privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
 
-  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHTTP) settings (
-    name := "http"
+  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHTTP, apacheHTTPBundle) settings (
+    name := "http",
+    importPackage := Seq("org.apache.tools.ant.*;resolution:=optional", "*"),
+    privatePackage := Seq("!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value
     )
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
@@ -143,18 +152,15 @@ trait Bundles <: Modules with Settings {
 
 trait Modules <: Libraries with Settings {
 
-  lazy val httpComponentsVersion = "4.5"
-
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
-  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
+
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP, apacheHTTP) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
-    libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
-    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1")
 
-  lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
+  lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale, apacheHTTP) settings (
     libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
     libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6"
     )
@@ -191,6 +197,7 @@ trait Libraries <: Settings {
   import sbtscalaxb.Plugin._
 
   lazy val jglobusVersion = "2.2.0-20150814"
+  lazy val httpComponentsVersion = "4.5"
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
@@ -258,6 +265,13 @@ trait Libraries <: Settings {
     libraryDependencies += "commons-lang" % "commons-lang" % "2.3",
     libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
     libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
+    )
+
+
+  lazy val apacheHTTP = Project(id= "apache-http", base = file("libraries/target/apache-http"), settings = defaultSettings) settings (
+    libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
+    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
+    version := httpComponentsVersion
     )
 
 
