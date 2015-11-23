@@ -112,7 +112,7 @@ trait Bundles <: Modules with Settings {
   lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHTTP) settings (
     name := "http",
     importPackage := Seq("org.apache.tools.ant.*;resolution:=optional", "*"),
-    privatePackage := Seq("!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value
+    privatePackage := Seq("org.apache.http.entity.mime.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value
     )
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
@@ -145,17 +145,22 @@ trait Bundles <: Modules with Settings {
 
 trait Modules <: Libraries with Settings {
 
+
+  lazy val httpComponentsVersion = "4.5.1"
+
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
 
-  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP, apacheHTTP) settings (
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1")
 
-  lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale, apacheHTTP) settings (
+  lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6"
+    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6",
+    libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
+    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion
     )
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
@@ -190,7 +195,6 @@ trait Libraries <: Settings {
   import sbtscalaxb.Plugin._
 
   lazy val jglobusVersion = "2.2.0-20150814"
-  lazy val httpComponentsVersion = "4.5"
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
@@ -259,15 +263,5 @@ trait Libraries <: Settings {
     libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
     libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
     )
-
-
-  lazy val apacheHTTP = Project(id = "apachehttp", base = file("bundles/apache-http"), settings = defaultSettings ++ osgiSettings) settings(
-    name := "apachehttp",
-    bundleSymbolicName := s"org.apache.http",
-    exportPackage := Seq("org.apache.http.*"),
-    privatePackage := Seq("*"),
-    libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
-    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
-    version := httpComponentsVersion)
 
 }
