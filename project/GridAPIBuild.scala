@@ -102,21 +102,14 @@ trait Bundles <: Modules with Settings {
     name := "gridscale"
     )
 
-  lazy val apacheHTTPBundle = Project(id = "apachehttpbundle", base = file("bundles/apache-http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (apacheHTTP) settings(
-    name := "http",
-    organization := "org.apache",
-    bundleSymbolicName := s"org.apache.http",
-    exportPackage := Seq("org.apache.http.*"),
-    version := httpComponentsVersion)
-
-  lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleEGI, apacheHTTPBundle) settings(
+  lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleEGI) settings(
     name := "egi",
     importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "org.tukaani.xz.*;resolution:=optional", "org.apache.tools.ant.*;resolution:=optional", "*"),
     privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
 
-  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHTTP, apacheHTTPBundle) settings (
+  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHTTP) settings (
     name := "http",
     importPackage := Seq("org.apache.tools.ant.*;resolution:=optional", "*"),
     privatePackage := Seq("!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value
@@ -268,11 +261,13 @@ trait Libraries <: Settings {
     )
 
 
-  lazy val apacheHTTP = Project(id= "apache-http", base = file("libraries/target/apache-http"), settings = defaultSettings) settings (
+  lazy val apacheHTTP = Project(id = "apachehttp", base = file("bundles/apache-http"), settings = defaultSettings ++ osgiSettings) settings(
+    name := "apachehttp",
+    bundleSymbolicName := s"org.apache.http",
+    exportPackage := Seq("org.apache.http.*"),
+    privatePackage := Seq("*"),
     libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
-    version := httpComponentsVersion
-    )
-
+    version := httpComponentsVersion)
 
 }
