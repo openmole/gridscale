@@ -68,7 +68,7 @@ trait WebDAVS <: HTTPSClient with Storage {
   }
 
   def fullUrl(path: String) =
-    trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
+    "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
   override protected def _openOutputStream(path: String): OutputStream = {
     val executor = Executors.newSingleThreadExecutor(new ThreadFactory {
