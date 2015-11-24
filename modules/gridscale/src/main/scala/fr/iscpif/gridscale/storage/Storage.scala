@@ -27,11 +27,6 @@ case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Lo
 
 trait Storage {
 
-  def exists(path: String) =
-    parent(path).
-      map(parentPath ⇒ listNames(parentPath).exists(_ == name(path))).
-      getOrElse(true)
-
   def child(parent: String, child: String) = Storage.child(parent, child)
 
   def parent(path: String): Option[String] = {
@@ -48,17 +43,22 @@ trait Storage {
   def openInputStream(path: String): InputStream = new BufferedInputStream(_openInputStream(path))
   def openOutputStream(path: String): OutputStream = new BufferedOutputStream(_openOutputStream(path))
 
-  def list(path: String): Seq[ListEntry] = wrapException(s"list $path")(_list(path))
-  def makeDir(path: String) = wrapException(s"make dir $path")(_makeDir(path))
-  def rmDir(path: String) = wrapException(s"rm dir $path")(_rmDir(path))
-  def rmFile(path: String) = wrapException(s"rm file $path")(_rmFile(path))
-  def mv(from: String, to: String) = wrapException(s"move $from to $to")(_mv(from, to))
+  def list(path: String): Seq[ListEntry] = wrapException(s"list $path on ${this}")(_list(path))
+  def makeDir(path: String) = wrapException(s"make dir $path on ${this}")(_makeDir(path))
+  def rmDir(path: String) = wrapException(s"rm dir $path on ${this}")(_rmDir(path))
+  def rmFile(path: String) = wrapException(s"rm file $path on ${this}")(_rmFile(path))
+  def mv(from: String, to: String) = wrapException(s"move $from to $to on ${this}")(_mv(from, to))
+  def exists(path: String) = wrapException(s"exists $path ${this}")(_exists(path))
 
   def _list(path: String): Seq[ListEntry]
   def _makeDir(path: String)
   def _rmDir(path: String)
   def _rmFile(path: String)
   def _mv(from: String, to: String)
+  def _exists(path: String) =
+    parent(path).
+      map(parentPath ⇒ listNames(parentPath).exists(_ == name(path))).
+      getOrElse(true)
 
   protected def _openInputStream(path: String): InputStream
   protected def _openOutputStream(path: String): OutputStream

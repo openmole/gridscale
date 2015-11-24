@@ -27,6 +27,7 @@ import org.apache.http.protocol.HttpContext
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
+import scala.util.{ Success, Failure, Try }
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
@@ -56,7 +57,7 @@ object WebDAVS {
 
 }
 
-trait WebDAVS <: HTTPSClient with Storage {
+trait WebDAVS <: HTTPSClient with Storage { dav =>
 
   def location: WebDAVLocation
   def timeout: Duration
@@ -92,7 +93,11 @@ trait WebDAVS <: HTTPSClient with Storage {
 
     future = executor.submit(
       new Runnable {
-        def run = webdavClient.put(fullUrl(path), is)
+        def run =
+          Try(webdavClient.put(fullUrl(path), is)) match {
+            case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
+            case Success(s) ⇒ s
+          }
       }
     )
     os
@@ -120,5 +125,7 @@ trait WebDAVS <: HTTPSClient with Storage {
   }
 
   override def _rmFile(path: String): Unit = webdavClient.delete(fullUrl(path))
-  override def exists(path: String): Boolean = webdavClient.exists(fullUrl(path))
+  override def _exists(path: String): Boolean = webdavClient.exists(fullUrl(path))
+
+  override def toString = fullUrl("")
 }
