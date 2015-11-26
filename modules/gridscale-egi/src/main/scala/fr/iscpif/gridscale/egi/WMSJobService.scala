@@ -178,7 +178,7 @@ trait WMSJobService extends JobService {
             GrDPConstants.CRF)), userCerts(0),
         key,
         lifetime,
-        proxyType); //12 hours proxy
+        proxyType) //12 hours proxy
 
     val finalCerts = new Array[X509Certificate](userCerts.length + 1);
     finalCerts(0) = certificate
@@ -187,28 +187,6 @@ trait WMSJobService extends JobService {
     } finalCerts(i + 1) = c
 
     new String(GrDPX509Util.certChainToByte(finalCerts))
-
-    //    val proxyStream = proxy.proxyString
-    //
-    //    // generator object
-    //    val generator = new GrDProxyGenerator
-    //
-    //    // gets the local proxy as array of byte
-    //    //proxy = GrDPX509Util.getFileBytes( File );
-    //    // reads the proxy time-left
-    //    val stream = new ByteArrayInputStream(proxyStream.getBytes)
-    //    val cf = CertificateFactory.getInstance("X.509")
-    //    val cert = cf.generateCertificate(stream).asInstanceOf[X509Certificate]
-    //    stream.close
-    //    val now = new Date()
-    //    val lifetime = (cert.getNotAfter.getTime - now.getTime()) / 3600000 // in hour ! (TBC in secs)
-    //
-    //    // checks if the proxy is still valid
-    //    if (lifetime < 0) throw new RuntimeException("The local proxy has expired")
-    //    // sets the lifetime
-    //    generator.setLifetime(lifetime.toInt)
-    //    // creates the new proxy and converts the proxy from byte[] to String
-    //    new String(generator.x509MakeProxyCert(certReq.getBytes, proxyStream.getBytes, ""))
   }
 
 }

@@ -57,7 +57,7 @@ object WebDAVS {
 
 }
 
-trait WebDAVS <: HTTPSClient with Storage { dav =>
+trait WebDAVS <: HTTPSClient with Storage { dav ⇒
 
   def location: WebDAVLocation
   def timeout: Duration
