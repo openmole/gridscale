@@ -95,6 +95,7 @@ trait VOMSAuthentication {
 
     proxy.setProxyLifetime(lifeTime.toSeconds.toInt)
     proxy.setProxySize(proxySize)
+    proxy.setProxyType(VOMSProxyBuilder.GT4_PROXY)
     requestOption.setLifetime(lifeTime.toSeconds.toInt)
 
     proxy.getVomsProxy(List(requestOption))
