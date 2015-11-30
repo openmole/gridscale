@@ -17,7 +17,7 @@
 package fr.iscpif.gridscale.http
 
 import java.io._
-import java.util.concurrent.{ Executors, Future, ThreadFactory }
+import java.util.concurrent.{ TimeUnit, Executors, Future, ThreadFactory }
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
@@ -84,8 +84,9 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
 
     val os = new PipedOutputStream() {
       override def close() = {
-        super.close
-        future.get
+        flush()
+        super.close()
+        future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
       }
     }
 
