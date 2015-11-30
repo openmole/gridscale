@@ -108,7 +108,7 @@ trait WMSJobService extends JobService {
       from ⇒
         val url = new URI(from.name)
         val file = indexed(new File(url.getPath).getName)._2
-        val is = new GridFTPInputStream(proxy().credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
+        val is = new GridFTPInputStream(proxy().gt2Credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
         finally is.close
     }
@@ -118,7 +118,7 @@ trait WMSJobService extends JobService {
     val inputSandboxURL = new URI(wmsService.getSandboxDestURI(jobId, "gsiftp").get.Item(0))
     desc.inputSandbox.foreach {
       file ⇒
-        val os = new GridFTPOutputStream(proxy().credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
+        val os = new GridFTPOutputStream(proxy().gt2Credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
         try copy(file, os, copyBufferSize, timeout)
         finally os.close
     }

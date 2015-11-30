@@ -25,39 +25,39 @@ import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.gridforum.jgss.{ ExtendedGSSCredential, ExtendedGSSManager }
 import org.ietf.jgss.GSSCredential
 
-object ProxyFileAuthentication {
-  def apply(proxy: File) = {
-    val _proxy = proxy
-    new ProxyFileAuthentication {
-      override val proxy: File = _proxy
-    }
-  }
-}
-
-trait ProxyFileAuthentication {
-
-  def proxy: File
-  @transient lazy val delegationID = UUID.randomUUID
-
-  def apply() =
-    try {
-      val proxyBytes = Array.ofDim[Byte](proxy.length.toInt)
-      val in = new FileInputStream(proxy)
-      try in.read(proxyBytes)
-      finally in.close
-
-      val credential = ExtendedGSSManager.getInstance.asInstanceOf[ExtendedGSSManager].createCredential(
-        proxyBytes,
-        ExtendedGSSCredential.IMPEXP_OPAQUE,
-        GSSCredential.DEFAULT_LIFETIME,
-        null, // use default mechanism: GSI
-        GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
-
-      GlobusAuthentication.Proxy(credential, proxyBytes, delegationID.toString)
-    } catch {
-      case e: Throwable ⇒ throw AuthenticationException("Error during proxy file authentication", e)
-
-    }
-
-}
+//object ProxyFileAuthentication {
+//  def apply(proxy: File) = {
+//    val _proxy = proxy
+//    new ProxyFileAuthentication {
+//      override val proxy: File = _proxy
+//    }
+//  }
+//}
+//
+//trait ProxyFileAuthentication {
+//
+//  def proxy: File
+//  @transient lazy val delegationID = UUID.randomUUID
+//
+//  def apply() =
+//    try {
+//      val proxyBytes = Array.ofDim[Byte](proxy.length.toInt)
+//      val in = new FileInputStream(proxy)
+//      try in.read(proxyBytes)
+//      finally in.close
+//
+//      val credential = ExtendedGSSManager.getInstance.asInstanceOf[ExtendedGSSManager].createCredential(
+//        proxyBytes,
+//        ExtendedGSSCredential.IMPEXP_OPAQUE,
+//        GSSCredential.DEFAULT_LIFETIME,
+//        null, // use default mechanism: GSI
+//        GSSCredential.INITIATE_AND_ACCEPT).asInstanceOf[GlobusGSSCredentialImpl]
+//
+//      GlobusAuthentication.Proxy(credential, proxyBytes, delegationID.toString)
+//    } catch {
+//      case e: Throwable ⇒ throw AuthenticationException("Error during proxy file authentication", e)
+//
+//    }
+//
+//}
 

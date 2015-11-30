@@ -24,6 +24,7 @@ import java.util.UUID
 import fr.iscpif.gridscale.authentication.AuthenticationException
 import fr.iscpif.gridscale.cache._
 import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
+import org.globus.gsi.GSIConstants.CertificateType
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.ietf.jgss.GSSCredential
 
@@ -57,21 +58,27 @@ trait VOMSAuthentication {
 
   def generateProxy =
     try {
-      val globusProxy = proxy()
+      val gt4Proxy = proxy(VOMSProxyBuilder.GT4_PROXY)
+
       val os = new ByteArrayOutputStream()
-      VOMSProxyBuilder.saveProxy(globusProxy, os)
-      GlobusAuthentication.Proxy(new GlobusGSSCredentialImpl(globusProxy, GSSCredential.INITIATE_AND_ACCEPT), os.toByteArray, delegationID.toString)
+      VOMSProxyBuilder.saveProxy(gt4Proxy, os)
+
+      GlobusAuthentication.Proxy(
+        new GlobusGSSCredentialImpl(gt4Proxy, GSSCredential.INITIATE_AND_ACCEPT),
+        os.toByteArray,
+        delegationID.toString,
+        new GlobusGSSCredentialImpl(proxy(VOMSProxyBuilder.GT2_PROXY), GSSCredential.INITIATE_AND_ACCEPT))
     } catch {
       case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
     }
 
   def generate(file: File) = {
     val os = new FileOutputStream(file)
-    try VOMSProxyBuilder.saveProxy(proxy(), os)
+    try VOMSProxyBuilder.saveProxy(proxy(VOMSProxyBuilder.GT4_PROXY), os)
     finally os.close
   }
 
-  def proxy() = synchronized {
+  def proxy(proxyType: CertificateType) = synchronized {
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
@@ -95,7 +102,7 @@ trait VOMSAuthentication {
 
     proxy.setProxyLifetime(lifeTime.toSeconds.toInt)
     proxy.setProxySize(proxySize)
-    proxy.setProxyType(VOMSProxyBuilder.GT4_PROXY)
+    proxy.setProxyType(proxyType)
     requestOption.setLifetime(lifeTime.toSeconds.toInt)
 
     proxy.getVomsProxy(List(requestOption))

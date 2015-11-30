@@ -33,9 +33,9 @@ object GlobusAuthenticationProvider {
     override def apply(t: PEMVOMSAuthentication) = t()
   }
 
-  implicit val proxyVOMSGlobusProvider = new GlobusAuthenticationProvider[ProxyFileAuthentication] {
-    override def apply(t: ProxyFileAuthentication) = t()
-  }
+  //  implicit val proxyVOMSGlobusProvider = new GlobusAuthenticationProvider[ProxyFileAuthentication] {
+  //    override def apply(t: ProxyFileAuthentication) = t()
+  //  }
 
 }
 
@@ -44,8 +44,23 @@ trait GlobusAuthenticationProvider[-T] {
 }
 
 object GlobusAuthentication {
-  case class Proxy(credential: GlobusGSSCredentialImpl, proxyBytes: Array[Byte], delegationID: String) {
+
+  object Proxy {
+    def apply(
+      credential: GlobusGSSCredentialImpl,
+      proxyBytes: Array[Byte],
+      delegationID: String,
+      gt2Credential: ⇒ GlobusGSSCredentialImpl) = new Proxy(credential, proxyBytes, delegationID, gt2Credential)
+  }
+
+  class Proxy(
+      val credential: GlobusGSSCredentialImpl,
+      val proxyBytes: Array[Byte],
+      val delegationID: String,
+      _gt2Credential: ⇒ GlobusGSSCredentialImpl) {
+    lazy val gt2Credential = _gt2Credential
     @transient lazy val proxyString = new String(proxyBytes)
   }
+
 }
 
