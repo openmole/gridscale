@@ -20,6 +20,7 @@ import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.config.RegistryBuilder
 import org.apache.http.conn.socket._
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
 
@@ -29,7 +30,7 @@ trait HTTPSClient {
 
   def maxConnections: Int
   def timeout: Duration
-  def factory: Duration ⇒ ConnectionSocketFactory
+  def factory: Duration ⇒ SSLConnectionSocketFactory
 
   @transient lazy val pool = {
     val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory(timeout)).build()
@@ -48,6 +49,7 @@ trait HTTPSClient {
       .build()
   }
 
-  def clientBuilder = HttpClients.custom().setConnectionManager(pool)
+  def pooledClient = HttpClients.custom().setConnectionManager(pool)
+  def client = HttpClients.custom().setSSLSocketFactory(factory(timeout)).build()
 
 }

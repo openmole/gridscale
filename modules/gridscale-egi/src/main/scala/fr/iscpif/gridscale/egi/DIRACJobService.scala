@@ -47,7 +47,7 @@ object DIRACJobService {
       override val timeout = _timeout
       override val maxConnections = _connections
       override val group: String = _group
-      override val factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
+      override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override val service: String = _service
     }
   }
@@ -69,7 +69,6 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def setup = "Dirac-Production"
   def auth2Auth = service + "/oauth2/token"
   def jobs = service + "/jobs"
-  def factory: Duration ⇒ ConnectionSocketFactory
 
   def tokenExpirationMargin = 10 -> MINUTES
 
@@ -185,7 +184,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
   }
 
   def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = {
-    val client = clientBuilder.build()
+    val client = pooledClient.build()
 
     request.setConfig(requestConfig)
 

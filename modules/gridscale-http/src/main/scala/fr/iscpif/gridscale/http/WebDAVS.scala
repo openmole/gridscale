@@ -23,6 +23,7 @@ import fr.iscpif.gridscale.storage._
 import org.apache.http._
 import org.apache.http.client.methods.{ HttpDelete, HttpPut, HttpUriRequest, RequestBuilder }
 import org.apache.http.conn.socket.ConnectionSocketFactory
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.protocol.HttpContext
 
 import scala.collection.JavaConversions._
@@ -36,7 +37,7 @@ object WebDAVS {
     val (_location, _connections, _timeout) = (location, connections, timeout)
     new WebDAVS {
       override def location = _location
-      override def factory: (Duration) ⇒ ConnectionSocketFactory = implicitly[HTTPSAuthentication[A]].factory(authentication)
+      override def factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def timeout = _timeout
       override def maxConnections = _connections
     }
@@ -63,7 +64,7 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
   def timeout: Duration
 
   lazy val webdavClient = {
-    val client = clientBuilder
+    val client = pooledClient
     client.setRedirectStrategy(new WebDAVS.RedirectStrategy)
     new SardineImpl(client)
   }
