@@ -28,17 +28,17 @@ import scala.concurrent.duration._
 
 trait HTTPSClient {
 
-  def maxConnections: Int
+  def pool: Option[Int]
   def timeout: Duration
   def factory: Duration ⇒ SSLConnectionSocketFactory
 
-  @transient lazy val pool = {
-    val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory(timeout)).build()
-    val pool = new PoolingHttpClientConnectionManager(registry)
-    pool.setMaxTotal(maxConnections)
-    pool.setDefaultMaxPerRoute(maxConnections)
-    pool
-  }
+  @transient lazy val connectionPool =
+    pool.map { connections ⇒
+      val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory(timeout)).build()
+      val p = new PoolingHttpClientConnectionManager(registry)
+      p.setDefaultMaxPerRoute(connections)
+      p
+    }
 
   @transient lazy val httpContext = HttpClientContext.create
 
@@ -49,7 +49,13 @@ trait HTTPSClient {
       .build()
   }
 
-  def pooledClient = HttpClients.custom().setConnectionManager(pool)
-  def client = HttpClients.custom().setSSLSocketFactory(factory(timeout)).build()
+  def newClient =
+    connectionPool match {
+      case Some(p) ⇒ HttpClients.custom().setConnectionManager(p)
+      case None    ⇒ HttpClients.custom().setSSLSocketFactory(factory(timeout))
+    }
+
+  @transient lazy val httpClient = newClient.build
+  override def finalize = httpClient.close
 
 }

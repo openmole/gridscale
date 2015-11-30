@@ -40,12 +40,12 @@ object DIRACJobService {
   def apply[A: HTTPSAuthentication](
     service: String,
     group: String,
-    connections: Int = 20,
+    connections: Option[Int] = Some(20),
     timeout: Duration = 1 minutes)(authentication: A) = {
     val (_service, _group, _connections, _timeout) = (service, group, connections, timeout)
     new DIRACJobService {
       override val timeout = _timeout
-      override val maxConnections = _connections
+      override val pool = _connections
       override val group: String = _group
       override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override val service: String = _service
@@ -156,7 +156,6 @@ trait DIRACJobService extends JobService with HTTPSClient {
       Iterator.continually(is.getNextEntry).takeWhile(_ != null).
         filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {
           e ⇒
-            println(e)
             val os = new BufferedOutputStream(new FileOutputStream(outputSandboxMap(e.getName)))
             try BasicIO.transferFully(is, os)
             finally os.close
@@ -184,15 +183,13 @@ trait DIRACJobService extends JobService with HTTPSClient {
   }
 
   def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = {
-    val client = pooledClient.build()
-
     request.setConfig(requestConfig)
 
     def close[T <: { def close(): Unit }, R](c: T)(f: T ⇒ R) =
       try f(c)
       finally c.close
 
-    close(client.execute(httpHost, request, httpContext)) { response ⇒
+    close(httpClient.execute(httpHost, request, httpContext)) { response ⇒
       close(response.getEntity.getContent) { is ⇒
         f(is)
       }

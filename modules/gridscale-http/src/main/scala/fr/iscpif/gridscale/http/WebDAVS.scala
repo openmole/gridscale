@@ -33,13 +33,13 @@ import scala.util.{ Success, Failure, Try }
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
 object WebDAVS {
-  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Int = 20, timeout: Duration = 1 minute)(authentication: A) = {
+  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Option[Int] = Some(20), timeout: Duration = 1 minute)(authentication: A) = {
     val (_location, _connections, _timeout) = (location, connections, timeout)
     new WebDAVS {
       override def location = _location
       override def factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def timeout = _timeout
-      override def maxConnections = _connections
+      override def pool = _connections
     }
   }
 
@@ -63,10 +63,15 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
   def location: WebDAVLocation
   def timeout: Duration
 
-  lazy val webdavClient = {
-    val client = pooledClient
-    client.setRedirectStrategy(new WebDAVS.RedirectStrategy)
-    new SardineImpl(client)
+  @transient lazy val webdavClient = {
+    val c = newClient
+    c.setRedirectStrategy(new WebDAVS.RedirectStrategy)
+    new SardineImpl(c)
+  }
+
+  override def finalize = {
+    super.finalize()
+    webdavClient.shutdown()
   }
 
   def fullUrl(path: String) =
@@ -105,8 +110,14 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
     os
   }
 
-  override protected def _openInputStream(path: String): InputStream =
-    webdavClient.get(fullUrl(path))
+  override protected def _openInputStream(path: String): InputStream = {
+    val is = webdavClient.get(fullUrl(path))
+
+    new InputStream {
+      override def read(): Int = is.read()
+      override def close() = is.close()
+    }
+  }
 
   override def _makeDir(path: String): Unit =
     webdavClient.createDirectory(fullUrl(path))
