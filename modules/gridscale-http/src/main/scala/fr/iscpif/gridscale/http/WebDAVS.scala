@@ -101,7 +101,7 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
     future = executor.submit(
       new Runnable {
         def run =
-          Try(webdavClient.put(fullUrl(path), is)) match {
+          Try(webdavClient.put(fullUrl(path), is, null, true)) match {
             case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
             case Success(s) ⇒ s
           }
