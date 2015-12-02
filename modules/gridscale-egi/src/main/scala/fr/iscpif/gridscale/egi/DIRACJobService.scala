@@ -72,6 +72,9 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   def tokenExpirationMargin = 10 -> MINUTES
 
+  @transient lazy val httpClient = newClient.build
+  override def finalize = httpClient.close
+
   @transient lazy val tokenCache =
     new SingleValueCache[Token] {
       def compute() = token

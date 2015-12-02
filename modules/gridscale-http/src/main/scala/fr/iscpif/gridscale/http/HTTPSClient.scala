@@ -55,7 +55,4 @@ trait HTTPSClient {
       case None    ⇒ HttpClients.custom().setSSLSocketFactory(factory(timeout))
     }
 
-  @transient lazy val httpClient = newClient.build
-  override def finalize = httpClient.close
-
 }

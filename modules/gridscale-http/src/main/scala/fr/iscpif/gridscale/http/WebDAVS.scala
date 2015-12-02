@@ -17,14 +17,16 @@
 package fr.iscpif.gridscale.http
 
 import java.io._
+import java.net.URI
 import java.util.concurrent.{ TimeUnit, Executors, Future, ThreadFactory }
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
-import org.apache.http.client.methods.{ HttpDelete, HttpPut, HttpUriRequest, RequestBuilder }
+import org.apache.http.client.methods._
 import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
-import org.apache.http.protocol.HttpContext
+import org.apache.http.entity.InputStreamEntity
+import org.apache.http.protocol.{ HTTP, HttpContext }
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
@@ -50,7 +52,7 @@ object WebDAVS {
     override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
       val method = request.getRequestLine().getMethod()
       if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
-        val uri = getLocationURI(request, response, context)
+        val uri: URI = getLocationURI(request, response, context)
         RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
       } else super.getRedirect(request, response, context)
     }
@@ -63,14 +65,18 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
   def location: WebDAVLocation
   def timeout: Duration
 
-  @transient lazy val webdavClient = {
+  @transient lazy val client = {
     val c = newClient
     c.setRedirectStrategy(new WebDAVS.RedirectStrategy)
-    new SardineImpl(c)
+    c
   }
+
+  @transient lazy val httpClient = client.build()
+  @transient lazy val webdavClient = new SardineImpl(client)
 
   override def finalize = {
     super.finalize()
+    httpClient.close()
     webdavClient.shutdown()
   }
 
@@ -100,22 +106,40 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
 
     future = executor.submit(
       new Runnable {
-        def run =
-          Try(webdavClient.put(fullUrl(path), is, null, true)) match {
-            case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
-            case Success(s) ⇒ s
-          }
+        def run = Try {
+          val put = new HttpPut(fullUrl(path))
+          val entity = new InputStreamEntity(is)
+          put.setEntity(entity)
+          put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+
+          val response = httpClient.execute(put)
+          try testResponse(response)
+          finally response.close()
+        } match {
+          case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
+          case Success(s) ⇒ s
+        }
       }
     )
     os
   }
 
   override protected def _openInputStream(path: String): InputStream = {
-    val is = webdavClient.get(fullUrl(path))
+    val get = new HttpGet(fullUrl(path))
+    get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+    val response = httpClient.execute(get)
+
+    try testResponse(response)
+    catch {
+      case e: Throwable ⇒
+        response.close()
+        throw e
+    }
+    val stream = response.getEntity.getContent
 
     new InputStream {
-      override def read(): Int = is.read()
-      override def close() = is.close()
+      override def read(): Int = stream.read()
+      override def close() = response.close()
     }
   }
 
@@ -136,6 +160,10 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
       ListEntry(e.getName, t, Some(e.getModified.getTime))
     }
   }
+
+  def responseOk(response: HttpResponse) = response.getStatusLine.getStatusCode >= HttpStatus.SC_OK && response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
+  def testResponse(response: HttpResponse) =
+    if (!responseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
 
   override def _rmFile(path: String): Unit = webdavClient.delete(fullUrl(path))
   override def _exists(path: String): Boolean = webdavClient.exists(fullUrl(path))
