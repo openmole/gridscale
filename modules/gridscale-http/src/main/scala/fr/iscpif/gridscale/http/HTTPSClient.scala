@@ -51,8 +51,8 @@ trait HTTPSClient {
 
   def newClient =
     connectionPool match {
-      case Some(p) ⇒ HttpClients.custom().setConnectionManager(p)
-      case None    ⇒ HttpClients.custom().setSSLSocketFactory(factory(timeout))
+      case Some(p) ⇒ HttpClients.custom().setConnectionManager(p).setDefaultRequestConfig(requestConfig)
+      case None    ⇒ HttpClients.custom().setSSLSocketFactory(factory(timeout)).setDefaultRequestConfig(requestConfig)
     }
 
 }
