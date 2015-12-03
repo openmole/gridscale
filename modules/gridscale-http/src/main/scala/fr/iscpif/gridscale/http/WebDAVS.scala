@@ -18,10 +18,12 @@ package fr.iscpif.gridscale.http
 
 import java.io._
 import java.net.URI
-import java.util.concurrent.{ TimeUnit, Executors, Future, ThreadFactory }
+import java.util.concurrent.TimeUnit
+import java.util.concurrent._
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
+import org.apache.http.client.ServiceUnavailableRetryStrategy
 import org.apache.http.client.methods._
 import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
@@ -35,28 +37,18 @@ import scala.util.{ Success, Failure, Try }
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
 object WebDAVS {
-  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Option[Int] = Some(20), timeout: Duration = 1 minute)(authentication: A) = {
-    val (_location, _connections, _timeout) = (location, connections, timeout)
+  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Option[Int] = Some(20), timeout: Duration = 1 minute, retry: Int = 5)(authentication: A) = {
+    val (_location, _connections, _timeout, _retry) = (location, connections, timeout, retry)
     new WebDAVS {
       override def location = _location
       override def factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def timeout = _timeout
       override def pool = _connections
+      override def retry = _retry
     }
   }
 
-  class RedirectStrategy extends SardineRedirectStrategy {
-    override def isRedirectable(method: String): Boolean =
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) true else super.isRedirectable(method)
-
-    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
-      val method = request.getRequestLine().getMethod()
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
-        val uri: URI = getLocationURI(request, response, context)
-        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
-      } else super.getRedirect(request, response, context)
-    }
-  }
+  def redirectStrategy = new SardineRedirectStrategy
 
 }
 
@@ -64,10 +56,11 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
 
   def location: WebDAVLocation
   def timeout: Duration
+  def retry: Int
 
   @transient lazy val client = {
     val c = newClient
-    c.setRedirectStrategy(new WebDAVS.RedirectStrategy)
+    c.setRedirectStrategy(WebDAVS.redirectStrategy)
     c
   }
 
@@ -107,14 +100,38 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
     future = executor.submit(
       new Runnable {
         def run = Try {
-          val put = new HttpPut(fullUrl(path))
-          val entity = new InputStreamEntity(is)
-          put.setEntity(entity)
-          put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+          def buildPut(uri: URI) = {
+            val put = new HttpPut(uri)
+            val entity = new InputStreamEntity(is)
+            put.setEntity(entity)
+            put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+            put
+          }
 
-          val response = httpClient.execute(put)
-          try testResponse(response)
-          finally response.close()
+          def execute(request: HttpPut): CloseableHttpResponse = {
+            val response = httpClient.execute(request)
+            getRedirection(response) match {
+              case Some(uri) ⇒
+                response.close()
+                execute(buildPut(uri))
+              case None ⇒ response
+            }
+          }
+
+          def retryPut(retry: Int): Unit = {
+            val put = buildPut(new URI(fullUrl(path)))
+            val response = execute(put)
+            if (!isResponseOk(response) && retry > 0) {
+              response.close()
+              Try(_rmFile(path))
+              if (retry > 0) retryPut(retry - 1)
+            } else {
+              try testResponse(response)
+              finally response.close()
+            }
+          }
+
+          retryPut(retry)
         } match {
           case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
           case Success(s) ⇒ s
@@ -161,9 +178,27 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
     }
   }
 
-  def responseOk(response: HttpResponse) = response.getStatusLine.getStatusCode >= HttpStatus.SC_OK && response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
-  def testResponse(response: HttpResponse) =
-    if (!responseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+  def isResponseOk(response: HttpResponse) = response.getStatusLine.getStatusCode >= HttpStatus.SC_OK && response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
+
+  def getRedirection(response: HttpResponse): Option[URI] =
+    if (isRedirection(response)) {
+      val locationHeader: Header = response.getFirstHeader("location")
+      if (locationHeader == null) throw new ProtocolException("Received redirect response " + response.getStatusLine + " but no location header")
+      Some(new URI(locationHeader.getValue))
+    } else None
+
+  def isRedirection(response: HttpResponse) =
+    response.getStatusLine.getStatusCode match {
+      case HttpStatus.SC_MOVED_TEMPORARILY |
+        HttpStatus.SC_MOVED_PERMANENTLY |
+        HttpStatus.SC_TEMPORARY_REDIRECT |
+        HttpStatus.SC_SEE_OTHER ⇒ true
+      case _ ⇒ false
+    }
+
+  def testResponse(response: HttpResponse) = Try {
+    if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+  }
 
   override def _rmFile(path: String): Unit = webdavClient.delete(fullUrl(path))
   override def _exists(path: String): Boolean = webdavClient.exists(fullUrl(path))
