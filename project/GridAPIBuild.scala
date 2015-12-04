@@ -39,6 +39,7 @@ trait Settings <: Build {
       if (snapshot) Some("snapshots" at nexus + "content/repositories/snapshots")
       else Some("releases" at nexus + "service/local/staging/deploy/maven2")
     },
+    libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.7",
     pomIncludeRepository := { _ => false},
     licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
     homepage := Some(url("https://github.com/openmole/gridscale")),
@@ -161,7 +162,7 @@ trait Modules <: Libraries with Settings {
     libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6",
     libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion
-    )
+     )
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "net.schmizz" % "sshj" % "0.10.0")

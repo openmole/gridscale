@@ -19,88 +19,84 @@ package fr.iscpif.gridscale.http
 import java.io._
 import java.net.URI
 import java.util.concurrent.TimeUnit
-import java.util.concurrent._
+import java.util.concurrent.{ Future, TimeoutException, ThreadFactory, Executors }
 import com.github.sardine.impl._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
-import org.apache.http.client.ServiceUnavailableRetryStrategy
 import org.apache.http.client.methods._
-import org.apache.http.conn.socket.ConnectionSocketFactory
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.entity.InputStreamEntity
-import org.apache.http.protocol.{ HTTP, HttpContext }
-import org.apache.http.util.EntityUtils
+import org.apache.http.protocol.{ HTTP }
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.{ Success, Failure, Try }
+import scala.concurrent.stm._
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
 object WebDAVS {
-  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Option[Int] = Some(20), timeout: Duration = 1 minute, retry: Int = 5)(authentication: A) = {
-    val (_location, _connections, _timeout, _retry) = (location, connections, timeout, retry)
+  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Option[Int] = Some(20), timeout: Duration = 1 minute)(authentication: A) = {
+    val (_location, _connections, _timeout) = (location, connections, timeout)
     new WebDAVS {
       override def location = _location
       override def factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def timeout = _timeout
       override def pool = _connections
-      override def retry = _retry
     }
   }
 
   def redirectStrategy = new SardineRedirectStrategy
+  /*{
+    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
+      val method = request.getRequestLine().getMethod()
+      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
+        val uri = getLocationURI(request, response, context)
+        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
+      } else super.getRedirect(request, response, context)
+    }
+  }*/
 
   class Pipe(timeout: Duration) {
 
     var reader = (None: Option[Future[_]])
 
-    val free = new Semaphore(1)
-    val occupied = new Semaphore(0)
-
-    @volatile var closed = false
-    @volatile var content: Int = -1
+    val content = Ref(None: Option[Int])
+    val writerClosed = Ref(false)
+    val readerClosed = Ref(false)
 
     def future = reader.get
 
     val is = new InputStream {
-      override def read(): Int = {
-        occupied.acquire()
-        if (!closed) {
-          val ret = content
-          free.release()
-          ret
-        } else {
-          occupied.release()
-          -1
+      override def read(): Int = atomic { implicit ctx ⇒
+        content() match {
+          case None ⇒
+            if (writerClosed()) -1
+            else retry
+          case Some(c) ⇒
+            content() = None
+            c & 0xFF
         }
       }
+
+      override def close() =
+        readerClosed.single() = true
+
     }
 
     val os = new OutputStream {
-      override def write(i: Int): Unit = {
-        def acquireFree: Unit = {
-          if (!free.tryAcquire(100, TimeUnit.MILLISECONDS))
-            if (future.isDone) {
-              future.get()
-              throw new IOException("Reader is terminated")
-            } else acquireFree
+      override def write(i: Int): Unit = atomic { implicit ctx ⇒
+        content() match {
+          case None ⇒ content() = Some(i)
+          case Some(_) ⇒
+            if (!readerClosed()) retry
         }
-
-        acquireFree
-        content = i
-        occupied.release()
       }
 
       override def close() = {
-        def acquireFree: Unit = {
-          if (!free.tryAcquire(100, TimeUnit.MILLISECONDS))
-            if (!future.isDone) acquireFree
+        atomic { implicit ctx ⇒
+          if (!readerClosed() && content().isDefined) retry
+          writerClosed() = true
         }
-
-        acquireFree
-        closed = true
-        occupied.release()
         try future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
         catch {
           case e: TimeoutException ⇒
@@ -118,7 +114,6 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
 
   def location: WebDAVLocation
   def timeout: Duration
-  def retry: Int
 
   @transient lazy val client = {
     val c = newClient
@@ -153,7 +148,8 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
     val future =
       executor.submit(
         new Runnable {
-          def run = Try {
+          def run = try {
+            // webdavClient.put(fullUrl(path), pipe.is)
             def buildPut(uri: URI) = {
               val put = new HttpPut(uri)
               val entity = new InputStreamEntity(pipe.is, -1)
@@ -169,29 +165,18 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
                   response.close()
                   execute(buildPut(uri))
                 case None ⇒
-                  EntityUtils.consume(request.getEntity)
                   response
               }
             }
 
-            def retryPut(retry: Int): Unit = {
-              val put = buildPut(new URI(fullUrl(path)))
-              val response = execute(put)
-              if (!isResponseOk(response) && retry > 0) {
-                response.close()
-                Try(_rmFile(path))
-                if (retry > 0) retryPut(retry - 1)
-              } else {
-                try testResponse(response).get
-                finally response.close()
-              }
-            }
+            val put = buildPut(new URI(fullUrl(path)))
+            val response = execute(put)
 
-            retryPut(retry)
-          } match {
-            case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
-            case Success(s) ⇒ s
-          }
+            try testResponse(response).get
+            finally response.close()
+          } catch {
+            case t: Throwable ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
+          } finally pipe.is.close()
         }
       )
 
@@ -200,22 +185,17 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
   }
 
   override protected def _openInputStream(path: String): InputStream = {
-    def retryGet(retry: Int): CloseableHttpResponse = {
-      val get = new HttpGet(fullUrl(path))
-      get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-      val response = httpClient.execute(get)
+    val get = new HttpGet(fullUrl(path))
+    get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+    val response = httpClient.execute(get)
 
-      testResponse(response) match {
-        case Success(_) ⇒ response
-        case Failure(e) ⇒
-          if (retry <= 0) {
-            response.close()
-            throw e
-          } else retryGet(retry - 1)
-      }
+    testResponse(response) match {
+      case Failure(e) ⇒
+        response.close()
+        throw e
+      case Success(_) ⇒
     }
 
-    val response = retryGet(retry)
     val stream = response.getEntity.getContent
 
     new InputStream {
