@@ -51,12 +51,17 @@ object WebDAVS {
 
   def redirectStrategy = new SardineRedirectStrategy
 
-  class Pipe(future: ⇒ Future[_], timeout: Duration) {
+  class Pipe(timeout: Duration) {
+
+    var reader = (None: Option[Future[_]])
+
     val free = new Semaphore(1)
     val occupied = new Semaphore(0)
 
     @volatile var closed = false
     @volatile var content: Int = -1
+
+    def future = reader.get
 
     val is = new InputStream {
       override def read(): Int = {
@@ -142,55 +147,55 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
       }
     })
 
-    @volatile var future: Future[_] = null
-
     import WebDAVS._
-    val pipe = new Pipe(future, timeout)
+    val pipe = new Pipe(timeout)
 
-    future = executor.submit(
-      new Runnable {
-        def run = Try {
-          def buildPut(uri: URI) = {
-            val put = new HttpPut(uri)
-            val entity = new InputStreamEntity(pipe.is, -1)
-            put.setEntity(entity)
-            put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-            put
-          }
+    val future =
+      executor.submit(
+        new Runnable {
+          def run = Try {
+            def buildPut(uri: URI) = {
+              val put = new HttpPut(uri)
+              val entity = new InputStreamEntity(pipe.is, -1)
+              put.setEntity(entity)
+              put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+              put
+            }
 
-          def execute(request: HttpPut): CloseableHttpResponse = {
-            val response = httpClient.execute(request)
-            getRedirection(response) match {
-              case Some(uri) ⇒
+            def execute(request: HttpPut): CloseableHttpResponse = {
+              val response = httpClient.execute(request)
+              getRedirection(response) match {
+                case Some(uri) ⇒
+                  response.close()
+                  execute(buildPut(uri))
+                case None ⇒
+                  EntityUtils.consume(request.getEntity)
+                  response
+              }
+            }
+
+            def retryPut(retry: Int): Unit = {
+              val put = buildPut(new URI(fullUrl(path)))
+              val response = execute(put)
+              if (!isResponseOk(response) && retry > 0) {
                 response.close()
-                execute(buildPut(uri))
-              case None ⇒
-                EntityUtils.consume(request.getEntity)
-                response
+                Try(_rmFile(path))
+                if (retry > 0) retryPut(retry - 1)
+              } else {
+                try testResponse(response).get
+                finally response.close()
+              }
             }
-          }
 
-          def retryPut(retry: Int): Unit = {
-            val put = buildPut(new URI(fullUrl(path)))
-            val response = execute(put)
-            if (!isResponseOk(response) && retry > 0) {
-              response.close()
-              Try(_rmFile(path))
-              if (retry > 0) retryPut(retry - 1)
-            } else {
-              try testResponse(response).get
-              finally response.close()
-            }
+            retryPut(retry)
+          } match {
+            case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
+            case Success(s) ⇒ s
           }
-
-          retryPut(retry)
-        } match {
-          case Failure(t) ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
-          case Success(s) ⇒ s
         }
-      }
-    )
+      )
 
+    pipe.reader = Some(future)
     pipe.os
   }
 
