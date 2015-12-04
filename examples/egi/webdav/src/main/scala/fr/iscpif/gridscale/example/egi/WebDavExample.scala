@@ -53,6 +53,7 @@ object WebDavExample extends App {
   finally out.close
 
   val in = dav.openInputStream(testFile)
-  println(Source.fromInputStream(in).mkString)
+  try println(Source.fromInputStream(in).mkString)
+  finally in.close
 
 }

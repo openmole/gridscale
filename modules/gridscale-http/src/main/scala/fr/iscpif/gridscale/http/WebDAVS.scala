@@ -29,6 +29,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.protocol.{ HTTP, HttpContext }
+import org.apache.http.util.EntityUtils
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
@@ -49,6 +50,62 @@ object WebDAVS {
   }
 
   def redirectStrategy = new SardineRedirectStrategy
+
+  class Pipe(future: ⇒ Future[_], timeout: Duration) {
+    val free = new Semaphore(1)
+    val occupied = new Semaphore(0)
+
+    @volatile var closed = false
+    @volatile var content: Int = -1
+
+    val is = new InputStream {
+      override def read(): Int = {
+        occupied.acquire()
+        if (!closed) {
+          val ret = content
+          free.release()
+          ret
+        } else {
+          occupied.release()
+          -1
+        }
+      }
+    }
+
+    val os = new OutputStream {
+      override def write(i: Int): Unit = {
+        def acquireFree: Unit = {
+          if (!free.tryAcquire(100, TimeUnit.MILLISECONDS))
+            if (future.isDone) {
+              future.get()
+              throw new IOException("Reader is terminated")
+            } else acquireFree
+        }
+
+        acquireFree
+        content = i
+        occupied.release()
+      }
+
+      override def close() = {
+        def acquireFree: Unit = {
+          if (!free.tryAcquire(100, TimeUnit.MILLISECONDS))
+            if (!future.isDone) acquireFree
+        }
+
+        acquireFree
+        closed = true
+        occupied.release()
+        try future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
+        catch {
+          case e: TimeoutException ⇒
+            future.cancel(true)
+            future.get
+          case e: Throwable ⇒ throw e
+        }
+      }
+    }
+  }
 
 }
 
@@ -87,22 +144,15 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
 
     @volatile var future: Future[_] = null
 
-    val os = new PipedOutputStream() {
-      override def close() = {
-        flush()
-        super.close()
-        future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
-      }
-    }
-
-    val is = new PipedInputStream(os)
+    import WebDAVS._
+    val pipe = new Pipe(future, timeout)
 
     future = executor.submit(
       new Runnable {
         def run = Try {
           def buildPut(uri: URI) = {
             val put = new HttpPut(uri)
-            val entity = new InputStreamEntity(is)
+            val entity = new InputStreamEntity(pipe.is, -1)
             put.setEntity(entity)
             put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
             put
@@ -114,7 +164,9 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
               case Some(uri) ⇒
                 response.close()
                 execute(buildPut(uri))
-              case None ⇒ response
+              case None ⇒
+                EntityUtils.consume(request.getEntity)
+                response
             }
           }
 
@@ -126,7 +178,7 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
               Try(_rmFile(path))
               if (retry > 0) retryPut(retry - 1)
             } else {
-              try testResponse(response)
+              try testResponse(response).get
               finally response.close()
             }
           }
@@ -138,20 +190,27 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
         }
       }
     )
-    os
+
+    pipe.os
   }
 
   override protected def _openInputStream(path: String): InputStream = {
-    val get = new HttpGet(fullUrl(path))
-    get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-    val response = httpClient.execute(get)
+    def retryGet(retry: Int): CloseableHttpResponse = {
+      val get = new HttpGet(fullUrl(path))
+      get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+      val response = httpClient.execute(get)
 
-    try testResponse(response)
-    catch {
-      case e: Throwable ⇒
-        response.close()
-        throw e
+      testResponse(response) match {
+        case Success(_) ⇒ response
+        case Failure(e) ⇒
+          if (retry <= 0) {
+            response.close()
+            throw e
+          } else retryGet(retry - 1)
+      }
     }
+
+    val response = retryGet(retry)
     val stream = response.getEntity.getContent
 
     new InputStream {
