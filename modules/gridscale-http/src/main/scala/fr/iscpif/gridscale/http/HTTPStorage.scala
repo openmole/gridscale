@@ -48,38 +48,41 @@ object HTTPStorage {
     }
   }
 
+  def parseHTMLListing(page: String) = {
+    val parser = new Parser
+    parser.setInputHTML(page)
+    val list = parser.extractAllNodesThatMatch(new NodeClassFilter(classOf[LinkTag]))
+
+    list.toNodeArray.flatMap {
+      l ⇒
+        val entryName = l.getText.substring("a href=\"".size, l.getText.size - 1)
+        val isDir = entryName.endsWith("/")
+        val name = if (isDir) entryName.substring(0, entryName.length - 1) else entryName
+        if (!name.isEmpty && !name.contains("/") && !name.contains("?") && !name.contains("#")) {
+          val ret = name.replaceAll("&amp;", "%26")
+          Some(
+            ListEntry(
+              new File(java.net.URLDecoder.decode(ret, "utf-8")).getPath,
+              if (isDir) DirectoryType else FileType,
+              None
+            )
+          )
+        } else None
+    }
+  }
+
 }
 
 trait HTTPStorage extends Storage {
 
   def url: String
-  def bufferSize = 64000
+  def bufferSize = 64 * 1024
   def timeout: Duration
 
   def _list(path: String) = {
     val is = openInputStream(path)
-    try {
-      val parser = new Parser
-      parser.setInputHTML(new String(getBytes(is, bufferSize, timeout)))
-      val list = parser.extractAllNodesThatMatch(new NodeClassFilter(classOf[LinkTag]))
-
-      list.toNodeArray.flatMap {
-        l ⇒
-          val entryName = l.getText.substring("a href=\"".size, l.getText.size - 1)
-          val isDir = entryName.endsWith("/")
-          val name = if (isDir) entryName.substring(0, entryName.length - 1) else entryName
-          if (!name.isEmpty && !name.contains("/") && !name.contains("?") && !name.contains("#")) {
-            val ret = name.replaceAll("&amp;", "%26")
-            Some(
-              ListEntry(
-                new File(java.net.URLDecoder.decode(ret, "utf-8")).getPath,
-                if (isDir) DirectoryType else FileType,
-                None
-              )
-            )
-          } else None
-      }
-    } finally is.close
+    try HTTPStorage.parseHTMLListing(new String(getBytes(is, bufferSize, timeout)))
+    finally is.close
   }
 
   def _makeDir(path: String) =

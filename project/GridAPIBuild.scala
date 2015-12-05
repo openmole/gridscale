@@ -39,7 +39,6 @@ trait Settings <: Build {
       if (snapshot) Some("snapshots" at nexus + "content/repositories/snapshots")
       else Some("releases" at nexus + "service/local/staging/deploy/maven2")
     },
-    libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.7",
     pomIncludeRepository := { _ => false},
     licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
     homepage := Some(url("https://github.com/openmole/gridscale")),

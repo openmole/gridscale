@@ -19,18 +19,25 @@ package fr.iscpif.gridscale.http
 import java.io._
 import java.net.URI
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.{ Future, TimeoutException, ThreadFactory, Executors }
+import java.util.concurrent._
+import com.github.sardine.DavResource
 import com.github.sardine.impl._
+import com.github.sardine.impl.handler.MultiStatusResponseHandler
+import com.github.sardine.impl.methods.HttpPropFind
+import com.github.sardine.model.Multistatus
 import fr.iscpif.gridscale.storage._
+import org.apache.http
 import org.apache.http._
 import org.apache.http.client.methods._
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.protocol.{ HTTP }
 
+import fr.iscpif.gridscale.tools._
+import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.{ Success, Failure, Try }
-import scala.concurrent.stm._
+import scala.io.Source
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
@@ -60,48 +67,68 @@ object WebDAVS {
 
     var reader = (None: Option[Future[_]])
 
-    val content = Ref(None: Option[Int])
-    val writerClosed = Ref(false)
-    val readerClosed = Ref(false)
+    @volatile var writerClosed = false
+    @volatile var readerClosed = false
+
+    val buffer = new RingBuffer[Int](4096)
 
     def future = reader.get
 
     val is = new InputStream {
-      override def read(): Int = atomic { implicit ctx ⇒
-        content() match {
-          case None ⇒
-            if (writerClosed()) -1
-            else retry
-          case Some(c) ⇒
-            content() = None
-            c & 0xFF
-        }
+      override def read(): Int = {
+        @tailrec def waitRead(): Int =
+          if (writerClosed) -1
+          else {
+            buffer.tryDequeue() match {
+              case None ⇒
+                buffer.waitNotEmpty
+                waitRead()
+              case Some(r) ⇒ (r & 0xFF)
+            }
+          }
+
+        waitRead()
       }
 
-      override def close() =
-        readerClosed.single() = true
+      override def close() = {
+        readerClosed = true
+        buffer.synchronized { buffer.notifyAll() }
+      }
 
     }
 
     val os = new OutputStream {
-      override def write(i: Int): Unit = atomic { implicit ctx ⇒
-        content() match {
-          case None ⇒ content() = Some(i)
-          case Some(_) ⇒
-            if (!readerClosed()) retry
+      override def write(i: Int): Unit = {
+        @tailrec def waitWrite(): Unit = {
+          if (!readerClosed) {
+            if (!buffer.tryEnqueue(i)) {
+              buffer.waitNotFull
+              waitWrite()
+            }
+          }
         }
+
+        waitWrite()
       }
 
-      override def close() = {
-        atomic { implicit ctx ⇒
-          if (!readerClosed() && content().isDefined) retry
-          writerClosed() = true
+      override def close(): Unit = {
+        @tailrec def waitClose(): Unit = {
+          if (!readerClosed && !buffer.isEmpty) {
+            buffer.waitEmpty
+            waitClose()
+          }
         }
+
+        waitClose()
+
+        writerClosed = true
+        buffer.synchronized { buffer.notifyAll() }
+
         try future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
         catch {
           case e: TimeoutException ⇒
             future.cancel(true)
-            future.get
+            throw e
           case e: Throwable ⇒ throw e
         }
       }
@@ -216,10 +243,25 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
   }
 
   override def _list(path: String): Seq[ListEntry] = {
-    webdavClient.list(fullUrl(path)).map { e ⇒
-      val t = if (e.isDirectory) DirectoryType else FileType
-      ListEntry(e.getName, t, Some(e.getModified.getTime))
-    }
+    //FIXME enable propfind when DPM webdav works properly
+    /*val entity = new HttpPropFind(fullUrl(path))
+    entity.setDepth(1.toString)
+    println(entity)
+    val multistatus = httpClient.execute(entity, new MultiStatusResponseHandler)
+    val responses = multistatus.getResponse
+    for { r ← responses.drop(1).map(new DavResource(_)) } yield {
+      ListEntry(
+        name = r.getName,
+        `type` = if (r.isDirectory) DirectoryType else FileType,
+        Some(r.getModified.getTime)
+      )
+    }*/
+    val request = new HttpGet(fullUrl(path))
+    val response = httpClient.execute(request)
+    try {
+      val is = response.getEntity.getContent
+      HTTPStorage.parseHTMLListing(new String(getBytes(is, 1024, timeout)))
+    } finally response.close
   }
 
   def isResponseOk(response: HttpResponse) = response.getStatusLine.getStatusCode >= HttpStatus.SC_OK && response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
