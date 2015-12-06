@@ -35,7 +35,7 @@ object WebDavExample extends App {
   val p12 = P12Authentication(new File("/path/to/certificate.p12"), "password")
   val authentication = P12VOMSAuthentication(p12, 24 hours, "voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "vo.complex-systems.eu")
 
-  val dav = WebDAVS(location)(authentication)
+  val dav = DPMWebDAVStorage(location)(authentication)
 
   def dir = "testDirectory"
   def list = dav.list("/").map(_.name).mkString("\n")

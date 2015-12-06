@@ -41,10 +41,10 @@ import scala.io.Source
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
-object WebDAVS {
+object DPMWebDAVStorage {
   def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Option[Int] = Some(20), timeout: Duration = 1 minute)(authentication: A) = {
     val (_location, _connections, _timeout) = (location, connections, timeout)
-    new WebDAVS {
+    new DPMWebDAVStorage {
       override def location = _location
       override def factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def timeout = _timeout
@@ -138,14 +138,14 @@ object WebDAVS {
 
 }
 
-trait WebDAVS <: HTTPSClient with Storage { dav ⇒
+trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
 
   def location: WebDAVLocation
   def timeout: Duration
 
   @transient lazy val client = {
     val c = newClient
-    c.setRedirectStrategy(WebDAVS.redirectStrategy)
+    c.setRedirectStrategy(DPMWebDAVStorage.redirectStrategy)
     c
   }
 
@@ -170,7 +170,7 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
       }
     })
 
-    import WebDAVS._
+    import DPMWebDAVStorage._
     val pipe = new Pipe(timeout)
 
     val future =
@@ -238,16 +238,11 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
   override def _mv(from: String, to: String): Unit =
     webdavClient.move(fullUrl(from), fullUrl(to))
 
-  override def _rmDir(path: String): Unit = {
-    val delete = new HttpDelete(fullUrl(path))
-    webdavClient.delete(fullUrl(path))
-  }
+  override def rmEmptyDir(path: String): Unit = webdavClient.delete(fullUrl(path))
 
   override def _list(path: String): Seq[ListEntry] = {
-    //FIXME enable propfind when DPM webdav works properly
-    /*val entity = new HttpPropFind(fullUrl(path))
+    val entity = new HttpPropFind(fullUrl(path))
     entity.setDepth(1.toString)
-    println(entity)
     val multistatus = httpClient.execute(entity, new MultiStatusResponseHandler)
     val responses = multistatus.getResponse
     for { r ← responses.drop(1).map(new DavResource(_)) } yield {
@@ -256,13 +251,14 @@ trait WebDAVS <: HTTPSClient with Storage { dav ⇒
         `type` = if (r.isDirectory) DirectoryType else FileType,
         Some(r.getModified.getTime)
       )
-    }*/
-    val request = new HttpGet(fullUrl(path))
+    }
+    //FIXME workaround when propfind doesn't work (in DPM)
+    /*val request = new HttpGet(fullUrl(path))
     val response = httpClient.execute(request)
     try {
       val is = response.getEntity.getContent
       HTTPStorage.parseHTMLListing(new String(getBytes(is, 1024, timeout)))
-    } finally response.close
+    } finally response.close*/
   }
 
   def isResponseOk(response: HttpResponse) = response.getStatusLine.getStatusCode >= HttpStatus.SC_OK && response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
