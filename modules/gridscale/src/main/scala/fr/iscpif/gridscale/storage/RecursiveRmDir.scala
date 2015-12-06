@@ -22,9 +22,7 @@ import java.util.logging.{ Level, Logger }
 trait RecursiveRmDir extends Storage {
 
   def _rmDir(path: String) = {
-    val subfiles = _list(path)
-    if (subfiles.isEmpty) rmEmptyDir(path)
-    else subfiles.foreach {
+    _list(path).foreach {
       l ⇒
         val childPath = child(path, l.name)
         try {
@@ -42,6 +40,8 @@ trait RecursiveRmDir extends Storage {
           case t: Throwable ⇒ Logger.getLogger(classOf[RecursiveRmDir].getName).log(Level.FINE, s"Error in recursive rm for $childPath", t)
         }
     }
+
+    rmEmptyDir(path)
   }
 
   def rmEmptyDir(path: String)
