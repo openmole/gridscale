@@ -119,10 +119,11 @@ object WebDAVS {
           }
         }
 
-        waitClose()
-
-        writerClosed = true
-        buffer.synchronized { buffer.notifyAll() }
+        try waitClose()
+        finally {
+          writerClosed = true
+          buffer.synchronized { buffer.notifyAll() }
+        }
 
         try future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
         catch {

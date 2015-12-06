@@ -48,8 +48,6 @@ class RingBuffer[T: ClassTag](val size: Int) {
   def nonEmpty: Boolean = count > 0
   def full = count >= (size - 1)
 
-  val fullLock = new Semaphore(0)
-
   /**
    * Tries to put the given value into the buffer and returns true if this was successful.
    */
@@ -78,21 +76,5 @@ class RingBuffer[T: ClassTag](val size: Int) {
   def waitNotFull = synchronized { if (full) wait() }
   def waitEmpty = synchronized { if (!isEmpty) wait() }
   def waitNotEmpty = synchronized { if (isEmpty) wait() }
-
-  /**
-   * Reads the next value from the buffer without removing it
-   * If the buffer is empty the method throws a NoSuchElementException.
-   */
-  def peek: T =
-    if (count > 0) array(readIx)
-    else throw new NoSuchElementException
-
-  /**
-   * Removes the next value from the buffer without reading it first.
-   * If the buffer is empty the method throws a NoSuchElementException.
-   */
-  def drop(): Unit =
-    if (count > 0) readIx = (readIx - 1) % size
-    else throw new NoSuchElementException
 
 }
