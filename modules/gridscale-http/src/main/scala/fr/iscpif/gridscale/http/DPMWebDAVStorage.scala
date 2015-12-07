@@ -70,7 +70,7 @@ object DPMWebDAVStorage {
     @volatile var writerClosed = false
     @volatile var readerClosed = false
 
-    val buffer = new RingBuffer[Int](4096)
+    val buffer = new RingBuffer[Int](1024 * 64)
 
     def future = reader.get
 
