@@ -73,8 +73,8 @@ class RingBuffer[T: ClassTag](val size: Int) {
     } else None
   }
 
-  def waitNotFull = synchronized { if (full) wait() }
-  def waitEmpty = synchronized { if (!isEmpty) wait() }
-  def waitNotEmpty = synchronized { if (isEmpty) wait() }
+  def waitNotFull = synchronized { if (full) wait(100) }
+  def waitEmpty = synchronized { if (!isEmpty) wait(100) }
+  def waitNotEmpty = synchronized { if (isEmpty) wait(100) }
 
 }
