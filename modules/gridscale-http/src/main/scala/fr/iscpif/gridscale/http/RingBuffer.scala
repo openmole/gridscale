@@ -37,7 +37,7 @@ class RingBuffer[T: ClassTag](val size: Int) {
   /**
    * The number of elements currently in the buffer.
    */
-  def count: Int = {
+  private def count: Int = synchronized {
     val w = writeIx % size
     val r = readIx % size
     val c = if (r <= w) w - r else (w + size) - r

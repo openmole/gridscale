@@ -43,11 +43,8 @@ object WebDavExample extends App {
   Try(dav.rmDir(dir))
 
   dav.makeDir(dir)
-  println(list)
-  dav.rmDir(dir)
 
   val testFile = "testdav.txt"
-  Try(dav.rmFile(testFile))
   val out = dav.openOutputStream(testFile)
   try out.write("Life is great\n".getBytes)
   finally out.close
@@ -55,5 +52,8 @@ object WebDavExample extends App {
   val in = dav.openInputStream(testFile)
   try println(Source.fromInputStream(in).mkString)
   finally in.close
+  dav.rmDir(dir)
+
+  println(list)
 
 }

@@ -18,27 +18,23 @@ package fr.iscpif.gridscale.http
 
 import java.io._
 import java.net.URI
-import java.util.concurrent.TimeUnit
-import java.util.concurrent._
+import java.util.concurrent.{ TimeUnit, _ }
 import java.util.concurrent.atomic.AtomicBoolean
+
 import com.github.sardine.DavResource
-import com.github.sardine.impl._
+import com.github.sardine.impl.SardineRedirectStrategy
 import com.github.sardine.impl.handler.MultiStatusResponseHandler
 import com.github.sardine.impl.methods.{ HttpMkCol, HttpMove, HttpPropFind }
-import com.github.sardine.model.Multistatus
 import fr.iscpif.gridscale.storage._
-import org.apache.http
 import org.apache.http._
 import org.apache.http.client.methods._
 import org.apache.http.entity.InputStreamEntity
-import org.apache.http.protocol.{ HTTP }
+import org.apache.http.protocol.HTTP
 
-import fr.iscpif.gridscale.tools._
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import scala.util.{ Success, Failure, Try }
-import scala.io.Source
+import scala.util.{ Failure, Success, Try }
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
@@ -52,17 +48,6 @@ object DPMWebDAVStorage {
       override def pool = _connections
     }
   }
-
-  def redirectStrategy = new SardineRedirectStrategy
-  /*{
-    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
-      val method = request.getRequestLine().getMethod()
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
-        val uri = getLocationURI(request, response, context)
-        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
-      } else super.getRedirect(request, response, context)
-    }
-  }*/
 
   class Pipe(timeout: Duration) {
 
@@ -139,18 +124,12 @@ object DPMWebDAVStorage {
 
 }
 
-trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
+trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
   def location: WebDAVLocation
   def timeout: Duration
 
-  @transient lazy val client = {
-    val c = newClient
-    c.setRedirectStrategy(DPMWebDAVStorage.redirectStrategy)
-    c
-  }
-
-  @transient lazy val httpClient = client.build()
+  @transient lazy val httpClient = newClient.setRedirectStrategy(new SardineRedirectStrategy).build()
 
   override def finalize = {
     super.finalize()
@@ -190,9 +169,18 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
 
               val redirect =
                 try getRedirection(response)
-                finally response.close
+                catch {
+                  case t: Throwable ⇒
+                    response.close()
+                    throw t
+                }
 
-              redirect.foreach( uri => execute(buildPut(uri)))
+              redirect match {
+                case Some(uri) ⇒
+                  response.close()
+                  execute(buildPut(uri))
+                case None ⇒ response.close()
+              }
             }
 
             val put = buildPut(new URI(fullUrl(path)))
@@ -237,8 +225,9 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
     testAndClose(httpClient.execute(move))
   }
 
-  override def rmEmptyDir(path: String): Unit = {
+  override def _rmDir(path: String): Unit = {
     val delete = new HttpDelete(fullUrl(path))
+    delete.addHeader("Depth", "infinity")
     testAndClose(httpClient.execute(delete))
   }
 
@@ -293,6 +282,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
     val delete = new HttpDelete(fullUrl(path))
     testAndClose(httpClient.execute(delete))
   }
+
   override def _exists(path: String): Boolean = {
     val head = new HttpHead(fullUrl(path))
     val response = httpClient.execute(head)
