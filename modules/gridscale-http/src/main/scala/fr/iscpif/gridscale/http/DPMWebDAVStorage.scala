@@ -20,10 +20,11 @@ import java.io._
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import java.util.concurrent._
+import java.util.concurrent.atomic.AtomicBoolean
 import com.github.sardine.DavResource
 import com.github.sardine.impl._
 import com.github.sardine.impl.handler.MultiStatusResponseHandler
-import com.github.sardine.impl.methods.HttpPropFind
+import com.github.sardine.impl.methods.{ HttpMkCol, HttpMove, HttpPropFind }
 import com.github.sardine.model.Multistatus
 import fr.iscpif.gridscale.storage._
 import org.apache.http
@@ -67,8 +68,8 @@ object DPMWebDAVStorage {
 
     var reader = (None: Option[Future[_]])
 
-    @volatile var writerClosed = false
-    @volatile var readerClosed = false
+    val writerClosed = new AtomicBoolean(false)
+    val readerClosed = new AtomicBoolean(false)
 
     val buffer = new RingBuffer[Int](1024 * 64)
 
@@ -77,7 +78,7 @@ object DPMWebDAVStorage {
     val is = new InputStream {
       override def read(): Int = {
         @tailrec def waitRead(): Int =
-          if (writerClosed) -1
+          if (writerClosed.get()) -1
           else {
             buffer.tryDequeue() match {
               case None ⇒
@@ -91,7 +92,7 @@ object DPMWebDAVStorage {
       }
 
       override def close() = {
-        readerClosed = true
+        readerClosed.set(true)
         buffer.synchronized { buffer.notifyAll() }
       }
 
@@ -100,7 +101,7 @@ object DPMWebDAVStorage {
     val os = new OutputStream {
       override def write(i: Int): Unit = {
         @tailrec def waitWrite(): Unit = {
-          if (!readerClosed) {
+          if (!readerClosed.get()) {
             if (!buffer.tryEnqueue(i)) {
               buffer.waitNotFull
               waitWrite()
@@ -113,7 +114,7 @@ object DPMWebDAVStorage {
 
       override def close(): Unit = {
         @tailrec def waitClose(): Unit = {
-          if (!readerClosed && !buffer.isEmpty) {
+          if (!readerClosed.get() && !buffer.isEmpty) {
             buffer.waitEmpty
             waitClose()
           }
@@ -121,7 +122,7 @@ object DPMWebDAVStorage {
 
         try waitClose()
         finally {
-          writerClosed = true
+          writerClosed.set(true)
           buffer.synchronized { buffer.notifyAll() }
         }
 
@@ -150,12 +151,10 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
   }
 
   @transient lazy val httpClient = client.build()
-  @transient lazy val webdavClient = new SardineImpl(client)
 
   override def finalize = {
     super.finalize()
     httpClient.close()
-    webdavClient.shutdown()
   }
 
   def fullUrl(path: String) =
@@ -186,22 +185,18 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
               put
             }
 
-            def execute(request: HttpPut): CloseableHttpResponse = {
+            def execute(request: HttpPut): Unit = {
               val response = httpClient.execute(request)
-              getRedirection(response) match {
-                case Some(uri) ⇒
-                  response.close()
-                  execute(buildPut(uri))
-                case None ⇒
-                  response
-              }
+
+              val redirect =
+                try getRedirection(response)
+                finally response.close
+
+              redirect.foreach( uri => execute(buildPut(uri)))
             }
 
             val put = buildPut(new URI(fullUrl(path)))
-            val response = execute(put)
-
-            try testResponse(response).get
-            finally response.close()
+            execute(put)
           } catch {
             case t: Throwable ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
           } finally pipe.is.close()
@@ -232,13 +227,20 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
     }
   }
 
-  override def _makeDir(path: String): Unit =
-    webdavClient.createDirectory(fullUrl(path))
+  override def _makeDir(path: String): Unit = {
+    val mkcol = new HttpMkCol(fullUrl(path))
+    testAndClose(httpClient.execute(mkcol))
+  }
 
-  override def _mv(from: String, to: String): Unit =
-    webdavClient.move(fullUrl(from), fullUrl(to))
+  override def _mv(from: String, to: String): Unit = {
+    val move = new HttpMove(fullUrl(from), fullUrl(to), true)
+    testAndClose(httpClient.execute(move))
+  }
 
-  override def rmEmptyDir(path: String): Unit = webdavClient.delete(fullUrl(path))
+  override def rmEmptyDir(path: String): Unit = {
+    val delete = new HttpDelete(fullUrl(path))
+    testAndClose(httpClient.execute(delete))
+  }
 
   override def _list(path: String): Seq[ListEntry] = {
     val entity = new HttpPropFind(fullUrl(path))
@@ -279,12 +281,31 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage with RecursiveRmDir { dav ⇒
       case _ ⇒ false
     }
 
+  def testAndClose(r: CloseableHttpResponse) =
+    try testResponse(r).get
+    finally r.close
+
   def testResponse(response: HttpResponse) = Try {
     if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
   }
 
-  override def _rmFile(path: String): Unit = webdavClient.delete(fullUrl(path))
-  override def _exists(path: String): Boolean = webdavClient.exists(fullUrl(path))
+  override def _rmFile(path: String): Unit = {
+    val delete = new HttpDelete(fullUrl(path))
+    testAndClose(httpClient.execute(delete))
+  }
+  override def _exists(path: String): Boolean = {
+    val head = new HttpHead(fullUrl(path))
+    val response = httpClient.execute(head)
+
+    try {
+      response.getStatusLine.getStatusCode match {
+        case x if x < HttpStatus.SC_MULTIPLE_CHOICES ⇒ true
+        case HttpStatus.SC_NOT_FOUND                 ⇒ false
+        case _                                       ⇒ throw new IOException(s"Server responded with an unexpected response: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+      }
+    } finally response.close()
+
+  }
 
   override def toString = fullUrl("")
 }
