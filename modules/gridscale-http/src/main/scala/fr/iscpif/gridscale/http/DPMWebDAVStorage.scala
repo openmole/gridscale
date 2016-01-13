@@ -29,7 +29,7 @@ import fr.iscpif.gridscale.storage._
 import org.apache.http._
 import org.apache.http.client.methods._
 import org.apache.http.entity.InputStreamEntity
-import org.apache.http.protocol.HTTP
+import org.apache.http.protocol.{ HttpContext, HTTP }
 
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
@@ -49,77 +49,17 @@ object DPMWebDAVStorage {
     }
   }
 
-  class Pipe(timeout: Duration) {
-
-    var reader = (None: Option[Future[_]])
-
-    val writerClosed = new AtomicBoolean(false)
-    val readerClosed = new AtomicBoolean(false)
-
-    val buffer = new RingBuffer[Int](1024 * 64)
-
-    def future = reader.get
-
-    val is = new InputStream {
-      override def read(): Int = {
-        @tailrec def waitRead(): Int =
-          if (writerClosed.get()) -1
-          else {
-            buffer.tryDequeue() match {
-              case None ⇒
-                buffer.waitNotEmpty
-                waitRead()
-              case Some(r) ⇒ (r & 0xFF)
-            }
-          }
-
-        waitRead()
-      }
-
-      override def close() = {
-        readerClosed.set(true)
-        buffer.synchronized { buffer.notifyAll() }
-      }
-
+  def redirectStrategy = new SardineRedirectStrategy {
+    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
+      val method = request.getRequestLine().getMethod()
+      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
+        val uri = getLocationURI(request, response, context)
+        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
+      } else super.getRedirect(request, response, context)
     }
-
-    val os = new OutputStream {
-      override def write(i: Int): Unit = {
-        @tailrec def waitWrite(): Unit = {
-          if (!readerClosed.get()) {
-            if (!buffer.tryEnqueue(i)) {
-              buffer.waitNotFull
-              waitWrite()
-            }
-          }
-        }
-
-        waitWrite()
-      }
-
-      override def close(): Unit = {
-        @tailrec def waitClose(): Unit = {
-          if (!readerClosed.get() && !buffer.isEmpty) {
-            buffer.waitEmpty
-            waitClose()
-          }
-        }
-
-        try waitClose()
-        finally {
-          writerClosed.set(true)
-          buffer.synchronized { buffer.notifyAll() }
-        }
-
-        try future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
-        catch {
-          case e: TimeoutException ⇒
-            future.cancel(true)
-            throw e
-          case e: Throwable ⇒ throw e
-        }
-      }
-    }
+    override protected def isRedirectable(method: String) =
+      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) true
+      else super.isRedirectable(method)
   }
 
 }
@@ -129,7 +69,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   def location: WebDAVLocation
   def timeout: Duration
 
-  @transient lazy val httpClient = newClient.setRedirectStrategy(new SardineRedirectStrategy).build()
+  @transient lazy val httpClient = newClient.setRedirectStrategy(DPMWebDAVStorage.redirectStrategy).build()
 
   override def finalize = {
     super.finalize()
@@ -149,45 +89,24 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     })
 
     import DPMWebDAVStorage._
-    val pipe = new Pipe(timeout)
+    val pipe = new Pipe(timeout, path)
 
     val future =
       executor.submit(
         new Runnable {
-          def run = try {
-            // webdavClient.put(fullUrl(path), pipe.is)
-            def buildPut(uri: URI) = {
-              val put = new HttpPut(uri)
+          def run =
+            try {
+              val put = new HttpPut(fullUrl(path))
               val entity = new InputStreamEntity(pipe.is, -1)
               put.setEntity(entity)
               put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-              put
-            }
-
-            def execute(request: HttpPut): Unit = {
-              val response = httpClient.execute(request)
-
-              val redirect =
-                try getRedirection(response)
-                catch {
-                  case t: Throwable ⇒
-                    response.close()
-                    throw t
-                }
-
-              redirect match {
-                case Some(uri) ⇒
-                  response.close()
-                  execute(buildPut(uri))
-                case None ⇒ response.close()
-              }
-            }
-
-            val put = buildPut(new URI(fullUrl(path)))
-            execute(put)
-          } catch {
-            case t: Throwable ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
-          } finally pipe.is.close()
+              val r = httpClient.execute(put)
+              testAndClose(r)
+            } catch {
+              case t: Throwable ⇒
+                Try(_rmFile(path))
+                throw new IOException(s"Error putting output stream for $path on $dav", t)
+            } finally pipe.is.close()
         }
       )
 
@@ -231,12 +150,17 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     testAndClose(httpClient.execute(delete))
   }
 
+  def listProp(path: String)=  {
+      val entity = new HttpPropFind(fullUrl(path))
+      entity.setDepth(1.toString)
+      val multistatus = httpClient.execute(entity, new MultiStatusResponseHandler)
+      val responses = multistatus.getResponse
+      responses.map(new DavResource(_))
+   }
+
+
   override def _list(path: String): Seq[ListEntry] = {
-    val entity = new HttpPropFind(fullUrl(path))
-    entity.setDepth(1.toString)
-    val multistatus = httpClient.execute(entity, new MultiStatusResponseHandler)
-    val responses = multistatus.getResponse
-    for { r ← responses.drop(1).map(new DavResource(_)) } yield {
+    for { r ← listProp(path).drop(1) } yield {
       ListEntry(
         name = r.getName,
         `type` = if (r.isDirectory) DirectoryType else FileType,
@@ -252,7 +176,9 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     } finally response.close*/
   }
 
-  def isResponseOk(response: HttpResponse) = response.getStatusLine.getStatusCode >= HttpStatus.SC_OK && response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
+  def isResponseOk(response: HttpResponse) =
+    response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
+      response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
 
   def getRedirection(response: HttpResponse): Option[URI] =
     if (isRedirection(response)) {
@@ -298,4 +224,88 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   }
 
   override def toString = fullUrl("")
+
+  class Pipe(timeout: Duration, path: String) {
+    var reader = (None: Option[Future[_]])
+
+    val writerClosed = new AtomicBoolean(false)
+    val readerClosed = new AtomicBoolean(false)
+
+    val buffer = new RingBuffer[Int](1024 * 64)
+
+    def future = reader.get
+
+    val is = new InputStream {
+
+      override def read(): Int = {
+        @tailrec def waitRead(): Int =
+          if (writerClosed.get()) -1
+          else {
+            buffer.tryDequeue() match {
+              case None ⇒
+                buffer.waitNotEmpty
+                waitRead()
+              case Some(r) ⇒ (r & 0xFF)
+            }
+          }
+
+        val res = waitRead()
+        res
+      }
+
+      override def close() = {
+        readerClosed.set(true)
+        buffer.synchronized { buffer.notifyAll() }
+      }
+
+    }
+
+    val os = new OutputStream {
+
+      var size = 0
+
+      override def write(i: Int): Unit = {
+        @tailrec def waitWrite(): Unit = {
+          if (!readerClosed.get()) {
+            if (!buffer.tryEnqueue(i)) {
+              buffer.waitNotFull
+              waitWrite()
+            }
+          }
+        }
+
+        size += 1
+        waitWrite()
+      }
+
+      override def close(): Unit = {
+        @tailrec def waitClose(): Unit = {
+          if (!readerClosed.get() && !buffer.isEmpty) {
+            buffer.waitEmpty
+            waitClose()
+          }
+        }
+
+        try waitClose()
+        finally {
+          writerClosed.set(true)
+          buffer.synchronized { buffer.notifyAll() }
+        }
+
+        try future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
+        catch {
+          case e: TimeoutException ⇒
+            future.cancel(true)
+            throw e
+          case e: Throwable ⇒ throw e
+        }
+
+        val serverSize: Long = listProp(path).head.getContentLength
+        if(size.toLong != serverSize) {
+          Try(_rmFile(path))
+          throw new IOException(s"Written file has a wrong size on the remote server")
+        }
+      }
+    }
+  }
 }

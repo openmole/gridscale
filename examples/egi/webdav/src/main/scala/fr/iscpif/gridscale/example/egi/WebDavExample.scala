@@ -24,36 +24,39 @@ import fr.iscpif.gridscale.egi._
 
 import scala.concurrent.duration._
 import scala.io.Source
-import scala.util.Try
+import scala.util.{ Success, Failure, Try }
 
 object WebDavExample extends App {
 
   val location = new BDII("ldap://topbdii.grif.fr:2170").queryWebDAVLocations("vo.complex-systems.eu", 1 minute).find(_.host.contains("lal")).get
 
-  VOMSAuthentication.setCARepository(new File("/path/to/CACertificates"))
+  VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
 
-  val p12 = P12Authentication(new File("/path/to/certificate.p12"), "password")
+  val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "password")
   val authentication = P12VOMSAuthentication(p12, 24 hours, "voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "vo.complex-systems.eu")
 
   val dav = DPMWebDAVStorage(location)(authentication)
 
-  def dir = "testDirectory"
-  def list = dav.list("/").map(_.name).mkString("\n")
-
-  Try(dav.rmDir(dir))
-
+  def dir = s"testDirectory"
+  println(Try(dav.rmDir(dir)))
   dav.makeDir(dir)
 
-  val testFile = "testdav.txt"
-  val out = dav.openOutputStream(testFile)
-  try out.write("Life is great\n".getBytes)
-  finally out.close
+  for (i ← (0 to 9999).par) {
+    val testFile = s"$dir/testdav$i.txt"
 
-  val in = dav.openInputStream(testFile)
-  try println(Source.fromInputStream(in).mkString)
-  finally in.close
-  dav.rmDir(dir)
+    Try {
+      val out = dav.openOutputStream(testFile)
+      try out.write("Life is great\n".getBytes)
+      finally out.close
 
-  println(list)
+      val in = dav.openInputStream(testFile)
+      try assert(Source.fromInputStream(in).mkString == "Life is great\n", "File content is not right")
+      finally in.close
+
+    } match {
+      case Failure(e) ⇒ println(s"Failed $testFile $e")
+      case Success(_) ⇒ println(s"Written $testFile")
+    }
+  }
 
 }
