@@ -88,7 +88,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
       }
     })
 
-    import DPMWebDAVStorage._
     val pipe = new Pipe(timeout, path)
 
     val future =
@@ -103,9 +102,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
               val r = httpClient.execute(put)
               testAndClose(r)
             } catch {
-              case t: Throwable ⇒
-                Try(_rmFile(path))
-                throw new IOException(s"Error putting output stream for $path on $dav", t)
+              case t: Throwable ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
             } finally pipe.is.close()
         }
       )
@@ -167,13 +164,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
         Some(r.getModified.getTime)
       )
     }
-    //FIXME workaround when propfind doesn't work (in DPM)
-    /*val request = new HttpGet(fullUrl(path))
-    val response = httpClient.execute(request)
-    try {
-      val is = response.getEntity.getContent
-      HTTPStorage.parseHTMLListing(new String(getBytes(is, 1024, timeout)))
-    } finally response.close*/
   }
 
   def isResponseOk(response: HttpResponse) =
@@ -261,7 +251,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     }
 
     val os = new OutputStream {
-
       var size = 0
 
       override def write(i: Int): Unit = {
@@ -301,10 +290,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
         }
 
         val serverSize: Long = listProp(path).head.getContentLength
-        if(size.toLong != serverSize) {
-          Try(_rmFile(path))
-          throw new IOException(s"Written file has a wrong size on the remote server")
-        }
+        if(size.toLong != serverSize) throw new IOException(s"Written file has a wrong size on the remote server, expected $size but the file size is $serverSize")
       }
     }
   }
