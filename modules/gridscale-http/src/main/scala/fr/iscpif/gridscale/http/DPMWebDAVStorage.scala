@@ -170,7 +170,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
       response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
 
-  def getRedirection(response: HttpResponse): Option[URI] =
+  /*def getRedirection(response: HttpResponse): Option[URI] =
     if (isRedirection(response)) {
       val locationHeader: Header = response.getFirstHeader("location")
       if (locationHeader == null) throw new ProtocolException("Received redirect response " + response.getStatusLine + " but no location header")
@@ -184,7 +184,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
         HttpStatus.SC_TEMPORARY_REDIRECT |
         HttpStatus.SC_SEE_OTHER ⇒ true
       case _ ⇒ false
-    }
+    }*/
 
   def testAndClose(r: CloseableHttpResponse) =
     try testResponse(r).get
@@ -221,7 +221,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     val writerClosed = new AtomicBoolean(false)
     val readerClosed = new AtomicBoolean(false)
 
-    val buffer = new RingBuffer[Int](1024 * 64)
+    val buffer = new RingBuffer[Byte](1024 * 256)
 
     def future = reader.get
 
@@ -235,7 +235,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
               case None ⇒
                 buffer.waitNotEmpty
                 waitRead()
-              case Some(r) ⇒ (r & 0xFF)
+              case Some(r) ⇒ (r.toInt & 0xFF)
             }
           }
 
@@ -256,7 +256,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
       override def write(i: Int): Unit = {
         @tailrec def waitWrite(): Unit = {
           if (!readerClosed.get()) {
-            if (!buffer.tryEnqueue(i)) {
+            if (!buffer.tryEnqueue(i.toByte)) {
               buffer.waitNotFull
               waitWrite()
             }
