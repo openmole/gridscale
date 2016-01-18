@@ -117,7 +117,7 @@ trait Bundles <: Modules with Settings {
 
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
     name := "ssh",
-    importPackage := Seq("!com.jcraft.jzlib", "!javax.*", "*"),
+    importPackage := Seq("!javax.*", "*"),
     exportPackage := exportPackage.value ++ Seq("net.schmizz.sshj.*")
     )
 
@@ -164,7 +164,9 @@ trait Modules <: Libraries with Settings {
      )
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
-    libraryDependencies += "net.schmizz" % "sshj" % "0.10.0")
+    libraryDependencies += "net.schmizz" % "sshj" % "0.10.0",
+    libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
+    )
 
   lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH) settings (
     libraryDependencies ++= Seq(scalaTest, mockito)
