@@ -37,6 +37,7 @@ trait HTTPSClient {
       val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory(timeout)).build()
       val p = new PoolingHttpClientConnectionManager(registry)
       p.setDefaultMaxPerRoute(connections)
+      p.setMaxTotal(Int.MaxValue)
       p
     }
 
