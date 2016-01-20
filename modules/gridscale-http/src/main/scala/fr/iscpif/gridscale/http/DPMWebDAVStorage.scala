@@ -99,8 +99,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
               val entity = new InputStreamEntity(pipe.is, -1)
               put.setEntity(entity)
               put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-              val r = httpClient.execute(put)
-              testAndClose(r)
+              execute(httpClient.execute, put)
             } catch {
               case t: Throwable ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
             } finally pipe.is.close()
@@ -118,6 +117,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
     testResponse(response) match {
       case Failure(e) ⇒
+        get.releaseConnection()
         response.close()
         throw e
       case Success(_) ⇒
@@ -127,32 +127,37 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
     new InputStream {
       override def read(): Int = stream.read()
-      override def close() = response.close()
+      override def close() = {
+        get.releaseConnection()
+        response.close()
+      }
     }
   }
 
   override def _makeDir(path: String): Unit = {
     val mkcol = new HttpMkCol(fullUrl(path))
-    testAndClose(httpClient.execute(mkcol))
+    execute(httpClient.execute, mkcol)
   }
 
   override def _mv(from: String, to: String): Unit = {
     val move = new HttpMove(fullUrl(from), fullUrl(to), true)
-    testAndClose(httpClient.execute(move))
+    execute(httpClient.execute, move)
   }
 
   override def _rmDir(path: String): Unit = {
     val delete = new HttpDelete(fullUrl(path))
     delete.addHeader("Depth", "infinity")
-    testAndClose(httpClient.execute(delete))
+    execute(httpClient.execute, delete)
   }
 
   def listProp(path: String)=  {
       val entity = new HttpPropFind(fullUrl(path))
       entity.setDepth(1.toString)
-      val multistatus = httpClient.execute(entity, new MultiStatusResponseHandler)
-      val responses = multistatus.getResponse
-      responses.map(new DavResource(_))
+      try {
+        val multistatus = httpClient.execute(entity, new MultiStatusResponseHandler)
+        val responses = multistatus.getResponse
+        responses.map(new DavResource(_))
+      } finally entity.releaseConnection
    }
 
 
@@ -186,9 +191,13 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
       case _ ⇒ false
     }*/
 
-  def testAndClose(r: CloseableHttpResponse) =
-    try testResponse(r).get
-    finally r.close
+
+  def execute(execute: HttpRequestBase => CloseableHttpResponse, request: HttpRequestBase) =
+    try {
+      val r = execute(request)
+      try testResponse(r).get
+      finally r.close
+    } finally request.releaseConnection()
 
   def testResponse(response: HttpResponse) = Try {
     if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
@@ -196,21 +205,22 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
   override def _rmFile(path: String): Unit = {
     val delete = new HttpDelete(fullUrl(path))
-    testAndClose(httpClient.execute(delete))
+    execute(httpClient.execute, delete)
   }
 
   override def _exists(path: String): Boolean = {
     val head = new HttpHead(fullUrl(path))
-    val response = httpClient.execute(head)
-
     try {
-      response.getStatusLine.getStatusCode match {
-        case x if x < HttpStatus.SC_MULTIPLE_CHOICES ⇒ true
-        case HttpStatus.SC_NOT_FOUND                 ⇒ false
-        case _                                       ⇒ throw new IOException(s"Server responded with an unexpected response: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
-      }
-    } finally response.close()
+      val response = httpClient.execute(head)
 
+      try {
+        response.getStatusLine.getStatusCode match {
+          case x if x < HttpStatus.SC_MULTIPLE_CHOICES ⇒ true
+          case HttpStatus.SC_NOT_FOUND ⇒ false
+          case _ ⇒ throw new IOException(s"Server responded with an unexpected response: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+        }
+      } finally response.close()
+    } finally head.releaseConnection()
   }
 
   override def toString = fullUrl("")
