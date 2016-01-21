@@ -80,33 +80,27 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
   override protected def _openOutputStream(path: String): OutputStream = {
-    val executor = Executors.newSingleThreadExecutor(new ThreadFactory {
-      override def newThread(runnable: Runnable): Thread = {
-        val thread = new Thread(runnable)
-        thread.setDaemon(true)
-        thread
-      }
-    })
-
     val pipe = new Pipe(timeout, path)
 
-    val future =
-      executor.submit(
-        new Runnable {
-          def run =
-            try {
-              val put = new HttpPut(fullUrl(path))
-              val entity = new InputStreamEntity(pipe.is, -1)
-              put.setEntity(entity)
-              put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-              execute(httpClient.execute, put)
-            } catch {
-              case t: Throwable ⇒ throw new IOException(s"Error putting output stream for $path on $dav", t)
-            } finally pipe.is.close()
-        }
-      )
+    val runnable =
+      new Runnable {
+        def run =
+          try {
+            val put = new HttpPut(fullUrl(path))
+            val entity = new InputStreamEntity(pipe.is, -1)
+            put.setEntity(entity)
+            put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+            execute(httpClient.execute, put)
+          } catch {
+            case t: Throwable ⇒
+              pipe.readerException = Some(throw new IOException(s"Error putting output stream for $path on $dav", t))
+          } finally pipe.is.close()
+      }
 
-    pipe.reader = Some(future)
+    val thread = new Thread(runnable)
+    thread.setDaemon(true)
+    thread.start()
+    pipe.reader = Some(thread)
     pipe.os
   }
 
@@ -226,14 +220,13 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   override def toString = fullUrl("")
 
   class Pipe(timeout: Duration, path: String) {
-    var reader = (None: Option[Future[_]])
+    var reader = (None: Option[Thread])
+    var readerException = (None: Option[Throwable])
 
     val writerClosed = new AtomicBoolean(false)
     val readerClosed = new AtomicBoolean(false)
 
     val buffer = new RingBuffer[Byte](1024 * 256)
-
-    def future = reader.get
 
     val is = new InputStream {
 
@@ -291,13 +284,11 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
           buffer.synchronized { buffer.notifyAll() }
         }
 
-        try future.get(timeout.toMillis, TimeUnit.MILLISECONDS)
-        catch {
-          case e: TimeoutException ⇒
-            future.cancel(true)
-            throw e
-          case e: Throwable ⇒ throw e
-        }
+        try {
+          reader.get.join(timeout.toMillis)
+          readerException.foreach(throw _)
+          if(reader.get.isAlive) throw new TimeoutException("Upload timed out")
+        } finally reader.get.interrupt()
 
         val serverSize: Long = listProp(path).head.getContentLength
         if(size.toLong != serverSize) throw new IOException(s"Written file has a wrong size on the remote server, expected $size but the file size is $serverSize")
