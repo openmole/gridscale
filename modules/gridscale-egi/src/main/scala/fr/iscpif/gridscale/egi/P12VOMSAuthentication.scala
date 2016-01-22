@@ -51,5 +51,5 @@ object P12VOMSAuthentication {
 
 trait P12VOMSAuthentication extends VOMSAuthentication {
   def p12Authentication: P12Authentication
-  def proxyInit(serverURL: String) = VOMSProxyInit.instance(p12Authentication.certificate, p12Authentication.password)
+  def proxyInit = new VOMSProxyInit(p12Authentication.certificate, p12Authentication.password)
 }

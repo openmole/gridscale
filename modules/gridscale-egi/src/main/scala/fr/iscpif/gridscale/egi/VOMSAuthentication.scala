@@ -95,12 +95,11 @@ trait VOMSAuthentication {
   def generate(file: File) = {
     val os = new FileOutputStream(file)
     val p =
-
       try VOMSProxyBuilder.saveProxy(proxy(VOMSProxyBuilder.GT4_PROXY), os)
       finally os.close
   }
 
-  def proxyInit(serverURL: String): VOMSProxyInit
+  def proxyInit(): VOMSProxyInit
 
   def proxy(proxyType: CertificateType): X509Credential =
     VOMSAuthentication.findWorking(serverURLs, s ⇒ proxy(s, proxyType))
@@ -116,7 +115,7 @@ trait VOMSAuthentication {
     server.setHostDn(uri.getPath)
     server.setVoName(voName)
 
-    val proxy = proxyInit(serverURL)
+    val proxy = proxyInit()
     proxy.addVomsServer(server)
 
     val requestOption = new VOMSRequestOptions

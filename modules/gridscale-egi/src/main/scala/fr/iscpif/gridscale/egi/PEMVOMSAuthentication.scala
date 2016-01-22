@@ -52,5 +52,5 @@ object PEMVOMSAuthentication {
 
 trait PEMVOMSAuthentication extends VOMSAuthentication {
   def pemAuthentication: PEMAuthentication
-  def proxyInit(serverURL: String) = VOMSProxyInit.instance(pemAuthentication.certificate.getPath, pemAuthentication.key.getPath, pemAuthentication.password)
+  def proxyInit() = new VOMSProxyInit(pemAuthentication.certificate.getPath, pemAuthentication.key.getPath, pemAuthentication.password)
 }
