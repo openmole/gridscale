@@ -28,19 +28,19 @@ object P12VOMSAuthentication {
   def apply(
     p12: P12Authentication,
     lifeTime: Duration,
-    serverURL: String,
+    serverURLs: Seq[String],
     voName: String,
     renewRatio: Double = 0.2,
     fqan: Option[String] = None,
     proxySize: Int = 1024) = {
-    val (_lifeTime, _serverURL, _voName, _renewRatio, _fqan, _proxySize) =
-      (lifeTime, serverURL, voName, renewRatio, fqan, proxySize)
+    val (_lifeTime, _serverURLs, _voName, _renewRatio, _fqan, _proxySize) =
+      (lifeTime, serverURLs, voName, renewRatio, fqan, proxySize)
 
     new P12VOMSAuthentication {
       override val p12Authentication = p12
       override val lifeTime: Duration = _lifeTime
       override val voName: String = _voName
-      override val serverURL: String = _serverURL
+      override val serverURLs: Seq[String] = _serverURLs
       override val renewRation: Double = _renewRatio
       override val fqan = _fqan
       override val proxySize = _proxySize
@@ -51,5 +51,5 @@ object P12VOMSAuthentication {
 
 trait P12VOMSAuthentication extends VOMSAuthentication {
   def p12Authentication: P12Authentication
-  def proxyInit = VOMSProxyInit.instance(p12Authentication.certificate, p12Authentication.password)
+  def proxyInit(serverURL: String) = VOMSProxyInit.instance(p12Authentication.certificate, p12Authentication.password)
 }

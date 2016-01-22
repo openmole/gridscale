@@ -25,11 +25,13 @@ import fr.iscpif.gridscale.authentication.AuthenticationException
 import fr.iscpif.gridscale.cache._
 import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
 import org.globus.gsi.GSIConstants.CertificateType
+import org.globus.gsi.X509Credential
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
 import org.ietf.jgss.GSSCredential
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration
+import scala.util._
 
 object VOMSAuthentication {
 
@@ -38,13 +40,31 @@ object VOMSAuthentication {
     System.setProperty("CADIR", directory.getCanonicalPath)
   }
 
+  def findWorking[T](servers: Seq[String], f: String ⇒ T): T = {
+    def findWorking0(servers: List[String]): Try[T] =
+      servers match {
+        case Nil      ⇒ Failure(new RuntimeException("Server list is empty"))
+        case h :: Nil ⇒ Try(f(h))
+        case h :: tail ⇒
+          Try(f(h)) match {
+            case Failure(_) ⇒ findWorking0(tail)
+            case s          ⇒ s
+          }
+      }
+
+    findWorking0(servers.toList) match {
+      case Failure(t) ⇒ throw new RuntimeException(s"No server is working among $servers", t)
+      case Success(t) ⇒ t
+    }
+  }
+
 }
 
 trait VOMSAuthentication {
 
-  def serverURL: String
+  def serverURLs: Seq[String]
   def voName: String
-  def proxyInit: VOMSProxyInit
+
   def fqan: Option[String]
   def lifeTime: Duration
   def renewRation: Double
@@ -74,11 +94,18 @@ trait VOMSAuthentication {
 
   def generate(file: File) = {
     val os = new FileOutputStream(file)
-    try VOMSProxyBuilder.saveProxy(proxy(VOMSProxyBuilder.GT4_PROXY), os)
-    finally os.close
+    val p =
+
+      try VOMSProxyBuilder.saveProxy(proxy(VOMSProxyBuilder.GT4_PROXY), os)
+      finally os.close
   }
 
-  def proxy(proxyType: CertificateType) = synchronized {
+  def proxyInit(serverURL: String): VOMSProxyInit
+
+  def proxy(proxyType: CertificateType): X509Credential =
+    VOMSAuthentication.findWorking(serverURLs, s ⇒ proxy(s, proxyType))
+
+  def proxy(serverURL: String, proxyType: CertificateType): X509Credential = synchronized {
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
@@ -89,7 +116,7 @@ trait VOMSAuthentication {
     server.setHostDn(uri.getPath)
     server.setVoName(voName)
 
-    val proxy = proxyInit
+    val proxy = proxyInit(serverURL)
     proxy.addVomsServer(server)
 
     val requestOption = new VOMSRequestOptions

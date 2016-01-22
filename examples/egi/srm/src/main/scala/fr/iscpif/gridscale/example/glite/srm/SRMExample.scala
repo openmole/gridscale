@@ -29,7 +29,7 @@ object SRMExample extends App {
   VOMSAuthentication.setCARepository(new File("/path/to/certificates/dir"))
 
   val p12 = P12Authentication(new File("/path/to/globus/certificate.p12"), "password")
-  val authentication = P12VOMSAuthentication(p12, 12 hours, "voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "vo.complex-systems.eu")
+  val authentication = P12VOMSAuthentication(p12, 12 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr"), "vo.complex-systems.eu")
 
   val bdii = new BDII("ldap://topbdii.grif.fr:2170")
   val srm = bdii.querySRMLocations("biomed", 2 minutes).map { l ⇒ SRMStorage(l)(authentication) }.head
