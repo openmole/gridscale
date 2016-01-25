@@ -39,42 +39,20 @@ import scala.util.{ Failure, Success, Try }
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
 object DPMWebDAVStorage {
-  def apply[A: HTTPSAuthentication](location: WebDAVLocation, connections: Option[Int] = Some(20), timeout: Duration = 1 minute)(authentication: A) = {
-    val (_location, _connections, _timeout) = (location, connections, timeout)
+  def apply[A: HTTPSAuthentication](location: WebDAVLocation, timeout: Duration = 1 minute)(authentication: A) = {
+    val (_location, _timeout) = (location, timeout)
     new DPMWebDAVStorage {
       override def location = _location
       override def factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override def timeout = _timeout
-      override def pool = _connections
     }
   }
-
-  def redirectStrategy = new SardineRedirectStrategy {
-    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
-      val method = request.getRequestLine().getMethod()
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
-        val uri = getLocationURI(request, response, context)
-        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
-      } else super.getRedirect(request, response, context)
-    }
-    override protected def isRedirectable(method: String) =
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) true
-      else super.isRedirectable(method)
-  }
-
 }
 
 trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
   def location: WebDAVLocation
   def timeout: Duration
-
-  @transient lazy val httpClient = newClient.setRedirectStrategy(DPMWebDAVStorage.redirectStrategy).build()
-
-  override def finalize = {
-    super.finalize()
-    httpClient.close()
-  }
 
   def fullUrl(path: String) =
     "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
@@ -85,15 +63,14 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     val runnable =
       new Runnable {
         def run =
-          try {
+          try withClient { httpClient =>
             val put = new HttpPut(fullUrl(path))
             val entity = new InputStreamEntity(pipe.is, -1)
             put.setEntity(entity)
             put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
             execute(httpClient.execute, put)
           } catch {
-            case t: Throwable ⇒
-              pipe.readerException = Some(throw new IOException(s"Error putting output stream for $path on $dav", t))
+            case t: Throwable ⇒ pipe.readerException = Some(throw new IOException(s"Error putting output stream for $path on $dav", t))
           } finally pipe.is.close()
       }
 
@@ -105,6 +82,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   }
 
   override protected def _openInputStream(path: String): InputStream = {
+    val httpClient = newClient
     val get = new HttpGet(fullUrl(path))
     get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
     val response = httpClient.execute(get)
@@ -124,27 +102,28 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
       override def close() = {
         get.releaseConnection()
         response.close()
+        httpClient.close()
       }
     }
   }
 
-  override def _makeDir(path: String): Unit = {
+  override def _makeDir(path: String): Unit = withClient { httpClient =>
     val mkcol = new HttpMkCol(fullUrl(path))
     execute(httpClient.execute, mkcol)
   }
 
-  override def _mv(from: String, to: String): Unit = {
+  override def _mv(from: String, to: String): Unit = withClient { httpClient =>
     val move = new HttpMove(fullUrl(from), fullUrl(to), true)
     execute(httpClient.execute, move)
   }
 
-  override def _rmDir(path: String): Unit = {
+  override def _rmDir(path: String): Unit =  withClient { httpClient =>
     val delete = new HttpDelete(fullUrl(path))
     delete.addHeader("Depth", "infinity")
     execute(httpClient.execute, delete)
   }
 
-  def listProp(path: String)=  {
+  def listProp(path: String)=   withClient { httpClient =>
       val entity = new HttpPropFind(fullUrl(path))
       entity.setDepth(1.toString)
       try {
@@ -197,12 +176,12 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
   }
 
-  override def _rmFile(path: String): Unit = {
+  override def _rmFile(path: String): Unit =  withClient { httpClient =>
     val delete = new HttpDelete(fullUrl(path))
     execute(httpClient.execute, delete)
   }
 
-  override def _exists(path: String): Boolean = {
+  override def _exists(path: String): Boolean =  withClient { httpClient =>
     val head = new HttpHead(fullUrl(path))
     try {
       val response = httpClient.execute(head)

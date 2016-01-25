@@ -22,7 +22,7 @@ import java.net.{ URI, URL }
 import java.security.cert.{ CertificateFactory, X509Certificate }
 import java.util.Date
 
-import fr.iscpif.gridscale.cache.{ Cache, SingleValueCache }
+import fr.iscpif.gridscale.cache.{ Cache, SingleValueAsynchronousCache }
 import fr.iscpif.gridscale.egi.services._
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.libraries.lbstub._
@@ -69,16 +69,14 @@ trait WMSJobService extends JobService {
   def proxy(): GlobusAuthentication.Proxy
 
   lazy val delegationCache =
-    new SingleValueCache[String] {
-      def compute = _delegate
+    new SingleValueAsynchronousCache[String] {
+      def compute = delegate
       def expiresIn(s: String) = delegationRenewal
     }
 
   def delegationId = delegationCache()
 
-  def delegate = delegationCache.forceRenewal
-
-  private def _delegate: String = {
+  private def delegate: String = {
     val p = proxy()
     val req = delegationService.getProxyReq(p.delegationID).get
     delegationService.putProxy(p.delegationID, createProxyfromCertReq(req, p)).get

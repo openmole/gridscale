@@ -19,7 +19,7 @@ package fr.iscpif.gridscale.egi
 import java.io.{ BufferedInputStream, BufferedOutputStream, FileOutputStream, InputStream }
 import java.net.{ URI, URL }
 
-import fr.iscpif.gridscale.cache.SingleValueCache
+import fr.iscpif.gridscale.cache.SingleValueAsynchronousCache
 import fr.iscpif.gridscale.http.{ HTTPSClient, HTTPSAuthentication }
 import fr.iscpif.gridscale.jobservice._
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -40,12 +40,10 @@ object DIRACJobService {
   def apply[A: HTTPSAuthentication](
     service: String,
     group: String,
-    connections: Option[Int] = Some(20),
     timeout: Duration = 1 minutes)(authentication: A) = {
-    val (_service, _group, _connections, _timeout) = (service, group, connections, timeout)
+    val (_service, _group, _timeout) = (service, group, timeout)
     new DIRACJobService {
       override val timeout = _timeout
-      override val pool = _connections
       override val group: String = _group
       override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override val service: String = _service
@@ -72,11 +70,8 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   def tokenExpirationMargin = 10 -> MINUTES
 
-  @transient lazy val httpClient = newClient.build
-  override def finalize = httpClient.close
-
   @transient lazy val tokenCache =
-    new SingleValueCache[Token] {
+    new SingleValueAsynchronousCache[Token] {
       def compute() = token
       def expiresIn(t: Token) = (t.expires_in, SECONDS) - tokenExpirationMargin
     }
@@ -185,18 +180,12 @@ trait DIRACJobService extends JobService with HTTPSClient {
     new HttpHost(uri.getHost, uri.getPort, uri.getScheme)
   }
 
-  def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = {
+  def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = withClient { httpClient ⇒
     request.setConfig(requestConfig)
-
-    def close[T <: { def close(): Unit }, R](c: T)(f: T ⇒ R) =
-      try f(c)
-      finally c.close
-
-    close(httpClient.execute(httpHost, request, httpContext)) { response ⇒
-      close(response.getEntity.getContent) { is ⇒
-        f(is)
-      }
-    }
+    val response = httpClient.execute(httpHost, request)
+    val is = response.getEntity.getContent
+    try f(is)
+    finally is.close
   }
 
   def request[T](request: HttpRequestBase with HttpRequest)(f: String ⇒ T): T =

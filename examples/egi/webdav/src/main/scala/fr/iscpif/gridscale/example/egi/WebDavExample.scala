@@ -41,7 +41,7 @@ object WebDavExample extends App {
   println(Try(dav.rmDir(dir)))
   dav.makeDir(dir)
 
-  for (i ← (0 to 9)) {
+  for (i ← (0 to 1000)) {
     val testFile = s"$dir/testdav$i.txt"
 
     Try {
@@ -52,7 +52,6 @@ object WebDavExample extends App {
       val in = dav.openInputStream(testFile)
       try assert(Source.fromInputStream(in).mkString == "Life is great\n", "File content is not right")
       finally in.close
-
     } match {
       case Failure(e) ⇒ println(s"Failed $testFile $e")
       case Success(_) ⇒ println(s"Written $testFile")
