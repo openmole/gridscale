@@ -73,7 +73,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
           } finally pipe.is.close()
         } catch {
           case t: Throwable =>
-            pipe.readerException = Some(new IOException(s"Error putting output stream for $path on $dav", throwable))
+            pipe.readerException = Some(new IOException(s"Error putting output stream for $path on $dav", t))
         }
       }
 
