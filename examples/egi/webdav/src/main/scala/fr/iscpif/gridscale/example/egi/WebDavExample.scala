@@ -41,7 +41,7 @@ object WebDavExample extends App {
   println(Try(dav.rmDir(dir)))
   dav.makeDir(dir)
 
-  for (i ← (0 to 1000)) {
+  for (i ← (0 to 1000).par) {
     val testFile = s"$dir/testdav$i.txt"
 
     Try {

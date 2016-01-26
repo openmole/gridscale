@@ -17,6 +17,7 @@
 package fr.iscpif.gridscale.http
 
 import java.io._
+import java.lang.Thread.UncaughtExceptionHandler
 import java.net.URI
 import java.util.concurrent.{ TimeUnit, _ }
 import java.util.concurrent.atomic.AtomicBoolean
@@ -62,16 +63,18 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
     val runnable =
       new Runnable {
-        def run =
+        def run = try {
           try withClient { httpClient =>
             val put = new HttpPut(fullUrl(path))
             val entity = new InputStreamEntity(pipe.is, -1)
             put.setEntity(entity)
             put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
             execute(httpClient.execute, put)
-          } catch {
-            case t: Throwable ⇒ pipe.readerException = Some(throw new IOException(s"Error putting output stream for $path on $dav", t))
           } finally pipe.is.close()
+        } catch {
+          case t: Throwable =>
+            pipe.readerException = Some(new IOException(s"Error putting output stream for $path on $dav", throwable))
+        }
       }
 
     val thread = new Thread(runnable)
