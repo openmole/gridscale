@@ -17,60 +17,46 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.util.Hashtable
-import javax.naming.Context
-import javax.naming.directory.{ InitialDirContext, SearchControls }
-
-import scala.concurrent.duration.Duration
+import org.apache.directory.ldap.client.api.LdapNetworkConnection
+import org.apache.directory.shared.ldap.model.message.SearchScope
+import scala.concurrent.duration._
+import collection.JavaConversions._
 
 object BDIIQuery {
 
-  def withBDIIQuery[T](bdii: String)(f: BDIIQuery ⇒ T) = {
-    val q = new BDIIQuery(bdii)
+  def withBDIIQuery[T](host: String, port: Int, timeout: Duration)(f: BDIIQuery ⇒ T) = {
+    val q = new BDIIQuery(host, port, timeout)
     try f(q)
     finally q.close
   }
 
 }
 
-class BDIIQuery(val bdii: String) {
+class BDIIQuery(host: String, port: Int, timeout: Duration) {
 
-  lazy val dirContext = {
-    val env = new Hashtable[String, String]
-
-    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
-    env.put(Context.PROVIDER_URL, this.bdii)
-
-    /* get a handle to an Initial DirContext */
-    val dirContext = new InitialDirContext(env)
-    dirContext
+  lazy val connection = {
+    val connection = new LdapNetworkConnection(host, port)
+    connection.setTimeOut(timeout.toMillis)
+    connection.anonymousBind()
+    connection
   }
 
   /**
    * This method queries the bdii set in the constructor
+   *
    * @param searchPhrase the search phrase
    * @return an array list of SearchResult objects.
    */
-  def query(searchPhrase: String, timeOut: Duration, attributeList: List[String] = List.empty, bindDN: String = "o=grid") = {
-    //boolean hasError= false;
-
-    /* specify search constraints to search subtree */
-    val constraints = new SearchControls
-    constraints.setTimeLimit(timeOut.toMillis.toInt)
-    constraints.setSearchScope(SearchControls.SUBTREE_SCOPE)
-
-    // specify the elements to return
-    if (attributeList.size > 0)
-      constraints.setReturningAttributes(attributeList.toArray)
-
+  def query(searchPhrase: String, attributeList: List[String] = List.empty, bindDN: String = "o=grid") = {
     // Perform the search
-    val results = dirContext.search(
+    val results = connection.search(
       bindDN,
       searchPhrase,
-      constraints)
-    java.util.Collections.list(results)
+      SearchScope.SUBTREE)
+    results.iterator().toList
+    // java.util.Collections.list(results)
   }
 
-  def close = dirContext.close
+  def close = connection.close
 
 }

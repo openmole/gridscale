@@ -154,7 +154,10 @@ trait Modules <: Libraries with Settings {
   lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
-    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1")
+    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1",
+    libraryDependencies += "org.apache.directory.shared" % "shared-ldap-client-api" % "1.0.0-M13",
+    libraryDependencies += "org.apache.directory.shared" % "shared-ldap-codec-standalone" % "1.0.0-M13"
+    )
 
   lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",

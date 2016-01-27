@@ -28,12 +28,12 @@ import scala.util.{ Success, Failure, Try }
 
 object WebDavExample extends App {
 
-  val location = new BDII("ldap://topbdii.grif.fr:2170").queryWebDAVLocations("vo.complex-systems.eu", 1 minute).find(_.host.contains("lal")).get
+  val location = new BDII("topbdii.grif.fr", 2170).queryWebDAVLocations("vo.complex-systems.eu").find(_.host.contains("lal")).get
 
   VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
 
   val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "password")
-  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://voms2.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms2.hellasgrid.gr"), "vo.complex-systems.eu")
+  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "voms://voms2.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms2.hellasgrid.gr"), "vo.complex-systems.eu")
 
   val dav = DPMWebDAVStorage(location)(authentication)
 
@@ -41,7 +41,7 @@ object WebDavExample extends App {
   println(Try(dav.rmDir(dir)))
   dav.makeDir(dir)
 
-  for (i ← (0 to 1000).par) {
+  for (i ← (0 to 10).par) {
     val testFile = s"$dir/testdav$i.txt"
 
     Try {
