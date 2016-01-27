@@ -20,7 +20,7 @@ import java.io._
 import java.lang.Thread.UncaughtExceptionHandler
 import java.net.URI
 import java.util.concurrent.{ TimeUnit, _ }
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicLong, AtomicBoolean}
 
 import com.github.sardine.DavResource
 import com.github.sardine.impl.SardineRedirectStrategy
@@ -202,6 +202,8 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   override def toString = fullUrl("")
 
   class Pipe(timeout: Duration, path: String) {
+    val lastReaderActivity = new AtomicLong(System.currentTimeMillis())
+
     var reader = (None: Option[Thread])
     var readerException = (None: Option[Throwable])
 
@@ -214,13 +216,15 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
       override def read(): Int = {
         @tailrec def waitRead(): Int =
-          if (writerClosed.get()) -1
+          if (writerClosed.get() && buffer.isEmpty) -1
           else {
             buffer.tryDequeue() match {
               case None ⇒
                 buffer.waitNotEmpty
                 waitRead()
-              case Some(r) ⇒ (r.toInt & 0xFF)
+              case Some(r) ⇒
+                lastReaderActivity.set(System.currentTimeMillis())
+                (r.toInt & 0xFF)
             }
           }
 
@@ -238,11 +242,18 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     val os = new OutputStream {
       var size = 0
 
+      def checkReader() =
+        if (System.currentTimeMillis() - lastReaderActivity.get > timeout.toMillis) {
+          reader.foreach(_.interrupt())
+          throw new TimeoutException(s"No activity of the reader thread since more than $timeout")
+        }
+
       override def write(i: Int): Unit = {
         @tailrec def waitWrite(): Unit = {
           if (!readerClosed.get()) {
             if (!buffer.tryEnqueue(i.toByte)) {
               buffer.waitNotFull
+              checkReader()
               waitWrite()
             }
           }
@@ -256,8 +267,9 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
         @tailrec def waitClose(): Unit = {
           if (!readerClosed.get() && !buffer.isEmpty) {
             buffer.waitEmpty
+            checkReader()
             waitClose()
-          }
+           }
         }
 
         try waitClose()

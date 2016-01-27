@@ -44,9 +44,9 @@ class RingBuffer[T: ClassTag](val size: Int) {
     c
   }
 
-  def isEmpty: Boolean = count == 0
-  def nonEmpty: Boolean = count > 0
-  def full = count >= (size - 1)
+  def isEmpty: Boolean = synchronized { count == 0 }
+  private def nonEmpty: Boolean = count > 0
+  private def full = count >= (size - 1)
 
   /**
    * Tries to put the given value into the buffer and returns true if this was successful.

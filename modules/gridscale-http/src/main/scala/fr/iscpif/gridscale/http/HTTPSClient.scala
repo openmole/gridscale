@@ -59,6 +59,7 @@ trait HTTPSClient {
     RequestConfig.custom()
       .setSocketTimeout(timeout.toMillis.toInt)
       .setConnectTimeout(timeout.toMillis.toInt)
+      .setConnectionRequestTimeout(timeout.toMillis.toInt)
       .build()
   }
 
