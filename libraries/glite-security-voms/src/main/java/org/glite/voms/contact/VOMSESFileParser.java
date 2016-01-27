@@ -48,9 +48,9 @@ public class VOMSESFileParser {
 
     private static final String splitSyntax = "\\x22[^\\x22]\\x22";
 
-    private static final List vomsesPaths;
+    //private static final List vomsesPaths;
 
-    static {
+    private List getVomsesPaths() {
 
         String gliteLoc = System.getProperty( "GLITE_LOCATION", null );
         String vomsesLoc = System.getProperty( "VOMSES_LOCATION", null );
@@ -92,7 +92,7 @@ public class VOMSESFileParser {
         if ( gliteVomses.exists() )
             list.add( gliteVomses );
 
-        vomsesPaths = list;
+        return list;
 
     }
 
@@ -205,11 +205,11 @@ public class VOMSESFileParser {
      */
     public VOMSServerMap buildServerMap() throws IOException {
 
-        Iterator i = vomsesPaths.iterator();
+        Iterator i = getVomsesPaths().iterator();
 
         if ( log.isDebugEnabled() ) {
 
-            String locations = StringUtils.join( vomsesPaths.iterator(), "," );
+            String locations = StringUtils.join( getVomsesPaths().iterator(), "," );
             log.debug( "Known vomses files: " + locations );
 
         }

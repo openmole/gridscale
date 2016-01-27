@@ -56,7 +56,7 @@ public class VOMSValidator {
     //    protected boolean isPreValidated = false;
     protected FQANTree myFQANTree = null;
     //    private VomsdataPeer vp = null;
-    protected static VOMSTrustStore vomsStore = null;
+    protected VOMSTrustStore vomsStore = null;
 
     static {
         if (Security.getProvider("BC") == null) {
@@ -141,24 +141,24 @@ public class VOMSValidator {
      * @see BasicVOMSTrustStore
      * @deprecated use setTrustStore(VOMSTrustStore trustStore) instead.
      */
-    public static void setTrustStore(ACTrustStore trustStore) {
-        if (trustStore instanceof BasicVOMSTrustStore) {
-            BasicVOMSTrustStore store = (BasicVOMSTrustStore)trustStore;
-            String directory = store.getDirList();
-            try {
-                setTrustStore(new PKIStore(directory, PKIStore.TYPE_VOMSDIR, true));
-                store.stopRefresh();
-            }
-            catch(Exception e) {
-                log.error("Cannot set upgraded truststore!");
-                theTrustStore = trustStore;
-            }
-        }
-        else {
-            log.error("Cannot set upgraded truststore!");
-            theTrustStore = trustStore;
-        }
-    }
+//    public static void setTrustStore(ACTrustStore trustStore) {
+//        if (trustStore instanceof BasicVOMSTrustStore) {
+//            BasicVOMSTrustStore store = (BasicVOMSTrustStore)trustStore;
+//            String directory = store.getDirList();
+//            try {
+//                setTrustStore(new PKIStore(directory, PKIStore.TYPE_VOMSDIR, true));
+//                store.stopRefresh();
+//            }
+//            catch(Exception e) {
+//                log.error("Cannot set upgraded truststore!");
+//                theTrustStore = trustStore;
+//            }
+//        }
+//        else {
+//            log.error("Cannot set upgraded truststore!");
+//            theTrustStore = trustStore;
+//        }
+//    }
 
     /**
      * Sets the trustStore to use with the default ACValidator.
@@ -167,9 +167,9 @@ public class VOMSValidator {
      *
      * @see org.glite.voms.ac.VOMSTrustStore
      */
-    public static void setTrustStore(VOMSTrustStore trustStore) {
-        vomsStore = trustStore;
-    }
+//    public static void setTrustStore(VOMSTrustStore trustStore) {
+//        vomsStore = trustStore;
+//    }
 
     /**
      * Cleans up the object.

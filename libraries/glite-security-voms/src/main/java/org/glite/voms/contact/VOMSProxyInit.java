@@ -39,7 +39,7 @@ public class VOMSProxyInit {
 
     private static final Logger log = Logger.getLogger( VOMSProxyInit.class );
     
-    private static VOMSProxyInit instance;
+    //private static VOMSProxyInit instance;
     
     private VOMSServerMap serverMap;
     private UserCredentials userCredentials;
