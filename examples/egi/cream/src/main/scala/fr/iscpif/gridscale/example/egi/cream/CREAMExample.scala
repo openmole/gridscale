@@ -22,8 +22,8 @@ import scala.concurrent.duration._
 
 object CREAMExample extends App {
 
-  val bdii = new BDII("topbdii.grif.fr", 2170)
-  val creams = bdii.queryCREAMCELocations("vo.complex-systems.eu", 2 minutes)
+  val bdii = BDII("topbdii.grif.fr", 2170)
+  val creams = bdii.queryCREAMCELocations("vo.complex-systems.eu")
 
   creams.foreach(println)
 
