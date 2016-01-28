@@ -19,7 +19,7 @@ package fr.iscpif.gridscale.egi.voms
 
 import java.net.URI
 
-import fr.iscpif.gridscale.http.{HTTPSAuthentication, HTTPSClient}
+import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient }
 import org.apache.http.client.methods.HttpGet
 
 import scala.concurrent.duration._

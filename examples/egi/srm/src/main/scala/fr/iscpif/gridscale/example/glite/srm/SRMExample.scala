@@ -26,10 +26,10 @@ import scala.concurrent.duration._
 
 object SRMExample extends App {
 
-    VOMSAuthentication.setCARepository(new File("/path/to/certificates/dir"))
+  VOMSAuthentication.setCARepository(new File("/path/to/certificates/dir"))
 
-    val p12 = P12Authentication(new File("/path/to/globus/certificate.p12"), "password")
-    val authentication = P12VOMSAuthentication(p12, 12 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr"), "vo.complex-systems.eu")
+  val p12 = P12Authentication(new File("/path/to/globus/certificate.p12"), "password")
+  val authentication = P12VOMSAuthentication(p12, 12 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr"), "vo.complex-systems.eu")
 
   val bdii = BDII("topbdii.grif.fr", 2170)
   val srm = bdii.querySRMLocations("vo.complex-systems.eu").map { l ⇒ SRMStorage(l)(authentication) }.apply(1)
