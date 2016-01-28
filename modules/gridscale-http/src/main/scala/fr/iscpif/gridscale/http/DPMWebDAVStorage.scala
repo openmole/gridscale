@@ -59,11 +59,22 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
   override def _write(is: InputStream, path: String) = withClient { httpClient =>
+    val countIS = new InputStream {
+      var size = 0
+      override def read(): Int = {
+        val ret = is.read()
+        if(ret != -1) size += 1
+        ret
+      }
+    }
+
     val put = new HttpPut(fullUrl(path))
-    val entity = new InputStreamEntity(is, -1)
+    val entity = new InputStreamEntity(countIS, -1)
     put.setEntity(entity)
     put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
     execute(httpClient.execute, put)
+    val writtenSize = listProp(path).size
+    if(writtenSize != countIS.size) throw new IOException(s"Size of the written file is $writtenSize and does'nt match ${countIS.size}")
   }
 
   override def _read(path: String): InputStream = {
