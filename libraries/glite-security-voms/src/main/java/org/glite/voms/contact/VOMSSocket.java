@@ -49,15 +49,9 @@ import java.security.Security;
  *
  */
 public class VOMSSocket {
-    
-    private static final Logger log = Logger.getLogger( VOMSSocket.class );
-    
-    UserCredentials cred;
-    
-    String hostDN;
-    
-    X509Credential proxy = null;
-        
+    final UserCredentials cred;
+    final String hostDN;
+
     //int proxyType = VOMSProxyBuilder.DEFAULT_PROXY_TYPE;
     GSIConstants.CertificateType proxyType = VOMSProxyBuilder.DEFAULT_PROXY_TYPE ;
 
@@ -65,18 +59,13 @@ public class VOMSSocket {
     
     public static VOMSSocket instance(UserCredentials cred, String hostDN, GSIConstants.CertificateType proxyType){
         return new VOMSSocket(cred, hostDN, proxyType);
-        
     }
     
     public static VOMSSocket instance(UserCredentials cred, String hostDN){
-        
-        //return new VOMSSocket(cred, hostDN, VOMSProxyBuilder.DEFAULT_PROXY_TYPE);
         return new VOMSSocket(cred, hostDN, VOMSProxyBuilder.DEFAULT_PROXY_TYPE);
-
     }
     
     private VOMSSocket(UserCredentials cred, String hostDN, GSIConstants.CertificateType proxyType){
-        
         this.cred = cred;
         this.hostDN = hostDN;
         this.proxyType= proxyType;
@@ -97,28 +86,19 @@ public class VOMSSocket {
      * @author Gidon Moont
      */
     protected void connect(String host, int port) throws GSSException, IOException, GeneralSecurityException{
-        
         if (Security.getProvider("BC") == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
         
-        
         GSSManager manager = new GlobusGSSManagerImpl();
         Authorization auth = new IdentityAuthorization(hostDN);
-        log.debug( "hostDN:"+hostDN );
         GSSCredential clientCreds;
-                
-       // proxy = VOMSProxyBuilder.buildProxy( cred, VOMSProxyBuilder.DEFAULT_PROXY_LIFETIME, proxyType);
-         proxy = VOMSProxyBuilder.buildProxy( cred, VOMSProxyBuilder.DEFAULT_PROXY_LIFETIME, proxyType);
+
+        X509Credential proxy = VOMSProxyBuilder.buildProxy( cred, VOMSProxyBuilder.DEFAULT_PROXY_LIFETIME, proxyType);
 
         try {
-            
             clientCreds = (GSSCredential)new GlobusGSSCredentialImpl( proxy , GSSCredential.INITIATE_ONLY ) ;
-            
         } catch ( GSSException e ) {
-            log.fatal( "Error creating gss credential: "+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.debug( e.getMessage(),e );
             throw e;
         }
         
@@ -140,72 +120,48 @@ public class VOMSSocket {
             socket.setWrapMode( GssSocket.GSI_MODE ) ;
             socket.setAuthorization( auth ) ;
         } catch ( IOException e ) {
-            
-            log.fatal( "Error opening GSS socket: "+e.getMessage() );
-            
-            if (log.isDebugEnabled())
-                log.debug( e.getMessage(),e );
             throw e;
         }
         
     }
     
     public void close() throws IOException {
-
         socket.close();
     }
 
     public GSSContext getContext() {
-
         return socket.getContext();
     }
 
     public boolean isClosed() {
-
         return socket.isClosed();
     }
 
     public boolean isConnected() {
-
         return socket.isConnected();
     }
 
     public void shutdownInput() throws IOException {
-
         socket.shutdownInput();
     }
 
     public void shutdownOutput() throws IOException {
-
         socket.shutdownOutput();
     }
 
-    public OutputStream getOutputStream() throws IOException{
+    public OutputStream getOutputStream() throws IOException {
         try {
             return socket.getOutputStream();
         } catch ( IOException e ) {
-            
-            log.error( "Error getting output stream from underlying socket:"+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
             throw e;
         }
     }
     
-    public InputStream getInputStream() throws IOException{
-        
+    public InputStream getInputStream() throws IOException {
         try {
-            
             return socket.getInputStream();
-            
         } catch ( IOException e ) {
-            log.error( "Error getting input stream from underlying socket:"+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
             throw e;
-            
         }
     }
 

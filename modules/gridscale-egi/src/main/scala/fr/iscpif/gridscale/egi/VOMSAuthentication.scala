@@ -115,9 +115,6 @@ trait VOMSAuthentication {
     server.setHostDn(uri.getPath)
     server.setVoName(voName)
 
-    val proxy = proxyInit()
-    proxy.addVomsServer(server)
-
     val requestOption = new VOMSRequestOptions
     requestOption.setVoName(voName)
 
@@ -126,11 +123,12 @@ trait VOMSAuthentication {
       case None    ⇒
     }
 
+    val proxy = proxyInit()
     proxy.setProxyLifetime(lifeTime.toSeconds.toInt)
     proxy.setProxySize(proxySize)
     proxy.setProxyType(proxyType)
     requestOption.setLifetime(lifeTime.toSeconds.toInt)
 
-    proxy.getVomsProxy(List(requestOption))
+    proxy.getVomsProxy(server, requestOption)
   }
 }

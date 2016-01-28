@@ -39,7 +39,7 @@ public class VOMSProtocol {
     
     private static final Logger log = Logger.getLogger(VOMSProtocol.class);
 
-    private VOMSRequestFactory requestFactory = VOMSRequestFactory.instance();
+    private VOMSRequestFactory requestFactory = new VOMSRequestFactory();
     private TransformerFactory transformerFactory;
     private VOMSParser parser = VOMSParser.instance();
         
