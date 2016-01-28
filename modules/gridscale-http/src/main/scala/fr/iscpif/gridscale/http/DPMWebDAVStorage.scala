@@ -202,7 +202,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   override def toString = fullUrl("")
 
   class Pipe(timeout: Duration, path: String) {
-    val lastReaderActivity = new AtomicLong(System.currentTimeMillis())
+    val lastReaderActivity = new AtomicLong(System.nanoTime())
 
     var reader = (None: Option[Thread])
     var readerException = (None: Option[Throwable])
@@ -223,7 +223,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
                 buffer.waitNotEmpty
                 waitRead()
               case Some(r) ⇒
-                lastReaderActivity.set(System.currentTimeMillis())
+                lastReaderActivity.set(System.nanoTime())
                 (r.toInt & 0xFF)
             }
           }
@@ -243,7 +243,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
       var size = 0
 
       def checkReader() =
-        if (System.currentTimeMillis() - lastReaderActivity.get > timeout.toMillis) {
+        if (System.nanoTime() - lastReaderActivity.get > timeout.toNanos) {
           reader.foreach(_.interrupt())
           throw new TimeoutException(s"No activity of the reader thread since more than $timeout")
         }
