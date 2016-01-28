@@ -64,7 +64,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     put.setEntity(entity)
     put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
     execute(httpClient.execute, put)
-    assert(listProp(path).size != 0)
   }
 
   override def _read(path: String): InputStream = {
@@ -133,23 +132,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   def isResponseOk(response: HttpResponse) =
     response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
       response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
-
-  /*def getRedirection(response: HttpResponse): Option[URI] =
-    if (isRedirection(response)) {
-      val locationHeader: Header = response.getFirstHeader("location")
-      if (locationHeader == null) throw new ProtocolException("Received redirect response " + response.getStatusLine + " but no location header")
-      Some(new URI(locationHeader.getValue))
-    } else None
-
-  def isRedirection(response: HttpResponse) =
-    response.getStatusLine.getStatusCode match {
-      case HttpStatus.SC_MOVED_TEMPORARILY |
-        HttpStatus.SC_MOVED_PERMANENTLY |
-        HttpStatus.SC_TEMPORARY_REDIRECT |
-        HttpStatus.SC_SEE_OTHER ⇒ true
-      case _ ⇒ false
-    }*/
-
 
   def execute(execute: HttpRequestBase => CloseableHttpResponse, request: HttpRequestBase) =
     try {
