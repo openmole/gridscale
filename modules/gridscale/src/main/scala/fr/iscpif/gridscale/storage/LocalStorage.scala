@@ -65,10 +65,10 @@ trait LocalStorage extends Storage {
   def _mv(from: String, to: String) =
     new File(from).renameTo(new File(to))
 
-  override def read(path: String): InputStream =
+  override def _read(path: String): InputStream =
     new FileInputStream(new File(path))
 
-  override def write(is: InputStream, path: String) =
+  override def _write(is: InputStream, path: String) =
     Files.copy(is, Paths.get(path))
 
 }

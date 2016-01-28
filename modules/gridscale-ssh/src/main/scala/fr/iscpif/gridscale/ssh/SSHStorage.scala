@@ -110,7 +110,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rm(path)
   }
 
-  override def read(path: String): InputStream = {
+  override def _read(path: String): InputStream = {
     val connection = getConnection
 
     def close = release(connection)
@@ -146,7 +146,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     }
   }
 
-  override def write(is: InputStream, path: String): Unit = {
+  override def _write(is: InputStream, path: String): Unit = {
     val connection = getConnection
 
     def close = release(connection)

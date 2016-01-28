@@ -140,7 +140,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
     if (jobIsRunning(job)) Running
     else {
       if (exists(endCodeFile(job.workDirectory, job.jobId))) {
-        val is = read(endCodeFile(job.workDirectory, job.jobId))
+        val is = _read(endCodeFile(job.workDirectory, job.jobId))
         val content =
           try getBytes(is, bufferSize, timeout)
           finally is.close

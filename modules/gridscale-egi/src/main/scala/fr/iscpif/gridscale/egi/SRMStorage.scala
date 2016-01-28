@@ -190,7 +190,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  override def read(path: String) = {
+  override def _read(path: String) = {
     val (token, url) = prepareToGet(path)
 
     new GridFTPInputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
@@ -201,7 +201,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     }
   }
 
-  override def write(is: InputStream, path: String) = {
+  override def _write(is: InputStream, path: String) = {
     val (token, url) = prepareToPut(path)
     val os = new GridFTPOutputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false)
     try copyStream(is, os)

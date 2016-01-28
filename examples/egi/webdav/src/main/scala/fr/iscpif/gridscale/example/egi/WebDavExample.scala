@@ -47,7 +47,7 @@ object WebDavExample extends App {
     Try {
       dav.write("Life is great\n".getBytes, testFile)
 
-      val in = dav.read(testFile)
+      val in = dav._read(testFile)
       try assert(Source.fromInputStream(in).mkString == "Life is great\n", "File content is not right")
       finally in.close
     } match {

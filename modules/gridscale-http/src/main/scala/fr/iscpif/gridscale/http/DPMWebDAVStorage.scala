@@ -58,7 +58,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   def fullUrl(path: String) =
     "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
-  override def write(is: InputStream, path: String) = withClient { httpClient =>
+  override def _write(is: InputStream, path: String) = withClient { httpClient =>
     val put = new HttpPut(fullUrl(path))
     val entity = new InputStreamEntity(is, -1)
     put.setEntity(entity)
@@ -67,7 +67,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     assert(listProp(path).size != 0)
   }
 
-  override def read(path: String): InputStream = {
+  override def _read(path: String): InputStream = {
     val httpClient = newClient
     val get = new HttpGet(fullUrl(path))
     get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
