@@ -172,7 +172,9 @@ public class VOMSProxyInit {
             socket.connect( sInfo.getHostName(), sInfo.getPort());
         } catch ( Exception e ) {
             throw new VOMSException("Error connecting to "+sInfo.compactString()+":"+e.getMessage() ,e);
-        } 
+        }
+
+        //if(!socket.isConnected()) throw new VOMSException("Socket is not connected");
 
         try {
             VOMSResponse response;
