@@ -17,9 +17,12 @@
 package fr.iscpif.gridscale.egi
 
 import java.io.File
+import java.net.URI
 
 import fr.iscpif.gridscale.authentication.P12Authentication
-import org.glite.voms.contact.VOMSProxyInit
+import fr.iscpif.gridscale.egi.voms.VOMSRestAPI
+import org.glite.voms.contact.{ UserCredentials, VOMSProxyInit }
+import org.globus.gsi.GSIConstants.CertificateType
 
 import scala.concurrent.duration.Duration
 
@@ -51,5 +54,11 @@ object P12VOMSAuthentication {
 
 trait P12VOMSAuthentication extends VOMSAuthentication {
   def p12Authentication: P12Authentication
-  def proxyInit = new VOMSProxyInit(p12Authentication.certificate, p12Authentication.password)
+  def proxy(serverURL: String, proxyType: CertificateType) = {
+    import fr.iscpif.gridscale.egi._
+    def userCredential = UserCredentials.instance(p12Authentication.certificate, p12Authentication.password)
+    val url = new URI(serverURL)
+    val credential = VOMSRestAPI.query(url.getHost, url.getPort, lifetime = Some(this.lifeTime.toSeconds.toInt))(p12Authentication)
+    credential.getCredential(userCredential, proxyType)
+  }
 }

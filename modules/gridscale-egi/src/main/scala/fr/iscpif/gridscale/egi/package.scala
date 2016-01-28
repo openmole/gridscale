@@ -33,7 +33,7 @@ package object egi {
     }
   }
 
-  implicit val p12Authentication = new HTTPSAuthentication[P12Authentication] {
+  implicit val p12HttpsAuthentication = new HTTPSAuthentication[P12Authentication] {
     override def factory(t: P12Authentication) = {
       val auth = new P12HTTPSAuthentication {
         override def authentication: P12Authentication = t

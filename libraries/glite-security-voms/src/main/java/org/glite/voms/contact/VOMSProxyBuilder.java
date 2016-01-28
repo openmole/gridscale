@@ -29,8 +29,10 @@ import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEREncodableVector;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.X509Name;
+import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.glite.voms.ac.AttributeCertificate;
 import org.globus.gsi.GSIConstants;
@@ -454,7 +456,7 @@ public class VOMSProxyBuilder {
         X509NameHelper issuer = new X509NameHelper(issuerDN);
 
         X509NameHelper subject = new X509NameHelper(issuerDN);
-        subject.add(X509Name.CN, cnValue);
+        subject.add(X509Name.CN, cert.getSubjectDN().getName());
 
         certGen.setSubjectDN(subject.getAsName());
         certGen.setIssuerDN(issuer.getAsName());

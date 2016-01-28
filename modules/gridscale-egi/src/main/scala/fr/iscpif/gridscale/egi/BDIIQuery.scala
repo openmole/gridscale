@@ -17,10 +17,11 @@
 
 package fr.iscpif.gridscale.egi
 
-import org.apache.directory.ldap.client.api.LdapNetworkConnection
-import org.apache.directory.shared.ldap.model.message.SearchScope
-import scala.concurrent.duration._
-import collection.JavaConversions._
+import java.util.Hashtable
+import javax.naming.Context
+import javax.naming.directory.{ InitialDirContext, SearchControls }
+
+import scala.concurrent.duration.Duration
 
 object BDIIQuery {
 
@@ -32,13 +33,17 @@ object BDIIQuery {
 
 }
 
-class BDIIQuery(host: String, port: Int, timeout: Duration) {
+class BDIIQuery(val host: String, port: Int, timeOut: Duration) {
 
-  lazy val connection = {
-    val connection = new LdapNetworkConnection(host, port)
-    connection.setTimeOut(timeout.toMillis)
-    connection.anonymousBind()
-    connection
+  lazy val dirContext = {
+    val env = new Hashtable[String, String]
+
+    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+    env.put(Context.PROVIDER_URL, s"ldap://$host:$port")
+
+    /* get a handle to an Initial DirContext */
+    val dirContext = new InitialDirContext(env)
+    dirContext
   }
 
   /**
@@ -48,15 +53,24 @@ class BDIIQuery(host: String, port: Int, timeout: Duration) {
    * @return an array list of SearchResult objects.
    */
   def query(searchPhrase: String, attributeList: List[String] = List.empty, bindDN: String = "o=grid") = {
+    //boolean hasError= false;
+
+    /* specify search constraints to search subtree */
+    val constraints = new SearchControls
+    constraints.setTimeLimit(timeOut.toMillis.toInt)
+    constraints.setSearchScope(SearchControls.SUBTREE_SCOPE)
+
+    // specify the elements to return
+    if (attributeList.size > 0)
+      constraints.setReturningAttributes(attributeList.toArray)
+
     // Perform the search
-    val results = connection.search(
+    val results = dirContext.search(
       bindDN,
       searchPhrase,
-      SearchScope.SUBTREE)
-    results.iterator().toList
-    // java.util.Collections.list(results)
+      constraints)
+    java.util.Collections.list(results)
   }
 
-  def close = connection.close
-
+  def close = dirContext.close
 }

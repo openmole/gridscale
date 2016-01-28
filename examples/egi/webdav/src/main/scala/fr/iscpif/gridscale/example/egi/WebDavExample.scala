@@ -17,10 +17,14 @@
 package fr.iscpif.gridscale.example.egi
 
 import java.io.{ FileOutputStream, File }
+import java.net.URI
 
 import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.http._
 import fr.iscpif.gridscale.egi._
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory
+import org.glite.voms.contact.UserCredentials
 
 import scala.concurrent.duration._
 import scala.io.Source

@@ -27,14 +27,13 @@ import fr.iscpif.gridscale.jobservice._
 import scala.concurrent.duration._
 
 object WMSExample extends App {
+  VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
 
-  VOMSAuthentication.setCARepository(new File("/path/to/certificates/dir"))
-
-  val p12 = P12Authentication(new File("/path/to/globus/certificate.p12"), "password")
-  val authentication = P12VOMSAuthentication(p12, 12 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr"), "vo.complex-systems.eu")
+  val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "password")
+  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "voms://voms2.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms2.hellasgrid.gr"), "vo.complex-systems.eu")
 
   val bdii = BDII("topbdii.grif.fr", 2170)
-  val wms = bdii.queryWMSLocations("biomed").map(l ⇒ WMSJobService(l)(authentication)).head
+  val wms = bdii.queryWMSLocations("vo.complex-systems.eu").map(l ⇒ WMSJobService(l)(authentication)).head
 
   val jobDesc = new WMSJobDescription {
     def executable = "/bin/echo"

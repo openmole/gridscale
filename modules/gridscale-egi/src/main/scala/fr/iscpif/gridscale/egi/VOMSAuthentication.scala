@@ -92,19 +92,21 @@ trait VOMSAuthentication {
       case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
     }
 
-  def generate(file: File) = {
+  /*def generate(file: File) = {
     val os = new FileOutputStream(file)
     val p =
       try VOMSProxyBuilder.saveProxy(proxy(VOMSProxyBuilder.GT4_PROXY), os)
       finally os.close
-  }
+  }*/
 
-  def proxyInit(): VOMSProxyInit
+  //def proxyInit(): VOMSProxyInit
 
   def proxy(proxyType: CertificateType): X509Credential =
     VOMSAuthentication.findWorking(serverURLs, s ⇒ proxy(s, proxyType))
 
-  def proxy(serverURL: String, proxyType: CertificateType): X509Credential = synchronized {
+  def proxy(serverURL: String, proxyType: CertificateType): X509Credential
+
+  /*def proxy(serverURL: String, proxyType: CertificateType): X509Credential = synchronized {
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
     if (uri.getHost == null)
       throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
@@ -130,5 +132,5 @@ trait VOMSAuthentication {
     requestOption.setLifetime(lifeTime.toSeconds.toInt)
 
     proxy.getVomsProxy(server, requestOption)
-  }
+  }*/
 }

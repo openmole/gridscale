@@ -44,8 +44,8 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
     val services =
       for {
         webdavService ← q.query(searchPhrase, bindDN = "o=glue").toSeq
-        id = webdavService.get("GLUE2EndpointID").get.toString
-        url = webdavService.get("GLUE2EndpointURL").get.toString
+        id = webdavService.getAttributes.get("GLUE2EndpointID").get.toString
+        url = webdavService.getAttributes.get("GLUE2EndpointURL").get.toString
       } yield (id, url)
 
     for {
@@ -53,7 +53,7 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
       urlObject = new URI(url)
       host = urlObject.getHost
       pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
-      path = pathQuery.get("GlueVOInfoPath").get.toString
+      path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
     } yield WebDAVLocation(urlObject.getHost, path, urlObject.getPort)
   }
 
@@ -64,16 +64,16 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
     val srms =
       for {
         r ← res
-        if r.get("GlueServiceVersion").get().toString.takeWhile(_ != '.').toInt >= 2
+        if r.getAttributes.get("GlueServiceVersion").get().toString.takeWhile(_ != '.').toInt >= 2
       } yield {
-        val serviceEndPoint = r.get("GlueServiceEndpoint").get().toString()
+        val serviceEndPoint = r.getAttributes.get("GlueServiceEndpoint").get().toString()
         val httpgURI = new URI(serviceEndPoint)
         val host = httpgURI.getHost
         val port = httpgURI.getPort
 
         Try {
           val resForPath = q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
-          val path = resForPath.get(0).get("GlueVOInfoPath").get().toString
+          val path = resForPath.get(0).getAttributes.get("GlueVOInfoPath").get().toString
           SRMLocation(host, port, path)
         } match {
           case Success(s) ⇒ Some(s)
@@ -95,7 +95,7 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
 
     for (r ← res) {
       try {
-        val wmsURI = new URI(r.get("GlueServiceEndpoint").get().toString)
+        val wmsURI = new URI(r.getAttributes.get("GlueServiceEndpoint").get().toString)
         wmsURIs += wmsURI
       } catch {
         case ex: NamingException   ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", ex);
@@ -114,18 +114,18 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
     case class Machine(memory: Int)
     def machineInfo(host: String) = {
       val info = q.query(s"(GlueChunkKey=GlueClusterUniqueID=$host)").get(0)
-      Machine(memory = info.get("GlueHostMainMemoryRAMSize").get().toString.toInt)
+      Machine(memory = info.getAttributes.get("GlueHostMainMemoryRAMSize").get().toString.toInt)
     }
 
     for {
       info ← res
-      maxWallTime = info.get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
-      maxCpuTime = info.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
-      port = info.get("GlueCEInfoGatekeeperPort").get.toString.toInt
-      uniqueId = info.get("GlueCEUniqueID").get.toString
-      contact = info.get("GlueCEInfoContactString").get.toString
-      status = info.get("GlueCEStateStatus").get.toString
-      hostingCluster = info.get("GlueCEHostingCluster").get.toString
+      maxWallTime = info.getAttributes.get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
+      maxCpuTime = info.getAttributes.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
+      port = info.getAttributes.get("GlueCEInfoGatekeeperPort").get.toString.toInt
+      uniqueId = info.getAttributes.get("GlueCEUniqueID").get.toString
+      contact = info.getAttributes.get("GlueCEInfoContactString").get.toString
+      status = info.getAttributes.get("GlueCEStateStatus").get.toString
+      hostingCluster = info.getAttributes.get("GlueCEHostingCluster").get.toString
       memory = machineInfo(hostingCluster).memory
     } yield {
       CREAMCELocation(
