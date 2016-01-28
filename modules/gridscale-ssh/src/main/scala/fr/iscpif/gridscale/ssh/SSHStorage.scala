@@ -22,6 +22,7 @@ import java.util
 import java.util.logging.{ Level, Logger }
 
 import fr.iscpif.gridscale.storage._
+import net.schmizz.sshj.sftp.RemoteFile.ReadAheadRemoteFileInputStream
 import net.schmizz.sshj.sftp.{ FileMode, OpenMode, SFTPClient }
 import net.schmizz.sshj.xfer.FilePermission
 
@@ -136,7 +137,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
       finally close
     }
 
-    new fileHandle.RemoteFileInputStream {
+    new fileHandle.ReadAheadRemoteFileInputStream(unconfirmedExchanges) {
       override def close = {
         try closeAll
         finally super.close
