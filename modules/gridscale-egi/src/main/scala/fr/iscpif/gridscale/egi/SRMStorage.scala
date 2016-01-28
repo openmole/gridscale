@@ -17,7 +17,7 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.io.File
+import java.io.{InputStream, File}
 import java.net.URI
 import java.util.concurrent.TimeoutException
 
@@ -25,6 +25,7 @@ import fr.iscpif.gridscale.egi.services._
 import fr.iscpif.gridscale.libraries.srmstub._
 import fr.iscpif.gridscale.storage._
 import org.globus.io.streams._
+import fr.iscpif.gridscale.tools._
 
 import scala.concurrent.duration._
 
@@ -189,7 +190,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  protected def _openInputStream(path: String) = {
+  override def read(path: String) = {
     val (token, url) = prepareToGet(path)
 
     new GridFTPInputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
@@ -200,16 +201,13 @@ trait SRMStorage <: Storage with RecursiveRmDir {
     }
   }
 
-  protected def _openOutputStream(path: String) = {
+  override def write(is: InputStream, path: String) = {
     val (token, url) = prepareToPut(path)
-
-    new GridFTPOutputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
-      override def close = {
-        try freeOutputStream(token, path)
-        finally super.close
-      }
-    }
+    val os = new GridFTPOutputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false)
+    try copyStream(is, os)
+    finally  freeOutputStream(token, path)
   }
+
   private def freeInputStream(token: String, absolutePath: String) = {
     val logicalUri = fullEndPoint(absolutePath)
     val request =

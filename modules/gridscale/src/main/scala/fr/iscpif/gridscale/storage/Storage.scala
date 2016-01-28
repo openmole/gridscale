@@ -18,6 +18,7 @@
 package fr.iscpif.gridscale.storage
 
 import java.io._
+import java.nio.file.Path
 
 object Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
@@ -40,8 +41,9 @@ trait Storage {
   def name(path: String) = new File(path).getName
   def listNames(path: String) = _list(path).map(_.name)
 
-  def openInputStream(path: String): InputStream = new BufferedInputStream(_openInputStream(path))
-  def openOutputStream(path: String): OutputStream = new BufferedOutputStream(_openOutputStream(path))
+  def read(path: String): InputStream
+  def write(is: InputStream, path: String): Unit
+  def write(bytes: Array[Byte], path: String): Unit = write(new ByteArrayInputStream(bytes), path)
 
   def list(path: String): Seq[ListEntry] = wrapException(s"list $path on ${this}")(_list(path))
   def makeDir(path: String) = wrapException(s"make dir $path on ${this}")(_makeDir(path))
@@ -59,9 +61,6 @@ trait Storage {
     parent(path).
       map(parentPath ⇒ listNames(parentPath).exists(_ == name(path))).
       getOrElse(true)
-
-  protected def _openInputStream(path: String): InputStream
-  protected def _openOutputStream(path: String): OutputStream
 
   def errorWrapping(operation: String, t: Throwable): Throwable = new IOException(s"Error $operation", t)
 

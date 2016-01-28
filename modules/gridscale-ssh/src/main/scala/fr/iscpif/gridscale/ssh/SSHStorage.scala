@@ -18,13 +18,14 @@
 package fr.iscpif.gridscale.ssh
 
 import java.io._
+import java.nio.file.Files
 import java.util
 import java.util.logging.{ Level, Logger }
 
 import fr.iscpif.gridscale.storage._
-import net.schmizz.sshj.sftp.RemoteFile.ReadAheadRemoteFileInputStream
 import net.schmizz.sshj.sftp.{ FileMode, OpenMode, SFTPClient }
 import net.schmizz.sshj.xfer.FilePermission
+import fr.iscpif.gridscale.tools._
 
 import scala.collection.JavaConversions._
 
@@ -109,7 +110,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rm(path)
   }
 
-  protected def _openInputStream(path: String): InputStream = {
+  override def read(path: String): InputStream = {
     val connection = getConnection
 
     def close = release(connection)
@@ -145,7 +146,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     }
   }
 
-  protected def _openOutputStream(path: String): OutputStream = {
+  override def write(is: InputStream, path: String): Unit = {
     val connection = getConnection
 
     def close = release(connection)
@@ -173,12 +174,12 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
       finally close
     }
 
-    new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges) {
-      override def close = {
-        try closeAll
-        finally super.close
-      }
-    }
+    try {
+      val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
+      try copyStream(is, os)
+      finally os.close
+    } finally closeAll
+
   }
 
 }

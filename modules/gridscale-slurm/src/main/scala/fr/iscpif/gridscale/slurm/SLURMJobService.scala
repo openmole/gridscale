@@ -65,9 +65,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(slurmScriptPath(description))
-    try outputStream.write(description.toSLURM.getBytes)
-    finally outputStream.close
+    write(description.toSLURM.getBytes, slurmScriptPath(description))
 
     val command = "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm"
     val (ret, output, error) = execReturnCodeOutput(command)

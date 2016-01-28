@@ -18,7 +18,7 @@
 package fr.iscpif.gridscale.storage
 
 import java.io._
-import java.nio.file.Files
+import java.nio.file.{ Paths, Path, Files }
 
 object LocalStorage {
   def apply() = new LocalStorage {}
@@ -65,10 +65,10 @@ trait LocalStorage extends Storage {
   def _mv(from: String, to: String) =
     new File(from).renameTo(new File(to))
 
-  protected def _openInputStream(path: String): InputStream =
+  override def read(path: String): InputStream =
     new FileInputStream(new File(path))
 
-  protected def _openOutputStream(path: String): OutputStream =
-    new FileOutputStream(new File(path))
+  override def write(is: InputStream, path: String) =
+    Files.copy(is, Paths.get(path))
 
 }

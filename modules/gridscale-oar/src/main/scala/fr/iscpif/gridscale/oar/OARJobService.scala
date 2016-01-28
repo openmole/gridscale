@@ -61,10 +61,7 @@ trait OARJobService extends JobService with SSHHost with SSHStorage with BashShe
     exec("mkdir -p " + description.workDirectory)
 
     val script = oarScriptPath(description)
-
-    val outputStream = openOutputStream(script)
-    try outputStream.write(description.toOAR.getBytes)
-    finally outputStream.close
+    write(description.toOAR.getBytes, script)
 
     chmod(script, FilePermission.USR_RWX)
 

@@ -80,7 +80,7 @@ trait HTTPStorage extends Storage {
   def timeout: Duration
 
   def _list(path: String) = {
-    val is = openInputStream(path)
+    val is = read(path)
     try HTTPStorage.parseHTMLListing(new String(getBytes(is, bufferSize, timeout)))
     finally is.close
   }
@@ -97,11 +97,11 @@ trait HTTPStorage extends Storage {
   def _mv(from: String, to: String) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  protected def _openInputStream(path: String): InputStream = withConnection(path) {
+  def read(path: String): InputStream = withConnection(path) {
     _.getInputStream
   }
 
-  protected def _openOutputStream(path: String): OutputStream =
+  def write(is: InputStream, path: String) =
     throw new RuntimeException("Operation not supported for http protocol")
 
   private def withConnection[T](path: String)(f: HttpURLConnection ⇒ T): T =

@@ -58,33 +58,16 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   def fullUrl(path: String) =
     "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
-  override protected def _openOutputStream(path: String): OutputStream = {
-    val pipe = new Pipe(timeout, path)
-
-    val runnable =
-      new Runnable {
-        def run = try {
-          try withClient { httpClient =>
-            val put = new HttpPut(fullUrl(path))
-            val entity = new InputStreamEntity(pipe.is, -1)
-            put.setEntity(entity)
-            put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-            execute(httpClient.execute, put)
-          } finally pipe.is.close()
-        } catch {
-          case t: Throwable =>
-            pipe.readerException = Some(new IOException(s"Error putting output stream for $path on $dav", t))
-        }
-      }
-
-    val thread = new Thread(runnable)
-    thread.setDaemon(true)
-    thread.start()
-    pipe.reader = Some(thread)
-    pipe.os
+  override def write(is: InputStream, path: String) = withClient { httpClient =>
+    val put = new HttpPut(fullUrl(path))
+    val entity = new InputStreamEntity(is, -1)
+    put.setEntity(entity)
+    put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+    execute(httpClient.execute, put)
+    assert(listProp(path).size != 0)
   }
 
-  override protected def _openInputStream(path: String): InputStream = {
+  override def read(path: String): InputStream = {
     val httpClient = newClient
     val get = new HttpGet(fullUrl(path))
     get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
@@ -201,92 +184,4 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
   override def toString = fullUrl("")
 
-  class Pipe(timeout: Duration, path: String) {
-    val lastReaderActivity = new AtomicLong(System.nanoTime())
-
-    var reader = (None: Option[Thread])
-    var readerException = (None: Option[Throwable])
-
-    val writerClosed = new AtomicBoolean(false)
-    val readerClosed = new AtomicBoolean(false)
-
-    val buffer = new RingBuffer[Byte](1024 * 256)
-
-    val is = new InputStream {
-
-      override def read(): Int = {
-        @tailrec def waitRead(): Int =
-          if (writerClosed.get() && buffer.isEmpty) -1
-          else {
-            buffer.tryDequeue() match {
-              case None ⇒
-                buffer.waitNotEmpty
-                waitRead()
-              case Some(r) ⇒
-                lastReaderActivity.set(System.nanoTime())
-                (r.toInt & 0xFF)
-            }
-          }
-
-        val res = waitRead()
-        res
-      }
-
-      override def close() = {
-        readerClosed.set(true)
-        buffer.synchronized { buffer.notifyAll() }
-      }
-
-    }
-
-    val os = new OutputStream {
-      var size = 0
-
-      def checkReader() =
-        if (System.nanoTime() - lastReaderActivity.get > timeout.toNanos) {
-          reader.foreach(_.interrupt())
-          throw new TimeoutException(s"No activity of the reader thread since more than $timeout")
-        }
-
-      override def write(i: Int): Unit = {
-        @tailrec def waitWrite(): Unit = {
-          if (!readerClosed.get()) {
-            if (!buffer.tryEnqueue(i.toByte)) {
-              buffer.waitNotFull
-              checkReader()
-              waitWrite()
-            }
-          }
-        }
-
-        size += 1
-        waitWrite()
-      }
-
-      override def close(): Unit = {
-        @tailrec def waitClose(): Unit = {
-          if (!readerClosed.get() && !buffer.isEmpty) {
-            buffer.waitEmpty
-            checkReader()
-            waitClose()
-           }
-        }
-
-        try waitClose()
-        finally {
-          writerClosed.set(true)
-          buffer.synchronized { buffer.notifyAll() }
-        }
-
-        try {
-          reader.get.join(timeout.toMillis)
-          readerException.foreach(throw _)
-          if(reader.get.isAlive) throw new TimeoutException("Upload timed out")
-        } finally reader.get.interrupt()
-
-        val serverSize: Long = listProp(path).head.getContentLength
-        if(size.toLong != serverSize) throw new IOException(s"Written file has a wrong size on the remote server, expected $size but the file size is $serverSize")
-      }
-    }
-  }
 }

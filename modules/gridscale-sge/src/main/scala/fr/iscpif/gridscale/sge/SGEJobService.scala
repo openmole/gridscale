@@ -18,6 +18,8 @@
 
 package fr.iscpif.gridscale.sge
 
+import java.io.ByteArrayInputStream
+
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
@@ -50,6 +52,7 @@ object SGEJobService {
    * Match SGE's states to 1 of the 4 generic states available in GridScale
    * Arbitrary choices were made for SGE's Suspended states that either relate to
    * Running or Submitted in GridScale.
+   *
    * @param status The original state collected from the SGE job scheduler
    * @return Corresponding state in GridScale
    * @throws RuntimeException when the input state can't be recognized.
@@ -72,9 +75,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(sgeScriptPath(description))
-    try outputStream.write(description.toSGE.getBytes)
-    finally outputStream.close
+    write(description.toSGE.getBytes, sgeScriptPath(description))
 
     val command = "cd " + description.workDirectory + " && qsub " + sgeScriptName(description)
     val (ret, out, error) = execReturnCodeOutput(command)

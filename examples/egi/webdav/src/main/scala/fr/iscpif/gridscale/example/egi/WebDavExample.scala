@@ -45,11 +45,9 @@ object WebDavExample extends App {
     val testFile = s"$dir/testdav$i.txt"
 
     Try {
-      val out = dav.openOutputStream(testFile)
-      try out.write("Life is great\n".getBytes)
-      finally out.close
+      dav.write("Life is great\n".getBytes, testFile)
 
-      val in = dav.openInputStream(testFile)
+      val in = dav.read(testFile)
       try assert(Source.fromInputStream(in).mkString == "Life is great\n", "File content is not right")
       finally in.close
     } match {

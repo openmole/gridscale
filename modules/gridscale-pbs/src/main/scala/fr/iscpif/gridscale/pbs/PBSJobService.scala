@@ -49,9 +49,8 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(pbsScriptPath(description))
-    try outputStream.write(description.toPBS.getBytes)
-    finally outputStream.close
+
+    write(description.toPBS.getBytes, pbsScriptPath(description))
 
     val command = "cd " + description.workDirectory + " && qsub " + pbsScriptName(description)
     val (ret, jobId, error) = execReturnCodeOutput(command)

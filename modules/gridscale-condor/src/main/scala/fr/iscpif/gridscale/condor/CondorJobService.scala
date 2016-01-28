@@ -62,9 +62,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(condorScriptPath(description))
-    try outputStream.write(description.toCondor.getBytes)
-    finally outputStream.close
+    write(description.toCondor.getBytes, condorScriptPath(description))
 
     val command = "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor"
 
