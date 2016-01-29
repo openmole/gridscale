@@ -22,7 +22,7 @@ import org.apache.http.protocol.HttpContext
 import org.apache.http.{ HttpEntityEnclosingRequest, HttpResponse, HttpRequest }
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.config.RegistryBuilder
+import org.apache.http.config.{SocketConfig, RegistryBuilder}
 import org.apache.http.conn.socket._
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.impl.client._
@@ -52,7 +52,10 @@ trait HTTPSClient {
 
   def connectionManager = {
     val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory(timeout)).build()
-    new BasicHttpClientConnectionManager(registry)
+    val client = new BasicHttpClientConnectionManager(registry)
+    val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
+    client.setSocketConfig(socketConfig)
+    client
   }
 
   def requestConfig = {
