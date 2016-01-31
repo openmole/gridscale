@@ -72,9 +72,9 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     val entity = new InputStreamEntity(countIS, -1)
     put.setEntity(entity)
     put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-    execute(httpClient.execute, put)
+    val returnCode = execute(httpClient.execute, put)
     val writtenSize = listProp(path).head.getContentLength
-    if(writtenSize != countIS.size.toLong) throw new IOException(s"Size of the written file is $writtenSize and does'nt match ${countIS.size}")
+    if(writtenSize != countIS.size.toLong) throw new IOException(s"Size of the written file is $writtenSize and does'nt match ${countIS.size} (return code of the request was $returnCode)")
   }
 
   override def _read(path: String): InputStream = {
@@ -147,8 +147,10 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   def execute(execute: HttpRequestBase => CloseableHttpResponse, request: HttpRequestBase) =
     try {
       val r = execute(request)
+      val returnCode = r.getStatusLine.getStatusCode
       try testResponse(r).get
       finally r.close
+      returnCode
     } finally request.releaseConnection()
 
   def testResponse(response: HttpResponse) = Try {

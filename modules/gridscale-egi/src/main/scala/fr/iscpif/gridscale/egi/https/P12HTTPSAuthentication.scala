@@ -16,11 +16,11 @@
  */
 package fr.iscpif.gridscale.egi.https
 
-import java.io.FileInputStream
+import java.io.{ IOException, FileInputStream }
 import java.security.KeyStore
 import javax.net.ssl._
 
-import fr.iscpif.gridscale.authentication.P12Authentication
+import fr.iscpif.gridscale.authentication.{ AuthenticationException, P12Authentication }
 
 trait P12HTTPSAuthentication {
 
@@ -32,7 +32,9 @@ trait P12HTTPSAuthentication {
 
     val in = new FileInputStream(authentication.certificate)
     try ks.load(in, authentication.password.toCharArray)
-    finally in.close
+    catch {
+      case e: IOException ⇒ throw new AuthenticationException(s"A wrong password has been provided for ${authentication.certificate}", e)
+    } finally in.close
 
     val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
     kmf.init(ks, authentication.password.toCharArray)
