@@ -118,7 +118,7 @@ trait Bundles <: Modules with Settings {
   lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings) enablePlugins(SbtOsgi)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleSSH) settings(
     name := "ssh",
     importPackage := Seq("!javax.*", "*"),
-    exportPackage := exportPackage.value ++ Seq("net.schmizz.sshj.*")
+    exportPackage := Seq("!net.schmizz.sshj.*") ++ exportPackage.value
     )
 
   lazy val condorBundle = Project(id = "condorbundle", base = file("bundles/condor"), settings = defaultSettings) enablePlugins(SbtOsgi)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleCondor) settings(
