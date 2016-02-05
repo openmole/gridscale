@@ -140,10 +140,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     }
   }
 
-  def isResponseOk(response: HttpResponse) =
-    response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
-      response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
-
   def execute(execute: HttpRequestBase => CloseableHttpResponse, request: HttpRequestBase) =
     try {
       val r = execute(request)
@@ -154,7 +150,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     } finally request.releaseConnection()
 
   def testResponse(response: HttpResponse) = Try {
-    if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+    if (!HTTPSClient.isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
   }
 
   override def _rmFile(path: String): Unit =  withClient { httpClient =>

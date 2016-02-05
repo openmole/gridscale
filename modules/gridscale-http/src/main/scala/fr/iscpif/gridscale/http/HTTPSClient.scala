@@ -17,10 +17,11 @@
 package fr.iscpif.gridscale.http
 
 import com.github.sardine.impl.SardineRedirectStrategy
+import com.github.sardine.impl.methods.HttpPropFind
 import org.apache.http.client.methods.{ RequestBuilder, HttpPut, HttpUriRequest }
 import org.apache.http.params.CoreConnectionPNames
 import org.apache.http.protocol.HttpContext
-import org.apache.http.{ HttpEntityEnclosingRequest, HttpResponse, HttpRequest }
+import org.apache.http.{ HttpStatus, HttpEntityEnclosingRequest, HttpResponse, HttpRequest }
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.config.{ SocketConfig, RegistryBuilder }
@@ -32,17 +33,24 @@ import org.apache.http.client._
 import scala.concurrent.duration._
 
 object HTTPSClient {
-  def redirectStrategy = new SardineRedirectStrategy {
+
+  def isResponseOk(response: HttpResponse) =
+    response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
+      response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
+
+  def redirectStrategy = new LaxRedirectStrategy {
+
     override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
-      val method = request.getRequestLine().getMethod()
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
-        val uri = getLocationURI(request, response, context)
-        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
-      } else super.getRedirect(request, response, context)
+      assert(response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST, "Error while redirecting request")
+      super.getRedirect(request, response, context)
     }
+
     override protected def isRedirectable(method: String) =
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) true
-      else super.isRedirectable(method)
+      method match {
+        case HttpPropFind.METHOD_NAME ⇒ true
+        case HttpPut.METHOD_NAME      ⇒ true
+        case _                        ⇒ super.isRedirectable(method)
+      }
   }
 }
 
