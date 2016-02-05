@@ -25,7 +25,7 @@ import fr.iscpif.gridscale.authentication.{ AuthenticationException, P12Authenti
 
 object P12HTTPSAuthentication {
 
-  def sslContext(certificate: File, password: String) = {
+  def sslContext(certificate: File, password: String): SSLContext = {
     val sslContext = javax.net.ssl.SSLContext.getInstance("TLS")
     val ks = KeyStore.getInstance("pkcs12")
 
