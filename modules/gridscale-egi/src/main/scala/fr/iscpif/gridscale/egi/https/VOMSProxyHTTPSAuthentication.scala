@@ -23,8 +23,6 @@ import fr.iscpif.gridscale.egi._
 import org.globus.gsi.jsse.SSLConfigurator
 import org.globus.gsi.stores.Stores
 
-
-
 trait VOMSProxyHTTPSAuthentication {
 
   def proxy(): GlobusAuthentication.Proxy

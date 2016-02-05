@@ -16,12 +16,11 @@
  */
 package fr.iscpif.gridscale.egi.https
 
-import java.io.{File, IOException, FileInputStream}
+import java.io.{ File, IOException, FileInputStream }
 import java.security.KeyStore
 import javax.net.ssl._
 
 import fr.iscpif.gridscale.authentication.{ AuthenticationException, P12Authentication }
-
 
 object P12HTTPSAuthentication {
 
