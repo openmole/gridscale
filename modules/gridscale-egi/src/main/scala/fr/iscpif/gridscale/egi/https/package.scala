@@ -16,6 +16,7 @@
  */
 package fr.iscpif.gridscale.egi
 
+import java.security.KeyStore
 import java.security.cert.X509Certificate
 import javax.net.ssl._
 
@@ -43,5 +44,6 @@ package object https {
         socket.setSoTimeout(timeout.toMillis.toInt)
       }
     }
+
 
 }
