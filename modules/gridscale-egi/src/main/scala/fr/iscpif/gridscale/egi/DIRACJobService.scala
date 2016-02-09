@@ -38,16 +38,29 @@ import scala.sys.process.BasicIO
 object DIRACJobService {
 
   def apply[A: HTTPSAuthentication](
-    service: String,
-    group: String,
+    vo: String,
     timeout: Duration = 1 minutes)(authentication: A) = {
-    val (_service, _group, _timeout) = (service, group, timeout)
+    val s = service(vo, timeout)
+
+    val (_timeout) = (timeout)
     new DIRACJobService {
       override val timeout = _timeout
-      override val group: String = _group
+      override val group: String = s.group
       override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
-      override val service: String = _service
+      override val service: String = s.service
     }
+  }
+
+  case class Service(service: String, group: String)
+
+  def service(vo: String, timeout: Duration = 1 minute) = {
+    val uri: URI = new URI("http://dirac.france-grilles.fr/defaults/DiracServices.json")
+    val is = HTTPStorage.toInputStream(uri, HTTPStorage.newClient(timeout))
+    try {
+      val page = Source.fromInputStream(is).mkString
+      val parsed = page.parseJson.asJsObject.fields.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory")).asJsObject.fields
+      Service("https://" + parsed("RESTServer").convertTo[String], parsed("DIRACDefaultGroup").convertTo[String])
+    } finally is.close
   }
 
 }
