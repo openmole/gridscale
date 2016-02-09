@@ -19,7 +19,6 @@ package fr.iscpif.gridscale.http
 import com.github.sardine.impl.SardineRedirectStrategy
 import com.github.sardine.impl.methods.HttpPropFind
 import org.apache.http.client.methods.{ RequestBuilder, HttpPut, HttpUriRequest }
-import org.apache.http.params.CoreConnectionPNames
 import org.apache.http.protocol.HttpContext
 import org.apache.http.{ HttpStatus, HttpEntityEnclosingRequest, HttpResponse, HttpRequest }
 import org.apache.http.client.config.RequestConfig
@@ -31,28 +30,6 @@ import org.apache.http.impl.client._
 import org.apache.http.impl.conn.{ BasicHttpClientConnectionManager, PoolingHttpClientConnectionManager }
 import org.apache.http.client._
 import scala.concurrent.duration._
-
-object HTTPSClient {
-
-  def isResponseOk(response: HttpResponse) =
-    response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
-      response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
-
-  def redirectStrategy = new LaxRedirectStrategy {
-
-    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
-      assert(response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST, "Error while redirecting request")
-      super.getRedirect(request, response, context)
-    }
-
-    override protected def isRedirectable(method: String) =
-      method match {
-        case HttpPropFind.METHOD_NAME ⇒ true
-        case HttpPut.METHOD_NAME      ⇒ true
-        case _                        ⇒ super.isRedirectable(method)
-      }
-  }
-}
 
 trait HTTPSClient {
 
@@ -67,19 +44,11 @@ trait HTTPSClient {
     client
   }
 
-  def requestConfig = {
-    RequestConfig.custom()
-      .setSocketTimeout(timeout.toMillis.toInt)
-      .setConnectTimeout(timeout.toMillis.toInt)
-      .setConnectionRequestTimeout(timeout.toMillis.toInt)
-      .build()
-  }
-
   def newClient =
     HttpClients.custom().
-      setRedirectStrategy(HTTPSClient.redirectStrategy).
+      setRedirectStrategy(HTTPStorage.redirectStrategy).
       setConnectionManager(connectionManager).
-      setDefaultRequestConfig(requestConfig).build()
+      setDefaultRequestConfig(HTTPStorage.requestConfig(timeout)).build()
 
   def withClient[T](f: CloseableHttpClient ⇒ T): T = {
     val httpClient = newClient

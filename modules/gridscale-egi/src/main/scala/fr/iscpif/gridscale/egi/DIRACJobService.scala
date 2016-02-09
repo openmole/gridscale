@@ -20,7 +20,7 @@ import java.io.{ BufferedInputStream, BufferedOutputStream, FileOutputStream, In
 import java.net.{ URI, URL }
 
 import fr.iscpif.gridscale.cache.SingleValueAsynchronousCache
-import fr.iscpif.gridscale.http.{ HTTPSClient, HTTPSAuthentication }
+import fr.iscpif.gridscale.http.{ HTTPStorage, HTTPSClient, HTTPSAuthentication }
 import fr.iscpif.gridscale.jobservice._
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.http.client.methods._
@@ -181,7 +181,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
   }
 
   def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = withClient { httpClient ⇒
-    request.setConfig(requestConfig)
+    request.setConfig(HTTPStorage.requestConfig(timeout))
     val response = httpClient.execute(httpHost, request)
     val is = response.getEntity.getContent
     try f(is)
