@@ -27,14 +27,18 @@ import scala.concurrent.duration._
 
 object Main extends App {
 
-  val p12 = P12Authentication(new File("/path/to/certificate.p12"), "password")
+  val certificate = new File("/home/reuillon/.globus/certificate.p12")
+  val password = "password"
+
+  val p12 = P12Authentication(certificate, password)
+  val js = DIRACJobService("vo.complex-systems.eu")(p12)
+
+  js.delegate(certificate, password)
 
   val jobDesc = new DIRACJobDescription {
     def executable = "/bin/echo"
     def arguments = "hello"
   }
-
-  val js = DIRACJobService(group = "complex_user", service = "https://ccdiracli06.in2p3.fr:9178")(p12)
 
   println(js.token)
 

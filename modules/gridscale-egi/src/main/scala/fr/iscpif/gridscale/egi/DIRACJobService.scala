@@ -16,7 +16,7 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.{ BufferedInputStream, BufferedOutputStream, FileOutputStream, InputStream }
+import java.io._
 import java.net.{ URI, URL }
 
 import fr.iscpif.gridscale.cache.SingleValueAsynchronousCache
@@ -80,6 +80,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def setup = "Dirac-Production"
   def auth2Auth = service + "/oauth2/token"
   def jobs = service + "/jobs"
+  def delegation = service + s"/proxy/unknown/$group"
 
   def tokenExpirationMargin = 10 -> MINUTES
 
@@ -88,6 +89,25 @@ trait DIRACJobService extends JobService with HTTPSClient {
       def compute() = token
       def expiresIn(t: Token) = (t.expires_in, SECONDS) - tokenExpirationMargin
     }
+
+  def delegate(p12: File, password: String) = {
+    val files = MultipartEntityBuilder.create()
+    files.addBinaryBody("p12", p12)
+    files.addTextBody("Password", password)
+    files.addTextBody("access_token", tokenCache().token)
+
+    val uri = new URIBuilder(delegation)
+      //.setParameter("access_token", tokenCache().token)
+      //.setParameter("Password", password)
+      .build
+
+    val post = new HttpPost(uri)
+    //post.setHeader("Password", password)
+    post.setEntity(files.build())
+    //post.addHeader("Password", password)
+
+    request(post) { identity }
+  }
 
   def token = {
     val uri = new URIBuilder(auth2Auth)
@@ -107,16 +127,15 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def submit(jobDescription: D): String = {
     def files = {
       val builder = MultipartEntityBuilder.create()
-      jobDescription.inputSandbox.zipWithIndex.foreach {
-        case (f, i) ⇒ builder.addBinaryBody(f.getName, f)
+      jobDescription.inputSandbox.foreach {
+        f ⇒ builder.addBinaryBody(f.getName, f)
       }
+      builder.addTextBody("access_token", tokenCache().token)
+      builder.addTextBody("manifest", jobDescription.toJSON)
       builder.build
     }
 
-    val uri = new URIBuilder(jobs)
-      .setParameter("access_token", tokenCache().token)
-      .setParameter("manifest", jobDescription.toJSON)
-      .build
+    val uri = new URI(jobs)
 
     val post = new HttpPost(uri)
     post.setEntity(files)
@@ -196,6 +215,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = withClient { httpClient ⇒
     request.setConfig(HTTPStorage.requestConfig(timeout))
     val response = httpClient.execute(httpHost, request)
+    HTTPStorage.testResponse(response).get
     val is = response.getEntity.getContent
     try f(is)
     finally is.close
