@@ -39,8 +39,9 @@ object DIRACJobService {
 
   def apply[A: HTTPSAuthentication](
     vo: String,
+    service: Option[Service] = None,
     timeout: Duration = 1 minutes)(authentication: A) = {
-    val s = service(vo, timeout)
+    val s = service.getOrElse(getService(vo, timeout))
 
     val (_timeout) = (timeout)
     new DIRACJobService {
@@ -53,7 +54,7 @@ object DIRACJobService {
 
   case class Service(service: String, group: String)
 
-  def service(vo: String, timeout: Duration = 1 minute) = {
+  def getService(vo: String, timeout: Duration = 1 minute) = {
     val uri: URI = new URI("http://dirac.france-grilles.fr/defaults/DiracServices.json")
     val is = HTTPStorage.toInputStream(uri, HTTPStorage.newClient(timeout))
     try {
@@ -97,14 +98,10 @@ trait DIRACJobService extends JobService with HTTPSClient {
     files.addTextBody("access_token", tokenCache().token)
 
     val uri = new URIBuilder(delegation)
-      //.setParameter("access_token", tokenCache().token)
-      //.setParameter("Password", password)
       .build
 
     val post = new HttpPost(uri)
-    //post.setHeader("Password", password)
     post.setEntity(files.build())
-    //post.addHeader("Password", password)
 
     request(post) { identity }
   }
