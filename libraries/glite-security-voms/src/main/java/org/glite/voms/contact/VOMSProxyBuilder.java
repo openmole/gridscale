@@ -26,10 +26,13 @@
 package org.glite.voms.contact;
 
 import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEREncodableVector;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameStyle;
+import org.bouncycastle.asn1.x500.style.RFC4519Style;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.X509Principal;
@@ -273,7 +276,7 @@ public class VOMSProxyBuilder {
         DEREncodableVector acVector = new DEREncodableVector();
 
         while (i.hasNext()) {
-            acVector.add((AttributeCertificate) i.next());
+            acVector.add((ASN1Encodable) i.next());
         }
 
         HashMap extensions = new HashMap();
@@ -291,28 +294,21 @@ public class VOMSProxyBuilder {
         extensions.put("2.5.29.15", ExtensionData.creator("2.5.29.15",
                 keyUsage.toASN1Primitive()));
 
-        //        try {
         X509Credential proxy = myCreateCredential(
                 cred.getUserChain(),
-                cred.getUserKey(), bits, lifetime,
-                delegType, gtVersion, extensions, policyType);
+                cred.getUserKey(),
+                bits,
+                lifetime,
+                delegType,
+                gtVersion,
+                extensions,
+                policyType);
 
         return proxy;
-
-//         } catch ( GeneralSecurityException e ) {
-
-//             log.error( "Error generating voms proxy: " + e.getMessage() );
-
-//             if ( log.isDebugEnabled() )
-//                 log.error( e.getMessage(), e );
-
-//             throw new VOMSException( e );
-
-//         }
-
     }
 
-    private static X509Credential myCreateCredential(X509Certificate[] certs,
+    private static X509Credential myCreateCredential(
+            X509Certificate[] certs,
             PrivateKey privateKey,
             int bits,
             int lifetime,
@@ -325,36 +321,32 @@ public class VOMSProxyBuilder {
         try {
             keys = KeyPairGenerator.getInstance("RSA", "BC");
         } catch (NoSuchAlgorithmException e) {
-            log.error("Error activating bouncycastle: " + e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-
             throw new VOMSException(e.getMessage(), e.getCause());
         } catch (NoSuchProviderException e) {
-            log.error("Error activating bouncycastle: " + e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-
             throw new VOMSException(e.getMessage(), e.getCause());
         }
 
         keys.initialize(bits);
         KeyPair pair = keys.genKeyPair();
 
-        X509Certificate proxy = myCreateProxyCertificate(certs[0], privateKey,
-                pair.getPublic(), lifetime,
+        X509Certificate proxy = myCreateProxyCertificate(
+                certs[0],
+                privateKey,
+                pair.getPublic(),
+                lifetime,
                 delegationMode,
                 gtVersion,
                 extensions,
                 policyType);
 
+
         X509Certificate[] newCerts = new X509Certificate[certs.length + 1];
         newCerts[0] = proxy;
         System.arraycopy(certs, 0, newCerts, 1, certs.length);
 
-        return new X509Credential(pair.getPrivate(), newCerts);
+        X509Credential credential = new X509Credential(pair.getPrivate(), newCerts);
+
+        return credential;
     }
 
     private static X509Certificate myCreateProxyCertificate(X509Certificate cert,
@@ -456,7 +448,7 @@ public class VOMSProxyBuilder {
         X509NameHelper issuer = new X509NameHelper(issuerDN);
 
         X509NameHelper subject = new X509NameHelper(issuerDN);
-        subject.add(X509Name.CN, cert.getSubjectDN().getName());
+        subject.add(RFC4519Style.cn, cnValue);
 
         certGen.setSubjectDN(subject.getAsName());
         certGen.setIssuerDN(issuer.getAsName());
@@ -482,46 +474,15 @@ public class VOMSProxyBuilder {
 
         try {
             return certGen.generate(issuerKey);
-
         } catch (SignatureException e) {
-            log.error("Error creating proxy: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-
             throw new VOMSException(e);
         } catch (InvalidKeyException e) {
-            log.error("Error creating proxy: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-
             throw new VOMSException(e);
         } catch (CertificateEncodingException e) {
-            log.error("Error creating proxy: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-
             throw new VOMSException(e);
         } catch (IllegalStateException e) {
-            log.error("Error creating proxy: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-
             throw new VOMSException(e);
         } catch (NoSuchAlgorithmException e) {
-            log.error("Error creating proxy: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-
             throw new VOMSException(e);
         }
 
@@ -534,27 +495,13 @@ public class VOMSProxyBuilder {
      * @param os
      */
     public static void saveProxy(X509Credential cred, OutputStream os) {
-
         try {
-
             cred.save(os);
         } catch (IOException e) {
-            log.error("Error saving generated proxy: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
             throw new VOMSException("Error saving generated proxy: " + e.getMessage(), e);
         }  catch (CertificateEncodingException e) {
-            log.error("Error saving generated proxy: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
             throw new VOMSException("Error saving generated proxy: " + e.getMessage(), e);
         }
-
-
     }
 
     /**

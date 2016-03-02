@@ -23,6 +23,7 @@ import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient }
 import org.apache.http.client.methods.HttpGet
 
 import scala.concurrent.duration._
+import scala.io.Source
 
 object VOMSRestAPI {
 

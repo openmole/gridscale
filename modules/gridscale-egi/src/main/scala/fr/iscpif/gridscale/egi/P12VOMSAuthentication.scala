@@ -16,12 +16,12 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.File
-import java.net.URI
+import java.io.{ ByteArrayInputStream, File }
+import java.net.{ MalformedURLException, URI }
 
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi.voms.VOMSRestAPI
-import org.glite.voms.contact.{ UserCredentials, VOMSProxyInit }
+import org.glite.voms.contact.{ VOMSRequestOptions, VOMSServerInfo, UserCredentials, VOMSProxyInit }
 import org.globus.gsi.GSIConstants.CertificateType
 
 import scala.concurrent.duration.Duration
@@ -55,10 +55,39 @@ object P12VOMSAuthentication {
 trait P12VOMSAuthentication extends VOMSAuthentication {
   def p12Authentication: P12Authentication
   def proxy(serverURL: String, proxyType: CertificateType) = {
+
+    //    val uri = new URI(serverURL.replaceAll(" ", "%20"))
+    //    if (uri.getHost == null)
+    //      throw new MalformedURLException("Attribute Server has no host name: " + uri.toString)
+    //
+    //    val server = new VOMSServerInfo
+    //    server.setHostName(uri.getHost)
+    //    server.setPort(uri.getPort)
+    //    server.setHostDn(uri.getPath)
+    //    server.setVoName(voName)
+    //
+    //    val requestOption = new VOMSRequestOptions
+    //    requestOption.setVoName(voName)
+    //
+    //    fqan match {
+    //      case Some(s) ⇒ requestOption.addFQAN(s)
+    //      case None    ⇒
+    //    }
+    //
+    //    val proxy = VOMSProxyInit.instance(p12Authentication.certificate, p12Authentication.password)
+    //
+    //    proxy.setProxyLifetime(lifeTime.toSeconds.toInt)
+    //    proxy.setProxySize(proxySize)
+    //    proxy.setProxyType(proxyType)
+    //    requestOption.setLifetime(lifeTime.toSeconds.toInt)
+    //
+    //    proxy.getVomsProxy(server, requestOption)
+
     import fr.iscpif.gridscale.egi._
     def userCredential = UserCredentials.instance(p12Authentication.certificate, p12Authentication.password)
     val url = new URI(serverURL)
     val credential = VOMSRestAPI.query(url.getHost, url.getPort, lifetime = Some(this.lifeTime.toSeconds.toInt))(p12Authentication)
     credential.getCredential(userCredential, proxyType)
   }
+
 }

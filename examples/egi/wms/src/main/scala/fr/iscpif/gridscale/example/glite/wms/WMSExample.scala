@@ -30,10 +30,11 @@ object WMSExample extends App {
   VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
 
   val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "password")
-  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "voms://voms2.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms2.hellasgrid.gr"), "vo.complex-systems.eu")
+  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"), "biomed")
 
   val bdii = BDII("topbdii.grif.fr", 2170)
-  val wms = bdii.queryWMSLocations("vo.complex-systems.eu").map(l ⇒ WMSJobService(l)(authentication)).head
+
+  val wms = bdii.queryWMSLocations("biomed").map(l ⇒ WMSJobService(l)(authentication)).head
 
   val jobDesc = new WMSJobDescription {
     def executable = "/bin/echo"
@@ -42,7 +43,6 @@ object WMSExample extends App {
     override def stdError = "error.txt"
     def inputSandbox = List()
     def outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt"))
-    override def fuzzy = true
   }
 
   val j = wms.submit(jobDesc)

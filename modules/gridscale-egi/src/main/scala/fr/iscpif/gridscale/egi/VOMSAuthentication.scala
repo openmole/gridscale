@@ -78,7 +78,7 @@ trait VOMSAuthentication {
 
   def generateProxy =
     try {
-      val gt4Proxy = proxy(VOMSProxyBuilder.GT4_PROXY)
+      val gt4Proxy = proxy(CertificateType.GSI_4_IMPERSONATION_PROXY)
 
       val os = new ByteArrayOutputStream()
       VOMSProxyBuilder.saveProxy(gt4Proxy, os)
@@ -91,15 +91,6 @@ trait VOMSAuthentication {
     } catch {
       case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
     }
-
-  /*def generate(file: File) = {
-    val os = new FileOutputStream(file)
-    val p =
-      try VOMSProxyBuilder.saveProxy(proxy(VOMSProxyBuilder.GT4_PROXY), os)
-      finally os.close
-  }*/
-
-  //def proxyInit(): VOMSProxyInit
 
   def proxy(proxyType: CertificateType): X509Credential =
     VOMSAuthentication.findWorking(serverURLs, s ⇒ proxy(s, proxyType))
@@ -133,4 +124,5 @@ trait VOMSAuthentication {
 
     proxy.getVomsProxy(server, requestOption)
   }*/
+
 }

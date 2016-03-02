@@ -33,11 +33,10 @@ import scala.util.{ Success, Failure, Try }
 object WebDavExample extends App {
 
   val location = new BDII("topbdii.grif.fr", 2170).queryWebDAVLocations("vo.complex-systems.eu").find(_.host.contains("lal")).get
-
   VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
-
   val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "password")
-  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr", "voms://voms2.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms2.hellasgrid.gr"), "vo.complex-systems.eu")
+
+  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"), "biomed")
 
   val dav = DPMWebDAVStorage(location)(authentication)
 
@@ -55,7 +54,9 @@ object WebDavExample extends App {
       try assert(Source.fromInputStream(in).mkString == "Life is great\n", "File content is not right")
       finally in.close
     } match {
-      case Failure(e) ⇒ println(s"Failed $testFile $e")
+      case Failure(e) ⇒
+        println(s"Failed $testFile $e")
+        e.printStackTrace()
       case Success(_) ⇒ println(s"Written $testFile")
     }
   }
