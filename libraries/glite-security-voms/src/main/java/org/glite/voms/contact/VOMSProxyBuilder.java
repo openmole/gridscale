@@ -35,6 +35,7 @@ import org.bouncycastle.asn1.x500.X500NameStyle;
 import org.bouncycastle.asn1.x500.style.RFC4519Style;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.X509Name;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.glite.voms.ac.AttributeCertificate;
@@ -349,7 +350,8 @@ public class VOMSProxyBuilder {
         return credential;
     }
 
-    private static X509Certificate myCreateProxyCertificate(X509Certificate cert,
+    private static X509Certificate myCreateProxyCertificate(
+            X509Certificate cert,
             PrivateKey issuerKey,
             PublicKey publicKey,
             int lifetime,
@@ -357,6 +359,7 @@ public class VOMSProxyBuilder {
             CertificateType gtVersion,
             HashMap extensions,
             String policyType) {
+
         X509V3CertificateGenerator certGen = new X509V3CertificateGenerator();
 
         String cnValue = null;
@@ -379,6 +382,7 @@ public class VOMSProxyBuilder {
             case GSI_2_PROXY:
                 policy = new ProxyPolicy(ProxyPolicy.IMPERSONATION);
                 serialNum = cert.getSerialNumber();
+                break;
             case GSI_2_LIMITED_PROXY:
                 policy = new ProxyPolicy(ProxyPolicy.LIMITED);
                 serialNum = cert.getSerialNumber();
@@ -392,7 +396,7 @@ public class VOMSProxyBuilder {
             case GSI_4_LIMITED_PROXY:
             case GSI_4_RESTRICTED_PROXY:
                 Random rand = new Random();
-                int number = Math.abs(rand.nextInt());
+                long number = Math.abs(rand.nextLong());
                 cnValue = String.valueOf(number);
                 serialNum = new BigInteger(String.valueOf(number));
 
@@ -443,34 +447,43 @@ public class VOMSProxyBuilder {
             certGen.addExtension(exts[i].getOID(), exts[i].getCritical(), exts[i].getObj());
         }
 
-        X509Name issuerDN = (X509Name) cert.getSubjectDN();
+        //X509Name issuerDN = (X509Name) cert.getIssuerDN(); //getSubjectDN();
+        //X509NameHelper issuer = new X509NameHelper(issuerDN);
+        X509Name subjectDN = (X509Name)cert.getSubjectDN();
 
-        X509NameHelper issuer = new X509NameHelper(issuerDN);
-
-        X509NameHelper subject = new X509NameHelper(issuerDN);
+        X509NameHelper subject = new X509NameHelper(subjectDN);
         subject.add(RFC4519Style.cn, cnValue);
 
         certGen.setSubjectDN(subject.getAsName());
-        certGen.setIssuerDN(issuer.getAsName());
+        certGen.setIssuerDN(subjectDN);
 
         certGen.setSerialNumber(serialNum);
         certGen.setPublicKey(publicKey);
         certGen.setSignatureAlgorithm(cert.getSigAlgName());
 
-        GregorianCalendar date =
-                new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+        GregorianCalendar notBefore = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+
         /* Allow for a five minute clock skew here. */
-        date.add(Calendar.MINUTE, -5);
-        certGen.setNotBefore(date.getTime());
+        notBefore.add(Calendar.MINUTE, -5);
+        certGen.setNotBefore(notBefore.getTime());
 
         /* If hours = 0, then cert lifetime is set to user cert */
-        if (lifetime <= 0) {
+        /*if (lifetime <= 0) {
             certGen.setNotAfter(cert.getNotAfter());
-        } else {
-            date.add(Calendar.MINUTE, 5);
-            date.add(Calendar.SECOND, lifetime);
-            certGen.setNotAfter(date.getTime());
-        }
+        } else {*/
+        GregorianCalendar notAfter = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+        notAfter.add(Calendar.SECOND, lifetime);
+        certGen.setNotAfter(notAfter.getTime());
+      //  }
+
+        /*new X509v3CertificateBuilder(
+                subjectDN,
+                serialNum,
+                notBefore.getTime(),
+                notAfter.getTime(),
+                subject.getAsName(),
+                publicKey
+        )*/
 
         try {
             return certGen.generate(issuerKey);
