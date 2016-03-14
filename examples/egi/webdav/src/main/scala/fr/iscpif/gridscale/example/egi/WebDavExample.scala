@@ -40,12 +40,14 @@ object WebDavExample extends App {
 
   val dav = DPMWebDAVStorage(location)(authentication)
 
-  def dir = s"testDirectory"
+  def dir = "/test/"
   println(Try(dav.rmDir(dir)))
   dav.makeDir(dir)
 
-  for (i ← (0 to 10).par) {
-    val testFile = s"$dir/testdav$i.txt"
+  for (i ← (0 to 10)) {
+    val d = s"$dir/dir$i"
+    dav.makeDir(d)
+    val testFile = s"$d/testdav$i.txt"
 
     Try {
       dav.write("Life is great\n".getBytes, testFile)

@@ -53,7 +53,9 @@ object P12VOMSAuthentication {
 }
 
 trait P12VOMSAuthentication extends VOMSAuthentication {
+
   def p12Authentication: P12Authentication
+
   def proxy(serverURL: String) = {
     import fr.iscpif.gridscale.egi._
     def userCredential = UserCredentials.instance(p12Authentication.certificate, p12Authentication.password)
