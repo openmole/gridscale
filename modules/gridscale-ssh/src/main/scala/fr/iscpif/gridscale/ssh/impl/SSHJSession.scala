@@ -15,20 +15,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.ssh
+package fr.iscpif.gridscale.ssh.impl
 
 import java.io.InputStream
 
-trait SSHSession {
-  def close()
-  def exec(command: String): SessionCommand
-}
+import fr.iscpif.gridscale.ssh.SessionCommand
 
-trait SessionCommand {
+object SSHJSession {
 
-  def join()
-  def close()
-  def getExitStatus: Int
-  def getInputStream: InputStream
-  def getErrorStream: InputStream
+  import net.schmizz.sshj.connection.channel.direct.Session
+
+  def close()(implicit sshjSession: Session) = sshjSession.close()
+
+  def exec(command: String)(implicit sshjSession: Session): SessionCommand = {
+    val sshjCommand = sshjSession.exec(command)
+    new SessionCommand {
+      def join() = sshjCommand.join()
+      def close() = sshjCommand.close()
+      def getExitStatus: Int = sshjCommand.getExitStatus
+      def getInputStream: InputStream = sshjSession.getInputStream
+      def getErrorStream: InputStream = sshjCommand.getErrorStream
+    }
+  }
 }

@@ -18,11 +18,8 @@
 package fr.iscpif.gridscale.ssh
 
 import java.io.InputStream
-import java.util
 
 import fr.iscpif.gridscale.authentication.{ PrivateKey, AuthenticationException }
-import fr.iscpif.gridscale.storage.{ FileType, LinkType, DirectoryType, ListEntry }
-import fr.iscpif.gridscale.tools._
 
 class SSHClient {
 
@@ -35,27 +32,18 @@ class SSHClient {
   private lazy val sshDefaultConfig = new DefaultConfig()
   private lazy val peer: SSHJSSHClient = new SSHJSSHClient(sshDefaultConfig)
 
-  def startSession: SSHSession = {
-    val sshjSession = peer.startSession
-    new SSHSession {
-      def close = sshjSession.close()
+  def startSession: SSHSession = new SSHSession {
 
-      def exec(command: String): Command = {
-        val sshjCommand = sshjSession.exec(command)
-        new Command {
-          def join = sshjCommand.join()
-          def close = sshjCommand.close()
-          def getExitStatus: Int = sshjCommand.getExitStatus
-          def getInputStream: InputStream = sshjSession.getInputStream
-          def getErrorStream: InputStream = sshjCommand.getErrorStream
-        }
-      }
-    }
+    implicit val peerSession = peer.startSession
+    import impl.SSHJSession
+
+    override def close() = SSHJSession.close()
+    override def exec(command: String) = SSHJSession.exec(command)
   }
 
-  def close = peer.close()
+  def close() = peer.close()
   def connect(host: String, port: Int) = peer.connect(host, port)
-  def disconnect = peer.disconnect()
+  def disconnect() = peer.disconnect()
 
   def setConnectTimeout(timeout: Int) = peer.setConnectTimeout(timeout)
   def setTimeout(timeout: Int) = peer.setTimeout(timeout)
@@ -80,85 +68,21 @@ class SSHClient {
   def isAuthenticated: Boolean = peer.isAuthenticated
   def isConnected: Boolean = peer.isConnected
 
-  def newSFTPClient: SFTPClient = {
-    val sshjSFTPClient = peer.newSFTPClient()
-    new SFTPClient {
-      import net.schmizz.sshj.sftp.{ FileMode, OpenMode }
-      import scala.collection.JavaConversions._
+  def newSFTPClient = new SFTPClient {
 
-      def ls(path: String)(predicate: String ⇒ Boolean): List[ListEntry] = {
+    import impl.SSHJSFTPClient
+    implicit val peerSFTPClient = peer.newSFTPClient()
 
-        sshjSFTPClient.ls(path).filterNot(e ⇒ { predicate(e.getName) }).map {
-          e ⇒
-            val t =
-              e.getAttributes.getType match {
-                case FileMode.Type.DIRECTORY ⇒ DirectoryType
-                case FileMode.Type.SYMKLINK  ⇒ LinkType
-                case _                       ⇒ FileType
-              }
-            ListEntry(e.getName, t, Some(e.getAttributes.getMtime))
-        } toList // FIXME is it because the List<> gets converted to a buffer?
-      }
-
-      def chmod(path: String, perms: Int) = sshjSFTPClient.chmod(path, perms)
-      def close = sshjSFTPClient.close()
-      def canonicalize(path: String) = sshjSFTPClient.canonicalize(path)
-      def exists(path: String) = sshjSFTPClient.statExistence(path) != null
-      def mkdir(path: String) = sshjSFTPClient.mkdir(path)
-      def rmdir(path: String) = sshjSFTPClient.rmdir(path)
-      def rm(path: String) = sshjSFTPClient.rm(path)
-      def rename(oldName: String, newName: String) = sshjSFTPClient.rename(oldName, newName)
-
-      lazy val unconfirmedExchanges = 32
-
-      def readAheadFileInputStream(path: String): InputStream = {
-
-        val fileHandle =
-          try sshjSFTPClient.open(path, util.EnumSet.of(OpenMode.READ))
-          catch {
-            case e: Throwable ⇒
-              try sshjSFTPClient.close
-              finally close
-              throw e
-          }
-
-        def closeAll = {
-          try fileHandle.close
-          finally try sshjSFTPClient.close
-          finally close
-        }
-
-        new fileHandle.ReadAheadRemoteFileInputStream(unconfirmedExchanges) {
-          override def close = {
-            try closeAll
-            finally super.close
-          }
-        }
-      }
-
-      def fileOutputStream(is: InputStream, path: String) = {
-        val fileHandle =
-          try sshjSFTPClient.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC))
-          catch {
-            case e: Throwable ⇒
-              try sshjSFTPClient.close
-              finally close
-              throw e
-          }
-
-        def closeAll = {
-          try fileHandle.close
-          finally try sshjSFTPClient.close
-          finally close
-        }
-
-        try {
-          val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
-          try copyStream(is, os)
-          finally os.close
-        } finally closeAll
-
-      }
-    }
+    override def fileOutputStream(is: InputStream, path: String) = SSHJSFTPClient.fileOutputStream(is, path)
+    override def rename(oldName: String, newName: String) = SSHJSFTPClient.rename(oldName, newName)
+    override def canonicalize(path: String) = SSHJSFTPClient.canonicalize(path)
+    override def rmdir(path: String) = SSHJSFTPClient.rmdir(path)
+    override def chmod(path: String, perms: Int) = SSHJSFTPClient.chmod(path, perms)
+    override def readAheadFileInputStream(path: String) = SSHJSFTPClient.readAheadFileInputStream(path)
+    override def close = SSHJSFTPClient.close()
+    override def rm(path: String) = SSHJSFTPClient.rm(path)
+    override def mkdir(path: String) = SSHJSFTPClient.mkdir(path)
+    override def exists(path: String) = SSHJSFTPClient.exists(path)
+    override def ls(path: String)(predicate: (String) ⇒ Boolean) = SSHJSFTPClient.ls(path)(predicate)
   }
 }
