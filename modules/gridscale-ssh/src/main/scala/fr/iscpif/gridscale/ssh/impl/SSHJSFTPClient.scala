@@ -62,6 +62,18 @@ object SSHJSFTPClient {
 
   lazy val unconfirmedExchanges = 32
 
+  def withClosable[C <: java.io.Closeable, T](open: ⇒ C)(f: C ⇒ T)(implicit sshjSFTPClient: SFTPClient): T = {
+    val c = open
+    try f(c)
+    catch {
+      case e: Throwable ⇒
+        close()
+        throw e
+    }
+    finally c.close()
+  }
+
+  // FIXME takes care of too much things => should not close the sftpclient for instance
   def readAheadFileInputStream(path: String)(implicit sshjSFTPClient: SFTPClient): InputStream = {
 
     val fileHandle =
@@ -87,27 +99,11 @@ object SSHJSFTPClient {
     }
   }
 
-  def fileOutputStream(is: InputStream, path: String)(implicit sshjSFTPClient: SFTPClient) = {
-    val fileHandle =
-      try sshjSFTPClient.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC))
-      catch {
-        case e: Throwable ⇒
-          try sshjSFTPClient.close()
-          finally close()
-          throw e
-      }
+  // FIXME this is badly named as it writes but does not return an output stream
+  def fileOutputStream(is: InputStream, path: String)(implicit sshjSFTPClient: SFTPClient): Unit = {
 
-    def closeAll() = {
-      try fileHandle.close()
-      finally try sshjSFTPClient.close()
-      finally close()
+    withClosable(sshjSFTPClient.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC))) {
+      fileHandle => withClosable(new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)) { copyStream(is, _) }
     }
-
-    try {
-      val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
-      try copyStream(is, os)
-      finally os.close()
-    } finally closeAll()
-
   }
 }
