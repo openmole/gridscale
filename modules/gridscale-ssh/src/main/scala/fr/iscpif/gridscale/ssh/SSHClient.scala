@@ -79,10 +79,10 @@ class SSHClient {
     override def rmdir(path: String) = SSHJSFTPClient.rmdir(path)
     override def chmod(path: String, perms: Int) = SSHJSFTPClient.chmod(path, perms)
     override def readAheadFileInputStream(path: String) = SSHJSFTPClient.readAheadFileInputStream(path)
-    override def close = SSHJSFTPClient.close()
+    override def close() = SSHJSFTPClient.close()
     override def rm(path: String) = SSHJSFTPClient.rm(path)
     override def mkdir(path: String) = SSHJSFTPClient.mkdir(path)
     override def exists(path: String) = SSHJSFTPClient.exists(path)
-    override def ls(path: String)(predicate: (String) ⇒ Boolean) = SSHJSFTPClient.ls(path)(predicate)
+    override def ls(path: String)(predicate: String ⇒ Boolean) = SSHJSFTPClient.ls(path)(predicate)
   }
 }

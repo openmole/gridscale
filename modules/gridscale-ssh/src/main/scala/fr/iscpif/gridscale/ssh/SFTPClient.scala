@@ -26,7 +26,7 @@ trait SFTPClient {
   def ls(path: String)(predicate: String ⇒ Boolean): List[ListEntry]
 
   def chmod(path: String, perms: Int)
-  def close
+  def close()
   def canonicalize(path: String): String
   def exists(path: String): Boolean
   def mkdir(path: String)
