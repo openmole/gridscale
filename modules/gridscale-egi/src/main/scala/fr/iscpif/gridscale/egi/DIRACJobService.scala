@@ -23,6 +23,7 @@ import fr.iscpif.gridscale.cache.SingleValueAsynchronousCache
 import fr.iscpif.gridscale.http.{ HTTPStorage, HTTPSClient, HTTPSAuthentication }
 import fr.iscpif.gridscale.jobservice._
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+
 import org.apache.http.client.methods._
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.conn.socket.ConnectionSocketFactory
@@ -178,7 +179,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val get = new HttpGet(uri)
 
     requestContent(get) { str ⇒
-      val is = new TarArchiveInputStream(new BufferedInputStream(str))
+      val is = new TarArchiveInputStream(str)
 
       Iterator.continually(is.getNextEntry).takeWhile(_ != null).
         filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {

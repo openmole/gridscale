@@ -50,8 +50,8 @@ trait DIRACJobDescription extends JobDescription {
     val fields = Seq(
       "Executable" -> JsString(executable),
       "Arguments" -> JsString(arguments)) ++
-      stdOut.map(s ⇒ "StdOut" -> JsString(s)) ++
-      stdErr.map(s ⇒ "StdErr" -> JsString(s)) ++
+      stdOut.map(s ⇒ "StdOutput" -> JsString(s)) ++
+      stdErr.map(s ⇒ "StdError" -> JsString(s)) ++
       (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++ (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
     cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toSeconds.toString)) ++
       (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None)

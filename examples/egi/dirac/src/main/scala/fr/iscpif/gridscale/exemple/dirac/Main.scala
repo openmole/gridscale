@@ -19,6 +19,7 @@ package fr.iscpif.gridscale.exemple.dirac
 
 import java.io.File
 
+import com.sun.java.util.jar.pack.Package
 import fr.iscpif.gridscale._
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi._
@@ -38,12 +39,15 @@ object Main extends App {
   val jobDesc = new DIRACJobDescription {
     def executable = "/bin/echo"
     def arguments = "hello"
+    override def outputSandbox: Seq[(String, File)] = Seq(("out" -> new File("/tmp/diractout.txt")), ("err" -> new File("/tmp/diracterr.txt")))
+    override def stdOut: Option[String] = Some("out")
+    override def stdErr: Option[String] = Some("err")
   }
-
-  println(js.token)
 
   val j = js.submit(jobDesc)
 
   js.untilFinished(j, sleepTime = 0 second) { println }
+
+  js.downloadOutputSandbox(jobDesc, j)
 
 }
