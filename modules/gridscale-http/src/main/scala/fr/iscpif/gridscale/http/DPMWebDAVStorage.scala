@@ -72,51 +72,27 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     val entity = new InputStreamEntity(countIS, -1)
     put.setEntity(entity)
     put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-    val returnCode = execute(httpClient.execute, put)
+    val returnCode = HTTPStorage.execute(httpClient.execute, put)
     val writtenSize = listProp(path).head.getContentLength
     if(writtenSize != countIS.size.toLong) throw new IOException(s"Size of the written file is $writtenSize and does'nt match ${countIS.size} (return code of the request was $returnCode)")
   }
 
-  override def _read(path: String): InputStream = {
-    val httpClient = newClient
-    val get = new HttpGet(fullUrl(path))
-    get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-    val response = httpClient.execute(get)
-
-    testResponse(response) match {
-      case Failure(e) ⇒
-        get.releaseConnection()
-        response.close()
-        throw e
-      case Success(_) ⇒
-    }
-
-    val stream = response.getEntity.getContent
-
-    new InputStream {
-      override def read(): Int = stream.read()
-      override def close() = {
-        get.releaseConnection()
-        response.close()
-        httpClient.close()
-      }
-    }
-  }
+  override def _read(path: String): InputStream = HTTPStorage.toInputStream(new URI(fullUrl(path)), newClient)
 
   override def _makeDir(path: String): Unit = withClient { httpClient =>
     val mkcol = new HttpMkCol(fullUrl(path))
-    execute(httpClient.execute, mkcol)
+    HTTPStorage.execute(httpClient.execute, mkcol)
   }
 
   override def _mv(from: String, to: String): Unit = withClient { httpClient =>
     val move = new HttpMove(fullUrl(from), fullUrl(to), true)
-    execute(httpClient.execute, move)
+    HTTPStorage.execute(httpClient.execute, move)
   }
 
   override def _rmDir(path: String): Unit =  withClient { httpClient =>
     val delete = new HttpDelete(fullUrl(path))
     delete.addHeader("Depth", "infinity")
-    execute(httpClient.execute, delete)
+    HTTPStorage.execute(httpClient.execute, delete)
   }
 
   def listProp(path: String)=   withClient { httpClient =>
@@ -129,7 +105,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
       } finally entity.releaseConnection
    }
 
-
   override def _list(path: String): Seq[ListEntry] = {
     for { r ← listProp(path).drop(1) } yield {
       ListEntry(
@@ -140,26 +115,9 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     }
   }
 
-  def isResponseOk(response: HttpResponse) =
-    response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
-      response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
-
-  def execute(execute: HttpRequestBase => CloseableHttpResponse, request: HttpRequestBase) =
-    try {
-      val r = execute(request)
-      val returnCode = r.getStatusLine.getStatusCode
-      try testResponse(r).get
-      finally r.close
-      returnCode
-    } finally request.releaseConnection()
-
-  def testResponse(response: HttpResponse) = Try {
-    if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
-  }
-
   override def _rmFile(path: String): Unit =  withClient { httpClient =>
     val delete = new HttpDelete(fullUrl(path))
-    execute(httpClient.execute, delete)
+    HTTPStorage.execute(httpClient.execute, delete)
   }
 
   override def _exists(path: String): Boolean =  withClient { httpClient =>

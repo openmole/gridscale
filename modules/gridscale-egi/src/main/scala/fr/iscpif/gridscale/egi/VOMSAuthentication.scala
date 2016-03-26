@@ -78,7 +78,7 @@ trait VOMSAuthentication {
 
   def generateProxy =
     try {
-      val gt4Proxy = proxy(VOMSProxyBuilder.GT4_PROXY)
+      val GlobusProxies(gt2Proxy, gt4Proxy) = proxy()
 
       val os = new ByteArrayOutputStream()
       VOMSProxyBuilder.saveProxy(gt4Proxy, os)
@@ -87,24 +87,17 @@ trait VOMSAuthentication {
         new GlobusGSSCredentialImpl(gt4Proxy, GSSCredential.INITIATE_AND_ACCEPT),
         os.toByteArray,
         delegationID.toString,
-        new GlobusGSSCredentialImpl(proxy(VOMSProxyBuilder.GT2_PROXY), GSSCredential.INITIATE_AND_ACCEPT))
+        new GlobusGSSCredentialImpl(gt2Proxy, GSSCredential.INITIATE_AND_ACCEPT))
     } catch {
       case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
     }
 
-  /*def generate(file: File) = {
-    val os = new FileOutputStream(file)
-    val p =
-      try VOMSProxyBuilder.saveProxy(proxy(VOMSProxyBuilder.GT4_PROXY), os)
-      finally os.close
-  }*/
+  def proxy(): GlobusProxies =
+    VOMSAuthentication.findWorking(serverURLs, s ⇒ proxy(s))
 
-  //def proxyInit(): VOMSProxyInit
+  case class GlobusProxies(gt2: X509Credential, gt4: X509Credential)
 
-  def proxy(proxyType: CertificateType): X509Credential =
-    VOMSAuthentication.findWorking(serverURLs, s ⇒ proxy(s, proxyType))
-
-  def proxy(serverURL: String, proxyType: CertificateType): X509Credential
+  def proxy(serverURL: String): GlobusProxies
 
   /*def proxy(serverURL: String, proxyType: CertificateType): X509Credential = synchronized {
     val uri = new URI(serverURL.replaceAll(" ", "%20"))
@@ -133,4 +126,5 @@ trait VOMSAuthentication {
 
     proxy.getVomsProxy(server, requestOption)
   }*/
+
 }

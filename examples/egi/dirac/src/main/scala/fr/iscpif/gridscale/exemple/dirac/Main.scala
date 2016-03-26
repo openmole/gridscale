@@ -19,6 +19,7 @@ package fr.iscpif.gridscale.exemple.dirac
 
 import java.io.File
 
+import com.sun.java.util.jar.pack.Package
 import fr.iscpif.gridscale._
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi._
@@ -27,19 +28,26 @@ import scala.concurrent.duration._
 
 object Main extends App {
 
-  val p12 = P12Authentication(new File("/path/to/certificate.p12"), "password")
+  val certificate = new File("/home/reuillon/.globus/certificate.p12")
+  val password = "password"
+
+  val p12 = P12Authentication(certificate, password)
+  val js = DIRACJobService("vo.complex-systems.eu")(p12)
+
+  js.delegate(certificate, password)
 
   val jobDesc = new DIRACJobDescription {
     def executable = "/bin/echo"
     def arguments = "hello"
+    override def outputSandbox: Seq[(String, File)] = Seq(("out" -> new File("/tmp/diractout.txt")), ("err" -> new File("/tmp/diracterr.txt")))
+    override def stdOut: Option[String] = Some("out")
+    override def stdErr: Option[String] = Some("err")
   }
-
-  val js = DIRACJobService(group = "complex_user", service = "https://ccdiracli06.in2p3.fr:9178")(p12)
-
-  println(js.token)
 
   val j = js.submit(jobDesc)
 
   js.untilFinished(j, sleepTime = 0 second) { println }
+
+  js.downloadOutputSandbox(jobDesc, j)
 
 }

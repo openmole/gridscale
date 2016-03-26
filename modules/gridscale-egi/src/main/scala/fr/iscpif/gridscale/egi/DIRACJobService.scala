@@ -16,13 +16,14 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.{ BufferedInputStream, BufferedOutputStream, FileOutputStream, InputStream }
+import java.io._
 import java.net.{ URI, URL }
 
 import fr.iscpif.gridscale.cache.SingleValueAsynchronousCache
-import fr.iscpif.gridscale.http.{ HTTPSClient, HTTPSAuthentication }
+import fr.iscpif.gridscale.http.{ HTTPStorage, HTTPSClient, HTTPSAuthentication }
 import fr.iscpif.gridscale.jobservice._
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+
 import org.apache.http.client.methods._
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.conn.socket.ConnectionSocketFactory
@@ -38,16 +39,30 @@ import scala.sys.process.BasicIO
 object DIRACJobService {
 
   def apply[A: HTTPSAuthentication](
-    service: String,
-    group: String,
+    vo: String,
+    service: Option[Service] = None,
     timeout: Duration = 1 minutes)(authentication: A) = {
-    val (_service, _group, _timeout) = (service, group, timeout)
+    val s = service.getOrElse(getService(vo, timeout))
+
+    val (_timeout) = (timeout)
     new DIRACJobService {
       override val timeout = _timeout
-      override val group: String = _group
+      override val group: String = s.group
       override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
-      override val service: String = _service
+      override val service: String = s.service
     }
+  }
+
+  case class Service(service: String, group: String)
+
+  def getService(vo: String, timeout: Duration = 1 minute) = {
+    val uri: URI = new URI("http://dirac.france-grilles.fr/defaults/DiracServices.json")
+    val is = HTTPStorage.toInputStream(uri, HTTPStorage.newClient(timeout))
+    try {
+      val page = Source.fromInputStream(is).mkString
+      val parsed = page.parseJson.asJsObject.fields.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory")).asJsObject.fields
+      Service("https://" + parsed("RESTServer").convertTo[String], parsed("DIRACDefaultGroup").convertTo[String])
+    } finally is.close
   }
 
 }
@@ -67,6 +82,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def setup = "Dirac-Production"
   def auth2Auth = service + "/oauth2/token"
   def jobs = service + "/jobs"
+  def delegation = service + s"/proxy/unknown/$group"
 
   def tokenExpirationMargin = 10 -> MINUTES
 
@@ -75,6 +91,21 @@ trait DIRACJobService extends JobService with HTTPSClient {
       def compute() = token
       def expiresIn(t: Token) = (t.expires_in, SECONDS) - tokenExpirationMargin
     }
+
+  def delegate(p12: File, password: String) = {
+    val files = MultipartEntityBuilder.create()
+    files.addBinaryBody("p12", p12)
+    files.addTextBody("Password", password)
+    files.addTextBody("access_token", tokenCache().token)
+
+    val uri = new URIBuilder(delegation)
+      .build
+
+    val post = new HttpPost(uri)
+    post.setEntity(files.build())
+
+    request(post) { identity }
+  }
 
   def token = {
     val uri = new URIBuilder(auth2Auth)
@@ -94,16 +125,15 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def submit(jobDescription: D): String = {
     def files = {
       val builder = MultipartEntityBuilder.create()
-      jobDescription.inputSandbox.zipWithIndex.foreach {
-        case (f, i) ⇒ builder.addBinaryBody(f.getName, f)
+      jobDescription.inputSandbox.foreach {
+        f ⇒ builder.addBinaryBody(f.getName, f)
       }
+      builder.addTextBody("access_token", tokenCache().token)
+      builder.addTextBody("manifest", jobDescription.toJSON)
       builder.build
     }
 
-    val uri = new URIBuilder(jobs)
-      .setParameter("access_token", tokenCache().token)
-      .setParameter("manifest", jobDescription.toJSON)
-      .build
+    val uri = new URI(jobs)
 
     val post = new HttpPost(uri)
     post.setEntity(files)
@@ -149,7 +179,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val get = new HttpGet(uri)
 
     requestContent(get) { str ⇒
-      val is = new TarArchiveInputStream(new BufferedInputStream(str))
+      val is = new TarArchiveInputStream(str)
 
       Iterator.continually(is.getNextEntry).takeWhile(_ != null).
         filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {
@@ -181,8 +211,9 @@ trait DIRACJobService extends JobService with HTTPSClient {
   }
 
   def requestContent[T](request: HttpRequestBase with HttpRequest)(f: InputStream ⇒ T): T = withClient { httpClient ⇒
-    request.setConfig(requestConfig)
+    request.setConfig(HTTPStorage.requestConfig(timeout))
     val response = httpClient.execute(httpHost, request)
+    HTTPStorage.testResponse(response).get
     val is = response.getEntity.getContent
     try f(is)
     finally is.close

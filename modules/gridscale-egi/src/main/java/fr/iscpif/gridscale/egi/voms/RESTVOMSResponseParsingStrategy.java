@@ -41,25 +41,19 @@ public class RESTVOMSResponseParsingStrategy {
     factory.setValidating(false);
 
     try {
-
       docBuilder = factory.newDocumentBuilder();
-
     } catch (ParserConfigurationException e) {
-
       throw new VOMSError(e.getMessage(), e);
     }
 
   }
 
   public RESTVOMSResponse parse(InputStream inputStream) {
-
     try {
       Document document = docBuilder.parse(inputStream);
       return new RESTVOMSResponse(document);
     } catch (Exception e) {
-
       throw new VOMSError(e.getMessage());
-
     }
   }
 

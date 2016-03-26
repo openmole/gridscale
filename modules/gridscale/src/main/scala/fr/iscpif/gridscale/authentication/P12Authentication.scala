@@ -17,7 +17,8 @@
 
 package fr.iscpif.gridscale.authentication
 
-import java.io.File
+import java.io.{ IOException, FileInputStream, File }
+import java.security.KeyStore
 
 object P12Authentication {
 
@@ -28,6 +29,17 @@ object P12Authentication {
       override val certificate: File = _certificate
       override val password: String = _password
     }
+  }
+
+  def loadKeyStore(a: P12Authentication) = {
+    val ks = KeyStore.getInstance("pkcs12")
+
+    val in = new FileInputStream(a.certificate)
+    try ks.load(in, a.password.toCharArray)
+    catch {
+      case e: IOException ⇒ throw new AuthenticationException(s"A wrong password has been provided for certificate ${a.certificate}", e)
+    } finally in.close
+    ks
   }
 
 }

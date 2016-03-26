@@ -46,7 +46,6 @@ public class RESTVOMSResponse {
   protected Document xmlResponse;
 
   public RESTVOMSResponse(Document res) {
-
     xmlResponse = res;
   }
 
@@ -74,7 +73,6 @@ public class RESTVOMSResponse {
    * @see org.glite.voms.contact.VOMSResponseIF#hasErrors()
    */
   public boolean hasErrors() {
-
     return (xmlResponse.getElementsByTagName("error").getLength() != 0);
   }
 
@@ -84,7 +82,6 @@ public class RESTVOMSResponse {
    * @see org.glite.voms.contact.VOMSResponseIF#hasWarnings()
    */
   public boolean hasWarnings() {
-
     return (xmlResponse.getElementsByTagName("warning").getLength() != 0);
   }
 
@@ -94,51 +91,43 @@ public class RESTVOMSResponse {
    * @see org.glite.voms.contact.VOMSResponseIF#getAC()
    */
   public byte[] getBytes() {
+    Element acElement = (Element) xmlResponse.getElementsByTagName("ac").item(0);
 
-    Element acElement = (Element) xmlResponse.getElementsByTagName("ac")
-      .item(0);
-
-    if (acElement == null || !acElement.hasChildNodes())
-      return null;
+    if (acElement == null || !acElement.hasChildNodes()) return null;
 
     String acString = acElement.getFirstChild().getNodeValue();
 
     GoodACDecodingStrategy acDecodingStrategy = new GoodACDecodingStrategy();
-
     byte[] decodedAc = acDecodingStrategy.decode(acString);
-
     return decodedAc;
   }
 
-  public AttributeCertificate getAC() {
+  public AttributeCertificate getAC() throws Exception{
     byte[] acBytes = getBytes();
 
     if (acBytes == null) return null;
 
     ASN1InputStream asn1InputStream = new ASN1InputStream(acBytes);
-
-    AttributeCertificate attributeCertificate = null;
-
-    try {
-      attributeCertificate = AttributeCertificate.getInstance(asn1InputStream.readObject());
-
-      asn1InputStream.close();
-      return attributeCertificate;
-    } catch (Throwable e) {
-      return null;
-    }
+    AttributeCertificate attributeCertificate = AttributeCertificate.getInstance(asn1InputStream.readObject());
+    asn1InputStream.close();
+    return attributeCertificate;
   }
 
   public X509Credential getCredential(UserCredentials userCredentials, GSIConstants.CertificateType proxyType) throws Exception {
     //new ByteArrayInputStream(getBytes());
     //AttributeCertificate ac = getAC();
 
-    org.glite.voms.ac.AttributeCertificate vac = org.glite.voms.ac.AttributeCertificate.getInstance(new ByteArrayInputStream(getBytes()));
+    AttributeCertificate vac = getAC(); //org.glite.voms.ac.AttributeCertificate.getInstance(new ByteArrayInputStream(getBytes()));
     List ACs = new ArrayList();
     ACs.add(vac);
+    //ACs.add(VOMSProxyBuilder.buildAC(getBytes()));
+
 
     //long proxyLifetime =
      //       ac.getAcinfo().getAttrCertValidityPeriod().getNotAfterTime().getDate().getTime() - ac.getAcinfo().getAttrCertValidityPeriod().getNotBeforeTime().getDate().getTime()
+
+   // System.out.println(vac.getAcinfo().);
+    //System.out.println(vac.);
 
     return VOMSProxyBuilder.buildProxy(
             userCredentials,

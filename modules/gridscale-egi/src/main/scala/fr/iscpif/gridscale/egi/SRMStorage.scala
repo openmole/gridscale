@@ -193,7 +193,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   override def _read(path: String) = {
     val (token, url) = prepareToGet(path)
 
-    new GridFTPInputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
+    new GridFTPInputStream(proxy().gt2Credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
       override def close = {
         try freeInputStream(token, path)
         finally super.close
@@ -203,7 +203,7 @@ trait SRMStorage <: Storage with RecursiveRmDir {
 
   override def _write(is: InputStream, path: String) = {
     val (token, url) = prepareToPut(path)
-    val os = new GridFTPOutputStream(proxy().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false)
+    val os = new GridFTPOutputStream(proxy().gt2Credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false)
     try copyStream(is, os)
     finally  freeOutputStream(token, path)
   }
@@ -320,7 +320,10 @@ trait SRMStorage <: Storage with RecursiveRmDir {
   private def throwError[R <: RequestStatus](r: R) =
     throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.returnStatus.statusCode + " " + r.returnStatus.explanation.getOrElse(None).getOrElse(""))
 
-  def fullEndPoint(absolutePath: String) = fullEndpoint(host, port, basePath + absolutePath)
+  def fullEndPoint(absolutePath: String) = {
+    def path = if(basePath.endsWith("/"))basePath + absolutePath else basePath + "/" + absolutePath
+    fullEndpoint(host, port, path)
+  }
 
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler).toURI
   @transient lazy val stub = SRMService(serviceUrl, proxy, timeout, connections)

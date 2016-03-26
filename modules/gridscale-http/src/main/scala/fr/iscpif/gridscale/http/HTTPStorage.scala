@@ -17,27 +17,99 @@
 
 package fr.iscpif.gridscale.http
 
-import java.io.{ File, InputStream, OutputStream }
+import java.io.{ IOException, File, InputStream, OutputStream }
 import java.net.{ HttpURLConnection, URI }
 
+import com.github.sardine.impl.methods.HttpPropFind
 import fr.iscpif.gridscale._
 import fr.iscpif.gridscale.storage._
 import fr.iscpif.gridscale.tools.{ _ }
+import org.apache.http._
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.client.methods._
+import org.apache.http.config.SocketConfig
+import org.apache.http.impl.client._
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager
+import org.apache.http.protocol._
 import org.htmlparser.Parser
 import org.htmlparser.filters.NodeClassFilter
 import org.htmlparser.tags.LinkTag
 
 import scala.concurrent.duration._
+import scala.util.{ Success, Failure, Try }
 
 object HTTPStorage {
+
+  def redirectStrategy = new LaxRedirectStrategy {
+    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
+      assert(response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST, "Error while redirecting request")
+      super.getRedirect(request, response, context)
+    }
+
+    override protected def isRedirectable(method: String) =
+      method match {
+        case HttpPropFind.METHOD_NAME ⇒ true
+        case HttpPut.METHOD_NAME      ⇒ true
+        case _                        ⇒ super.isRedirectable(method)
+      }
+  }
+
+  def connectionManager(timeout: Duration) = {
+    val client = new BasicHttpClientConnectionManager()
+    val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
+    client.setSocketConfig(socketConfig)
+    client
+  }
+
+  def requestConfig(timeout: Duration) =
+    RequestConfig.custom()
+      .setSocketTimeout(timeout.toMillis.toInt)
+      .setConnectTimeout(timeout.toMillis.toInt)
+      .setConnectionRequestTimeout(timeout.toMillis.toInt)
+      .build()
+
+  def newClient(timeout: Duration) =
+    HttpClients.custom().
+      setRedirectStrategy(redirectStrategy).
+      setConnectionManager(connectionManager(timeout)).
+      setDefaultRequestConfig(requestConfig(timeout)).build()
 
   def withConnection[T](uri: URI, timeout: Duration)(f: HttpURLConnection ⇒ T): T = {
     val relativeURL = uri.toURL
     val cnx = relativeURL.openConnection.asInstanceOf[HttpURLConnection]
     cnx.setConnectTimeout(timeout.toMillis.toInt)
     cnx.setReadTimeout(timeout.toMillis.toInt)
-    if (cnx.getHeaderField(null) == null) throw new RuntimeException("Failed to connect to url: " + relativeURL)
+    if (cnx.getHeaderField(null) == null) throw new RuntimeException("Failed to connect to url: " + relativeURL + " response code was " + cnx.getResponseCode)
     else f(cnx)
+  }
+
+  def isResponseOk(response: HttpResponse) =
+    response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
+      response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
+
+  def toInputStream(uri: URI, httpClient: CloseableHttpClient): InputStream = {
+    val get = new HttpGet(uri)
+    get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
+    val response = httpClient.execute(get)
+
+    HTTPStorage.testResponse(response) match {
+      case Failure(e) ⇒
+        get.releaseConnection()
+        response.close()
+        throw e
+      case Success(_) ⇒
+    }
+
+    val stream = response.getEntity.getContent
+
+    new InputStream {
+      override def read(): Int = stream.read()
+      override def close() = {
+        get.releaseConnection()
+        response.close()
+        httpClient.close()
+      }
+    }
   }
 
   def apply(url: String, timeout: Duration = 1 minute) = {
@@ -46,6 +118,19 @@ object HTTPStorage {
       override val url: String = _url
       override val timeout = _timeout
     }
+  }
+
+  def execute(execute: HttpRequestBase ⇒ CloseableHttpResponse, request: HttpRequestBase) =
+    try {
+      val r = execute(request)
+      val returnCode = r.getStatusLine.getStatusCode
+      try testResponse(r).get
+      finally r.close
+      returnCode
+    } finally request.releaseConnection()
+
+  def testResponse(response: HttpResponse) = Try {
+    if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
   }
 
   def parseHTMLListing(page: String) = {
@@ -97,14 +182,10 @@ trait HTTPStorage extends Storage {
   def _mv(from: String, to: String) =
     throw new RuntimeException("Operation not supported for http protocol")
 
-  def _read(path: String): InputStream = withConnection(path) {
-    _.getInputStream
-  }
+  def _read(path: String): InputStream =
+    HTTPStorage.toInputStream(new URI(url + "/" + path), HTTPStorage.newClient(timeout))
 
   def _write(is: InputStream, path: String) =
     throw new RuntimeException("Operation not supported for http protocol")
-
-  private def withConnection[T](path: String)(f: HttpURLConnection ⇒ T): T =
-    HTTPStorage.withConnection[T](new URI(url + "/" + path), timeout)(f)
 
 }

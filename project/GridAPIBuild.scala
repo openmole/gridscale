@@ -14,8 +14,8 @@ object GridAPIBuild extends Build with Libraries with Modules with Examples with
 trait Settings <: Build {
 
   override def settings = super.settings ++ Seq (
-    scalaVersion := "2.11.7",
-    crossScalaVersions := Seq("2.10.5", "2.11.7"),
+    scalaVersion := "2.11.8",
+    crossScalaVersions := Seq("2.11.8"),
     javacOptions in (Compile, compile) ++= Seq("-source", "1.7", "-target", "1.7"),
     scalacOptions += "-target:jvm-1.7"
   )
@@ -75,6 +75,7 @@ trait Examples <: Modules with Settings{
   lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSGE)
   lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSSH)
   lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleOAR)
+  lazy val httpExample  = Project(id = "httpexample", base = file("examples/http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleHTTP)
 
   mainClass in SbtOneJar.oneJar := Some("fr.iscpif.gridscale.examples.Main")
 }
@@ -153,7 +154,7 @@ trait Modules <: Libraries with Settings {
   lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
-    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1"
+    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10"
     )
 
   lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (

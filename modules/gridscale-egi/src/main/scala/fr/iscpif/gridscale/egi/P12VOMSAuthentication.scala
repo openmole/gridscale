@@ -16,12 +16,12 @@
  */
 package fr.iscpif.gridscale.egi
 
-import java.io.File
-import java.net.URI
+import java.io.{ ByteArrayInputStream, File }
+import java.net.{ MalformedURLException, URI }
 
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi.voms.VOMSRestAPI
-import org.glite.voms.contact.{ UserCredentials, VOMSProxyInit }
+import org.glite.voms.contact._
 import org.globus.gsi.GSIConstants.CertificateType
 
 import scala.concurrent.duration.Duration
@@ -53,12 +53,17 @@ object P12VOMSAuthentication {
 }
 
 trait P12VOMSAuthentication extends VOMSAuthentication {
+
   def p12Authentication: P12Authentication
-  def proxy(serverURL: String, proxyType: CertificateType) = {
+
+  def proxy(serverURL: String) = {
     import fr.iscpif.gridscale.egi._
     def userCredential = UserCredentials.instance(p12Authentication.certificate, p12Authentication.password)
     val url = new URI(serverURL)
     val credential = VOMSRestAPI.query(url.getHost, url.getPort, lifetime = Some(this.lifeTime.toSeconds.toInt))(p12Authentication)
-    credential.getCredential(userCredential, proxyType)
+    val gt2Proxy = credential.getCredential(userCredential, VOMSProxyBuilder.GT2_PROXY)
+    val gt4Proxy = credential.getCredential(userCredential, CertificateType.GSI_4_LIMITED_PROXY)
+    GlobusProxies(gt2Proxy, gt4Proxy)
   }
+
 }

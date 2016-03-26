@@ -17,10 +17,10 @@
 package fr.iscpif.gridscale.http
 
 import com.github.sardine.impl.SardineRedirectStrategy
+import com.github.sardine.impl.methods.HttpPropFind
 import org.apache.http.client.methods.{ RequestBuilder, HttpPut, HttpUriRequest }
-import org.apache.http.params.CoreConnectionPNames
 import org.apache.http.protocol.HttpContext
-import org.apache.http.{ HttpEntityEnclosingRequest, HttpResponse, HttpRequest }
+import org.apache.http.{ HttpStatus, HttpEntityEnclosingRequest, HttpResponse, HttpRequest }
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.config.{ SocketConfig, RegistryBuilder }
@@ -30,21 +30,6 @@ import org.apache.http.impl.client._
 import org.apache.http.impl.conn.{ BasicHttpClientConnectionManager, PoolingHttpClientConnectionManager }
 import org.apache.http.client._
 import scala.concurrent.duration._
-
-object HTTPSClient {
-  def redirectStrategy = new SardineRedirectStrategy {
-    override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
-      val method = request.getRequestLine().getMethod()
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) {
-        val uri = getLocationURI(request, response, context)
-        RequestBuilder.put(uri).setEntity(request.asInstanceOf[HttpEntityEnclosingRequest].getEntity).build()
-      } else super.getRedirect(request, response, context)
-    }
-    override protected def isRedirectable(method: String) =
-      if (method.equalsIgnoreCase(HttpPut.METHOD_NAME)) true
-      else super.isRedirectable(method)
-  }
-}
 
 trait HTTPSClient {
 
@@ -59,19 +44,11 @@ trait HTTPSClient {
     client
   }
 
-  def requestConfig = {
-    RequestConfig.custom()
-      .setSocketTimeout(timeout.toMillis.toInt)
-      .setConnectTimeout(timeout.toMillis.toInt)
-      .setConnectionRequestTimeout(timeout.toMillis.toInt)
-      .build()
-  }
-
   def newClient =
     HttpClients.custom().
-      setRedirectStrategy(HTTPSClient.redirectStrategy).
+      setRedirectStrategy(HTTPStorage.redirectStrategy).
       setConnectionManager(connectionManager).
-      setDefaultRequestConfig(requestConfig).build()
+      setDefaultRequestConfig(HTTPStorage.requestConfig(timeout)).build()
 
   def withClient[T](f: CloseableHttpClient ⇒ T): T = {
     val httpClient = newClient

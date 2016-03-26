@@ -16,30 +16,26 @@
  */
 package fr.iscpif.gridscale.egi.https
 
-import java.io.{ IOException, FileInputStream }
+import java.io.{ File, IOException, FileInputStream }
 import java.security.KeyStore
 import javax.net.ssl._
 
 import fr.iscpif.gridscale.authentication.{ AuthenticationException, P12Authentication }
 
-trait P12HTTPSAuthentication {
+object P12HTTPSAuthentication {
 
-  def authentication: P12Authentication
-
-  @transient lazy val sslContext = {
+  def sslContext(a: P12Authentication): SSLContext = {
     val sslContext = javax.net.ssl.SSLContext.getInstance("TLS")
-    val ks = KeyStore.getInstance("pkcs12")
-
-    val in = new FileInputStream(authentication.certificate)
-    try ks.load(in, authentication.password.toCharArray)
-    catch {
-      case e: IOException ⇒ throw new AuthenticationException(s"A wrong password has been provided for ${authentication.certificate}", e)
-    } finally in.close
-
+    val ks = P12Authentication.loadKeyStore(a)
     val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-    kmf.init(ks, authentication.password.toCharArray)
+    kmf.init(ks, a.password.toCharArray)
     sslContext.init(kmf.getKeyManagers, trustManager, null)
     sslContext
   }
 
+}
+
+trait P12HTTPSAuthentication {
+  def authentication: P12Authentication
+  @transient lazy val sslContext = P12HTTPSAuthentication.sslContext(authentication)
 }
