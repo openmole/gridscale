@@ -90,7 +90,6 @@ trait Benchmarks <: Modules with Settings {
   lazy val slurmBenchmark = Project(id = "slurmbenchmark", base = file("benchmark/slurm"), settings = benchmarkBundleSettings) dependsOn (gridscaleSLURM, utilBenchmark)
   lazy val wmsBenchmark   = Project(id = "wmsbenchmark", base = file("benchmark/egi/wms"), settings = benchmarkBundleSettings) dependsOn (gridscaleEGI, utilBenchmark)
 
-  lazy val mainBenchmark = Project(id = "mainbenchmark", base = file("benchmark/app"), settings = benchmarkBundleSettings) dependsOn (slurmBenchmark, wmsBenchmark)
   mainClass in SbtOneJar.oneJar := Some("fr.iscpif.gridscale.benchmark.Main")
 }
 
