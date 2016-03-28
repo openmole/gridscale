@@ -27,7 +27,7 @@ trait BenchmarkUtils {
       val before = System.nanoTime()
       val res = f
       val after = System.nanoTime()
-      val elapsed = (after - before)
+      val elapsed = after - before
       Some((res, elapsed / 1000000d))
     } catch {
       case _: Throwable ⇒ None
@@ -42,10 +42,11 @@ trait BenchmarkConfig {
   def workDirectory = "/homes/jpassera/benchmark"
 }
 
-trait Benchmark extends BenchmarkConfig with BenchmarkUtils {
-  this: JobService ⇒
+trait Benchmark extends BenchmarkUtils {
 
-  type JobDescription = this.D
+  implicit val jobService: JobService
+
+  type JobDescription = jobService.D
 
   val jobDescription: JobDescription
   val nbJobs: Int
@@ -55,25 +56,25 @@ trait Benchmark extends BenchmarkConfig with BenchmarkUtils {
 
     println("Submitting jobs...")
     val (jobs, submitTime) = withTimer {
-      (1 to nbJobs).map(x ⇒ this.submit(jobDescription))
+      (1 to nbJobs).map(x ⇒ jobService.submit(jobDescription))
     }.getOrElse(Seq.empty, missingValue)
 
-    println(s"Submitted ${nbJobs} jobs in ${submitTime}")
+    println(s"Submitted $nbJobs jobs in $submitTime")
 
     println("Querying state for jobs...")
     val (states, queryTime) = withTimer {
-      jobs.map(this.state)
+      jobs.map(jobService.state)
     }.getOrElse(Seq.empty, missingValue)
 
-    println(s"Queried state for ${states.length} jobs in ${queryTime}")
+    println(s"Queried state for $states.length jobs in $queryTime")
 
     println("Cancelling jobs...")
-    val (_, cancelTime) = withTimer(jobs.map(this.cancel)).getOrElse(Seq.empty, missingValue)
-    println(s"Cancelled ${nbJobs} jobs in ${cancelTime}")
+    val (_, cancelTime) = withTimer(jobs.foreach(jobService.cancel)).getOrElse(Seq.empty, missingValue)
+    println(s"Cancelled $nbJobs jobs in $cancelTime")
 
     println("Purging jobs...")
     // only purging one job, they're all the same
-    try this.purge(jobs.head)
+    try jobService.purge(jobs.head)
     catch { case _: Throwable ⇒ }
 
     println("Done")
