@@ -19,7 +19,19 @@ package fr.iscpif.gridscale.authentication
 
 import java.io.File
 
-trait PrivateKey {
+object PrivateKey {
+  def apply(user: String, privateKey: File, password: String) = {
+    val (_user, _privateKey, _password) = (user, privateKey, password)
+
+    new PrivateKey {
+      override val privateKey: File = _privateKey
+      override val user: String = _user
+      override val password: String = _password
+    }
+  }
+}
+
+trait PrivateKey <: User {
   def privateKey: File
   def password: String
   def user: String

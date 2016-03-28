@@ -18,20 +18,18 @@ limitations under the License.
 
 package org.glite.security.trustmanager;
 
-import java.io.IOException;
-import java.security.NoSuchProviderException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.text.ParseException;
-import java.util.logging.Level;
-
-import javax.net.ssl.X509TrustManager;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.crypto.digests.MD5Digest;
 import org.glite.security.util.CaseInsensitiveProperties;
+
+import javax.net.ssl.X509TrustManager;
+import java.io.IOException;
+import java.security.NoSuchProviderException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.text.ParseException;
 
 /**
  * @author Joni Hahkala

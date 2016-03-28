@@ -17,51 +17,63 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.net.URI
-import java.net.URISyntaxException
-import java.util.TreeMap
-import java.util.logging.Level
-import java.util.logging.Logger
+import java.net.{ URI, URISyntaxException }
+import java.util.logging.{ Level, Logger }
 import javax.naming.NamingException
-import collection.mutable
-import collection.JavaConversions._
-import scala.concurrent.duration.Duration
+
+import fr.iscpif.gridscale.http.WebDAVLocation
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable
+import scala.concurrent.duration._
 import scala.util._
 
-class BDII(location: String) {
+object BDII {
+  def apply(host: String, port: Int, timeout: Duration = 1 minute) = new BDII(host, port, timeout)
+}
+
+class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
 
   val srmServiceType = "SRM"
   val wmsServiceType = "org.glite.wms.WMProxy"
   val creamCEServiceType = "org.glite.ce.CREAM"
 
-  case class SRMLocation(host: String, port: Int, basePath: String) { self ⇒
-    def toSRM(implicit auth: SRMStorage#A) =
-      new SRMStorage {
-        val host = self.host
-        val port = self.port
-        val basePath = self.basePath
-        val credential = auth
-      }
+  def queryWebDAVLocations(vo: String) = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
+    def searchPhrase = "(GLUE2EndpointInterfaceName=webdav)"
+
+    val services =
+      for {
+        webdavService ← q.query(searchPhrase, bindDN = "o=glue").toSeq
+        id = webdavService.getAttributes.get("GLUE2EndpointID").get.toString
+        url = webdavService.getAttributes.get("GLUE2EndpointURL").get.toString
+      } yield (id, url)
+
+    for {
+      (id, url) ← services
+      urlObject = new URI(url)
+      host = urlObject.getHost
+      pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
+      path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
+    } yield WebDAVLocation(urlObject.getHost, path, urlObject.getPort)
   }
 
-  def querySRMLocations(vo: String, timeOut: Duration): Seq[SRMLocation] = BDIIQuery.withBDIIQuery(location) { q ⇒
+  def querySRMLocations(vo: String): Seq[SRMLocation] = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
     def searchPhrase = searchService(vo, srmServiceType)
-    val res = q.query(searchPhrase, timeOut)
+    val res = q.query(searchPhrase)
 
     val srms =
       for {
         r ← res
-        attributes = r.getAttributes()
-        if attributes.get("GlueServiceVersion").get().toString.takeWhile(_ != '.').toInt >= 2
+        if r.getAttributes.get("GlueServiceVersion").get().toString.takeWhile(_ != '.').toInt >= 2
       } yield {
-        val serviceEndPoint = attributes.get("GlueServiceEndpoint").get().toString()
+        val serviceEndPoint = r.getAttributes.get("GlueServiceEndpoint").get().toString()
         val httpgURI = new URI(serviceEndPoint)
         val host = httpgURI.getHost
         val port = httpgURI.getPort
 
         Try {
-          val resForPath = q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))", timeOut)
-          val path = resForPath.get(0).getAttributes().get("GlueVOInfoPath").get().toString
+          val resForPath = q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
+          val path = resForPath.get(0).getAttributes.get("GlueVOInfoPath").get().toString
           SRMLocation(host, port, path)
         } match {
           case Success(s) ⇒ Some(s)
@@ -74,21 +86,10 @@ class BDII(location: String) {
     srms.flatten.toSeq
   }
 
-  def querySRMs(vo: String, timeOut: Duration)(implicit auth: SRMStorage#A) =
-    querySRMLocations(vo, timeOut).map(_.toSRM(auth))
-
-  case class WMSLocation(url: URI) { self ⇒
-    def toWMS(auth: WMSJobService#A) =
-      new WMSJobService {
-        val url = self.url
-        val credential = auth
-      }
-  }
-
-  def queryWMSLocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
+  def queryWMSLocations(vo: String) = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
 
     def searchPhrase = searchService(vo, wmsServiceType)
-    val res = q.query(searchPhrase, timeOut)
+    val res = q.query(searchPhrase)
 
     val wmsURIs = new mutable.HashSet[URI]
 
@@ -105,33 +106,28 @@ class BDII(location: String) {
     wmsURIs.toSeq.map { WMSLocation(_) }
   }
 
-  def queryWMS(vo: String, timeOut: Duration)(implicit auth: WMSJobService#A) = queryWMSLocations(vo, timeOut).map(_.toWMS(auth))
-
   case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
 
-  def queryCREAMCELocations(vo: String, timeOut: Duration) = BDIIQuery.withBDIIQuery(location) { q ⇒
-    val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))", timeOut)
+  def queryCREAMCELocations(vo: String) = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
+    val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))")
 
     case class Machine(memory: Int)
     def machineInfo(host: String) = {
-      val info = q.query(s"(GlueChunkKey=GlueClusterUniqueID=$host)", timeOut).get(0)
-      Machine(memory = info.getAttributes().get("GlueHostMainMemoryRAMSize").get().toString.toInt)
+      val info = q.query(s"(GlueChunkKey=GlueClusterUniqueID=$host)").get(0)
+      Machine(memory = info.getAttributes.get("GlueHostMainMemoryRAMSize").get().toString.toInt)
     }
 
     for {
       info ← res
-      attributes = info.getAttributes()
-      maxWallTime = attributes.get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
-      maxCpuTime = attributes.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
-      port = attributes.get("GlueCEInfoGatekeeperPort").get.toString.toInt
-      uniqueId = attributes.get("GlueCEUniqueID").get.toString
-      contact = attributes.get("GlueCEInfoContactString").get.toString
-      status = attributes.get("GlueCEStateStatus").get.toString
-      hostingCluster = attributes.get("GlueCEHostingCluster").get.toString
+      maxWallTime = info.getAttributes.get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
+      maxCpuTime = info.getAttributes.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
+      port = info.getAttributes.get("GlueCEInfoGatekeeperPort").get.toString.toInt
+      uniqueId = info.getAttributes.get("GlueCEUniqueID").get.toString
+      contact = info.getAttributes.get("GlueCEInfoContactString").get.toString
+      status = info.getAttributes.get("GlueCEStateStatus").get.toString
+      hostingCluster = info.getAttributes.get("GlueCEHostingCluster").get.toString
       memory = machineInfo(hostingCluster).memory
     } yield {
-      //println(uniqueId -> attributes.get("GlueCECapability"))
-
       CREAMCELocation(
         hostingCluster = hostingCluster,
         port = port,

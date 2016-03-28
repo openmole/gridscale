@@ -17,8 +17,9 @@
 
 package org.glite.security.delegation.storage;
 
-import java.util.Date;
 import org.glite.security.util.DNHandler;
+
+import java.util.Date;
 
 /**
  * Representation of a delegated proxy entry in storage.

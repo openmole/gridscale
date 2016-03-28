@@ -17,20 +17,19 @@
 
 package org.glite.security.delegation.storage;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import org.apache.log4j.Logger;
+import org.glite.security.delegation.GrDPX509Util;
+import org.glite.security.delegation.GrDProxyDlgeeOptions;
+import org.glite.security.util.DNHandler;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
-
-import org.apache.log4j.Logger;
-import org.glite.security.util.DNHandler;
-import org.glite.security.delegation.GrDPX509Util;
-import org.glite.security.delegation.GrDProxyDlgeeOptions;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 
 /**

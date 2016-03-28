@@ -17,9 +17,10 @@
 
 package fr.iscpif
 
-import fr.iscpif.gridscale.{ cache ⇒ gscache }
-import scala.concurrent.duration._
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.{ cache ⇒ gscache }
+
+import scala.concurrent.duration._
 
 package object gridscale {
 

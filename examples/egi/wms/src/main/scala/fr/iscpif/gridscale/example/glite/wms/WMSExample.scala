@@ -17,27 +17,24 @@
 
 package fr.iscpif.gridscale.example.glite.wms
 
-import fr.iscpif.gridscale.egi._
-import fr.iscpif.gridscale._
-import fr.iscpif.gridscale.jobservice._
 import java.io.File
-import concurrent.duration._
+
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.authentication._
+import fr.iscpif.gridscale.egi._
+import fr.iscpif.gridscale.jobservice._
+
+import scala.concurrent.duration._
 
 object WMSExample extends App {
+  VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
 
-  VOMSAuthentication.setCARepository(new File("/path/to/certificates/dir"))
+  val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "password")
+  val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"), "biomed")
 
-  implicit val auth = new P12VOMSAuthentication {
-    def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
-    def voName = "biomed"
-    def fquan = None
-    def lifeTime = 24 hours
-    def certificate = new File("/path/to/certificate.p12")
-    def password = "password"
-  }.cache(1 hour)
+  val bdii = BDII("topbdii.grif.fr", 2170)
 
-  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-  val wms = bdii.queryWMS("biomed", 2 minutes).head
+  val wms = bdii.queryWMSLocations("biomed").map(l ⇒ WMSJobService(l)(authentication)).head
 
   val jobDesc = new WMSJobDescription {
     def executable = "/bin/echo"
@@ -46,13 +43,10 @@ object WMSExample extends App {
     override def stdError = "error.txt"
     def inputSandbox = List()
     def outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt"))
-    override def fuzzy = true
   }
 
   val j = wms.submit(jobDesc)
-
   val s = wms.untilFinished(j) { println }
-
   if (s == Done) wms.downloadOutputSandbox(jobDesc, j)
   wms.purge(j)
 

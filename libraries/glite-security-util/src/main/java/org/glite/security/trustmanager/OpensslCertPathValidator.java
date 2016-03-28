@@ -17,36 +17,25 @@
 
 package org.glite.security.trustmanager;
 
+import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.x509.X509Name;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.glite.security.util.*;
+import org.glite.security.util.CertificateRevokedException;
+import org.glite.security.util.namespace.DNCheckerImpl;
+import org.glite.security.util.proxy.ProxyCertInfoExtension;
+import org.glite.security.util.proxy.ProxyCertificateInfo;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Security;
-import java.security.cert.CRLException;
-import java.security.cert.CertPathValidatorException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 import java.text.ParseException;
 import java.util.Set;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.bouncycastle.asn1.x509.X509Extensions;
-import org.bouncycastle.asn1.x509.X509Name;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.glite.security.util.CaseInsensitiveProperties;
-import org.glite.security.util.CertificateRevokedException;
-import org.glite.security.util.DN;
-import org.glite.security.util.DNHandler;
-import org.glite.security.util.FullTrustAnchor;
-import org.glite.security.util.TrustStorage;
-import org.glite.security.util.namespace.DNCheckerImpl;
-import org.glite.security.util.proxy.ProxyCertInfoExtension;
-import org.glite.security.util.proxy.ProxyCertificateInfo;
 
 /**
  * OpenSSLCertPathValidator validates certificate paths. A certificate path is an array of certificates where the first

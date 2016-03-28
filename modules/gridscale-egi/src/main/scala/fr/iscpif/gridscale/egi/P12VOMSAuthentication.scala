@@ -16,9 +16,54 @@
  */
 package fr.iscpif.gridscale.egi
 
-import fr.iscpif.gridscale.authentication.P12Authentication
-import org.glite.voms.contact.VOMSProxyInit
+import java.io.{ ByteArrayInputStream, File }
+import java.net.{ MalformedURLException, URI }
 
-trait P12VOMSAuthentication extends VOMSAuthentication with P12Authentication {
-  def proxyInit = VOMSProxyInit.instance(certificate, password)
+import fr.iscpif.gridscale.authentication.P12Authentication
+import fr.iscpif.gridscale.egi.voms.VOMSRestAPI
+import org.glite.voms.contact._
+import org.globus.gsi.GSIConstants.CertificateType
+
+import scala.concurrent.duration.Duration
+
+object P12VOMSAuthentication {
+
+  def apply(
+    p12: P12Authentication,
+    lifeTime: Duration,
+    serverURLs: Seq[String],
+    voName: String,
+    renewRatio: Double = 0.2,
+    fqan: Option[String] = None,
+    proxySize: Int = 1024) = {
+    val (_lifeTime, _serverURLs, _voName, _renewRatio, _fqan, _proxySize) =
+      (lifeTime, serverURLs, voName, renewRatio, fqan, proxySize)
+
+    new P12VOMSAuthentication {
+      override val p12Authentication = p12
+      override val lifeTime: Duration = _lifeTime
+      override val voName: String = _voName
+      override val serverURLs: Seq[String] = _serverURLs
+      override val renewRation: Double = _renewRatio
+      override val fqan = _fqan
+      override val proxySize = _proxySize
+    }
+  }
+
+}
+
+trait P12VOMSAuthentication extends VOMSAuthentication {
+
+  def p12Authentication: P12Authentication
+
+  def proxy(serverURL: String) = {
+    import fr.iscpif.gridscale.egi._
+    def userCredential = UserCredentials.instance(p12Authentication.certificate, p12Authentication.password)
+    val url = new URI(serverURL)
+    val credential = VOMSRestAPI.query(url.getHost, url.getPort, lifetime = Some(this.lifeTime.toSeconds.toInt))(p12Authentication)
+    val gt2Proxy = credential.getCredential(userCredential, VOMSProxyBuilder.GT2_PROXY)
+    val gt4Proxy = credential.getCredential(userCredential, CertificateType.GSI_4_LIMITED_PROXY)
+    GlobusProxies(gt2Proxy, gt4Proxy)
+  }
+
 }

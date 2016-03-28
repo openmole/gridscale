@@ -17,42 +17,6 @@
 
 package org.glite.security.delegation;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-//import java.security.cert.CRLException;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.StringTokenizer;
-import java.util.Vector;
-import java.util.logging.Level;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -64,6 +28,20 @@ import org.glite.security.SecurityContext;
 import org.glite.security.delegation.storage.GrDPStorageFactory;
 import org.glite.security.util.PrivateKeyReader;
 import org.glite.voms.VOMSValidator;
+
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.security.*;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.StringTokenizer;
+import java.util.Vector;
+
+//import java.security.cert.CRLException;
 //import org.glite.voms.PKIStore;
 //import org.glite.voms.ac.ACValidator;
 

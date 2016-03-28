@@ -14,18 +14,13 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 
 /**
  * 
@@ -53,9 +48,9 @@ public class VOMSESFileParser {
 
     private static final String splitSyntax = "\\x22[^\\x22]\\x22";
 
-    private static final List vomsesPaths;
+    //private static final List vomsesPaths;
 
-    static {
+    private List getVomsesPaths() {
 
         String gliteLoc = System.getProperty( "GLITE_LOCATION", null );
         String vomsesLoc = System.getProperty( "VOMSES_LOCATION", null );
@@ -97,7 +92,7 @@ public class VOMSESFileParser {
         if ( gliteVomses.exists() )
             list.add( gliteVomses );
 
-        vomsesPaths = list;
+        return list;
 
     }
 
@@ -210,11 +205,11 @@ public class VOMSESFileParser {
      */
     public VOMSServerMap buildServerMap() throws IOException {
 
-        Iterator i = vomsesPaths.iterator();
+        Iterator i = getVomsesPaths().iterator();
 
         if ( log.isDebugEnabled() ) {
 
-            String locations = StringUtils.join( vomsesPaths.iterator(), "," );
+            String locations = StringUtils.join( getVomsesPaths().iterator(), "," );
             log.debug( "Known vomses files: " + locations );
 
         }

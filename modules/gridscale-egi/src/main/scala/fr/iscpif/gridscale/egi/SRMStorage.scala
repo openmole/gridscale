@@ -17,16 +17,34 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.io.File
+import java.io.{InputStream, File}
 import java.net.URI
-import fr.iscpif.gridscale.tools.DefaultTimeout
 import java.util.concurrent.TimeoutException
-import org.globus.io.streams._
-import fr.iscpif.gridscale.storage._
+
 import fr.iscpif.gridscale.egi.services._
 import fr.iscpif.gridscale.libraries.srmstub._
+import fr.iscpif.gridscale.storage._
+import org.globus.io.streams._
+import fr.iscpif.gridscale.tools._
+
+import scala.concurrent.duration._
+
+case class SRMLocation(host: String, port: Int, basePath: String)
 
 object SRMStorage {
+
+  def apply[P: GlobusAuthenticationProvider](location: SRMLocation, connections: Int = 5, timeout: Duration = 1 minute)(proxy: P): SRMStorage = {
+    val (_connections, _proxy, _timeout) = (connections, proxy, timeout)
+
+    new SRMStorage {
+      override def proxy(): GlobusAuthentication.Proxy = implicitly[GlobusAuthenticationProvider[P]].apply(_proxy)
+      override def host = location.host
+      override def basePath = location.basePath
+      override def port = location.port
+      override def connections = _connections
+      override def timeout = _timeout
+    }
+  }
 
   def SERVICE_PATH = "/srm/managerv2"
 
@@ -46,19 +64,20 @@ object SRMStorage {
 
 }
 
-import SRMStorage._
+import fr.iscpif.gridscale.egi.SRMStorage._
 
-trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
+trait SRMStorage <: Storage with RecursiveRmDir {
 
-  type A = () ⇒ GlobusAuthentication.Proxy
+  def proxy(): GlobusAuthentication.Proxy
 
   override def toString = s"srm://$host:$port$basePath"
 
   def host: String
   def port: Int
   def basePath: String
+  def timeout: Duration
 
-  def connections = 5
+  def connections: Int
   def sleepTime = 1
   def lsSizeMax = 500
   def SERVICE_PROTOCOL = "httpg"
@@ -171,10 +190,10 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
     if (requestStatus.returnStatus.statusCode != SRM_SUCCESS) throwError(requestStatus)
   }
 
-  protected def _openInputStream(path: String) = {
+  override def _read(path: String) = {
     val (token, url) = prepareToGet(path)
 
-    new GridFTPInputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
+    new GridFTPInputStream(proxy().gt2Credential, url.getHost, gridFtpPort(url.getPort), url.getPath) {
       override def close = {
         try freeInputStream(token, path)
         finally super.close
@@ -182,16 +201,13 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
     }
   }
 
-  protected def _openOutputStream(path: String) = {
+  override def _write(is: InputStream, path: String) = {
     val (token, url) = prepareToPut(path)
-
-    new GridFTPOutputStream(credential().credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false) {
-      override def close = {
-        try freeOutputStream(token, path)
-        finally super.close
-      }
-    }
+    val os = new GridFTPOutputStream(proxy().gt2Credential, url.getHost, gridFtpPort(url.getPort), url.getPath, false)
+    try copyStream(is, os)
+    finally  freeOutputStream(token, path)
   }
+
   private def freeInputStream(token: String, absolutePath: String) = {
     val logicalUri = fullEndPoint(absolutePath)
     val request =
@@ -267,7 +283,6 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   }
 
   private def status[R <: RequestStatusWithToken](request: R) = {
-    import TStatusCode._
 
     if (request.returnStatus.statusCode == SRM_SUCCESS) Left(request)
     else if (request.returnStatus.statusCode == SRM_REQUEST_QUEUED || request.returnStatus.statusCode == SRM_REQUEST_INPROGRESS) Right(request.requestToken)
@@ -305,9 +320,12 @@ trait SRMStorage <: Storage with RecursiveRmDir with DefaultTimeout {
   private def throwError[R <: RequestStatus](r: R) =
     throw new RuntimeException("Error interrogating the SRM server " + host + ", response was " + r.returnStatus.statusCode + " " + r.returnStatus.explanation.getOrElse(None).getOrElse(""))
 
-  def fullEndPoint(absolutePath: String) = fullEndpoint(host, port, basePath + absolutePath)
+  def fullEndPoint(absolutePath: String) = {
+    def path = if(basePath.endsWith("/"))basePath + absolutePath else basePath + "/" + absolutePath
+    fullEndpoint(host, port, path)
+  }
 
   @transient lazy val serviceUrl = new java.net.URL(SERVICE_PROTOCOL, host, port, SERVICE_PATH, new org.globus.net.protocol.httpg.Handler).toURI
-  @transient lazy val stub = SRMService(serviceUrl, credential, timeout, connections)
+  @transient lazy val stub = SRMService(serviceUrl, proxy, timeout, connections)
 
 }

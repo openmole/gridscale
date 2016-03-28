@@ -16,17 +16,14 @@
  */
 
 package fr.iscpif.gridscale.example.sge
-import fr.iscpif.gridscale.sge.{ SGEJobDescription, SGEJobService }
-import fr.iscpif.gridscale.ssh.{ SSHUserPasswordAuthentication, SSHPrivateKeyAuthentication }
 import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.authentication._
+import fr.iscpif.gridscale.sge.{ SGEJobDescription, SGEJobService }
+import fr.iscpif.gridscale.ssh._
 
 object SubmitEcho extends App {
 
-  val service = new SGEJobService with SSHUserPasswordAuthentication {
-    def host = "master.domain"
-    def user = "login"
-    def password = "password"
-  }
+  val service = SGEJobService("master.domain")(UserPassword("login", "password"))
 
   val description = new SGEJobDescription {
     def executable = "/bin/echo"

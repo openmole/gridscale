@@ -17,6 +17,28 @@
 
 package fr.iscpif.gridscale
 
+import fr.iscpif.gridscale.authentication._
+import fr.iscpif.gridscale.egi.https._
+import fr.iscpif.gridscale.http._
+
 package object egi {
   implicit def stringToJobId(s: String) = WMSJobId(s)
+
+  implicit def VOMSHTTSAuthentication[T: GlobusAuthenticationProvider] = new HTTPSAuthentication[T] {
+    override def factory(t: T) = {
+      val auth = new VOMSProxyHTTPSAuthentication {
+        override def proxy(): GlobusAuthentication.Proxy = implicitly[GlobusAuthenticationProvider[T]].apply(t)
+      }
+      socketFactory(auth.sslContext)
+    }
+  }
+
+  implicit val p12HttpsAuthentication = new HTTPSAuthentication[P12Authentication] {
+    override def factory(t: P12Authentication) = {
+      val auth = new P12HTTPSAuthentication {
+        override def authentication: P12Authentication = t
+      }
+      socketFactory(auth.sslContext)
+    }
+  }
 }

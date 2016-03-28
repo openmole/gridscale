@@ -14,26 +14,18 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-
 import org.apache.log4j.Logger;
 import org.glite.voms.PKIVerifier;
 import org.glite.voms.ac.AttributeCertificate;
 import org.globus.gsi.CredentialException;
-import org.globus.gsi.GSIConstants;
 import org.globus.gsi.GSIConstants.CertificateType;
 import org.globus.gsi.GSIConstants.DelegationType;
 import org.globus.gsi.X509Credential;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.*;
 
 
 /**
@@ -44,12 +36,6 @@ import org.globus.gsi.X509Credential;
  *
  */
 public class VOMSProxyInit {
-
-    private static final Logger log = Logger.getLogger( VOMSProxyInit.class );
-    
-    private static VOMSProxyInit instance;
-    
-    private VOMSServerMap serverMap;
     private UserCredentials userCredentials;
     private VOMSProtocol protocol = VOMSProtocol.instance();
 
@@ -63,37 +49,13 @@ public class VOMSProxyInit {
 
     private String policyType = null;
 
-    public VOMSProxyInit(String privateKeyPassword){
-    
-        try {
-            
-            serverMap = VOMSESFileParser.instance().buildServerMap();
-            
-            userCredentials = UserCredentials.instance(privateKeyPassword);
-            
-        } catch ( IOException e ) {
-        
-            log.error( "Error parsing vomses files: "+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
-            throw new VOMSException(e);
-        }
-        
-        
+    public VOMSProxyInit(String privateKeyPassword) {
+        userCredentials = UserCredentials.instance(privateKeyPassword);
     }
 
     //sreynaud
     public VOMSProxyInit(String userCertFile, String userKeyFile, String privateKeyPassword){
-        try {
-            serverMap = VOMSESFileParser.instance().buildServerMap();
-            userCredentials = UserCredentials.instance(userCertFile, userKeyFile, privateKeyPassword);
-        } catch ( IOException e ) {
-            log.error( "Error parsing vomses files: "+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            throw new VOMSException(e);
-        }
+        userCredentials = UserCredentials.instance(userCertFile, userKeyFile, privateKeyPassword);
     }
 
     private VOMSProxyInit(X509Credential credentials) {
@@ -101,35 +63,15 @@ public class VOMSProxyInit {
             throw new VOMSException("Unable to find GlobusCredentials!");
 
         try {
-            serverMap = VOMSESFileParser.instance().buildServerMap();
-
             userCredentials = UserCredentials.instance(credentials);
         } catch (CredentialException e) {
-            log.error( "Error parsing vomses files: "+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
             throw new VOMSException(e);
-        } catch ( IOException e ) {        
-            log.error( "Error parsing vomses files: "+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
-            throw new VOMSException(e);
-        }        
+        }
     }
 
     //sreynaud
     public VOMSProxyInit(File pkcs12UserCert, String pkcs12KeyPassword){
-        try {
-            serverMap = VOMSESFileParser.instance().buildServerMap();
-            userCredentials = UserCredentials.instance(pkcs12UserCert, pkcs12KeyPassword);
-        } catch ( IOException e ) {
-            log.error( "Error parsing vomses files: "+e.getMessage() );
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            throw new VOMSException(e);
-        }
+        userCredentials = UserCredentials.instance(pkcs12UserCert, pkcs12KeyPassword);
     }
 
     //sreynaud
@@ -154,172 +96,62 @@ public class VOMSProxyInit {
         return new VOMSProxyInit(credentials);
     }
 
-    public void addVomsServer(VOMSServerInfo info){
-        
-        serverMap.add( info );
-        
-    }
     
-    public synchronized AttributeCertificate getVomsAC(VOMSRequestOptions requestOptions){
-        
-        if (requestOptions.getVoName() == null)
-            throw new VOMSException("Please specify a vo name to create a voms ac.");
-        
-        Set servers = serverMap.get( requestOptions.getVoName());
-        
-        Iterator serverIter = servers.iterator();
-        
-        while(serverIter.hasNext()){
-            
-            VOMSServerInfo serverInfo = (VOMSServerInfo) serverIter.next();
-            
-            try{
-            
-                VOMSResponse response = contactServer( serverInfo, requestOptions );
-                
-                if (!response.hasErrors()){
-                    
-                    AttributeCertificate ac = VOMSProxyBuilder.buildAC(response.getAC());
-                    log.info( "Got AC from VOMS server "+serverInfo.compactString() );
-                    
-                    if (log.isDebugEnabled()){
-                        
-                        try {
-                            log.debug( "AC validity period:\nNotBefore:"+ac.getNotBefore()+"\nNotAfter:"+ac.getNotAfter() );
-                     
-                        } catch ( ParseException e ) {
-                            
-                            log.error( e.getMessage(),e );
-                            e.printStackTrace();
-                        }
-                        
-                    }
-                    
-                    return ac;
-                }
-                
-                log.error( "Got error response from VOMS server "+serverInfo.compactString() );
-                logErrorMessages( response );
-                
-            }catch(VOMSException e){
-                
-                log.error(e.getMessage());
-                if (log.isDebugEnabled()){
-                    log.error(e.getMessage(),e);
-                }
-                
-                if (serverIter.hasNext())
-                    continue;
-                
-                throw(e);
+    public synchronized AttributeCertificate getVomsAC(VOMSServerInfo serverInfo, VOMSRequestOptions requestOptions){
+        VOMSResponse response = contactServer( serverInfo, requestOptions );
+
+        if (!response.hasErrors()){
+            AttributeCertificate ac = VOMSProxyBuilder.buildAC(response.getAC());
+            return ac;
+        } else {
+            StringBuilder b = new StringBuilder();
+            for(VOMSErrorMessage e: response.errorMessages()) {
+                b.append(e.getMessage());
+                b.append("; ");
             }
+            throw new VOMSException("Error(s) in the response of the VOMS server: " + b.toString());
         }
-        
-        return null;            
     }
     
     public void validateACs(List ACs){
-        
         if (ACs.isEmpty())
             throw new VOMSException("Cannot validate an empty list of Attribute Certificates!");
-        
-        log.debug("AC Validation started at: "+ new Date(  ));
         
         PKIVerifier verifier;
         
         try {
-        
             verifier = new PKIVerifier();
-        
         } catch ( Exception e ) {
-            
-            log.error("Error instantiating PKIVerifier: "+e.getMessage());
-            
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
             throw new VOMSException("Error instantiating PKIVerifier: "+e.getMessage(),e);
-            
         }
         
         Iterator i = ACs.iterator();
         
         while(i.hasNext()){
-            
             AttributeCertificate ac = (AttributeCertificate)i.next();
-            
-            if (!verifier.verify( ac ))
-                i.remove();    
+            if (!verifier.verify( ac )) i.remove();
         }
-        
-        log.debug("AC Validation ended at: "+ new Date(  ));
-        
     }
-    public synchronized X509Credential getVomsProxy(){
-        
-        return getVomsProxy( null );
-        
-    }
-    
-    
+
     protected X509Credential getGridProxy(){
         return VOMSProxyBuilder.buildProxy( userCredentials, proxyLifetime, delegationType );
     }
-    public synchronized X509Credential getVomsProxy(Collection listOfReqOptions){
-        
-        
-        if (listOfReqOptions == null)
-            return getGridProxy();
-        
-        if (listOfReqOptions.isEmpty())
-            throw new VOMSException("No request options specified!");
-        
-        Iterator i = listOfReqOptions.iterator();
-        
-        List ACs = new ArrayList();
-        
-        while (i.hasNext()){
-            
-            VOMSRequestOptions options = (VOMSRequestOptions)i.next();
-            
-            if (options.getVoName() == null)
-                throw new VOMSException("Please specify a vo name to create a voms proxy.");
-            
-            AttributeCertificate ac = getVomsAC( options );
-            
-            ACs.add(ac);
-            
-        }
 
-        //sreynaud: workaround for bug in AC validation
-//        validateACs( ACs );
-        
-        if (ACs.isEmpty())
-            throw new VOMSException("AC validation failed!");
-        
-        log.info( "ACs validation succeded." );
-        
+    public synchronized X509Credential getVomsProxy(VOMSServerInfo serverInfo, VOMSRequestOptions requestOptions){
+        AttributeCertificate ac = getVomsAC( serverInfo, requestOptions );
+         List ACs = new ArrayList();
+        ACs.add(ac);
+
         return VOMSProxyBuilder.buildProxy( userCredentials,
-                                                              ACs, proxySize, proxyLifetime,
-                                                              proxyType, 
-                                                              delegationType,
-                                                              policyType);
+          ACs, proxySize, proxyLifetime,
+          proxyType,
+          delegationType,
+          policyType);
 
     }
 
-    
-    private void logErrorMessages(VOMSResponse response){
-        
-        VOMSErrorMessage[] msgs = response.errorMessages();
-        
-        for ( int i = 0; i < msgs.length; i++ ) {
-            log.error(msgs[i]);
-        }
-        
-        
-    }
+
     protected VOMSResponse contactServer(VOMSServerInfo sInfo, VOMSRequestOptions reqOptions) {
-        
-        log.info("Contacting server "+sInfo.compactString() );
         VOMSSocket socket;
         
         int gridProxyType = sInfo.getGlobusVersionAsInt();
@@ -332,54 +164,41 @@ public class VOMSProxyInit {
                 case 4: pType = VOMSProxyBuilder.GT4_PROXY; break;
             }
             socket = VOMSSocket.instance( userCredentials, sInfo.getHostDn(), pType );
-        } else
+        } else {
             socket = VOMSSocket.instance( userCredentials, sInfo.getHostDn());
-        
-        try {
-            
-            socket.connect( sInfo.getHostName(), sInfo.getPort());
-            
-        } catch ( Exception e ) {
-            
-            log.error( "Error connecting to "+sInfo.compactString()+":"+e.getMessage() );
-            
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            throw new VOMSException("Error connecting to "+sInfo.compactString()+":"+e.getMessage() ,e);
-            
-        } 
-        
-        VOMSResponse response;
-        
-        try {
-            
-            protocol.sendRequest( reqOptions, socket.getOutputStream());
-            response = protocol.getResponse( socket.getInputStream() );
-            
-            socket.close();
-            
-            
-        } catch ( IOException e ) {
-            log.error( "Error communicating with server "+sInfo.getHostName()+":"+sInfo.getPort()+":"+e.getMessage() );
-            
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            throw new VOMSException("Error communicating with server "+sInfo.getHostName()+":"+sInfo.getPort()+":"+e.getMessage(),e);
         }
         
-        return response;
+        try {
+            socket.connect( sInfo.getHostName(), sInfo.getPort());
+        } catch ( Exception e ) {
+            throw new VOMSException("Error connecting to "+sInfo.compactString()+":"+e.getMessage() ,e);
+        }
+
+        try {
+            VOMSResponse response;
+
+            try {
+                protocol.sendRequest(reqOptions, socket.getOutputStream());
+                response = protocol.getResponse(socket.getInputStream());
+                return response;
+            } catch (IOException e) {
+                throw new VOMSException("Error communicating with server " + sInfo.getHostName() + ":" + sInfo.getPort() + ":" + e.getMessage(), e);
+            }
+        } finally  {
+            try {
+                socket.close();
+            } catch (IOException e){
+                throw new RuntimeException("Error in close", e);
+            }
+        }
            
     }
 
-
     public int getProxyLifetime() {
-    
         return proxyLifetime;
     }
-
     
     public void setProxyLifetime( int proxyLifetime ) {
-    
         this.proxyLifetime = proxyLifetime;
     }
 
@@ -392,13 +211,11 @@ public class VOMSProxyInit {
     }
 
     public CertificateType getProxyType() {
-    
         return proxyType;
     }
 
     
     public void setProxyType( CertificateType proxyType ) {
-    
         this.proxyType = proxyType;
     }
 
@@ -412,13 +229,11 @@ public class VOMSProxyInit {
     }
 
     public DelegationType getDelegationType() {
-    
         return delegationType;
     }
 
     
     public void setDelegationType( DelegationType delegationType ) {
-    
         this.delegationType = delegationType;
     }
     

@@ -16,14 +16,13 @@
  */
 package org.glite.security.util.proxy;
 
-import java.io.IOException;
-
-import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
+
+import java.io.IOException;
 
 /**
  * A class for generating and parsing the proxy tracing extensions. <br>

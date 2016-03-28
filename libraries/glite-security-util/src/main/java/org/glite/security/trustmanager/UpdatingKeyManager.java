@@ -18,11 +18,16 @@ limitations under the License.
 
 package org.glite.security.trustmanager;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import org.apache.log4j.Logger;
+import org.bouncycastle.openssl.PasswordFinder;
+import org.glite.security.SecurityContext;
+import org.glite.security.util.*;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.X509ExtendedKeyManager;
+import javax.net.ssl.X509KeyManager;
+import java.io.*;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -31,21 +36,6 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.X509ExtendedKeyManager;
-import javax.net.ssl.X509KeyManager;
-
-import org.apache.log4j.Logger;
-import org.bouncycastle.openssl.PasswordFinder;
-import org.glite.security.SecurityContext;
-import org.glite.security.util.CaseInsensitiveProperties;
-import org.glite.security.util.CertUtil;
-import org.glite.security.util.DNHandler;
-import org.glite.security.util.FileCertReader;
-import org.glite.security.util.KeyStoreGenerator;
-import org.glite.security.util.Password;
 
 /**
  * A KeyManager that reloads the credentials periodically. <b>Notice!</b> If the identity certificate changes, the

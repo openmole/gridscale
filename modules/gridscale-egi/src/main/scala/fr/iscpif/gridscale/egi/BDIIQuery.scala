@@ -18,29 +18,28 @@
 package fr.iscpif.gridscale.egi
 
 import java.util.Hashtable
-
 import javax.naming.Context
-import javax.naming.directory.InitialDirContext
-import javax.naming.directory.SearchControls
+import javax.naming.directory.{ InitialDirContext, SearchControls }
+
 import scala.concurrent.duration.Duration
 
 object BDIIQuery {
 
-  def withBDIIQuery[T](bdii: String)(f: BDIIQuery ⇒ T) = {
-    val q = new BDIIQuery(bdii)
+  def withBDIIQuery[T](host: String, port: Int, timeout: Duration)(f: BDIIQuery ⇒ T) = {
+    val q = new BDIIQuery(host, port, timeout)
     try f(q)
     finally q.close
   }
 
 }
 
-class BDIIQuery(val bdii: String) {
+class BDIIQuery(val host: String, port: Int, timeOut: Duration) {
 
   lazy val dirContext = {
     val env = new Hashtable[String, String]
 
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
-    env.put(Context.PROVIDER_URL, this.bdii)
+    env.put(Context.PROVIDER_URL, s"ldap://$host:$port")
 
     /* get a handle to an Initial DirContext */
     val dirContext = new InitialDirContext(env)
@@ -49,10 +48,11 @@ class BDIIQuery(val bdii: String) {
 
   /**
    * This method queries the bdii set in the constructor
+   *
    * @param searchPhrase the search phrase
    * @return an array list of SearchResult objects.
    */
-  def query(searchPhrase: String, timeOut: Duration, attributeList: List[String] = List.empty) = {
+  def query(searchPhrase: String, attributeList: List[String] = List.empty, bindDN: String = "o=grid") = {
     //boolean hasError= false;
 
     /* specify search constraints to search subtree */
@@ -64,7 +64,6 @@ class BDIIQuery(val bdii: String) {
     if (attributeList.size > 0)
       constraints.setReturningAttributes(attributeList.toArray)
 
-    val bindDN = "o=grid"
     // Perform the search
     val results = dirContext.search(
       bindDN,
@@ -74,5 +73,4 @@ class BDIIQuery(val bdii: String) {
   }
 
   def close = dirContext.close
-
 }

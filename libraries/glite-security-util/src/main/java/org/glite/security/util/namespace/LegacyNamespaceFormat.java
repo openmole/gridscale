@@ -17,15 +17,15 @@
 
 package org.glite.security.util.namespace;
 
+import org.apache.log4j.Logger;
+import org.glite.security.util.DNHandler;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.glite.security.util.DNHandler;
 
 /**
  * Legacy policy language format.

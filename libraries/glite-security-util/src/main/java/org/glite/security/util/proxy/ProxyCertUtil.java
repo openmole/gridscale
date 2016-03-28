@@ -16,13 +16,13 @@
  */
 package org.glite.security.util.proxy;
 
-import java.math.BigInteger;
-import java.util.Vector;
-import java.util.regex.Pattern;
-
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.glite.security.util.DN;
+
+import java.math.BigInteger;
+import java.util.Vector;
+import java.util.regex.Pattern;
 
 /**
  * Utility methods to dig up information out of proxy certificates. 

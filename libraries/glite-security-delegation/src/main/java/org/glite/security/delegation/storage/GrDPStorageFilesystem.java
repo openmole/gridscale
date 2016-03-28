@@ -17,21 +17,16 @@
 
 package org.glite.security.delegation.storage;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.util.Date;
-
 import org.apache.log4j.Logger;
 import org.glite.security.delegation.GrDPConstants;
 import org.glite.security.delegation.GrDPX509Util;
 import org.glite.security.delegation.GrDProxyDlgeeOptions;
+
+import java.io.*;
+import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.Date;
 
 /**
  * This is the filesystem based implementation of the GrDPStorage interface.

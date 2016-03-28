@@ -20,8 +20,8 @@ package fr.iscpif.gridscale
 import scala.concurrent.duration.Duration
 
 package object cache {
-  def cache[T](f: () ⇒ T)(_time: Duration): SingleValueCache[T] =
-    new SingleValueCache[T] {
+  def cache[T](f: () ⇒ T)(_time: Duration): SingleValueAsynchronousCache[T] =
+    new SingleValueAsynchronousCache[T] {
       def compute() = f()
       def expiresIn(t: T) = _time
     }

@@ -17,13 +17,6 @@
 
 package org.glite.security.delegation;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.openssl.PEMParser;
@@ -32,6 +25,13 @@ import org.glite.security.util.FileCertReader;
 import org.glite.security.util.Password;
 import org.glite.security.util.PrivateKeyReader;
 import org.glite.security.util.proxy.ProxyCertificateGenerator;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 
 /**
  * The delegation handler class

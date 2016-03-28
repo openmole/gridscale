@@ -6,30 +6,23 @@
 
 package org.glite.voms;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.security.Security;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.StringTokenizer;
-import java.util.Vector;
-
 import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.glite.voms.ac.ACTrustStore;
-import org.glite.voms.ac.*;
+import org.glite.voms.ac.ACValidator;
 import org.glite.voms.ac.AttributeCertificate;
 import org.glite.voms.ac.VOMSTrustStore;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.security.Security;
+import java.security.cert.CRLException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.*;
 
 /**
  * The main (top) class to use for extracting VOMS information from
@@ -63,7 +56,7 @@ public class VOMSValidator {
     //    protected boolean isPreValidated = false;
     protected FQANTree myFQANTree = null;
     //    private VomsdataPeer vp = null;
-    protected static VOMSTrustStore vomsStore = null;
+    protected VOMSTrustStore vomsStore = null;
 
     static {
         if (Security.getProvider("BC") == null) {
@@ -148,24 +141,24 @@ public class VOMSValidator {
      * @see BasicVOMSTrustStore
      * @deprecated use setTrustStore(VOMSTrustStore trustStore) instead.
      */
-    public static void setTrustStore(ACTrustStore trustStore) {
-        if (trustStore instanceof BasicVOMSTrustStore) {
-            BasicVOMSTrustStore store = (BasicVOMSTrustStore)trustStore;
-            String directory = store.getDirList();
-            try {
-                setTrustStore(new PKIStore(directory, PKIStore.TYPE_VOMSDIR, true));
-                store.stopRefresh();
-            }
-            catch(Exception e) {
-                log.error("Cannot set upgraded truststore!");
-                theTrustStore = trustStore;
-            }
-        }
-        else {
-            log.error("Cannot set upgraded truststore!");
-            theTrustStore = trustStore;
-        }
-    }
+//    public static void setTrustStore(ACTrustStore trustStore) {
+//        if (trustStore instanceof BasicVOMSTrustStore) {
+//            BasicVOMSTrustStore store = (BasicVOMSTrustStore)trustStore;
+//            String directory = store.getDirList();
+//            try {
+//                setTrustStore(new PKIStore(directory, PKIStore.TYPE_VOMSDIR, true));
+//                store.stopRefresh();
+//            }
+//            catch(Exception e) {
+//                log.error("Cannot set upgraded truststore!");
+//                theTrustStore = trustStore;
+//            }
+//        }
+//        else {
+//            log.error("Cannot set upgraded truststore!");
+//            theTrustStore = trustStore;
+//        }
+//    }
 
     /**
      * Sets the trustStore to use with the default ACValidator.
@@ -174,9 +167,9 @@ public class VOMSValidator {
      *
      * @see org.glite.voms.ac.VOMSTrustStore
      */
-    public static void setTrustStore(VOMSTrustStore trustStore) {
-        vomsStore = trustStore;
-    }
+//    public static void setTrustStore(VOMSTrustStore trustStore) {
+//        vomsStore = trustStore;
+//    }
 
     /**
      * Cleans up the object.

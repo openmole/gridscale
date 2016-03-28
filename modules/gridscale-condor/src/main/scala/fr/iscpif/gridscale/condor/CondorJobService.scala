@@ -19,11 +19,24 @@
 package fr.iscpif.gridscale.condor
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
+import scala.concurrent.duration._
+
 object CondorJobService {
+
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential, _timeout) = (host, port, credential, timeout)
+    new CondorJobService {
+      override val credential = _credential
+      override val host = _host
+      override val port = _port
+      override val timeout = _timeout
+    }
+  }
+
   class CondorJob(val description: CondorJobDescription, val condorId: String)
 
   object CondorJob {
@@ -41,7 +54,7 @@ object CondorJobService {
     }
 }
 
-import CondorJobService._
+import fr.iscpif.gridscale.condor.CondorJobService._
 
 trait CondorJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = CondorJob
@@ -49,9 +62,7 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(condorScriptPath(description))
-    try outputStream.write(description.toCondor.getBytes)
-    finally outputStream.close
+    write(description.toCondor.getBytes, condorScriptPath(description))
 
     val command = "cd " + description.workDirectory + " && condor_submit " + description.uniqId + ".condor"
 

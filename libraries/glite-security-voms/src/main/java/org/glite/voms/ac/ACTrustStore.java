@@ -6,9 +6,8 @@
 
 package org.glite.voms.ac;
 
-import java.security.cert.X509Certificate;
-
 import javax.security.auth.x500.X500Principal;
+import java.security.cert.X509Certificate;
 
 
 /**

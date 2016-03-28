@@ -13,11 +13,10 @@
  *********************************************************************/
 package org.glite.voms.ac;
 
-import java.security.cert.X509Certificate;
+import org.glite.voms.LSCFile;
 
 import javax.security.auth.x500.X500Principal;
-
-import org.glite.voms.LSCFile;
+import java.security.cert.X509Certificate;
 
 
 /**

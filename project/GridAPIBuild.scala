@@ -1,11 +1,12 @@
 
-import sbt._
-import sbt.Keys._
-import com.typesafe.sbt.osgi.OsgiKeys._
-import com.typesafe.sbt.osgi.SbtOsgi._
-import com.typesafe.sbt.SbtScalariform._
-import scalariform.formatter.preferences._
 import com.github.retronym.SbtOneJar
+import com.typesafe.sbt.SbtScalariform._
+import com.typesafe.sbt.osgi.OsgiKeys._
+import com.typesafe.sbt.osgi.SbtOsgi
+import sbt.Keys._
+import sbt._
+
+import scalariform.formatter.preferences._
 
 object GridAPIBuild extends Build with Libraries with Modules with Examples with Benchmarks with Bundles
 
@@ -13,8 +14,8 @@ object GridAPIBuild extends Build with Libraries with Modules with Examples with
 trait Settings <: Build {
 
   override def settings = super.settings ++ Seq (
-    scalaVersion := "2.11.7",
-    crossScalaVersions := Seq("2.10.5", "2.11.7"),
+    scalaVersion := "2.11.8",
+    crossScalaVersions := Seq("2.11.8"),
     javacOptions in (Compile, compile) ++= Seq("-source", "1.7", "-target", "1.7"),
     scalacOptions += "-target:jvm-1.7"
   )
@@ -31,6 +32,7 @@ trait Settings <: Build {
         .setPreference(AlignSingleLineCaseStatements, true)
         .setPreference(RewriteArrowSymbols, true),
     organization := "fr.iscpif.gridscale",
+    resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
     publishTo <<= isSnapshot { snapshot =>
       val nexus = "https://oss.sonatype.org/"
@@ -66,12 +68,14 @@ trait Examples <: Modules with Settings{
   lazy val egicreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val egisrmExample  = Project(id = "egisrmexample", base = file("examples/egi/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val egiwmsExample  = Project(id = "egiwmsexample", base = file("examples/egi/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
-  lazy val diracExample  = Project(id = "diracexample", base = file("examples/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleDIRAC)
+  lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
+  lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleCondor)
   lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSLURM)
   lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSGE)
   lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSSH)
   lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleOAR)
+  lazy val httpExample  = Project(id = "httpexample", base = file("examples/http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleHTTP)
 
   mainClass in SbtOneJar.oneJar := Some("fr.iscpif.gridscale.examples.Main")
 }
@@ -95,64 +99,61 @@ trait Bundles <: Modules with Settings {
   self: Build =>
 
   lazy val gridscaleOsgiSettings =
-    osgiSettings ++
-      Seq(
-        importPackage := Seq("*"),
-        privatePackage := Seq(s"fr.iscpif.gridscale.${name.value}.*", "!fr.iscpif.gridscale.*", "!scala.*", "!org.bouncycastle.*", "!org.apache.log4j.*", "!org.slf4j.*", "!org.apache.commons.logging.*", "*"),
-        organization := "fr.iscpif.gridscale.bundle",
-        bundleSymbolicName := s"fr.iscpif.gridscale.${name.value}",
-        exportPackage := Seq(s"${bundleSymbolicName.value}.*")
-      )
+    SbtOsgi.autoImport.osgiSettings ++ Seq(
+      importPackage := Seq("*"),
+      privatePackage := Seq(s"fr.iscpif.gridscale.${name.value}.*", "!fr.iscpif.gridscale.*", "!scala.*", "!org.bouncycastle.*", "!org.apache.log4j.*", "!org.slf4j.*", "!org.apache.commons.logging.*", "*"),
+      organization := "fr.iscpif.gridscale.bundle",
+      bundleSymbolicName := s"fr.iscpif.gridscale.${name.value}",
+      exportPackage := Seq(s"${bundleSymbolicName.value}.*"),
+      requireCapability := """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.7))"""
+    )
 
 
   lazy val noSSH = privatePackage :=
     Seq("!net.schmizz.*", "!fr.iscpif.gridscale.ssh.*") ++ privatePackage.value
 
-  lazy val gridscaleBundle = Project(id = "gridscalebundle", base = file("bundles/gridscale"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscale) settings (
+  lazy val gridscaleBundle = Project(id = "gridscalebundle", base = file("bundles/gridscale"), settings = defaultSettings) enablePlugins(SbtOsgi) settings(gridscaleOsgiSettings:_*) dependsOn (gridscale) settings (
     privatePackage := Seq("fr.iscpif.gridscale.*", "!scala.*"),
     exportPackage := Seq("fr.iscpif.gridscale.*"),
     name := "gridscale"
     )
 
-  lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleEGI) settings(
+  lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings) enablePlugins(SbtOsgi) settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleEGI) settings(
     name := "egi",
-    importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "*"),
-    privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*") ++ privatePackage.value,
+    importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "org.tukaani.xz.*;resolution:=optional", "org.apache.tools.ant.*;resolution:=optional", "*"),
+    privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value,
     exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*")
     )
 
-  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleHttp) settings (
-    name := "http"
+  lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings) enablePlugins(SbtOsgi) settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleHTTP) settings (
+    name := "http",
+    importPackage := Seq("org.apache.tools.ant.*;resolution:=optional", "*"),
+    privatePackage := Seq("org.apache.http.entity.mime.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value
     )
 
-  lazy val diracBundle = Project(id = "diracbundle", base = file("bundles/dirac"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleDIRAC) settings (
-    name := "dirac",
-    importPackage := Seq("org.tukaani.xz.*;resolution:=optional") ++ importPackage.value
-    )
-
-  lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSSH) settings(
+  lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings) enablePlugins(SbtOsgi)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleSSH) settings(
     name := "ssh",
-    importPackage := Seq("!com.jcraft.jzlib", "!javax.*", "*"),
+    importPackage := Seq("!javax.*", "*"),
     exportPackage := exportPackage.value ++ Seq("net.schmizz.sshj.*")
     )
 
-  lazy val condorBundle = Project(id = "condorbundle", base = file("bundles/condor"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleCondor) settings(
+  lazy val condorBundle = Project(id = "condorbundle", base = file("bundles/condor"), settings = defaultSettings) enablePlugins(SbtOsgi)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleCondor) settings(
     name := "condor", noSSH
     )
 
-  lazy val pbsBundle = Project(id = "pbsbundle", base = file("bundles/pbs"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscalePBS) settings(
+  lazy val pbsBundle = Project(id = "pbsbundle", base = file("bundles/pbs"), settings = defaultSettings) enablePlugins(SbtOsgi)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscalePBS) settings(
     name := "pbs", noSSH
     )
 
-  lazy val slurmBundle = Project(id = "slurmbundle", base = file("bundles/slurm"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSLURM) settings(
+  lazy val slurmBundle = Project(id = "slurmbundle", base = file("bundles/slurm"), settings = defaultSettings) enablePlugins(SbtOsgi)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleSLURM) settings(
     name := "slurm", noSSH
     )
 
-  lazy val sgeBundle = Project(id = "sgebundle", base = file("bundles/sge"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleSGE) settings(
+  lazy val sgeBundle = Project(id = "sgebundle", base = file("bundles/sge"), settings = defaultSettings) enablePlugins(SbtOsgi)  settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleSGE) settings(
     name := "sge", noSSH
     )
 
-  lazy val oarBundle = Project(id = "oarbundle", base = file("bundles/oar"), settings = defaultSettings ++ gridscaleOsgiSettings) dependsOn (gridscaleOAR) settings(
+  lazy val oarBundle = Project(id = "oarbundle", base = file("bundles/oar"), settings = defaultSettings) enablePlugins(SbtOsgi) settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleOAR) settings(
     name := "oar", noSSH
     )
 
@@ -160,27 +161,27 @@ trait Bundles <: Modules with Settings {
 
 trait Modules <: Libraries with Settings {
 
-  lazy val httpComponentsVersion = "4.5"
+  lazy val httpComponentsVersion = "4.5.1"
 
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
-  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation) settings (
-    libraryDependencies += "org.jglobus" % "io" % jglobusVersion
-    )
 
-  lazy val gridscaleHttp = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
-    libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1"
-    )
-
-  lazy val gridscaleDIRAC = Project(id = "dirac", base = file("modules/gridscale-dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings(
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
+    libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "io.spray" %% "spray-json" % "1.2.6",
-    libraryDependencies += "org.apache.httpcomponents" % "httpclient" % httpComponentsVersion,
-    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
-    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.8.1"
+    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10"
     )
+
+  lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
+    libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
+    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6",
+    libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
+    libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion
+     )
 
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
-    libraryDependencies += "com.hierynomus" % "sshj" % "0.14.0"
+    libraryDependencies += "com.hierynomus" % "sshj" % "0.14.0",
+    libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
     )
 
   lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH) settings (
@@ -189,8 +190,7 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscalePBS = Project(id = "pbs", base = file("modules/gridscale-pbs"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)
 
-  lazy val gridscaleSLURM = Project(id = "slurm", base = file("modules/gridscale-slurm"), settings = defaultSettings ++ exportSettings)
-                          .dependsOn(gridscale, gridscaleSSH)  settings (
+  lazy val gridscaleSLURM = Project(id = "slurm", base = file("modules/gridscale-slurm"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH)  settings (
     libraryDependencies ++= Seq(scalaTest, mockito)
     )
 
@@ -207,9 +207,9 @@ trait Modules <: Libraries with Settings {
 
 trait Libraries <: Settings {
 
-  import Keys._
+  import sbt.Keys._
+  import sbtscalaxb.Plugin.ScalaxbKeys._
   import sbtscalaxb.Plugin._
-  import ScalaxbKeys._
 
   lazy val jglobusVersion = "2.2.0-20150814"
 
@@ -280,6 +280,5 @@ trait Libraries <: Settings {
     libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
     libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
     )
-
 
 }

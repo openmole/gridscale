@@ -13,27 +13,22 @@
  *********************************************************************/
 package org.glite.voms.ac;
 
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.asn1.x509.X509CertificateStructure;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.provider.X509CertificateObject;
+
 import java.io.ByteArrayInputStream;
+import java.security.NoSuchProviderException;
+import java.security.Security;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.NoSuchProviderException;
-import java.security.cert.CertificateException;
-import java.security.Security;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1Primitive;
-
-import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DEREncodableVector;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.DLSequence;
-import org.bouncycastle.asn1.x509.X509CertificateStructure;
-import org.bouncycastle.jce.provider.X509CertificateObject;
 
 /**
  * This class represents the ACCerts extension which may be present in the AC.

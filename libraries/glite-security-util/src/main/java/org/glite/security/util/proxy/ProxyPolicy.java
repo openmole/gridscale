@@ -18,17 +18,9 @@ limitations under the License.
 
 package org.glite.security.util.proxy;
 
+import org.bouncycastle.asn1.*;
+
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERObjectIdentifier;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
 
 /**
  * Proxy policy ASN1 class. ProxyPolicy ::= SEQUENCE { policyLanguage OBJECT IDENTIFIER, policy OCTET STRING OPTIONAL }

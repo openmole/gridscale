@@ -1,13 +1,8 @@
 package org.glite.security.trustmanager;
 
-import java.io.IOException;
+import org.apache.log4j.*;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.PropertyConfigurator;
+import java.io.IOException;
 
 /**
  * Class to configure the log4j outside of the other classes allowing the use of slf4j without log4j present.

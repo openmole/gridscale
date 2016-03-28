@@ -14,10 +14,8 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringWriter;
+import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
 
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
@@ -25,9 +23,10 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
-import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringWriter;
 
 
 /**
@@ -37,10 +36,7 @@ import org.w3c.dom.Document;
  *
  */
 public class VOMSProtocol {
-    
-    private static final Logger log = Logger.getLogger(VOMSProtocol.class);
-
-    private VOMSRequestFactory requestFactory = VOMSRequestFactory.instance();
+    private VOMSRequestFactory requestFactory = new VOMSRequestFactory();
     private TransformerFactory transformerFactory;
     private VOMSParser parser = VOMSParser.instance();
         
@@ -53,22 +49,13 @@ public class VOMSProtocol {
         return new VOMSProtocol();
     }
     
-    protected String xmlDocAsString(Document doc){ 
-        
+    protected String xmlDocAsString(Document doc){
         Transformer transformer;
         
         try {
-        
             transformer = transformerFactory.newTransformer();
-        
         } catch ( TransformerConfigurationException e ) {
-            
-            log.error("Error creating XML transformer:"+e.getMessage());
-            if (log.isDebugEnabled())
-                log.error( e.getMessage(),e );
-            
             throw new VOMSException("Error creating XML transformer:", e);
-            
         }
         StringWriter writer = new StringWriter();
         
@@ -76,15 +63,8 @@ public class VOMSProtocol {
         StreamResult res = new StreamResult(writer);
         
         try {
-            
             transformer.transform( source, res );
-        
         } catch ( TransformerException e ) {
-            
-            log.error("Error caught serializing XML :"+e.getMessage());
-            if (log.isDebugEnabled())
-                log.error( e.getMessage(),e );
-            
             throw new VOMSException("Error caugh serializing XML :", e);
         
         }
@@ -101,52 +81,25 @@ public class VOMSProtocol {
      * @param stream, an output stream.
      */
     public void sendRequest(VOMSRequestOptions requestOptions, OutputStream stream){
-        
         Document request = requestFactory.buildRequest( requestOptions );
-        
-        if (log.isDebugEnabled())
-            log.debug( "Voms request:\n"+ xmlDocAsString( request ));
-        
+
         Transformer transformer;
         
         try {
-            
             transformer = transformerFactory.newTransformer();
-        
         } catch ( TransformerConfigurationException e ) {
-            
-            log.error("Error creating XML transformer:"+e.getMessage());
-            if (log.isDebugEnabled())
-                log.error( e.getMessage(),e );
-            
             throw new VOMSException("Error creating XML transformer:", e);
-            
         }
         
         DOMSource source = new DOMSource( request );
         StreamResult res = new StreamResult(stream );
         
         try {
-            
-            
             transformer.transform( source, res);
             stream.flush();
-            
         } catch ( TransformerException e ) {
-        
-            log.error("XML request serialization error! "+e.getMessage());
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
             throw new VOMSException("XML request serialization error! "+e.getMessage(),e);
-            
         } catch ( IOException e ) {
-            
-            log.error( e.getMessage() );
-            
-            if (log.isDebugEnabled())
-                log.error(e.getMessage(),e);
-            
             throw new VOMSException("XML request serialization error! "+e.getMessage(),e);
         }
     }

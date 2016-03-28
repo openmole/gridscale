@@ -18,14 +18,28 @@
 
 package fr.iscpif.gridscale.sge
 
+import java.io.ByteArrayInputStream
+
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
+import scala.concurrent.duration._
 import scala.util.Try
 
 object SGEJobService {
+
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential, _timeout) = (host, port, credential, timeout)
+    new SGEJobService {
+      override val credential = _credential
+      override val host = _host
+      override val port = _port
+      override val timeout = _timeout
+    }
+  }
+
   class SGEJob(val description: SGEJobDescription, val sgeId: String)
 
   object SGEJob {
@@ -38,6 +52,7 @@ object SGEJobService {
    * Match SGE's states to 1 of the 4 generic states available in GridScale
    * Arbitrary choices were made for SGE's Suspended states that either relate to
    * Running or Submitted in GridScale.
+   *
    * @param status The original state collected from the SGE job scheduler
    * @return Corresponding state in GridScale
    * @throws RuntimeException when the input state can't be recognized.
@@ -52,7 +67,7 @@ object SGEJobService {
     }
 }
 
-import SGEJobService._
+import fr.iscpif.gridscale.sge.SGEJobService._
 
 trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = SGEJob
@@ -60,9 +75,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(sgeScriptPath(description))
-    try outputStream.write(description.toSGE.getBytes)
-    finally outputStream.close
+    write(description.toSGE.getBytes, sgeScriptPath(description))
 
     val command = "cd " + description.workDirectory + " && qsub " + sgeScriptName(description)
     val (ret, out, error) = execReturnCodeOutput(command)

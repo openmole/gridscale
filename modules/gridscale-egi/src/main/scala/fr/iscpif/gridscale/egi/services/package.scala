@@ -17,7 +17,7 @@
 
 package fr.iscpif.gridscale.egi
 
-import scala.util.{ Success, Failure }
+import scala.util.{ Failure, Success }
 
 package object services {
 

@@ -17,53 +17,74 @@
 
 package fr.iscpif.gridscale.egi
 
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.net.URI
-import java.net.URL
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
+import java.io.{ ByteArrayInputStream, File }
+import java.net.{ URI, URL }
+import java.security.cert.{ CertificateFactory, X509Certificate }
 import java.util.Date
-import fr.iscpif.gridscale.cache.{ SingleValueCache, Cache }
-import org.glite.security.delegation.GrDProxyGenerator
-import org.globus.io.streams.GridFTPInputStream
-import org.globus.io.streams.GridFTPOutputStream
-import fr.iscpif.gridscale.tools._
-import fr.iscpif.gridscale.jobservice._
-import services._
-import fr.iscpif.gridscale.libraries.lbstub._
-import concurrent.duration._
 
-trait WMSJobService extends JobService with DefaultTimeout {
+import fr.iscpif.gridscale.cache.{ Cache, SingleValueAsynchronousCache }
+import fr.iscpif.gridscale.egi.services._
+import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.libraries.lbstub._
+import fr.iscpif.gridscale.tools._
+import org.glite.security.delegation.{ GrDPConstants, GrDPX509Util, GrDProxyGenerator }
+import org.globus.gsi.GSIConstants.CertificateType
+import org.globus.gsi.bc.BouncyCastleCertProcessingFactory
+import org.globus.io.streams.{ GridFTPInputStream, GridFTPOutputStream }
+
+import scala.concurrent.duration._
+
+case class WMSLocation(url: URI)
+
+object WMSJobService {
+
+  def apply[P: GlobusAuthenticationProvider](
+    location: WMSLocation,
+    connections: Int = 5,
+    timeout: Duration = 1 minute,
+    delegationRenewal: Duration = 1 hour)(proxy: P): WMSJobService = {
+    val (_connections, _proxy, _timeout, _delegationRenewal) = (connections, proxy, timeout, delegationRenewal)
+
+    new WMSJobService {
+      override def proxy(): GlobusAuthentication.Proxy = implicitly[GlobusAuthenticationProvider[P]].apply(_proxy)
+      def url: URI = location.url
+      override def connections = _connections
+      override def delegationRenewal = _delegationRenewal
+      override def timeout = _timeout
+    }
+  }
+
+}
+
+trait WMSJobService extends JobService {
   type J = WMSJobId
-  type A = () ⇒ GlobusAuthentication.Proxy
   type D = WMSJobDescription
 
   def url: URI
-  def connections = 5
+  def connections: Int
+  def delegationRenewal: Duration
+  def timeout: Duration
+  def copyBufferSize = 64 * 1024
 
-  def copyBufferSize = 64 * 1000
-  def delegationRenewal: Duration = 1 -> HOURS
+  def proxy(): GlobusAuthentication.Proxy
 
   lazy val delegationCache =
-    new SingleValueCache[String] {
-      def compute = _delegate
+    new SingleValueAsynchronousCache[String] {
+      def compute = delegate
       def expiresIn(s: String) = delegationRenewal
     }
 
   def delegationId = delegationCache()
 
-  def delegate = delegationCache.forceRenewal
-
-  private def _delegate: String = {
-    val proxy = credential()
-    val req = delegationService.getProxyReq(proxy.delegationID).get
-    delegationService.putProxy(proxy.delegationID, createProxyfromCertReq(req, proxy)).get
-    proxy.delegationID
+  private def delegate: String = {
+    val p = proxy()
+    val req = delegationService.getProxyReq(p.delegationID).get
+    delegationService.putProxy(p.delegationID, createProxyfromCertReq(req, p)).get
+    p.delegationID
   }
 
   def submit(desc: WMSJobDescription) = {
-    val cred = credential()
+    val cred = proxy()
     val j = wmsService.jobRegister(desc.toJDL, delegationId).get
     fillInputSandbox(desc, j.id)
     wmsService.jobStart(j.id).get
@@ -85,7 +106,7 @@ trait WMSJobService extends JobService with DefaultTimeout {
       from ⇒
         val url = new URI(from.name)
         val file = indexed(new File(url.getPath).getName)._2
-        val is = new GridFTPInputStream(credential().credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
+        val is = new GridFTPInputStream(proxy().gt2Credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
         finally is.close
     }
@@ -95,19 +116,19 @@ trait WMSJobService extends JobService with DefaultTimeout {
     val inputSandboxURL = new URI(wmsService.getSandboxDestURI(jobId, "gsiftp").get.Item(0))
     desc.inputSandbox.foreach {
       file ⇒
-        val os = new GridFTPOutputStream(credential().credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
+        val os = new GridFTPOutputStream(proxy().gt2Credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
         try copy(file, os, copyBufferSize, timeout)
         finally os.close
     }
   }
 
-  @transient lazy val delegationService = DelegationService(url, credential, timeout, connections)
-  @transient lazy val wmsService = WMSService(url, credential, timeout, connections)
+  @transient lazy val delegationService = DelegationService(url, proxy, timeout, connections)
+  @transient lazy val wmsService = WMSService(url, proxy, timeout, connections)
 
   @transient lazy val lbServiceCache = new Cache[String, LoggingAndBookkeepingPortType] {
     override def compute(k: String) = {
       val lbServiceURL = new URL(k)
-      LBService(lbServiceURL.toURI, credential, timeout, connections)
+      LBService(lbServiceURL.toURI, proxy, timeout, connections)
     }
     override def cacheTime(t: LoggingAndBookkeepingPortType) = None
   }
@@ -136,27 +157,34 @@ trait WMSJobService extends JobService with DefaultTimeout {
   private lazy val flags = JobFlags(CLASSADS, CHILDREN, CHILDSTAT)
 
   private def createProxyfromCertReq(certReq: String, proxy: GlobusAuthentication.Proxy) = {
-    val proxyStream = proxy.proxyString
+    val globusCred = proxy.credential.getX509Credential
 
-    // generator object
-    val generator = new GrDProxyGenerator
+    val userCerts = globusCred.getCertificateChain
+    val key = globusCred.getPrivateKey
 
-    // gets the local proxy as array of byte
-    //proxy = GrDPX509Util.getFileBytes( File );
-    // reads the proxy time-left
-    val stream = new ByteArrayInputStream(proxyStream.getBytes)
-    val cf = CertificateFactory.getInstance("X.509")
-    val cert = cf.generateCertificate(stream).asInstanceOf[X509Certificate]
-    stream.close
-    val now = new Date()
-    val lifetime = (cert.getNotAfter.getTime - now.getTime()) / 3600000 // in hour ! (TBC in secs)
+    val factory = BouncyCastleCertProcessingFactory.getDefault
 
-    // checks if the proxy is still valid
-    if (lifetime < 0) throw new RuntimeException("The local proxy has expired")
-    // sets the lifetime
-    generator.setLifetime(lifetime.toInt)
-    // creates the new proxy and converts the proxy from byte[] to String
-    new String(generator.x509MakeProxyCert(certReq.getBytes, proxyStream.getBytes, ""))
+    val proxyType = globusCred.getProxyType
+    val lifetime = proxy.credential.getRemainingLifetime
+
+    val certificate =
+      factory.createCertificate(
+        new ByteArrayInputStream(
+          GrDPX509Util.readPEM(
+            new ByteArrayInputStream(certReq.getBytes()),
+            GrDPConstants.CRH,
+            GrDPConstants.CRF)), userCerts(0),
+        key,
+        lifetime,
+        proxyType) //12 hours proxy
+
+    val finalCerts = new Array[X509Certificate](userCerts.length + 1);
+    finalCerts(0) = certificate
+    for {
+      (c, i) ← userCerts.zipWithIndex
+    } finalCerts(i + 1) = c
+
+    new String(GrDPX509Util.certChainToByte(finalCerts))
   }
 
 }

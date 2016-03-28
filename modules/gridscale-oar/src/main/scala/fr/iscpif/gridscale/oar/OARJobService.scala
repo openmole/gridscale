@@ -19,13 +19,24 @@ package fr.iscpif.gridscale.oar
 
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh.SSHJobService._
-import fr.iscpif.gridscale.ssh.{ SSHStorage, SSHHost }
+import fr.iscpif.gridscale.ssh.{ SSHAuthentication, SSHHost, SSHStorage }
 import fr.iscpif.gridscale.tools.shell.BashShell
-import fr.iscpif.gridscale.tools._
-import net.schmizz.sshj.sftp.{ FileMode, SFTPClient }
 import net.schmizz.sshj.xfer.FilePermission
 
+import scala.concurrent.duration._
+
 object OARJobService {
+
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential, _timeout) = (host, port, credential, timeout)
+    new OARJobService {
+      override val credential = _credential
+      override val host = _host
+      override val port = _port
+      override val timeout = _timeout
+    }
+  }
+
   case class OARJob(val description: OARJobDescription, val id: String)
   val oarJobId = "OAR_JOB_ID"
 
@@ -40,7 +51,7 @@ object OARJobService {
 
 }
 
-import OARJobService._
+import fr.iscpif.gridscale.oar.OARJobService._
 
 trait OARJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = OARJob
@@ -50,10 +61,7 @@ trait OARJobService extends JobService with SSHHost with SSHStorage with BashShe
     exec("mkdir -p " + description.workDirectory)
 
     val script = oarScriptPath(description)
-
-    val outputStream = openOutputStream(script)
-    try outputStream.write(description.toOAR.getBytes)
-    finally outputStream.close
+    write(description.toOAR.getBytes, script)
 
     chmod(script, FilePermission.USR_RWX)
 

@@ -18,18 +18,28 @@
 package fr.iscpif.gridscale.ssh
 
 import java.util.UUID
-import java.util.logging.Logger
+
+import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.tools._
 import fr.iscpif.gridscale.tools.shell._
 import net.schmizz.sshj.SSHClient
-import net.schmizz.sshj.connection.channel.direct.Session
 import net.schmizz.sshj.common.IOUtils
-import fr.iscpif.gridscale._
-import tools._
-import jobservice._
+import net.schmizz.sshj.connection.channel.direct.Session
 
-import scala.util.Try
+import scala.concurrent.duration._
 
 object SSHJobService {
+
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_port, _host, _credential, _timeout) = (port, host, credential, timeout)
+
+    new SSHJobService {
+      override val credential = _credential
+      override val port = _port
+      override val host = _host
+      override val timeout = _timeout
+    }
+  }
 
   // val rootDir = ".gridscale/ssh"
 
@@ -86,13 +96,14 @@ object SSHJobService {
   case class JobId(jobId: String, workDirectory: String)
 }
 
-import SSHJobService._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 
 trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShell { js ⇒
   type J = JobId
   type D = SSHJobDescription
 
   def bufferSize = 65535
+  def timeout: Duration
 
   def toScript(description: D, background: Boolean = true) = {
     val jobId = UUID.randomUUID.toString
@@ -129,7 +140,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
     if (jobIsRunning(job)) Running
     else {
       if (exists(endCodeFile(job.workDirectory, job.jobId))) {
-        val is = openInputStream(endCodeFile(job.workDirectory, job.jobId))
+        val is = _read(endCodeFile(job.workDirectory, job.jobId))
         val content =
           try getBytes(is, bufferSize, timeout)
           finally is.close

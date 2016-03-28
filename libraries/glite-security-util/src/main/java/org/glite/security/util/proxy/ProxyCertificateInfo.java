@@ -16,14 +16,14 @@
  */
 package org.glite.security.util.proxy;
 
-import java.io.IOException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.glite.security.util.CertUtil;
+
+import java.io.IOException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 /**
  * A base class for digging up info from the proxy.

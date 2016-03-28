@@ -16,10 +16,10 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
+import org.apache.log4j.Logger;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.log4j.Logger;
 
 /**
  * This class provides utility methods that are used for parsing, matching voms

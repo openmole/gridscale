@@ -14,12 +14,7 @@
  *********************************************************************/
 package org.glite.voms.contact;
 
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.DEREncodableVector;
-import org.bouncycastle.asn1.DERSequence;
-import org.globus.gsi.GSIConstants;
+import org.bouncycastle.asn1.*;
 import org.globus.gsi.GSIConstants.CertificateType;
 import org.globus.gsi.proxy.ext.ProxyPolicy;
 

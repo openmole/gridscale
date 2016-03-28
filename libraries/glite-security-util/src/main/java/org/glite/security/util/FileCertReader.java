@@ -17,29 +17,14 @@
 package org.glite.security.util;
 
 import org.apache.log4j.Logger;
-
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.Security;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.CertificateParsingException;
-import java.security.cert.TrustAnchor;
-import java.security.cert.X509CRL;
-import java.security.cert.X509Certificate;
-
+import java.security.*;
+import java.security.cert.*;
 import java.util.Iterator;
 import java.util.Vector;
 

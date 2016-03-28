@@ -18,8 +18,9 @@ limitations under the License.
 
 package org.glite.security.util;
 
-import java.io.File;
 import org.apache.log4j.Logger;
+
+import java.io.File;
 
 /**
  * Utility class to split the CA filename. E.g. file name "/etc/grid-security/certificates/12adf342.4" would be split

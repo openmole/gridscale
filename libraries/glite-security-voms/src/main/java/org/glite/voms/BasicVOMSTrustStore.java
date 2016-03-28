@@ -1,13 +1,13 @@
 package org.glite.voms;
 
-import org.glite.voms.ac.ACTrustStore;
 import org.apache.log4j.Logger;
+import org.glite.voms.ac.ACTrustStore;
 
 import javax.security.auth.x500.X500Principal;
-import java.util.*;
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
 import java.security.cert.X509Certificate;
+import java.util.*;
 
 /**
  * @deprecated  This class does not expose the necessary information. Use

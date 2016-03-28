@@ -16,13 +16,13 @@
  */
 package org.glite.security.util;
 
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.log4j.Logger;
 
 /**
  * The class that handles the trust directory, currently provides a method to list all the CA certificates.

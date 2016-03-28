@@ -18,17 +18,30 @@
 package fr.iscpif.gridscale.pbs
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
+import scala.concurrent.duration._
+
 object PBSJobService {
+
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential, _timeout) = (host, port, credential, timeout)
+    new PBSJobService {
+      override val credential = _credential
+      override val host = _host
+      override val port = _port
+      override val timeout = _timeout
+    }
+  }
+
   class PBSJob(val description: PBSJobDescription, val pbsId: String)
 
   val jobStateAttribute = "JOB_STATE"
 }
 
-import PBSJobService._
+import fr.iscpif.gridscale.pbs.PBSJobService._
 
 trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = PBSJob
@@ -36,9 +49,8 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(pbsScriptPath(description))
-    try outputStream.write(description.toPBS.getBytes)
-    finally outputStream.close
+
+    write(description.toPBS.getBytes, pbsScriptPath(description))
 
     val command = "cd " + description.workDirectory + " && qsub " + pbsScriptName(description)
     val (ret, jobId, error) = execReturnCodeOutput(command)

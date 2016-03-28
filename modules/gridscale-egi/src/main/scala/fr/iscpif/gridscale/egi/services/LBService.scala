@@ -17,18 +17,19 @@
 
 package fr.iscpif.gridscale.egi.services
 
-import fr.iscpif.gridscale.libraries.lbstub._
-import scala.concurrent.duration.Duration
-import scalaxb.HttpClients
 import java.net.{ Socket, URI }
+
 import fr.iscpif.gridscale.egi.GlobusAuthentication
-import fr.iscpif.gridscale.globushttp.{ CompleteSocketFactory, GlobusHttpClient }
-import org.apache.commons.httpclient.methods.{ PostMethod, StringRequestEntity }
-import scala.util.{ Try, Success, Failure }
+import fr.iscpif.gridscale.globushttp.CompleteSocketFactory
+import fr.iscpif.gridscale.libraries.lbstub._
+
+import scala.concurrent.duration.Duration
+import scala.util.{ Failure, Success, Try }
+import scalaxb.HttpClients
 
 object LBService {
 
-  def apply(uri: URI, credential: GlobusAuthentication.ProxyCreator, _timeout: Duration, _maxConnections: Int) =
+  def apply(uri: URI, credential: () ⇒ GlobusAuthentication.Proxy, _timeout: Duration, _maxConnections: Int) =
     new LBService {
       @transient lazy val httpClient: HttpClient = new HttpClient with GlobusHttpRequest with CompleteSocketFactory {
         def defaultPort = 9003

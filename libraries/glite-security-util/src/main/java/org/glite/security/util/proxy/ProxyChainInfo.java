@@ -16,13 +16,13 @@
  */
 package org.glite.security.util.proxy;
 
+import org.glite.security.util.IPAddressComparator;
+
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.Vector;
-
-import org.glite.security.util.IPAddressComparator;
 
 /**
  * A class to get the proxy information from the whole proxy cert chain.

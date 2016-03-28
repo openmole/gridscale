@@ -17,7 +17,7 @@
 
 package fr.iscpif.gridscale.egi
 
-import org.globus.myproxy.{ MyProxy ⇒ GMyProxy, InitParams, InfoParams }
+import org.globus.myproxy.{ InfoParams, InitParams, MyProxy ⇒ GMyProxy }
 import org.ietf.jgss.GSSCredential
 
 trait MyProxy {

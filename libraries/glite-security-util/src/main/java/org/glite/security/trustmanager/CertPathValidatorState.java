@@ -17,11 +17,11 @@ limitations under the License.
  */
 package org.glite.security.trustmanager;
 
-import java.util.Vector;
-
 import org.glite.security.util.DN;
 import org.glite.security.util.FullTrustAnchor;
 import org.glite.security.util.proxy.ProxyCertificateInfo;
+
+import java.util.Vector;
 
 /**
  * Simple class to hold the path validator state from one stage to the next.

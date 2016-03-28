@@ -17,18 +17,15 @@
 
 package fr.iscpif.gridscale.globushttp
 
-import java.net.SocketTimeoutException
-import java.util.concurrent.{ ConcurrentLinkedQueue, Executors }
+import java.util.concurrent.Executors
 
-import org.apache.commons.httpclient.params.{ HttpMethodParams, HttpClientParams, HttpConnectionManagerParams }
+import org.apache.commons.httpclient.methods.{ GetMethod, PostMethod, StringRequestEntity }
+import org.apache.commons.httpclient.params.{ HttpClientParams, HttpConnectionManagerParams, HttpMethodParams }
+import org.apache.commons.httpclient.protocol.Protocol
 import org.apache.commons.httpclient.{ HttpClient, MultiThreadedHttpConnectionManager }
-import org.gridforum.jgss.{ ExtendedGSSContext, ExtendedGSSCredential, ExtendedGSSManager }
-import org.ietf.jgss.{ GSSContext, GSSCredential }
-import org.globus.gsi.gssapi.{ GSSConstants, GlobusGSSCredentialImpl }
-import org.apache.commons.httpclient.protocol.{ Protocol, ProtocolSocketFactory }
-import org.apache.commons.httpclient.methods.{ PutMethod, GetMethod, PostMethod, StringRequestEntity }
-
-import collection.JavaConversions._
+import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
+import org.gridforum.jgss.{ ExtendedGSSCredential, ExtendedGSSManager }
+import org.ietf.jgss.GSSCredential
 
 object GlobusHttpClient {
 
@@ -42,11 +39,10 @@ object GlobusHttpClient {
 
 }
 
-import GlobusHttpClient._
-
 trait GlobusHttpClient <: SocketFactory {
   def proxyBytes: Array[Byte]
   def address: java.net.URI
+  def defaultProtocolPort = 8446
 
   def maxConnections: Int
 
@@ -62,7 +58,7 @@ trait GlobusHttpClient <: SocketFactory {
   }
 
   @transient lazy val httpclient = {
-    val myHttpg = new Protocol("https", factory, 8446)
+    val myHttpg = new Protocol("https", factory, defaultProtocolPort)
     val httpclient = new HttpClient(manager)
     val param = new HttpClientParams()
     param.setSoTimeout(timeout.toMillis.toInt)
@@ -84,6 +80,20 @@ trait GlobusHttpClient <: SocketFactory {
       post.getResponseBodyAsString
     } finally {
       post.releaseConnection
+    }
+  }
+
+  def get(address: java.net.URI, headers: Map[String, String]): String = {
+    val get = new GetMethod(address.getPath)
+    try {
+      val params = new HttpMethodParams()
+      params.setSoTimeout(timeout.toMillis.toInt)
+      get.setParams(params)
+      headers.foreach { case (k, v) ⇒ get.setRequestHeader(k, v) }
+      httpclient.executeMethod(get)
+      get.getResponseBodyAsString
+    } finally {
+      get.releaseConnection
     }
   }
 

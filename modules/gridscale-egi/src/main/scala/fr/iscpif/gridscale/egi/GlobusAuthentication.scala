@@ -18,17 +18,48 @@
 package fr.iscpif.gridscale.egi
 
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl
-import java.io.{ FileInputStream, File }
-import java.util.UUID
-import io._
+
+object GlobusAuthenticationProvider {
+
+  implicit val functionGlobusProvider = new GlobusAuthenticationProvider[() ⇒ GlobusAuthentication.Proxy] {
+    override def apply(t: () ⇒ GlobusAuthentication.Proxy): GlobusAuthentication.Proxy = t()
+  }
+
+  implicit val p12VOMSGlobusProvider = new GlobusAuthenticationProvider[P12VOMSAuthentication] {
+    override def apply(t: P12VOMSAuthentication) = t()
+  }
+
+  //  implicit val pemVOMSGlobusProvider = new GlobusAuthenticationProvider[PEMVOMSAuthentication] {
+  //    override def apply(t: PEMVOMSAuthentication) = t()
+  //  }
+
+  //  implicit val proxyVOMSGlobusProvider = new GlobusAuthenticationProvider[ProxyFileAuthentication] {
+  //    override def apply(t: ProxyFileAuthentication) = t()
+  //  }
+
+}
+
+trait GlobusAuthenticationProvider[-T] {
+  def apply(t: T): GlobusAuthentication.Proxy
+}
 
 object GlobusAuthentication {
-  case class Proxy(credential: GlobusGSSCredentialImpl, proxyBytes: Array[Byte], delegationID: String) {
+
+  object Proxy {
+    def apply(
+      credential: GlobusGSSCredentialImpl,
+      proxyBytes: Array[Byte],
+      delegationID: String,
+      gt2Credential: GlobusGSSCredentialImpl) = new Proxy(credential, proxyBytes, delegationID, gt2Credential)
+  }
+
+  class Proxy(
+      val credential: GlobusGSSCredentialImpl,
+      val proxyBytes: Array[Byte],
+      val delegationID: String,
+      val gt2Credential: GlobusGSSCredentialImpl) {
     @transient lazy val proxyString = new String(proxyBytes)
   }
-  type ProxyCreator = () ⇒ Proxy
+
 }
 
-trait GlobusAuthentication extends GlobusAuthentication.ProxyCreator {
-  @transient lazy val delegationID = UUID.randomUUID
-}

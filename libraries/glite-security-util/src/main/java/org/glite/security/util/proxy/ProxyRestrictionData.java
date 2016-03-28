@@ -16,20 +16,14 @@
  */
 package org.glite.security.util.proxy;
 
+import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralSubtree;
+
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.DERTaggedObject;
-import org.bouncycastle.asn1.x509.GeneralName;
-import org.bouncycastle.asn1.x509.GeneralSubtree;
 
 /**
  * An utility class for defining the allowed address space, used both to define the source and target restrictions. The

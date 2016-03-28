@@ -1,12 +1,14 @@
 package org.glite.voms.contact;
 
-import org.apache.log4j.Logger;
 import org.apache.commons.lang.StringUtils;
-import org.glite.voms.contact.VOMSRequestFragment;
-import org.glite.voms.contact.VOMSRequestOptions;
-import org.w3c.dom.*;
+import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+import org.w3c.dom.Element;
 
-import javax.xml.parsers.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.Iterator;
 
 /**
@@ -18,24 +20,14 @@ import java.util.Iterator;
  */
 public class VOMSRequestFactory {
 
-    private static Logger log = Logger.getLogger( VOMSRequestFactory.class );
-    private static VOMSRequestFactory instance = null;
-
     private String orderString;
     private String targetString;
     private long lifetime = 0;
 
     protected DocumentBuilder docBuilder;
 
-    public static VOMSRequestFactory instance(){
-        if (instance == null)
-            instance = new VOMSRequestFactory();
 
-        return instance;
-
-    }
-
-    private VOMSRequestFactory(){
+    public VOMSRequestFactory(){
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setIgnoringComments( true );
@@ -45,32 +37,19 @@ public class VOMSRequestFactory {
         try {
             docBuilder = factory.newDocumentBuilder();
         } catch ( ParserConfigurationException e ) {
-
-            log.fatal( "Error configuring DOM document builder." );
-
-            if (log.isDebugEnabled()){
-                log.debug( e.getMessage(), e );
-            }
-
             throw new VOMSException(e);
         }
     }
 
     public long getLifetime() {
-
         return lifetime;
     }
 
     public void setLifetime( long lifetime ) {
-
         this.lifetime = lifetime;
     }
 
-
-
-
     public String getOrderString() {
-
         return orderString;
     }
 
@@ -78,15 +57,10 @@ public class VOMSRequestFactory {
 
 
     public void setOrderString( String orderString ) {
-
         this.orderString = orderString;
     }
 
-
-
-
     public String getTargetString() {
-
         return targetString;
     }
 
@@ -94,12 +68,10 @@ public class VOMSRequestFactory {
 
 
     public void setTargetString( String targetString ) {
-
         this.targetString = targetString;
     }
 
     private void setOptionsForRequest(VOMSRequestFragment fragment){
-
         if (orderString != null && orderString != "")
             fragment.buildOrderElement( orderString );
 
@@ -126,7 +98,6 @@ public class VOMSRequestFactory {
         VOMSRequestFragment frag = new VOMSRequestFragment(request);
 
         if (options.getRequestedFQANs().isEmpty()){
-
             if (options.getVoName() == null)
                 throw new VOMSException("No vo name specified for AC retrieval.");
 
@@ -225,28 +196,23 @@ class VOMSRequestFragment{
 
     }
     void buildCommandElement(String cmdString){
-
         command = doc.createElement( "command");
         appendTextChild( command, cmdString);
         root.appendChild( command );
     }
 
     void buildOrderElement(String orderString){
-
         order = doc.createElement( "order" );
 
         // Temporary compatibility hack
         appendTextChild( order,buildCompatibleOrderString( orderString ));
-
         root.appendChild( order );
     }
 
     void buildTargetsElement(String targetString){
-
         targets = doc.createElement( "targets" );
         appendTextChild( targets, targetString);
         root.appendChild( targets );
-
     }
 
     void buildLifetime(long lifetime){
@@ -254,14 +220,12 @@ class VOMSRequestFragment{
     }
 
     void buildLifetime(String lifetimeString){
-
         lifetime = doc.createElement( "lifetime" );
         appendTextChild( lifetime, lifetimeString);
         root.appendChild( lifetime );
     }
 
     public DocumentFragment getFragment() {
-
         return fragment;
     }
 
@@ -271,19 +235,15 @@ class VOMSRequestFragment{
     }
 
     public void roleCommand(String roleName){
-
         buildCommandElement( "R"+roleName );
-
     }
 
     public void mappingCommand(String groupName, String roleName){
-
         buildCommandElement( "B"+groupName+":"+roleName );
 
     }
 
     public void allCommand(){
-
         buildCommandElement( "A" );
     }
 

@@ -21,13 +21,11 @@ package org.glite.security.trustmanager;
 import org.apache.log4j.Logger;
 
 import java.math.BigInteger;
-
 import java.security.Principal;
 import java.security.cert.CertPathValidatorException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509CRLEntry;
 import java.security.cert.X509Certificate;
-
 import java.util.Iterator;
 import java.util.Vector;
 

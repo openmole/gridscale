@@ -19,11 +19,24 @@
 package fr.iscpif.gridscale.slurm
 
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
-import SSHJobService._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
+import scala.concurrent.duration._
+
 object SLURMJobService {
+
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_host, _port, _credential, _timeout) = (host, port, credential, timeout)
+    new SLURMJobService {
+      override val credential = _credential
+      override val host = _host
+      override val port = _port
+      override val timeout = _timeout
+    }
+  }
+
   class SLURMJob(val description: SLURMJobDescription, val slurmId: String)
 
   object SLURMJob {
@@ -44,7 +57,7 @@ object SLURMJobService {
     }
 }
 
-import SLURMJobService._
+import fr.iscpif.gridscale.slurm.SLURMJobService._
 
 trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashShell {
   type J = SLURMJob
@@ -52,9 +65,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
 
   def submit(description: D): J = withConnection { implicit connection ⇒
     exec("mkdir -p " + description.workDirectory)
-    val outputStream = openOutputStream(slurmScriptPath(description))
-    try outputStream.write(description.toSLURM.getBytes)
-    finally outputStream.close
+    write(description.toSLURM.getBytes, slurmScriptPath(description))
 
     val command = "cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm"
     val (ret, output, error) = execReturnCodeOutput(command)

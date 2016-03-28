@@ -18,15 +18,32 @@
 package fr.iscpif.gridscale.ssh
 
 import java.io._
-
-import net.schmizz.sshj.xfer.FilePermission
-
-import collection.JavaConversions._
-import net.schmizz.sshj.sftp.{ OpenMode, FileMode, SFTPClient }
+import java.nio.file.Files
 import java.util
-import fr.iscpif.gridscale.storage._
 import java.util.logging.{ Level, Logger }
-import collection.JavaConversions._
+
+import fr.iscpif.gridscale.storage._
+import net.schmizz.sshj.sftp.{ FileMode, OpenMode, SFTPClient }
+import net.schmizz.sshj.xfer.FilePermission
+import fr.iscpif.gridscale.tools._
+
+import scala.collection.JavaConversions._
+import scala.concurrent.duration._
+
+object SSHStorage {
+
+  def apply(host: String, port: Int = 22, timeout: Duration = 1 minute)(implicit credential: SSHAuthentication) = {
+    val (_port, _host, _credential, _timeout) = (port, host, credential, timeout)
+
+    new SSHStorage {
+      override def credential: SSHAuthentication = _credential
+      override def host: String = _host
+      override def timeout: Duration = _timeout
+      override def port: Int = _port
+    }
+  }
+
+}
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒
 
@@ -79,19 +96,12 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   private def rmDirWithClient(path: String)(c: SFTPClient): Unit = wrapException(s"rm dir $path") {
     listWithClient(path)(c).foreach {
       entry ⇒
-        try {
-          val child = path + "/" + entry.name
-          entry.`type` match {
-            case FileType      ⇒ rmFileWithClient(child)(c)
-            case LinkType      ⇒ rmFileWithClient(child)(c)
-            case DirectoryType ⇒ rmDirWithClient(child)(c)
-            case UnknownType   ⇒ rmFileWithClient(child)(c)
-          }
-        } catch {
-          // some err/out files might not have been created, so this error should be harmless
-          case e: SSHException.NoSuchFileException ⇒ Logger.getLogger(
-            classOf[SSHStorage].getName).log(Level.FINEST, e.msg)
-          case t: Throwable ⇒ Logger.getLogger(classOf[SSHStorage].getName).log(Level.FINE, "Error in recursive rm", t)
+        val child = path + "/" + entry.name
+        entry.`type` match {
+          case FileType      ⇒ rmFileWithClient(child)(c)
+          case LinkType      ⇒ rmFileWithClient(child)(c)
+          case DirectoryType ⇒ rmDirWithClient(child)(c)
+          case UnknownType   ⇒ rmFileWithClient(child)(c)
         }
     }
     c.rmdir(path)
@@ -109,7 +119,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rm(path)
   }
 
-  protected def _openInputStream(path: String): InputStream = {
+  override def _read(path: String): InputStream = {
     val connection = getConnection
 
     def close = release(connection)
@@ -137,7 +147,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
       finally close
     }
 
-    new fileHandle.RemoteFileInputStream {
+    new fileHandle.ReadAheadRemoteFileInputStream(unconfirmedExchanges) {
       override def close = {
         try closeAll
         finally super.close
@@ -145,7 +155,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     }
   }
 
-  protected def _openOutputStream(path: String): OutputStream = {
+  override def _write(is: InputStream, path: String): Unit = {
     val connection = getConnection
 
     def close = release(connection)
@@ -173,12 +183,12 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
       finally close
     }
 
-    new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges) {
-      override def close = {
-        try closeAll
-        finally super.close
-      }
-    }
+    try {
+      val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
+      try copyStream(is, os)
+      finally os.close
+    } finally closeAll
+
   }
 
 }
