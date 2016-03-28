@@ -28,16 +28,16 @@ object Main {
       case _                             ⇒ throw new RuntimeException("Bad arguments")
     }
 
-    val b = new PBSBenchmark(host, username, password, privateKeyPath)(nbJobs)
+    val b = PBSBenchmark(host, username, password, privateKeyPath)(nbJobs)
     val (avgSubmit, avgQuery, avgCancel) = b.avgBenchmark(nbRuns).toList match {
       case List(a, b, c) ⇒ (a, b, c)
     }
 
     println(
-      s"""Average for ${nbJobs} jobs along ${nbRuns} runs (milliseconds):
-         |\tsubmit: ${avgSubmit}
-         |\tstate: ${avgQuery}
-         |\tcancel: ${avgCancel}
+      s"""Average for $nbJobs jobs along $nbRuns runs (milliseconds):
+         |\tsubmit: $avgSubmit
+         |\tstate: $avgQuery
+         |\tcancel: $avgCancel
        """.stripMargin)
   }
 }

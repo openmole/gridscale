@@ -19,24 +19,26 @@ package fr.iscpif.gridscale.benchmark
 package pbs
 
 import java.io.File
-import fr.iscpif.gridscale.ssh._
+import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.pbs._
 import fr.iscpif.gridscale.benchmark.util._
 
 import scala.concurrent.duration._
 
-class PBSBenchmark(val inHost: String, val inUsername: String, val inPassword: String, val inPrivateKeyPath: String)(val nbJobs: Int)
-    extends Benchmark with PBSJobService with SSHPrivateKeyAuthentication { slurmService ⇒
+object PBSBenchmark {
 
-  override val jobDescription = new PBSJobDescription {
-    val executable = slurmService.executable
-    val arguments = slurmService.arguments
-    val workDirectory = "/work/jpassera/benchmark"
-    override val wallTime = Some(30 minutes)
+  def apply(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String)(inNbJobs: Int) = {
+
+    new Benchmark {
+
+      def credential = PrivateKey(inUsername, new File(inPrivateKeyPath), inPassword)
+
+      implicit val jobService: PBSJobService = PBSJobService(inHost)(credential)
+
+      override val nbJobs = inNbJobs
+      override val jobDescription = new PBSJobDescription with BenchmarkConfig {
+        override val wallTime = Some(30 minutes)
+      }
+    }
   }
-
-  def host = inHost
-  def user = inUsername
-  def password = inPassword
-  def privateKey = new File(inPrivateKeyPath)
 }

@@ -19,21 +19,21 @@ package fr.iscpif.gridscale.benchmark
 package condor
 
 import java.io.File
-import fr.iscpif.gridscale.ssh._
+import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.condor._
 import fr.iscpif.gridscale.benchmark.util._
 
-class CondorBenchmark(val inHost: String, val inUsername: String, val inPassword: String, val inPrivateKeyPath: String)(val nbJobs: Int)
-    extends Benchmark with CondorJobService with SSHPrivateKeyAuthentication { slurmService ⇒
+object CondorBenchmark {
 
-  override val jobDescription = new CondorJobDescription {
-    val executable = slurmService.executable
-    val arguments = slurmService.arguments
-    val workDirectory = slurmService.workDirectory
+  def apply(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String)(inNbJobs: Int) = {
+
+    new Benchmark {
+      def credential = PrivateKey(inUsername, new File(inPrivateKeyPath), inPassword)
+
+      implicit val jobService: CondorJobService = CondorJobService(inHost)(credential)
+
+      override val nbJobs = inNbJobs
+      override val jobDescription = new CondorJobDescription with BenchmarkConfig
+    }
   }
-
-  def host = inHost
-  def user = inUsername
-  def password = inPassword
-  def privateKey = new File(inPrivateKeyPath)
 }

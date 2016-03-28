@@ -19,21 +19,21 @@ package fr.iscpif.gridscale.benchmark
 package slurm
 
 import java.io.File
-import fr.iscpif.gridscale.ssh._
+import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.slurm._
 import fr.iscpif.gridscale.benchmark.util._
 
-class SlurmBenchmark(val inHost: String, val inUsername: String, val inPassword: String, val inPrivateKeyPath: String)(val nbJobs: Int)
-    extends Benchmark with SLURMJobService with SSHPrivateKeyAuthentication { slurmService ⇒
+object SlurmBenchmark {
 
-  override val jobDescription = new SLURMJobDescription {
-    val executable = slurmService.executable
-    val arguments = slurmService.arguments
-    val workDirectory = slurmService.workDirectory
+  def apply(inHost: String, inUsername: String, inPassword: String, inPrivateKeyPath: String)(inNbJobs: Int) = {
+
+    new Benchmark {
+      def credential = PrivateKey(inUsername, new File(inPrivateKeyPath), inPassword)
+
+      implicit val jobService: SLURMJobService = SLURMJobService(inHost)(credential)
+
+      override val nbJobs = inNbJobs
+      override val jobDescription = new SLURMJobDescription with BenchmarkConfig
+    }
   }
-
-  def host = inHost
-  def user = inUsername
-  def password = inPassword
-  def privateKey = new File(inPrivateKeyPath)
 }
