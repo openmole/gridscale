@@ -66,7 +66,7 @@ trait Benchmark extends BenchmarkUtils {
       jobs.map(jobService.state)
     }.getOrElse(Seq.empty, missingValue)
 
-    println(s"Queried state for $states.length jobs in $queryTime")
+    println(s"Queried state for ${states.length} jobs in $queryTime")
 
     println("Cancelling jobs...")
     val (_, cancelTime) = withTimer(jobs.foreach(jobService.cancel)).getOrElse(Seq.empty, missingValue)
