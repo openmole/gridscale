@@ -19,6 +19,7 @@ package fr.iscpif.gridscale.benchmark
 package util
 
 import fr.iscpif.gridscale.jobservice.JobService
+import fr.iscpif.gridscale.slurm._
 
 trait BenchmarkUtils {
 
@@ -29,9 +30,10 @@ trait BenchmarkUtils {
       val after = System.nanoTime()
       val elapsed = after - before
       Some((res, elapsed / 1000000d))
-    } catch {
-      case _: Throwable ⇒ None
     }
+    //    catch {
+    //      case _: Throwable ⇒ None
+    //    }
   }
 }
 
@@ -69,7 +71,19 @@ trait Benchmark extends BenchmarkUtils {
     println(s"Queried state for ${states.length} jobs in $queryTime")
 
     println("Cancelling jobs...")
-    val (_, cancelTime) = withTimer(jobs.foreach(jobService.cancel)).getOrElse(Seq.empty, missingValue)
+    //    val (_, cancelTime) = withTimer(jobs.foreach(jobService.cancel)).getOrElse(Seq.empty, missingValue)
+
+    val slurmJS = jobService.asInstanceOf[SLURMJobService]
+    val slurmJobs = jobs.asInstanceOf[Seq[SLURMJobService.SLURMJob]]
+    val slurmCancel = slurmJS.cancelAsync(_)
+
+    val (_, cancelTime) = slurmJS.withConnection(connection ⇒
+      withTimer {
+        val futures = slurmJS.processFutures(slurmJobs: _*)(slurmCancel).run(connection)
+        slurmJS.retrieveFutures(futures)(slurmJS.processCancel)
+      }
+    ).getOrElse(Seq.empty, missingValue)
+
     println(s"Cancelled $nbJobs jobs in $cancelTime")
 
     println("Purging jobs...")
