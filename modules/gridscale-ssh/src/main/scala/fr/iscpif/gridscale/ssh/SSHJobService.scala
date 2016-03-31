@@ -26,7 +26,11 @@ import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.IOUtils
 import net.schmizz.sshj.connection.channel.direct.Session
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+
+case class ExecResult(retCode: Int, output: String, error: String)
 
 object SSHJobService {
 
@@ -80,6 +84,11 @@ object SSHJobService {
       cmd.join
       (cmd.getExitStatus.toInt, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
+  }
+
+  def execReturnCodeOutputFuture(cde: Command)(implicit client: SSHClient) = Future {
+    val (ret, out, err) = execReturnCodeOutput(cde)
+    ExecResult(ret, out, err)
   }
 
   def exec(cde: Command)(implicit client: SSHClient) = withSession(client) { session ⇒
