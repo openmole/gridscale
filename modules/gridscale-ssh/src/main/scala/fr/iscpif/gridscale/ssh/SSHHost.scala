@@ -23,6 +23,11 @@ import net.schmizz.sshj.sftp._
 
 import scala.concurrent.duration.Duration
 
+case class Reader[E, A](run: E ⇒ A) {
+  def map[B](f: A ⇒ B): Reader[E, B] = Reader(env ⇒ f(run(env)))
+  def flatMap[B](f: A ⇒ Reader[E, B]): Reader[E, B] = Reader(env ⇒ f(run(env)).run(env))
+}
+
 trait SSHHost {
 
   def credential: SSHAuthentication
@@ -53,4 +58,8 @@ trait SSHHost {
       val sftpClient = connection.newSFTPClient
       try f(sftpClient) finally sftpClient.close
   }
+}
+
+object SSHHost {
+  def withReusedConnection[T](f: SSHClient ⇒ T): Reader[SSHClient, T] = Reader(f)
 }
