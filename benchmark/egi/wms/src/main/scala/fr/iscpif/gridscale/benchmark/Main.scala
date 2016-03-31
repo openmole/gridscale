@@ -34,10 +34,10 @@ object Main {
     }
 
     println(
-      s"""Average for ${nbJobs} jobs along ${nbRuns} runs (milliseconds):
-         |\tsubmit: ${avgSubmit}
-         |\tstate: ${avgQuery}
-         |\tcancel: ${avgCancel}
+      s"""Average for $nbJobs jobs along $nbRuns runs (milliseconds):
+         |\tsubmit: $avgSubmit
+         |\tstate: $avgQuery
+         |\tcancel: $avgCancel
        """.stripMargin)
   }
 }
