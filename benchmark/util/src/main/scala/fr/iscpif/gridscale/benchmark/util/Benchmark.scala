@@ -64,17 +64,27 @@ trait Benchmark extends BenchmarkUtils {
     println(s"Submitted $nbJobs jobs in $submitTime")
 
     println("Querying state for jobs...")
-    val (states, queryTime) = withTimer {
-      jobs.map(jobService.state)
-    }.getOrElse(Seq.empty, missingValue)
+    //    val (states, queryTime) = withTimer {
+    //      jobs.map(jobService.state)
+    //    }.getOrElse(Seq.empty, missingValue)
+
+    val slurmJS = jobService.asInstanceOf[SLURMJobService]
+    val slurmJobs = jobs.asInstanceOf[Seq[SLURMJobService.SLURMJob]]
+    val slurmState = slurmJS.stateAsync(_)
+
+    // FIXME refactor with cancel
+    val (states, queryTime) = slurmJS.withConnection { connection ⇒
+      withTimer {
+        val futures = slurmJS.processFutures(slurmJobs: _*)(slurmState).run(connection)
+        slurmJS.retrieveFutures(futures)(slurmJS.processState)
+      }.getOrElse(Seq.empty, missingValue)
+    }
 
     println(s"Queried state for ${states.length} jobs in $queryTime")
 
     println("Cancelling jobs...")
     //    val (_, cancelTime) = withTimer(jobs.foreach(jobService.cancel)).getOrElse(Seq.empty, missingValue)
 
-    val slurmJS = jobService.asInstanceOf[SLURMJobService]
-    val slurmJobs = jobs.asInstanceOf[Seq[SLURMJobService.SLURMJob]]
     val slurmCancel = slurmJS.cancelAsync(_)
 
     val (_, cancelTime) = slurmJS.withConnection(connection ⇒
