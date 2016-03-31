@@ -97,6 +97,25 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
 
   }
 
+  def stateAsync(job: J) = withReusedConnection { implicit connection ⇒
+    execReturnCodeOutputFuture("scontrol show job " + job.slurmId).map((job, _))
+  }
+
+  // FIXME factor out for synchronous state as well
+  def processState(resState: (SLURMJob, ExecResult)) = {
+
+    val (job, ExecResult(ret, output, _)) = resState
+    val lines = output.split("\n").map(_.trim)
+    val state = lines.filter(_.matches(".*JobState=.*")).map {
+      prop ⇒
+        val splits = prop.split('=')
+        splits(0).trim -> splits(1).trim.split(' ')(0)
+      // consider job COMPLETED when scontrol returns 1: "Invalid job id specified"
+      /** @see translateStatus(retCode: Int, status: String) */
+    }.toMap.getOrElse(jobStateAttribute, "COMPLETED?")
+    (job, translateStatus(ret, state))
+  }
+
   def cancel(job: J): Unit = withConnection { implicit connection ⇒
     execReturnCodeOutput("scancel " + job.slurmId) match {
       case (0, _, _) ⇒
