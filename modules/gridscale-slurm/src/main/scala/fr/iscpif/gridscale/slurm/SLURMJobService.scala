@@ -21,9 +21,13 @@ package fr.iscpif.gridscale.slurm
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
+import fr.iscpif.gridscale.ssh.SSHHost._
 import fr.iscpif.gridscale.tools.shell.BashShell
+import net.schmizz.sshj.SSHClient
 
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object SLURMJobService {
 
@@ -99,6 +103,55 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
       case (1, _, error) if (error.matches(".*Invalid job id specified")) ⇒ throw new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id")
       case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}")
     }
+  }
+
+  def cancel2(job: J) =
+    withReusedConnection { implicit connection ⇒
+      execReturnCodeOutput("scancel " + job.slurmId) match {
+        case (0, _, _) ⇒
+        case (1, _, error) if (error.matches(".*Invalid job id specified")) ⇒ throw new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id")
+        case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}")
+      }
+    }
+
+  def cancelAsync(job: J) =
+    withReusedConnection { implicit connection ⇒
+      execReturnCodeOutputFuture("scancel " + job.slurmId).map((job, _))
+    }
+
+  def processCancel(resCancel: (SLURMJob, ExecResult)) = {
+    val (job, result) = resCancel
+    result match {
+      case ExecResult(0, _, _) ⇒ (job, result)
+      case ExecResult(1, _, error) if error.matches(".*Invalid job id specified") ⇒ throw new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id")
+      case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}")
+    }
+  }
+
+  /**
+   * Generic function creating the futures from the action applied to the jobs
+   *
+   * @param jobs list of Jobs / Job Description to apply an action on
+   * @param process Function performing an action on a job through an implicit connection
+   * @return A sequence containing the created futures
+   */
+  def processFutures[J, T](jobs: J*)(process: J ⇒ Reader[SSHClient, Future[(J, T)]]) = withReusedConnection { connection ⇒
+    val futures = jobs.map(process).map(_.run(connection))
+    futures
+  }
+
+  /**
+   * Generic function retrieving the results of the action run in async futures
+   *
+   * @param futures Sequence of the futures containing the results to be retrieved
+   * @param process Post-processing function to apply to the retrived results
+   * @return A sequence of results retrieved from the asynchronous actions performed in the futures
+   */
+  def retrieveFutures[J, T, R](futures: Seq[Future[(J, T)]])(process: ((J, T)) ⇒ R) = {
+    val res = Await.result(
+      Future.sequence(futures),
+      Duration.Inf)
+    res.map(process)
   }
 
   //Purge output error job script
