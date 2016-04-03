@@ -56,10 +56,16 @@ trait Benchmark extends BenchmarkUtils {
 
   def benchmark(jd: JobDescription)(nbJobs: Int) = {
 
+    val slurmJS = jobService.asInstanceOf[SLURMJobService]
+    val slurmJobDescriptions = jobDescription.asInstanceOf[SLURMJobDescription]
+    val slurmSubmit = slurmJS.submitAsync(_)
+
     println("Submitting jobs...")
-    val (jobs, submitTime) = withTimer {
-      (1 to nbJobs).map(x ⇒ jobService.submit(jobDescription))
-    }.getOrElse(Seq.empty, missingValue)
+    val (submitRes, submitTime) = slurmJS.withConnection(connection ⇒
+      withTimer { slurmJS.jobActions(slurmSubmit)(slurmJS.processSubmit)(Seq(slurmJobDescriptions): _*) run (connection) }
+    ).getOrElse(Seq.empty, missingValue)
+
+    val jobs = submitRes.map(_._2)
 
     println(s"Submitted $nbJobs jobs in $submitTime")
 
@@ -68,7 +74,6 @@ trait Benchmark extends BenchmarkUtils {
     //      jobs.map(jobService.state)
     //    }.getOrElse(Seq.empty, missingValue)
 
-    val slurmJS = jobService.asInstanceOf[SLURMJobService]
     val slurmJobs = jobs.asInstanceOf[Seq[SLURMJobService.SLURMJob]]
     val slurmState = slurmJS.stateAsync(_)
 
@@ -91,7 +96,7 @@ trait Benchmark extends BenchmarkUtils {
 
     println("Purging jobs...")
     // only purging one job, they're all the same
-    try jobService.purge(jobs.head)
+    try slurmJS.purge(jobs.head)
     catch { case _: Throwable ⇒ }
 
     println("Done")
