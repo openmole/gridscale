@@ -76,7 +76,27 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
 
     if (ret != 0 || jobId.isEmpty) throw exception(ret, command, output, error)
     new SLURMJob(description, jobId)
+  }
 
+  def submitAsync(description: D) = withReusedConnection { implicit connection ⇒
+    // FIXME ideally would like the bootstrap async too
+    exec("mkdir -p " + description.workDirectory)
+    write(description.toSLURM.getBytes, slurmScriptPath(description))
+
+    execReturnCodeOutputFuture("cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm").map((description, _))
+  }
+
+  def processSubmit(resSubmit: (SLURMJobDescription, ExecResult)) = {
+    val (jobDescription, ExecResult(ret, output, error)) = resSubmit
+    val job = processSubmitOutput(jobDescription, ret, output, error)
+    (jobDescription, job)
+  }
+
+  def processSubmitOutput(description: D, ret: Int, output: String, error: String, command: Option[String] = None) = {
+    val jobId = output.trim.reverse.takeWhile(_ != ' ').reverse
+
+    if (ret != 0 || jobId.isEmpty) throw exception(ret, command.getOrElse("(job submission)"), output, error)
+    new SLURMJob(description, jobId)
   }
 
   def state(job: J): JobState = withConnection { implicit connection ⇒
