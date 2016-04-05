@@ -17,30 +17,19 @@
 package fr.iscpif.gridscale
 
 import fr.iscpif.gridscale.authentication._
-import net.schmizz.sshj.SSHClient
 
 package object ssh {
 
   implicit def sshUserPassword(userPassword: UserPassword) = new SSHAuthentication with User {
     def user = userPassword.user
 
-    override def authenticate(c: SSHClient): Unit =
-      try c.authPassword(userPassword.user, userPassword.password)
-      catch {
-        case e: Throwable ⇒ throw AuthenticationException("Error during ssh login/password authentication", e)
-      }
+    override def authenticate(c: SSHClient): Unit = c.authPassword(userPassword.user, userPassword.password)
   }
 
   implicit def sshPrivateKey(privateKey: PrivateKey) = new SSHAuthentication with User {
     def user = privateKey.user
 
-    override def authenticate(c: SSHClient) =
-      try {
-        val kp = c.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)
-        c.authPublickey(privateKey.user, kp)
-      } catch {
-        case e: Throwable ⇒ throw AuthenticationException("Error during ssh key authentication", e)
-      }
+    override def authenticate(c: SSHClient) = c.authPrivateKey(privateKey)
   }
 
 }

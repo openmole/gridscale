@@ -17,15 +17,10 @@
 
 package fr.iscpif.gridscale.ssh
 
-import java.io._
-import java.nio.file.Files
-import java.util
+import java.io.InputStream
 import java.util.logging.{ Level, Logger }
 
 import fr.iscpif.gridscale.storage._
-import net.schmizz.sshj.sftp.{ FileMode, OpenMode, SFTPClient }
-import net.schmizz.sshj.xfer.FilePermission
-import fr.iscpif.gridscale.tools._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
@@ -47,42 +42,49 @@ object SSHStorage {
 
 trait SSHStorage extends Storage with SSHHost { storage ⇒
 
-  def unconfirmedExchanges = 32
+  object FilePermission {
+
+    sealed abstract class FilePermission
+
+    case object USR_RWX extends FilePermission
+
+    case object GRP_RWX extends FilePermission
+
+    case object OTH_RWX extends FilePermission
+    def toMask(fps: Set[FilePermission]): Int = {
+
+      import net.schmizz.sshj.xfer.{ FilePermission ⇒ SSHJFilePermission }
+
+      SSHJFilePermission.toMask(
+        fps map {
+          case USR_RWX ⇒ SSHJFilePermission.USR_RWX
+          case GRP_RWX ⇒ SSHJFilePermission.GRP_RWX
+          case OTH_RWX ⇒ SSHJFilePermission.OTH_RWX
+        })
+    }
+  }
 
   def home = withSftpClient {
     _.canonicalize(".")
   }
 
-  override def exists(path: String) = withSftpClient { c ⇒
-    c.statExistence(path) != null
+  override def exists(path: String): Boolean = withSftpClient { c ⇒
+    c.exists(path)
   }
 
   override def errorWrapping(operation: String, t: Throwable) =
     t match {
-      case e: net.schmizz.sshj.sftp.SFTPException if (e.getMessage == "No such file") ⇒
+      case e: net.schmizz.sshj.sftp.SFTPException if e.getMessage == "No such file" ⇒
         new SSHException.NoSuchFileException(s"$operation: " + e.getMessage)
       case t: Throwable ⇒ super.errorWrapping(operation, t)
     }
 
-  def chmod(path: String, perms: FilePermission*) = withSftpClient {
-    _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission]))
+  def chmod(path: String, perms: FilePermission.FilePermission*) = withSftpClient {
+    _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission.FilePermission]))
   }
 
   def _list(path: String) = withSftpClient {
-    listWithClient(path) _
-  }
-
-  private def listWithClient(path: String)(c: SFTPClient) = {
-    c.ls(path).filterNot(e ⇒ { e.getName == "." || e.getName == ".." }).map {
-      e ⇒
-        val t =
-          e.getAttributes.getType match {
-            case FileMode.Type.DIRECTORY ⇒ DirectoryType
-            case FileMode.Type.SYMKLINK  ⇒ LinkType
-            case _                       ⇒ FileType
-          }
-        ListEntry(e.getName, t, Some(e.getAttributes.getMtime))
-    }
+    _.ls(path)(e ⇒ e == "." || e == "..")
   }
 
   def _makeDir(path: String) = withSftpClient {
@@ -94,7 +96,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   }
 
   private def rmDirWithClient(path: String)(c: SFTPClient): Unit = wrapException(s"rm dir $path") {
-    listWithClient(path)(c).foreach {
+    c.ls(path)(_ ⇒ true).foreach {
       entry ⇒
         val child = path + "/" + entry.name
         entry.`type` match {
@@ -119,76 +121,22 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rm(path)
   }
 
-  override def _read(path: String): InputStream = {
-    val connection = getConnection
 
-    def close = release(connection)
-
+  // FIXME resource not released in normal case!
+  def withNotClosedResource[R <: { def release(connection: SSHClient)}, T](f: SFTPClient => T): T = withConnection { connection =>
     val sftpClient =
       try connection.newSFTPClient
       catch {
         case e: Throwable ⇒
-          close
+          release(connection)
           throw e
       }
 
-    val fileHandle =
-      try sftpClient.open(path, util.EnumSet.of(OpenMode.READ))
-      catch {
-        case e: Throwable ⇒
-          try sftpClient.close
-          finally close
-          throw e
-      }
-
-    def closeAll = {
-      try fileHandle.close
-      finally try sftpClient.close
-      finally close
-    }
-
-    new fileHandle.ReadAheadRemoteFileInputStream(unconfirmedExchanges) {
-      override def close = {
-        try closeAll
-        finally super.close
-      }
-    }
+      f(sftpClient)
   }
 
-  override def _write(is: InputStream, path: String): Unit = {
-    val connection = getConnection
+  override def _read(path: String): InputStream = withNotClosedResource(_.readAheadFileInputStream(path))
 
-    def close = release(connection)
-
-    val sftpClient =
-      try connection.newSFTPClient
-      catch {
-        case e: Throwable ⇒
-          close
-          throw e
-      }
-
-    val fileHandle =
-      try sftpClient.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC))
-      catch {
-        case e: Throwable ⇒
-          try sftpClient.close
-          finally close
-          throw e
-      }
-
-    def closeAll = {
-      try fileHandle.close
-      finally try sftpClient.close
-      finally close
-    }
-
-    try {
-      val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
-      try copyStream(is, os)
-      finally os.close
-    } finally closeAll
-
-  }
-
+  // FIXME signature incoherent with read
+  override def _write(is: InputStream, path: String): Unit = withSftpClient(_.fileOutputStream(is, path))
 }
