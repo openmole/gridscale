@@ -18,9 +18,6 @@
 
 package fr.iscpif.gridscale.ssh
 
-import net.schmizz.sshj._
-import net.schmizz.sshj.sftp._
-
 import scala.concurrent.duration.Duration
 
 trait SSHHost {

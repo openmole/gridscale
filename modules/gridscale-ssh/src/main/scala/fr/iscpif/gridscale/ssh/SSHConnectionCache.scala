@@ -19,8 +19,6 @@ package fr.iscpif.gridscale.ssh
 
 import java.util.concurrent.Executors
 
-import net.schmizz.sshj.SSHClient
-
 trait SSHConnectionCache <: SSHHost {
   @transient private var connection: Option[SSHClient] = None
 

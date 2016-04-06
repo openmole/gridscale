@@ -23,14 +23,11 @@ import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 
 trait SSHAuthentication {
 
-  // instantiated only once and not for each sshj SSHClient
-  // see https://groups.google.com/d/msg/sshj-users/p-cjao1MiHg/nFZ99-WEf6IJ
-  lazy val sshDefaultConfig = new DefaultConfig()
-
   def connect(host: String, port: Int) = {
-    val ssh = new SSHClient(sshDefaultConfig)
+    val ssh = new SSHClient
+
     // disable strict host key checking
-    ssh.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
+    ssh.disableHostChecking()
     ssh.useCompression()
     ssh.connect(host, port)
 
