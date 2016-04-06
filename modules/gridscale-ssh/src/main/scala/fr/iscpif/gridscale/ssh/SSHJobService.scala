@@ -26,9 +26,8 @@ import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.IOUtils
 import net.schmizz.sshj.connection.channel.direct.Session
 
-import scala.concurrent.Future
+import scalaz.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 case class ExecResult(retCode: Int, output: String, error: String)
 

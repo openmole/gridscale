@@ -181,7 +181,8 @@ trait Modules <: Libraries with Settings {
   lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "com.hierynomus" % "sshj" % "0.14.0",
     libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3",
-    libraryDependencies += scalaz
+    libraryDependencies += scalazCore,
+    libraryDependencies += scalazConcurrent
     )
 
   lazy val gridscaleCondor = Project(id = "gridscalecondor", base = file("modules/gridscale-condor"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gridscaleSSH) settings (
@@ -211,7 +212,9 @@ trait Libraries <: Settings {
   import sbtscalaxb.Plugin.ScalaxbKeys._
   import sbtscalaxb.Plugin._
 
-  lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.2.2"
+  lazy val scalazVersion = "7.2.2"
+  lazy val scalazCore = "org.scalaz" %% "scalaz-core" % scalazVersion
+  lazy val scalazConcurrent = "org.scalaz" %% "scalaz-concurrent" % scalazVersion
 
   lazy val jglobusVersion = "2.2.0-20150814"
 

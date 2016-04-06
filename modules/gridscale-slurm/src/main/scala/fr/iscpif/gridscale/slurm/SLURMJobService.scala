@@ -27,8 +27,7 @@ import fr.iscpif.gridscale.ssh.SSHHost._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scalaz.concurrent.Future
 
 object SLURMJobService {
 

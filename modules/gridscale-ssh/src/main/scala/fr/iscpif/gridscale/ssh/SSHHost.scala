@@ -21,12 +21,9 @@ package fr.iscpif.gridscale.ssh
 import net.schmizz.sshj._
 import net.schmizz.sshj.sftp._
 
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext.Implicits.global
 
-import scalaz._
-import Scalaz._
+import scalaz._, Scalaz._, scalaz.concurrent.Future
 
 trait SSHHost {
 
@@ -79,10 +76,8 @@ trait SSHHost {
    * @return A sequence of results retrieved from the asynchronous actions performed in the futures
    */
   def retrieveFutures[J, T, R](futures: Seq[Future[(J, T)]])(process: ((J, T)) ⇒ R) = {
-    val res = Await.result(
-      Future.sequence(futures),
-      Duration.Inf)
-    res.map(process)
+    val res = Future.gatherUnordered(futures)
+    res.run.map(process)
   }
 
   def jobActions[E, J, R](processAction: J ⇒ Reader[E, Future[(J, ExecResult)]])(retrieveAction: ((J, ExecResult)) ⇒ (J, R))(jobs: J*)(implicit e: E) =
