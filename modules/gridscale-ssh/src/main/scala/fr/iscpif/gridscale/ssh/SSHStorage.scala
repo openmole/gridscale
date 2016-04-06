@@ -191,4 +191,15 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
 
   }
 
+  def write2(is: InputStream, path: String)(implicit sftpClient: SFTPClient) = {
+
+    val fileHandle = sftpClient.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC))
+
+    try {
+      val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
+      try copyStream(is, os)
+      finally os.close
+    } finally fileHandle.close
+  }
+
 }
