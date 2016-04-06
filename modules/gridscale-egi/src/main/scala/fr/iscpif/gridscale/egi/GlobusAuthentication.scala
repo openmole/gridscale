@@ -29,14 +29,6 @@ object GlobusAuthenticationProvider {
     override def apply(t: P12VOMSAuthentication) = t()
   }
 
-  //  implicit val pemVOMSGlobusProvider = new GlobusAuthenticationProvider[PEMVOMSAuthentication] {
-  //    override def apply(t: PEMVOMSAuthentication) = t()
-  //  }
-
-  //  implicit val proxyVOMSGlobusProvider = new GlobusAuthenticationProvider[ProxyFileAuthentication] {
-  //    override def apply(t: ProxyFileAuthentication) = t()
-  //  }
-
 }
 
 trait GlobusAuthenticationProvider[-T] {
