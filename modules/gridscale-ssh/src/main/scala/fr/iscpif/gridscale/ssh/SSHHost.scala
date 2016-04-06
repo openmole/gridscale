@@ -25,10 +25,8 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 
-case class Reader[E, A](run: E ⇒ A) {
-  def map[B](f: A ⇒ B): Reader[E, B] = Reader(env ⇒ f(run(env)))
-  def flatMap[B](f: A ⇒ Reader[E, B]): Reader[E, B] = Reader(env ⇒ f(run(env)).run(env))
-}
+import scalaz._
+import Scalaz._
 
 trait SSHHost {
 
@@ -68,17 +66,16 @@ trait SSHHost {
    * @param process Function performing an action on a job through an implicit connection
    * @return A sequence containing the created futures
    */
-  def processFutures[J, R](jobs: J*)(process: J ⇒ Reader[SSHClient, Future[(J, R)]]) = SSHHost.withReusedConnection {
-    connection ⇒
-      val futures = jobs.map(process).map(_.run(connection))
-      futures
+  def processFutures[E, J, R](jobs: J*)(process: J ⇒ Reader[E, Future[(J, R)]]) = {
+    val futures = jobs.map(process)
+    futures.toList.sequenceU
   }
 
   /**
    * Generic function retrieving the results of the action run in async futures
    *
    * @param futures Sequence of the futures containing the results to be retrieved
-   * @param process Post-processing function to apply to the retrived results
+   * @param process Post-processing function to apply to the retrieved results
    * @return A sequence of results retrieved from the asynchronous actions performed in the futures
    */
   def retrieveFutures[J, T, R](futures: Seq[Future[(J, T)]])(process: ((J, T)) ⇒ R) = {
@@ -88,13 +85,19 @@ trait SSHHost {
     res.map(process)
   }
 
-  def jobActions[J, R](processAction: J ⇒ Reader[SSHClient, Future[(J, ExecResult)]])(retrieveAction: ((J, ExecResult)) ⇒ (J, R))(jobs: J*) =
+  def jobActions[E, J, R](processAction: J ⇒ Reader[E, Future[(J, ExecResult)]])(retrieveAction: ((J, ExecResult)) ⇒ (J, R))(jobs: J*)(implicit e: E) =
     SSHHost.withReusedConnection { connection ⇒
-      val futures = processFutures(jobs: _*)(processAction).run(connection)
+      val futures = processFutures(jobs: _*)(processAction) run (e)
       retrieveFutures(futures)(retrieveAction)
     }
 }
 
 object SSHHost {
+
+  // FIXME maybe swap with non-reused in trait/object
   def withReusedConnection[T](f: SSHClient ⇒ T): Reader[SSHClient, T] = Reader(f)
+
+  def withReusedSFTPClient[T](f: SFTPClient ⇒ T): Reader[SFTPClient, T] = Reader(f)
+
+  def withSSH[T](f: ((SSHClient, SFTPClient)) ⇒ T) = Reader(f)
 }
