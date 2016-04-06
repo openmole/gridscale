@@ -58,12 +58,15 @@ trait Benchmark extends BenchmarkUtils {
 
     val slurmJS = jobService.asInstanceOf[SLURMJobService]
     val slurmJobDescriptions = jobDescription.asInstanceOf[SLURMJobDescription]
-    val slurmSubmit = slurmJS.submitAsync(_)
+    val slurmSubmit = slurmJS.submitAsync2(_)
 
     println("Submitting jobs...")
-    val (submitRes, submitTime) = slurmJS.withConnection(connection ⇒
-      withTimer { slurmJS.jobActions(slurmSubmit)(slurmJS.processSubmit)(Seq(slurmJobDescriptions): _*) run (connection) }
-    ).getOrElse(Seq.empty, missingValue)
+    val (submitRes, submitTime) = slurmJS.withConnection { implicit connection ⇒
+      implicit val ssh = (connection, connection.newSFTPClient())
+      withTimer {
+        slurmJS.jobActions(slurmSubmit)(slurmJS.processSubmit)({ for (i ← 1 to nbJobs) yield slurmJobDescriptions }: _*) run (connection) // ((connection, sftpClient))
+      }
+    }.getOrElse(Seq.empty, missingValue)
 
     val jobs = submitRes.map(_._2)
 
@@ -77,7 +80,7 @@ trait Benchmark extends BenchmarkUtils {
     val slurmJobs = jobs.asInstanceOf[Seq[SLURMJobService.SLURMJob]]
     val slurmState = slurmJS.stateAsync(_)
 
-    val (states, queryTime) = slurmJS.withConnection(connection ⇒
+    val (states, queryTime) = slurmJS.withConnection(implicit connection ⇒
       withTimer { slurmJS.jobActions(slurmState)(slurmJS.processState)(slurmJobs: _*) run (connection) }
     ).getOrElse(Seq.empty, missingValue)
 
@@ -88,7 +91,7 @@ trait Benchmark extends BenchmarkUtils {
 
     val slurmCancel = slurmJS.cancelAsync(_)
 
-    val (_, cancelTime) = slurmJS.withConnection(connection ⇒
+    val (_, cancelTime) = slurmJS.withConnection(implicit connection ⇒
       withTimer { slurmJS.jobActions(slurmCancel)(slurmJS.processCancel)(slurmJobs: _*) run (connection) }
     ).getOrElse(Seq.empty, missingValue)
 
