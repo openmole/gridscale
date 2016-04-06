@@ -28,6 +28,7 @@ import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object SLURMJobService {
 
@@ -88,18 +89,20 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
     execReturnCodeOutputFuture("cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm").map((description, _))
   }
 
-  def submitAsync2(description: D) = {
+  def submitAsync2(description: D) =
     SSHHost.withSSH {
       case (sshClient, sftpClient) ⇒
-        implicit val sftp = sftpClient
-        implicit val connection = sshClient
+        Future {
+          implicit val sftp = sftpClient
+          implicit val connection = sshClient
 
-        exec("mkdir -p " + description.workDirectory)
-        write2(new ByteArrayInputStream(description.toSLURM.getBytes), slurmScriptPath(description))
+          exec("mkdir -p " + description.workDirectory)
+          write2(new ByteArrayInputStream(description.toSLURM.getBytes), slurmScriptPath(description))
 
-        execReturnCodeOutputFuture("cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm").map((description, _))
+          val (ret, out, err) = execReturnCodeOutput("cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm")
+          (description, ExecResult(ret, out, err))
+        }
     }
-  }
 
   def processSubmit(resSubmit: (SLURMJobDescription, ExecResult)) = {
     val (jobDescription, ExecResult(ret, output, error)) = resSubmit
