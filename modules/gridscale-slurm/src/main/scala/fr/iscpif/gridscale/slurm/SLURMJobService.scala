@@ -18,6 +18,8 @@
 
 package fr.iscpif.gridscale.slurm
 
+import java.io.ByteArrayInputStream
+
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
@@ -84,6 +86,19 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
     write(description.toSLURM.getBytes, slurmScriptPath(description))
 
     execReturnCodeOutputFuture("cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm").map((description, _))
+  }
+
+  def submitAsync2(description: D) = {
+    SSHHost.withSSH {
+      case (sshClient, sftpClient) ⇒
+        implicit val sftp = sftpClient
+        implicit val connection = sshClient
+
+        exec("mkdir -p " + description.workDirectory)
+        write2(new ByteArrayInputStream(description.toSLURM.getBytes), slurmScriptPath(description))
+
+        execReturnCodeOutputFuture("cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm").map((description, _))
+    }
   }
 
   def processSubmit(resSubmit: (SLURMJobDescription, ExecResult)) = {
