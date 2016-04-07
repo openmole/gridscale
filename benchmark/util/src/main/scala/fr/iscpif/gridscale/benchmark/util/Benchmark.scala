@@ -54,7 +54,7 @@ trait Benchmark extends BenchmarkUtils {
   val nbJobs: Int
   val missingValue = -1.0
 
-  def benchmark(jd: JobDescription)(nbJobs: Int) = {
+  def benchmarkSSH(jd: JobDescription)(nbJobs: Int) = {
 
     val slurmJS = jobService.asInstanceOf[SLURMJobService]
     val slurmJobDescriptions = jobDescription.asInstanceOf[SLURMJobDescription]
@@ -100,7 +100,37 @@ trait Benchmark extends BenchmarkUtils {
     List(submitTime, queryTime, cancelTime)
   }
 
-  def runBenchmark(runs: Int = 1) = for (run ← 1 to runs) yield benchmark(jobDescription)(nbJobs)
+  def benchmarkOthers(jd: JobDescription)(nbJobs: Int) = {
+
+    println("Submitting jobs...")
+    val (jobs, submitTime) = withTimer {
+      (1 to nbJobs).map(x ⇒ jobService.submit(jobDescription))
+    }.getOrElse(Seq.empty, missingValue)
+
+    println(s"Submitted $nbJobs jobs in $submitTime")
+
+    println("Querying state for jobs...")
+    val (states, queryTime) = withTimer {
+      jobs.map(jobService.state)
+    }.getOrElse(Seq.empty, missingValue)
+
+    println(s"Queried state for ${states.length} jobs in $queryTime")
+
+    println("Cancelling jobs...")
+    val (_, cancelTime) = withTimer(jobs.foreach(jobService.cancel)).getOrElse(Seq.empty, missingValue)
+    println(s"Cancelled $nbJobs jobs in $cancelTime")
+
+    println("Purging jobs...")
+    // only purging one job, they're all the same
+    try jobService.purge(jobs.head)
+    catch { case _: Throwable ⇒ }
+
+    println("Done")
+
+    List(submitTime, queryTime, cancelTime)
+  }
+
+  def runBenchmark(runs: Int = 1) = for (run ← 1 to runs) yield benchmarkOthers(jobDescription)(nbJobs)
 
   def avgBenchmark(runs: Int) = {
     val res = runBenchmark(runs)
