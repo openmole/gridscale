@@ -21,7 +21,6 @@ import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh.{ SSHAuthentication, SSHHost, SSHStorage }
 import fr.iscpif.gridscale.tools.shell.BashShell
-import net.schmizz.sshj.xfer.FilePermission
 
 import scala.concurrent.duration._
 

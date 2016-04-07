@@ -22,9 +22,7 @@ import java.util.UUID
 import fr.iscpif.gridscale.jobservice._
 import fr.iscpif.gridscale.tools._
 import fr.iscpif.gridscale.tools.shell._
-import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.IOUtils
-import net.schmizz.sshj.connection.channel.direct.Session
 
 import scalaz.concurrent.Future
 import scala.concurrent.duration._
@@ -63,7 +61,7 @@ object SSHJobService {
     } finally session.close
   } */
 
-  def withSession[T](c: SSHClient)(f: Session ⇒ T): T = {
+  def withSession[T](c: SSHClient)(f: SSHSession ⇒ T): T = {
     val session = c.startSession
     try f(session)
     finally session.close
@@ -81,7 +79,7 @@ object SSHJobService {
     val cmd = session.exec(cde.toString)
     try {
       cmd.join
-      (cmd.getExitStatus.toInt, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
+      (cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
   }
 
