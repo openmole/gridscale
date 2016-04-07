@@ -32,10 +32,9 @@ trait BenchmarkUtils {
       val after = System.nanoTime()
       val elapsed = after - before
       Some((res, elapsed / 1000000d))
+    } catch {
+      case _: Throwable ⇒ None
     }
-    //    catch {
-    //      case _: Throwable ⇒ None
-    //    }
   }
 }
 
@@ -43,7 +42,7 @@ trait BenchmarkConfig {
 
   def executable = "/bin/sleep"
   def arguments = "1000"
-  def workDirectory = "/homes/jpassera/benchmark"
+  def workDirectory = "/work/jpassera/benchmark"
 }
 
 trait Benchmark extends BenchmarkUtils {
@@ -58,8 +57,8 @@ trait Benchmark extends BenchmarkUtils {
 
   def benchmarkSSH(jd: JobDescription)(nbJobs: Int) = {
 
-    val sshJobService = jobService.asInstanceOf[CondorJobService]
-    val sshJobDescriptions = jobDescription.asInstanceOf[CondorJobDescription]
+    val sshJobService = jobService.asInstanceOf[PBSJobService]
+    val sshJobDescriptions = jobDescription.asInstanceOf[PBSJobDescription]
     val sshSubmit = sshJobService.submitAsync(_)
     val sshState = sshJobService.stateAsync(_)
     val sshCancel = sshJobService.cancelAsync(_)
