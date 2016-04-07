@@ -64,7 +64,7 @@ trait Benchmark extends BenchmarkUtils {
 
     println("Submitting jobs...")
     val (submitRes, submitTime) = slurmJS.withConnection { implicit connection ⇒
-      implicit val ssh = (connection, connection.newSFTPClient())
+      implicit val ssh = (connection, connection.newSFTPClient)
       withTimer {
         slurmJS.jobActions(slurmSubmit)(slurmJS.processSubmit)({ for (i ← 1 to nbJobs) yield slurmJobDescriptions }: _*) run (connection) // ((connection, sftpClient))
       }
@@ -90,10 +90,10 @@ trait Benchmark extends BenchmarkUtils {
 
     println(s"Cancelled $nbJobs jobs in $cancelTime")
 
-    //    println("Purging jobs...")
-    //    // only purging one job, they're all the same
-    //    try slurmJS.purge(jobs.head)
-    //    catch { case _: Throwable ⇒ }
+    println("Purging jobs...")
+    // only purging one job, they're all the same
+    try slurmJS.purge(jobs.head)
+    catch { case _: Throwable ⇒ }
 
     println("Done")
 
