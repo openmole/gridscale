@@ -28,7 +28,7 @@ object Main {
       case _                        ⇒ throw new RuntimeException("Bad arguments")
     }
 
-    val b = new WMSBenchmark(voName, certificateLocation, password)(nbJobs)
+    val b = WMSBenchmark(voName, certificateLocation, password)(nbJobs)
     val (avgSubmit, avgQuery, avgCancel) = b.avgBenchmark(nbRuns).toList match {
       case List(a, b, c) ⇒ (a, b, c)
     }

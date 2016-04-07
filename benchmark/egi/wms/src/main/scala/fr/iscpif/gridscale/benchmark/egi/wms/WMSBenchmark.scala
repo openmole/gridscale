@@ -18,34 +18,55 @@
 
 package fr.iscpif.gridscale.benchmark.egi.wms
 
-import _root_.fr.iscpif.gridscale.benchmark.util.Benchmark
-import fr.iscpif.gridscale.egi._
-import fr.iscpif.gridscale._
 import java.io.File
-import concurrent.duration._
 
-class WMSBenchmark(val voName: String, val certificateLocation: String, val password: String)(val nbJobs: Int)
-    extends Benchmark with WMSJobService with P12VOMSAuthentication { wmsBenchmarkService ⇒
+import fr.iscpif.gridscale._
+import fr.iscpif.gridscale.egi._
+import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.authentication._
+import fr.iscpif.gridscale.benchmark.util._
 
-  VOMSAuthentication.setCARepository(new File("/home/jopasserat/.openmole/dantalion/CACertificates"))
+import scala.concurrent.duration._
 
-  implicit val auth = wmsBenchmarkService.cache(1 hour)
+object WMSBenchmark {
 
-  def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
-  def fquan = None
-  def lifeTime = 24 hours
-  def certificate = new File(certificateLocation)
+  def apply(voName: String, certificateLocation: String, password: String)(inNbJobs: Int) = {
 
-  val bdii = new BDII("ldap://topbdii.grif.fr:2170")
-  val wms = bdii.queryWMS("biomed", 2 minutes).head
-  def url = wms.url
-  def credential = wms.credential
+    VOMSAuthentication.setCARepository(new File("/home/jopasserat/.openmole/dantalion/CACertificates"))
 
-  override val jobDescription = new WMSJobDescription {
-    val executable = wmsBenchmarkService.executable
-    val arguments = wmsBenchmarkService.arguments
-    def inputSandbox = List()
-    def outputSandbox = List()
-    override def fuzzy = true
+    //  implicit val auth = wmsBenchmarkService.cache(1 hour)
+    //
+    //  def serverURL = "voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"
+    //  def fquan = None
+    //  def lifeTime = 24 hours
+    //  def certificate = new File(certificateLocation)
+
+    val p12 = P12Authentication(new File(certificateLocation), password)
+    val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://cclcgvomsli01.in2p3.fr:15000/O=GRID-FR/C=FR/O=CNRS/OU=CC-IN2P3/CN=cclcgvomsli01.in2p3.fr"), voName)
+
+    val bdii = BDII("topbdii.grif.fr", 2170)
+
+    val wms = bdii.queryWMSLocations(voName).map(l ⇒ WMSJobService(l)(authentication)).head
+
+    //    def url = wms.url
+    //    def credential = wms.credential
+
+    new Benchmark {
+
+      implicit val jobService: WMSJobService = wms
+
+      override val nbJobs = inNbJobs
+
+      override val jobDescription = new WMSJobDescription with BenchmarkConfig {
+        //      val executable = wmsBenchmarkService.executable
+        //      val arguments = wmsBenchmarkService.arguments
+
+        def inputSandbox = List()
+
+        def outputSandbox = List()
+
+        override def fuzzy = true
+      }
+    }
   }
 }
