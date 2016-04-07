@@ -34,7 +34,7 @@ class SSHClient {
 
   def startSession: SSHSession = new SSHSession {
 
-    implicit val peerSession = peer.startSession
+    private implicit val peerSession = peer.startSession
     import impl.SSHJSession
 
     override def close() = SSHJSession.close()
@@ -71,7 +71,7 @@ class SSHClient {
   def newSFTPClient = new SFTPClient {
 
     import impl.SSHJSFTPClient
-    implicit val peerSFTPClient = peer.newSFTPClient()
+    private implicit val peerSFTPClient = peer.newSFTPClient()
 
     override def fileOutputStream(is: InputStream, path: String) = SSHJSFTPClient.fileOutputStream(is, path)
     override def rename(oldName: String, newName: String) = SSHJSFTPClient.rename(oldName, newName)
