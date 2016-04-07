@@ -33,6 +33,7 @@ trait SFTPClient {
   def rmdir(path: String)
   def rm(path: String)
   def rename(oldName: String, newName: String)
+  def writeRemoteFile(is: InputStream, filename: String)
 
   def readAheadFileInputStream(path: String): InputStream
 

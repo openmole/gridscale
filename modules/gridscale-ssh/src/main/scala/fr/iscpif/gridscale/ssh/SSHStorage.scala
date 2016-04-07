@@ -18,7 +18,6 @@
 package fr.iscpif.gridscale.ssh
 
 import java.io.InputStream
-import java.util.logging.{ Level, Logger }
 
 import fr.iscpif.gridscale.storage._
 
@@ -136,16 +135,9 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   }
 
   override def _read(path: String): InputStream = withNotClosedResource(_.readAheadFileInputStream(path))
-  
+
   def write2(is: InputStream, path: String)(implicit sftpClient: SFTPClient) = {
-
-    val fileHandle = sftpClient.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC))
-
-    try {
-      val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
-      try copyStream(is, os)
-      finally os.close
-    } finally fileHandle.close
+    sftpClient.writeRemoteFile(is, path)
   }
 
   override def _write(is: InputStream, path: String): Unit = withSftpClient(_.fileOutputStream(is, path))

@@ -84,5 +84,6 @@ class SSHClient {
     override def mkdir(path: String) = SSHJSFTPClient.mkdir(path)
     override def exists(path: String) = SSHJSFTPClient.exists(path)
     override def ls(path: String)(predicate: String ⇒ Boolean) = SSHJSFTPClient.ls(path)(predicate)
+    override def writeRemoteFile(is: InputStream, path: String) = SSHJSFTPClient.writeRemoteFile(is, path)
   }
 }

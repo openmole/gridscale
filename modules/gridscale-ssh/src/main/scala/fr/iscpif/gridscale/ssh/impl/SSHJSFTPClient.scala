@@ -62,6 +62,20 @@ object SSHJSFTPClient {
 
   lazy val unconfirmedExchanges = 32
 
+  def writeRemoteFile(is: InputStream, path: String)(implicit sshjSFTPClient: SFTPClient) = {
+
+    import net.schmizz.sshj.common.StreamCopier
+
+    // flag OpenMode.TRUNC causes problems when used  in concurrent context (truncates file to 0 size...)
+    val fileHandle = sshjSFTPClient.open(path, Set(OpenMode.WRITE, OpenMode.CREAT))
+
+    try {
+      val os = new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)
+      try new StreamCopier(is, os).bufSize(8092).copy()
+      finally os.close()
+    } finally fileHandle.close()
+  }
+
   def withClosable[C <: java.io.Closeable, T](open: ⇒ C)(f: C ⇒ T)(implicit sshjSFTPClient: SFTPClient): T = {
     val c = open
     try f(c)
