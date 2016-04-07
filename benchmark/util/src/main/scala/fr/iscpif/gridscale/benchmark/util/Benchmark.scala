@@ -59,6 +59,8 @@ trait Benchmark extends BenchmarkUtils {
     val slurmJS = jobService.asInstanceOf[SLURMJobService]
     val slurmJobDescriptions = jobDescription.asInstanceOf[SLURMJobDescription]
     val slurmSubmit = slurmJS.submitAsync2(_)
+    val slurmState = slurmJS.stateAsync(_)
+    val slurmCancel = slurmJS.cancelAsync(_)
 
     println("Submitting jobs...")
     val (submitRes, submitTime) = slurmJS.withConnection { implicit connection ⇒
@@ -73,26 +75,17 @@ trait Benchmark extends BenchmarkUtils {
     println(s"Submitted $nbJobs jobs in $submitTime")
 
     println("Querying state for jobs...")
-    //    val (states, queryTime) = withTimer {
-    //      jobs.map(jobService.state)
-    //    }.getOrElse(Seq.empty, missingValue)
-
-    val slurmJobs = jobs.asInstanceOf[Seq[SLURMJobService.SLURMJob]]
-    val slurmState = slurmJS.stateAsync(_)
 
     val (states, queryTime) = slurmJS.withConnection(implicit connection ⇒
-      withTimer { slurmJS.jobActions(slurmState)(slurmJS.processState)(slurmJobs: _*) run (connection) }
+      withTimer { slurmJS.jobActions(slurmState)(slurmJS.processState)(jobs: _*) run (connection) }
     ).getOrElse(Seq.empty, missingValue)
 
     println(s"Queried state for ${states.length} jobs in $queryTime")
 
     println("Cancelling jobs...")
-    //    val (_, cancelTime) = withTimer(jobs.foreach(jobService.cancel)).getOrElse(Seq.empty, missingValue)
-
-    val slurmCancel = slurmJS.cancelAsync(_)
 
     val (_, cancelTime) = slurmJS.withConnection(implicit connection ⇒
-      withTimer { slurmJS.jobActions(slurmCancel)(slurmJS.processCancel)(slurmJobs: _*) run (connection) }
+      withTimer { slurmJS.jobActions(slurmCancel)(slurmJS.processCancel)(jobs: _*) run (connection) }
     ).getOrElse(Seq.empty, missingValue)
 
     println(s"Cancelled $nbJobs jobs in $cancelTime")
