@@ -90,10 +90,10 @@ trait Benchmark extends BenchmarkUtils {
 
     println(s"Cancelled $nbJobs jobs in $cancelTime")
 
-    println("Purging jobs...")
-    // only purging one job, they're all the same
-    try slurmJS.purge(jobs.head)
-    catch { case _: Throwable ⇒ }
+    //    println("Purging jobs...")
+    //    // only purging one job, they're all the same
+    //    try slurmJS.purge(jobs.head)
+    //    catch { case _: Throwable ⇒ }
 
     println("Done")
 

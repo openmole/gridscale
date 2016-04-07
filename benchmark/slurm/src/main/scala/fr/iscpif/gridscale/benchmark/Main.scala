@@ -29,11 +29,8 @@ object Main {
     }
 
     val b = SlurmBenchmark(host, username, password, privateKeyPath)(nbJobs)
-    val js = b.jobService
-    val (avgSubmit, avgQuery, avgCancel) = js.withConnection { connection ⇒
-      b.avgBenchmark(nbRuns).toList match {
-        case List(a, b, c) ⇒ (a, b, c)
-      }
+    val (avgSubmit, avgQuery, avgCancel) = b.avgBenchmark(nbRuns).toList match {
+      case List(a, b, c) ⇒ (a, b, c)
     }
 
     println(
