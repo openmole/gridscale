@@ -18,12 +18,16 @@
 
 package fr.iscpif.gridscale.condor
 
+import java.io.ByteArrayInputStream
+
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHHost._
 import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.concurrent.duration._
+import scalaz.concurrent.Future
 
 object CondorJobService {
 
@@ -75,6 +79,35 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
     CondorJob(description, jobId)
   }
 
+  def submitAsync(description: D) =
+    SSHHost.withSSH {
+      case (sshClient, sftpClient) ⇒
+        Future {
+          implicit val sftp = sftpClient
+          implicit val connection = sshClient
+
+          exec("mkdir -p " + description.workDirectory)
+          write2(new ByteArrayInputStream(description.toCondor.getBytes), condorScriptPath(description))
+
+          val (ret, out, err) = execReturnCodeOutput("cd " + description.workDirectory + " condor_submit " + description.uniqId + ".condor")
+          (description, ExecResult(ret, out, err))
+        }
+    }
+
+  // TODO factor out
+  def processSubmit(resSubmit: (CondorJobDescription, ExecResult)) = {
+    val (jobDescription, ExecResult(ret, output, error)) = resSubmit
+    val job = processSubmitOutput(jobDescription, ret, output, error)
+    (jobDescription, job)
+  }
+
+  def processSubmitOutput(description: D, ret: Int, output: String, error: String, command: Option[String] = None) = {
+    val jobId = output.trim.reverse.tail.takeWhile(_ != ' ').reverse
+
+    if (jobId.isEmpty) throw exception(ret, command.getOrElse("(job submission)"), output, error)
+    new CondorJob(description, jobId)
+  }
+
   def state(job: J): JobState = withConnection { implicit connection ⇒
     // NOTE: submission sends only 1 process per cluster for the moment so no need to query the process id
 
@@ -110,7 +143,36 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
 
   }
 
+  def stateAsync(job: J) = withReusedConnection { implicit connection ⇒
+    execReturnCodeOutputFuture("condor_q " + job.condorId + " -long -attributes JobStatus").map((job, _))
+  }
+
+  def processState(resState: (CondorJob, ExecResult)) = {
+    val (job, ExecResult(retInQueue, outputInQueue, _)) = resState
+    val state = retInQueue.toInt match {
+      case 0 if (!outputInQueue.isEmpty) ⇒ {
+        // when split, the actual state is the last member of a 2-element array
+        val state = outputInQueue.split('=').map(_ trim).last
+        translateStatus(state)
+      }
+    }
+    (job, state)
+  }
+
   def cancel(job: J) = withConnection { exec("condor_rm " + job.condorId)(_) }
+
+  def cancelAsync(job: J) =
+    withReusedConnection { implicit connection ⇒
+      execReturnCodeOutputFuture("condor rm " + job.condorId).map((job, _))
+    }
+
+  def processCancel(resCancel: (CondorJob, ExecResult)) = {
+    val (job, result) = resCancel
+    result match {
+      case ExecResult(_, _, _) ⇒ (job, result)
+      case _                   ⇒ throw new RuntimeException(s"Condor JobService could not cancel job ${job.condorId}")
+    }
+  }
 
   // Purge output, error and job script
   def purge(job: J) = withSftpClient { c ⇒

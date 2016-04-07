@@ -84,7 +84,7 @@ trait Benchmarks <: Modules with Settings {
 
   lazy val benchmarkBundleSettings = defaultSettings ++ exportSettings
 
-  lazy val utilBenchmark = Project(id = "utilbenchmark", base = file("benchmark/util"), settings = benchmarkBundleSettings) dependsOn (gridscale, gridscaleSLURM)
+  lazy val utilBenchmark = Project(id = "utilbenchmark", base = file("benchmark/util"), settings = benchmarkBundleSettings) dependsOn (gridscale, gridscaleSLURM, gridscaleCondor, gridscalePBS)
   lazy val condorBenchmark = Project(id = "condorbenchmark", base = file("benchmark/condor"), settings = benchmarkBundleSettings) dependsOn (gridscaleCondor, utilBenchmark)
   lazy val pbsBenchmark = Project(id = "pbsbenchmark", base = file("benchmark/pbs"), settings = benchmarkBundleSettings) dependsOn (gridscalePBS, utilBenchmark)
   lazy val slurmBenchmark = Project(id = "slurmbenchmark", base = file("benchmark/slurm"), settings = benchmarkBundleSettings) dependsOn (gridscaleSLURM, utilBenchmark)
