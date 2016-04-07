@@ -18,8 +18,10 @@
 package fr.iscpif.gridscale.benchmark
 package util
 
+import fr.iscpif.gridscale.condor.{ CondorJobDescription, CondorJobService }
 import fr.iscpif.gridscale.jobservice.JobService
 import fr.iscpif.gridscale.slurm._
+import fr.iscpif.gridscale.pbs._
 
 trait BenchmarkUtils {
 
@@ -56,17 +58,17 @@ trait Benchmark extends BenchmarkUtils {
 
   def benchmarkSSH(jd: JobDescription)(nbJobs: Int) = {
 
-    val slurmJS = jobService.asInstanceOf[SLURMJobService]
-    val slurmJobDescriptions = jobDescription.asInstanceOf[SLURMJobDescription]
-    val slurmSubmit = slurmJS.submitAsync2(_)
-    val slurmState = slurmJS.stateAsync(_)
-    val slurmCancel = slurmJS.cancelAsync(_)
+    val sshJobService = jobService.asInstanceOf[CondorJobService]
+    val sshJobDescriptions = jobDescription.asInstanceOf[CondorJobDescription]
+    val sshSubmit = sshJobService.submitAsync(_)
+    val sshState = sshJobService.stateAsync(_)
+    val sshCancel = sshJobService.cancelAsync(_)
 
     println("Submitting jobs...")
-    val (submitRes, submitTime) = slurmJS.withConnection { implicit connection ⇒
+    val (submitRes, submitTime) = sshJobService.withConnection { implicit connection ⇒
       implicit val ssh = (connection, connection.newSFTPClient)
       withTimer {
-        slurmJS.jobActions(slurmSubmit)(slurmJS.processSubmit)({ for (i ← 1 to nbJobs) yield slurmJobDescriptions }: _*) run (connection) // ((connection, sftpClient))
+        sshJobService.jobActions(sshSubmit)(sshJobService.processSubmit)({ for (i ← 1 to nbJobs) yield sshJobDescriptions }: _*) run (connection) // ((connection, sftpClient))
       }
     }.getOrElse(Seq.empty, missingValue)
 
@@ -76,23 +78,23 @@ trait Benchmark extends BenchmarkUtils {
 
     println("Querying state for jobs...")
 
-    val (states, queryTime) = slurmJS.withConnection(implicit connection ⇒
-      withTimer { slurmJS.jobActions(slurmState)(slurmJS.processState)(jobs: _*) run (connection) }
+    val (states, queryTime) = sshJobService.withConnection(implicit connection ⇒
+      withTimer { sshJobService.jobActions(sshState)(sshJobService.processState)(jobs: _*) run (connection) }
     ).getOrElse(Seq.empty, missingValue)
 
     println(s"Queried state for ${states.length} jobs in $queryTime")
 
     println("Cancelling jobs...")
 
-    val (_, cancelTime) = slurmJS.withConnection(implicit connection ⇒
-      withTimer { slurmJS.jobActions(slurmCancel)(slurmJS.processCancel)(jobs: _*) run (connection) }
+    val (_, cancelTime) = sshJobService.withConnection(implicit connection ⇒
+      withTimer { sshJobService.jobActions(sshCancel)(sshJobService.processCancel)(jobs: _*) run (connection) }
     ).getOrElse(Seq.empty, missingValue)
 
     println(s"Cancelled $nbJobs jobs in $cancelTime")
 
     println("Purging jobs...")
     // only purging one job, they're all the same
-    try slurmJS.purge(jobs.head)
+    try sshJobService.purge(jobs.head)
     catch { case _: Throwable ⇒ }
 
     println("Done")
