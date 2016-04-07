@@ -17,12 +17,16 @@
 
 package fr.iscpif.gridscale.pbs
 
+import java.io.ByteArrayInputStream
+
 import fr.iscpif.gridscale.jobservice._
+import fr.iscpif.gridscale.ssh.SSHHost._
 import fr.iscpif.gridscale.ssh.SSHJobService._
 import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.concurrent.duration._
+import scalaz.concurrent.Future
 
 object PBSJobService {
 
@@ -60,6 +64,35 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   }
 
+  def submitAsync(description: D) =
+    SSHHost.withSSH {
+      case (sshClient, sftpClient) ⇒
+        Future {
+          implicit val sftp = sftpClient
+          implicit val connection = sshClient
+
+          exec("mkdir -p " + description.workDirectory)
+          write2(new ByteArrayInputStream(description.toPBS.getBytes), pbsScriptPath(description))
+
+          val (ret, out, err) = execReturnCodeOutput("cd " + description.workDirectory + " && qsub " + pbsScriptName(description))
+          (description, ExecResult(ret, out, err))
+        }
+    }
+
+  def processSubmit(resSubmit: (PBSJobDescription, ExecResult)) = {
+    val (jobDescription, ExecResult(ret, output, error)) = resSubmit
+    val job = processSubmitOutput(jobDescription, ret, output, error)
+    (jobDescription, job)
+  }
+
+  def processSubmitOutput(description: D, ret: Int, output: String, error: String, command: Option[String] = None) = {
+    val jobId = output
+
+    if (ret != 0) throw exception(ret, command.getOrElse("(job submission)"), jobId, error)
+    if (jobId == null) throw new RuntimeException("qsub did not return a JobID")
+    new PBSJob(description, jobId)
+  }
+
   def state(job: J): JobState = withConnection { implicit connection ⇒
     val command = "qstat -f " + job.pbsId
 
@@ -79,7 +112,46 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShe
     }
   }
 
+  def stateAsync(job: J) = withReusedConnection { implicit connection ⇒
+    execReturnCodeOutputFuture("qstat -f " + job.pbsId).map((job, _))
+  }
+
+  def processStateOuput(ret: Int, output: String, error: String, command: Option[String] = None) = {
+    ret.toInt match {
+      case 153 ⇒ Done
+      case 0 ⇒
+        val lines = output.split("\n").map(_.trim)
+        val state = lines.filter(_.matches(".*=.*")).map {
+          prop ⇒
+            val splited = prop.split('=')
+            splited(0).trim.toUpperCase -> splited(1).trim
+        }.toMap.getOrElse(jobStateAttribute, throw new RuntimeException("State not found in qstat output: " + output))
+        translateStatus(ret, state)
+      case r ⇒ throw exception(ret, command.getOrElse("(job state query)"), output, error)
+    }
+  }
+
+  def processState(resState: (PBSJob, ExecResult)) = {
+    val (job, ExecResult(ret, output, error)) = resState
+    val state = processStateOuput(ret, output, error)
+    (job, state)
+  }
+
   def cancel(job: J) = withConnection { exec("qdel " + job.pbsId)(_) }
+
+  def cancelAsync(job: J) =
+    withReusedConnection { implicit connection ⇒
+      execReturnCodeOutputFuture("qdel " + job.pbsId).map((job, _))
+    }
+
+  // FIXME quite similar to the others too..
+  def processCancel(resCancel: (PBSJob, ExecResult)) = {
+    val (job, result) = resCancel
+    result match {
+      case ExecResult(_, _, _) ⇒ (job, result)
+      case _                   ⇒ throw new RuntimeException(s"PBS JobService could not cancel job ${job.pbsId}")
+    }
+  }
 
   //Purge output error job script
   def purge(job: J) = withSftpClient { c ⇒
