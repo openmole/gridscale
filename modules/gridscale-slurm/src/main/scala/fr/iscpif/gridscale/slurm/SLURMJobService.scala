@@ -80,15 +80,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
     new SLURMJob(description, jobId)
   }
 
-  def submitAsync(description: D) = withReusedConnection { implicit connection ⇒
-    // FIXME ideally would like the bootstrap async too
-    exec("mkdir -p " + description.workDirectory)
-    write(description.toSLURM.getBytes, slurmScriptPath(description))
-
-    execReturnCodeOutputFuture("cd " + description.workDirectory + " ; sbatch " + description.uniqId + ".slurm").map((description, _))
-  }
-
-  def submitAsync2(description: D) =
+  def submitAsync(description: D) =
     SSHHost.withSSH {
       case (sshClient, sftpClient) ⇒
         Future {
@@ -153,15 +145,6 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
       case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}")
     }
   }
-
-  def cancel2(job: J) =
-    withReusedConnection { implicit connection ⇒
-      execReturnCodeOutput("scancel " + job.slurmId) match {
-        case (0, _, _) ⇒
-        case (1, _, error) if (error.matches(".*Invalid job id specified")) ⇒ throw new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id")
-        case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}")
-      }
-    }
 
   def cancelAsync(job: J) =
     withReusedConnection { implicit connection ⇒
