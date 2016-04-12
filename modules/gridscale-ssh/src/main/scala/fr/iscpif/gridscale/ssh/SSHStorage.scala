@@ -39,7 +39,7 @@ object SSHStorage {
 
 }
 
-trait SSHStorage extends Storage with SSHHost { storage ⇒
+trait SSHStorage extends Storage with SSHHost {
 
   object FilePermission {
 
