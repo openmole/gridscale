@@ -45,7 +45,7 @@ trait SGEJobDescription extends JobDescription {
     queue.foreach(q ⇒ buffer += "#$ -q " + q)
     memory.foreach(m ⇒ buffer += "-l h_vmem=" + m + "M")
     wallTime.foreach(t ⇒ buffer += "-l h_cpu=" + t.toSeconds)
-    buffer += "#$ -cdw " + workDirectory
+    buffer += "#$ -cwd"
 
     buffer += executable + " " + arguments
 
