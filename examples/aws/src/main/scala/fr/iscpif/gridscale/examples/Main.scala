@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Romain Reuillon
+ * Copyright (C) 2016 Adrian Draghici
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,26 +15,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.example.sge
+package fr.iscpif.gridscale.examples
 
-import fr.iscpif.gridscale._
-import fr.iscpif.gridscale.authentication._
-import fr.iscpif.gridscale.sge.{SGEJobDescription, SGEJobService}
-import fr.iscpif.gridscale.ssh._
+import fr.iscpif.gridscale.aws.AWSJobService
+import resource.managed
 
-object SubmitEcho extends App {
+object Main extends App {
 
-  val service = SGEJobService("master.domain")(UserPassword("login", "password"))
+  val awsService = AWSJobService("us-east-1", "adrian", "gridscale", "/Users/adrian/.aws/credentials.csv", "/Users/adrian/.ssh/id_rsa")
 
-  val description = new SGEJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "hello world"
-    def workDirectory = service.home + "/testjob/"
+  managed(awsService) acquireAndGet {
+    aws ⇒
+      {
+        println("starting stuff")
+        aws.start()
+        println(aws.host)
+        println("running test script")
+        aws.testScript()
+      }
   }
-
-  val j = service.submit(description)
-
-  val s2 = service.untilFinished(j) { println }
-
-  service.purge(j)
 }
