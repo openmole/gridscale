@@ -38,6 +38,8 @@ import scala.sys.process.BasicIO
 
 object DIRACJobService {
 
+  def directoryURL = "http://dirac.france-grilles.fr/defaults/DiracServices.json"
+
   def apply[A: HTTPSAuthentication](
     vo: String,
     service: Option[Service] = None,
@@ -55,15 +57,19 @@ object DIRACJobService {
 
   case class Service(service: String, group: String)
 
-  def getService(vo: String, timeout: Duration = 1 minute) = {
-    val uri: URI = new URI("http://dirac.france-grilles.fr/defaults/DiracServices.json")
+  def getService(vo: String, timeout: Duration = 1 minute) =
+    getServices(timeout).getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory"))
+
+  def getServices(timeout: Duration) = {
+    val uri: URI = new URI(directoryURL)
     val is = HTTPStorage.toInputStream(uri, HTTPStorage.newClient(timeout))
     try {
       val page = Source.fromInputStream(is).mkString
-      val parsed = page.parseJson.asJsObject.fields.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory")).asJsObject.fields
-      Service("https://" + parsed("RESTServer").convertTo[String], parsed("DIRACDefaultGroup").convertTo[String])
+      page.parseJson.asJsObject.fields.mapValues(_.asJsObject.fields).mapValues(parsed ⇒ Service("https://" + parsed("RESTServer").convertTo[String], parsed("DIRACDefaultGroup").convertTo[String]))
     } finally is.close
   }
+
+  def supportedVOs(timeout: Duration = 1 minute) = getServices(timeout).keys
 
 }
 
