@@ -75,7 +75,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     putOnDiskNode.setEntity(entity)
 
     val response = withClient { _.execute(putOnDiskNode) }
-    HTTPStorage.testResponse(redirect).get
+    HTTPStorage.testResponse(response).get
   }
 
   override def _read(path: String): InputStream = HTTPStorage.toInputStream(new URI(fullUrl(path)), newClient)
