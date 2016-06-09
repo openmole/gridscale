@@ -49,7 +49,7 @@ object HTTPStorage {
     override protected def isRedirectable(method: String) =
       method match {
         case HttpPropFind.METHOD_NAME ⇒ true
-        case HttpPut.METHOD_NAME      ⇒ true
+        //  case HttpPut.METHOD_NAME      ⇒ true
         case _                        ⇒ super.isRedirectable(method)
       }
   }
@@ -85,7 +85,7 @@ object HTTPStorage {
 
   def isResponseOk(response: HttpResponse) =
     response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
-      response.getStatusLine.getStatusCode < HttpStatus.SC_MULTIPLE_CHOICES
+      response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
 
   def toInputStream(uri: URI, httpClient: CloseableHttpClient): InputStream = {
     val get = new HttpGet(uri)

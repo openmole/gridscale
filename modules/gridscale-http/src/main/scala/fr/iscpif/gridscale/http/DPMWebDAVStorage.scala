@@ -19,23 +19,25 @@ package fr.iscpif.gridscale.http
 import java.io._
 import java.lang.Thread.UncaughtExceptionHandler
 import java.net.URI
-import java.util.concurrent.{ TimeUnit, _ }
-import java.util.concurrent.atomic.{AtomicLong, AtomicBoolean}
+import java.util.concurrent.{TimeUnit, _}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
 import com.github.sardine.DavResource
-import com.github.sardine.impl.SardineRedirectStrategy
 import com.github.sardine.impl.handler.MultiStatusResponseHandler
-import com.github.sardine.impl.methods.{ HttpMkCol, HttpMove, HttpPropFind }
+import com.github.sardine.impl.methods.{HttpMkCol, HttpMove, HttpPropFind}
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
+import org.apache.http.client.ResponseHandler
 import org.apache.http.client.methods._
+import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
-import org.apache.http.protocol.{ HttpContext, HTTP }
+import org.apache.http.impl.client.DefaultRedirectStrategy
+import org.apache.http.protocol.{HTTP, HttpContext}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
@@ -58,7 +60,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
   def fullUrl(path: String) =
     "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
-  override def _write(is: InputStream, path: String) = withClient { httpClient =>
+  override def _write(is: InputStream, path: String) = {
     val countIS = new InputStream {
       var size = 0
       override def read(): Int = {
@@ -69,12 +71,23 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     }
 
     val put = new HttpPut(fullUrl(path))
-    val entity = new InputStreamEntity(countIS, -1)
-    put.setEntity(entity)
     put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
-    val returnCode = HTTPStorage.execute(httpClient.execute, put)
+    put.setEntity(new InputStreamEntity(new ByteArrayInputStream(Array())))
+
+    val redirect = withClient { _.execute(put) }
+    HTTPStorage.testResponse(redirect).get
+
+    val uri = new DefaultRedirectStrategy().getLocationURI(put, redirect, new HttpClientContext())
+
+    val entity = new InputStreamEntity(countIS, -1)
+    val putOnDiskNode = new HttpPut(uri)
+    putOnDiskNode.setEntity(entity)
+
+    val response = withClient { _.execute(putOnDiskNode) }
+    HTTPStorage.testResponse(redirect).get
+
     val writtenSize = listProp(path).head.getContentLength
-    if(writtenSize != countIS.size.toLong) throw new IOException(s"Size of the written file is $writtenSize and does'nt match ${countIS.size} (return code of the request was $returnCode)")
+    if(writtenSize != countIS.size.toLong) throw new IOException(s"Size of the written file is $writtenSize and does'nt match ${countIS.size} (response was ${response.getStatusLine})")
   }
 
   override def _read(path: String): InputStream = HTTPStorage.toInputStream(new URI(fullUrl(path)), newClient)

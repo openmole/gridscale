@@ -146,7 +146,7 @@ trait Bundles <: Modules with Settings {
 
 trait Modules <: Libraries with Settings {
 
-  lazy val httpComponentsVersion = "4.5.1"
+  lazy val httpComponentsVersion = "4.5.2"
 
   lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
 
@@ -159,7 +159,7 @@ trait Modules <: Libraries with Settings {
 
   lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (
     libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6",
+    libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6" excludeAll (ExclusionRule("org.apache.httpcomponents")),
     libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
     libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion
      )
