@@ -26,7 +26,7 @@ import fr.iscpif.gridscale.egi._
 
 import scala.concurrent.duration._
 
-object Main extends App {
+object DIRACExample extends App {
 
   val certificate = new File("/home/reuillon/.globus/certificate.p12")
   val password = "password"
@@ -39,7 +39,9 @@ object Main extends App {
   val jobDesc = DIRACJobDescription(
     executable = "/bin/echo",
     arguments = "hello",
-    outputSandbox = Seq(("out" -> new File("/tmp/diractout.txt")), ("err" -> new File("/tmp/diracterr.txt"))),
+    outputSandbox = Seq(
+      "out" -> new File("/tmp/diractout.txt"),
+      "err" -> new File("/tmp/diracterr.txt")),
     stdOut = Some("out"),
     stdErr = Some("err")
   )

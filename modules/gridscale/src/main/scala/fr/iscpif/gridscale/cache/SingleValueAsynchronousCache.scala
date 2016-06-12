@@ -32,46 +32,37 @@ trait SingleValueAsynchronousCache[T] extends (() ⇒ T) {
   def apply(): T = synchronized {
     def cache = {
       val value = compute()
-      putInCache(Success(value))
+      cached = computeCache(Success(value))
       value
     }
 
-    def putInCache(t: Try[T]) =
-      cached =
-        Some(
-          t.map {
-            value ⇒
-              val expires = expiresIn(value).toMillis
-              (value, System.currentTimeMillis + expires)
-          }
-        )
+    def computeCache(t: Try[T]) =
+      Some(t.map { value ⇒ (value, System.currentTimeMillis + expiresIn(value).toMillis) })
 
     def refreshThread = {
       val thread = new Thread(new Runnable {
-        override def run(): Unit = putInCache(Try { compute() })
+        override def run(): Unit = {
+          try {
+            val res = Try { compute() }
+            cached = computeCache(res)
+          } finally caching = None
+        }
       })
       thread.setDaemon(true)
+      thread.start
       thread
     }
 
-    cached match {
-      case None ⇒ cache
-      case Some(Failure(t)) ⇒
+    (caching, cached) match {
+      case (_, None) ⇒ cache
+      case (_, Some(Failure(t))) ⇒
         cached = None
         caching = None
         throw t
-      case Some(Success((v, expireTime))) ⇒
-        caching.foreach { thread ⇒ if (!thread.isAlive) caching = None }
-        if (expireTime < System.currentTimeMillis) {
-          caching match {
-            case Some(_) ⇒
-            case None ⇒
-              val t = refreshThread
-              t.start
-              caching = Some(t)
-          }
-          v
-        } else v
+      case (None, Some(Success((v, expireTime)))) if expireTime < System.currentTimeMillis ⇒
+        caching = Some(refreshThread)
+        v
+      case (Some(_), Some(Success((v, expireTime)))) ⇒ v
     }
   }
 
