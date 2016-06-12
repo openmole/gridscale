@@ -18,15 +18,14 @@ package fr.iscpif.gridscale.egi
 
 import java.io._
 import java.net.{ URI, URL }
+import java.util.UUID
 
-import fr.iscpif.gridscale.cache.SingleValueAsynchronousCache
-import fr.iscpif.gridscale.http.{ HTTPStorage, HTTPSClient, HTTPSAuthentication }
+import fr.iscpif.gridscale.cache._
+import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient, HTTPStorage }
 import fr.iscpif.gridscale.jobservice._
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-
 import org.apache.http.client.methods._
 import org.apache.http.client.utils.URIBuilder
-import org.apache.http.conn.socket.ConnectionSocketFactory
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.{ HttpHost, HttpRequest }
 import spray.json.DefaultJsonProtocol._
@@ -43,13 +42,15 @@ object DIRACJobService {
   def apply[A: HTTPSAuthentication](
     vo: String,
     service: Option[Service] = None,
+    groupStatusQuery: Option[Duration] = None,
     timeout: Duration = 1 minutes)(authentication: A) = {
     val s = service.getOrElse(getService(vo, timeout))
 
-    val (_timeout) = (timeout)
+    val (_timeout, _groupStatusQuery) = (timeout, groupStatusQuery)
     new DIRACJobService {
       override val timeout = _timeout
       override val group: String = s.group
+      override val groupStatusQuery = _groupStatusQuery
       override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override val service: String = s.service
     }
@@ -90,12 +91,20 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def jobs = service + "/jobs"
   def delegation = service + s"/proxy/unknown/$group"
 
+  def groupStatusQuery: Option[Duration]
+  def groupQuery = groupStatusQuery.isDefined
+
   def tokenExpirationMargin = 10 -> MINUTES
 
   @transient lazy val tokenCache =
-    SingleValueAsynchronousCache[Token]((t: Token) ⇒ (t.expires_in, SECONDS) - tokenExpirationMargin) {
+    ValueCache[Token]((t: Token) ⇒ (t.expires_in, SECONDS) - tokenExpirationMargin) {
       () ⇒ token
     }
+
+  lazy val jobsServiceJobGroup = UUID.randomUUID().toString
+  @transient lazy val statusesCache = groupStatusQuery.map { queryInterval ⇒
+    ValueCache(queryInterval) { () ⇒ queryGroupStatus(jobsServiceJobGroup).toMap }
+  }
 
   def delegate(p12: File, password: String) = {
     val files = MultipartEntityBuilder.create()
@@ -147,31 +156,34 @@ trait DIRACJobService extends JobService with HTTPSClient {
     }
   }
 
-  def state(jobId: J) = {
-    val uri =
-      new URIBuilder(jobs + "/" + jobId)
-        .setParameter("access_token", tokenCache().token)
-        .build
+  def state(jobId: J) =
+    statusesCache match {
+      case None ⇒
+        val uri =
+          new URIBuilder(jobs + "/" + jobId)
+            .setParameter("access_token", tokenCache().token)
+            .build
 
-    val get = new HttpGet(uri)
+        val get = new HttpGet(uri)
 
-    request(get) { r ⇒
-      r.parseJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
-        case "Received"  ⇒ Submitted
-        case "Checking"  ⇒ Submitted
-        case "Staging"   ⇒ Submitted
-        case "Waiting"   ⇒ Submitted
-        case "Matched"   ⇒ Submitted
-        case "Running"   ⇒ Running
-        case "Completed" ⇒ Running
-        case "Stalled"   ⇒ Running
-        case "Killed"    ⇒ Failed
-        case "Deleted"   ⇒ Failed
-        case "Done"      ⇒ Done
-        case "Failed"    ⇒ Failed
-      }
+        request(get) { r ⇒
+          r.parseJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
+            case "Received"  ⇒ Submitted
+            case "Checking"  ⇒ Submitted
+            case "Staging"   ⇒ Submitted
+            case "Waiting"   ⇒ Submitted
+            case "Matched"   ⇒ Submitted
+            case "Running"   ⇒ Running
+            case "Completed" ⇒ Running
+            case "Stalled"   ⇒ Running
+            case "Killed"    ⇒ Failed
+            case "Deleted"   ⇒ Failed
+            case "Done"      ⇒ Done
+            case "Failed"    ⇒ Failed
+          }
+        }
+      case Some(cache) ⇒ cache()(jobId)
     }
-  }
 
   def downloadOutputSandbox(desc: D, jobId: J) = {
     val outputSandboxMap = desc.outputSandbox.toMap
@@ -210,6 +222,21 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   def purge(job: J) = {}
 
+  def queryGroupStatus(group: String): Seq[(J, JobState)] = {
+    val uri =
+      new URIBuilder(jobs)
+        .setParameter("access_token", tokenCache().token)
+        .setParameter("jobGroup", group)
+        .setParameter("startJob", 0.toString)
+        .setParameter("maxJob", Int.MaxValue.toString)
+        .build
+
+    val get = new HttpGet(uri)
+    // FIXME implement jobs status parsing
+    request(get) { identity }
+    Seq.empty
+  }
+
   def httpHost: HttpHost = {
     val uri = new URI(service)
     new HttpHost(uri.getHost, uri.getPort, uri.getScheme)
@@ -229,3 +256,4 @@ trait DIRACJobService extends JobService with HTTPSClient {
       f(Source.fromInputStream(is).mkString)
     }
 }
+

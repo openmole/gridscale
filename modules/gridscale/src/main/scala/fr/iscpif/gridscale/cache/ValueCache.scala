@@ -19,20 +19,20 @@ package fr.iscpif.gridscale.cache
 
 import scala.concurrent.duration._
 
-object SingleValueCaching {
+object ValueCache {
 
-  def apply[T](_expireInterval: T ⇒ Duration)(_compute: () ⇒ T): SingleValueCaching[T] =
-    new SingleValueCaching[T] {
+  def apply[T](_expireInterval: T ⇒ Duration)(_compute: () ⇒ T): ValueCache[T] =
+    new ValueCache[T] {
       override def compute(): T = _compute()
       override def expiresInterval(t: T): Duration = _expireInterval(t)
     }
 
-  def apply[T](_expireInterval: Duration)(_compute: () ⇒ T): SingleValueCaching[T] =
+  def apply[T](_expireInterval: Duration)(_compute: () ⇒ T): ValueCache[T] =
     apply[T]((t: T) ⇒ _expireInterval)(_compute)
 
 }
 
-trait SingleValueCaching[T] extends (() ⇒ T) {
+trait ValueCache[T] extends (() ⇒ T) {
   @volatile private var cached: Option[(T, Long)] = None
 
   def compute(): T

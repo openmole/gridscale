@@ -74,7 +74,7 @@ trait VOMSAuthentication {
 
   def apply() = cached()
 
-  @transient lazy val cached = SingleValueAsynchronousCache(lifeTime * renewRation)(() ⇒ generateProxy)
+  @transient lazy val cached = ValueAsyncCache(lifeTime * renewRation)(() ⇒ generateProxy)
 
   def generateProxy =
     try {
