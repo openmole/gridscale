@@ -40,7 +40,7 @@ case class DIRACJobDescription(
     platforms: Seq[String] = Seq.empty,
     cpuTime: Option[Duration] = None) {
 
-  def toJSON(group: Option[String] = None) = {
+  def toJSON(jobGroup: Option[String] = None) = {
     def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)): _*)
     def outputSandboxArray = JsArray(outputSandbox.map(f ⇒ JsString(f._1)): _*)
     def platformsArray = JsArray(platforms.map(f ⇒ JsString(f)): _*)
@@ -50,10 +50,11 @@ case class DIRACJobDescription(
       "Arguments" -> JsString(arguments)) ++
       stdOut.map(s ⇒ "StdOutput" -> JsString(s)) ++
       stdErr.map(s ⇒ "StdError" -> JsString(s)) ++
-      (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++ (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
-    cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toSeconds.toString)) ++
+      (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++
+      (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None) ++
+      cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toSeconds.toString)) ++
       (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None) ++
-      group.map(s ⇒ "JobGroup" -> JsString(s))
+      jobGroup.map(s ⇒ "JobGroup" -> JsString(s))
 
     JsObject(fields: _*).compactPrint
   }

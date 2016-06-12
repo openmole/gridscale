@@ -101,7 +101,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
       () ⇒ token
     }
 
-  lazy val jobsServiceJobGroup = UUID.randomUUID().toString
+  lazy val jobsServiceJobGroup = UUID.randomUUID().toString.filter(_ != '-')
   @transient lazy val statusesCache = groupStatusQuery.map { queryInterval ⇒
     ValueCache(queryInterval) { () ⇒ queryGroupStatus(jobsServiceJobGroup).toMap }
   }
@@ -167,22 +167,26 @@ trait DIRACJobService extends JobService with HTTPSClient {
         val get = new HttpGet(uri)
 
         request(get) { r ⇒
-          r.parseJson.asJsObject.getFields("status").head.toJson.convertTo[String] match {
-            case "Received"  ⇒ Submitted
-            case "Checking"  ⇒ Submitted
-            case "Staging"   ⇒ Submitted
-            case "Waiting"   ⇒ Submitted
-            case "Matched"   ⇒ Submitted
-            case "Running"   ⇒ Running
-            case "Completed" ⇒ Running
-            case "Stalled"   ⇒ Running
-            case "Killed"    ⇒ Failed
-            case "Deleted"   ⇒ Failed
-            case "Done"      ⇒ Done
-            case "Failed"    ⇒ Failed
-          }
+          val s = r.parseJson.asJsObject.getFields("status").head.toJson.convertTo[String]
+          translateState(s)
         }
-      case Some(cache) ⇒ cache()(jobId)
+      case Some(cache) ⇒ cache().getOrElse(jobId, Submitted)
+    }
+
+  def translateState(s: String) =
+    s match {
+      case "Received"  ⇒ Submitted
+      case "Checking"  ⇒ Submitted
+      case "Staging"   ⇒ Submitted
+      case "Waiting"   ⇒ Submitted
+      case "Matched"   ⇒ Submitted
+      case "Running"   ⇒ Running
+      case "Completed" ⇒ Running
+      case "Stalled"   ⇒ Running
+      case "Killed"    ⇒ Failed
+      case "Deleted"   ⇒ Failed
+      case "Done"      ⇒ Done
+      case "Failed"    ⇒ Failed
     }
 
   def downloadOutputSandbox(desc: D, jobId: J) = {
@@ -222,7 +226,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   def purge(job: J) = {}
 
-  def queryGroupStatus(group: String): Seq[(J, JobState)] = {
+  def queryGroupStatus(group: String = jobsServiceJobGroup): Seq[(J, JobState)] = {
     val uri =
       new URIBuilder(jobs)
         .setParameter("access_token", tokenCache().token)
@@ -232,9 +236,15 @@ trait DIRACJobService extends JobService with HTTPSClient {
         .build
 
     val get = new HttpGet(uri)
-    // FIXME implement jobs status parsing
-    request(get) { identity }
-    Seq.empty
+
+    request(get) { r ⇒
+      r.parseJson.asJsObject.fields("jobs").convertTo[JsArray].elements.map {
+        j ⇒
+          val jsObject = j.asJsObject
+          jsObject.fields("jid").convertTo[Long].toString ->
+            translateState(jsObject.fields("status").convertTo[String])
+      }
+    }
   }
 
   def httpHost: HttpHost = {
