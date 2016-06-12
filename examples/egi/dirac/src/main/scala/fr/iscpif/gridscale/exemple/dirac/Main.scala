@@ -36,13 +36,13 @@ object Main extends App {
 
   js.delegate(certificate, password)
 
-  val jobDesc = new DIRACJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "hello"
-    override def outputSandbox: Seq[(String, File)] = Seq(("out" -> new File("/tmp/diractout.txt")), ("err" -> new File("/tmp/diracterr.txt")))
-    override def stdOut: Option[String] = Some("out")
-    override def stdErr: Option[String] = Some("err")
-  }
+  val jobDesc = DIRACJobDescription(
+    executable = "/bin/echo",
+    arguments = "hello",
+    outputSandbox = Seq(("out" -> new File("/tmp/diractout.txt")), ("err" -> new File("/tmp/diracterr.txt"))),
+    stdOut = Some("out"),
+    stdErr = Some("err")
+  )
 
   val j = js.submit(jobDesc)
 

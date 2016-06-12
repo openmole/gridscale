@@ -32,15 +32,16 @@ object DIRACJobDescription {
   val Linux_i686_glibc_2_5 = "Linux_i686_glibc-2.5"
 }
 
-trait DIRACJobDescription extends JobDescription {
-
-  def stdOut: Option[String] = None
-  def stdErr: Option[String] = None
-  def inputSandbox: Seq[File] = List.empty
-  def outputSandbox: Seq[(String, File)] = List.empty
-  def platforms: Seq[String] = Seq.empty
-
-  def cpuTime: Option[Duration] = None
+case class DIRACJobDescription(
+    executable: String,
+    arguments: String,
+    stdOut: Option[String] = None,
+    stdErr: Option[String] = None,
+    inputSandbox: Seq[File] = List.empty,
+    outputSandbox: Seq[(String, File)] = List.empty,
+    platforms: Seq[String] = Seq.empty,
+    cpuTime: Option[Duration] = None,
+    group: Option[String] = None) extends JobDescription {
 
   def toJSON = {
     def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)): _*)
@@ -54,7 +55,8 @@ trait DIRACJobDescription extends JobDescription {
       stdErr.map(s ⇒ "StdError" -> JsString(s)) ++
       (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++ (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None)
     cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toSeconds.toString)) ++
-      (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None)
+      (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None) ++
+      group.map(s ⇒ "JobGroup" -> JsString(s))
 
     JsObject(fields: _*).compactPrint
   }
