@@ -41,7 +41,8 @@ case class WMSJobDescription(
     shallowRetryCount: Option[Int] = None,
     myProxyServer: Option[String] = None,
     architecture: Option[String] = None,
-    ce: Option[Iterable[String]] = None) {
+    ce: Option[Iterable[String]] = None,
+    extraRequirements: Option[String] = None) {
 
   def requirements =
     "other.GlueCEStateStatus == \"Production\"" +
@@ -49,7 +50,8 @@ case class WMSJobDescription(
       cpuTime.map(" && other.GlueCEPolicyMaxCPUTime >= " + _.toMinutes).mkString +
       wallTime.map(" && other.GlueCEPolicyMaxWallClockTime >= " + _.toMinutes).mkString +
       architecture.map(" && other.GlueHostArchitecturePlatformType == \"" + _ + "\"").mkString +
-      ce.map(" && (" + _.map("other.GlueCEUniqueID == \"" + _ + "\"").mkString("|") + ")").mkString
+      ce.map(" && (" + _.map("other.GlueCEUniqueID == \"" + _ + "\"").mkString("|") + ")").mkString +
+      extraRequirements.map(" && " + _)
 
   def toJDL = {
     val script = new ScriptBuffer
