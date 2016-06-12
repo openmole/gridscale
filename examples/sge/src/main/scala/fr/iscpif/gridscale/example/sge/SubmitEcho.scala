@@ -26,11 +26,11 @@ object SubmitEcho extends App {
 
   val service = SGEJobService("master.domain")(UserPassword("login", "password"))
 
-  val description = new SGEJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "hello world"
-    def workDirectory = service.home + "/testjob/"
-  }
+  val description = SGEJobDescription(
+    executable = "/bin/echo",
+    arguments = "hello world",
+    workDirectory = service.home + "/testjob/"
+  )
 
   val j = service.submit(description)
 

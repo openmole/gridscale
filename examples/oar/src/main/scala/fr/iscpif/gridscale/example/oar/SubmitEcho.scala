@@ -28,15 +28,14 @@ object SubmitEcho extends App {
 
   val service = OARJobService("172.17.0.4")(UserPassword("docker", "docker"))
 
-  val description = new OARJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "hello wold"
-    def workDirectory = "/data/"
-    override def core = Some(1)
-    override def cpu = Some(1)
-
-    override def wallTime = Some(1 hour)
-  }
+  val description = OARJobDescription(
+    executable = "/bin/echo",
+    arguments = "hello wold",
+    workDirectory = "/data/",
+    core = Some(1),
+    cpu = Some(1),
+    wallTime = Some(1 hour)
+  )
 
   val j = service.submit(description)
 

@@ -36,14 +36,13 @@ object WMSExample extends App {
 
   val wms = bdii.queryWMSLocations("biomed").map(l ⇒ WMSJobService(l)(authentication)).head
 
-  val jobDesc = new WMSJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "Hello world!"
-    override def stdOutput = "out.txt"
-    override def stdError = "error.txt"
-    def inputSandbox = List()
-    def outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt"))
-  }
+  val jobDesc = WMSJobDescription(
+    executable = "/bin/echo",
+    arguments = "Hello world!",
+    stdOutput = Some("out.txt"),
+    stdError = Some("error.txt"),
+    outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt"))
+  )
 
   val j = wms.submit(jobDesc)
   val s = wms.untilFinished(j) { println }

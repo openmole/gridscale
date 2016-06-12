@@ -25,18 +25,18 @@ import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.slurm._
 import fr.iscpif.gridscale.ssh._
 
-object Main {
+object SLURMExample {
 
   def submitEchoAndDone(slurmService: SLURMJobService) = {
 
     println("a job is successfully submitted, runs then its results are retrived normally")
 
     println("a simple job")
-    val description = new SLURMJobDescription {
-      def executable = "/bin/echo"
-      def arguments = "success > test_success.txt"
-      def workDirectory = "/home/jopasserat/toto"
-    }
+    val description = SLURMJobDescription(
+      executable = "/bin/echo",
+      arguments = "success > test_success.txt",
+      workDirectory = "/home/jopasserat/toto"
+    )
 
     println("job to submit:")
     println(description.toSLURM)
@@ -59,11 +59,11 @@ object Main {
     println("a job is successfully submitted, then cancelled")
 
     println("an infinite job")
-    val description = new SLURMJobDescription {
-      def executable = "/usr/bin/find"
-      def arguments = "/"
-      def workDirectory = "/home/jopasserat/toto"
-    }
+    val description = SLURMJobDescription(
+      executable = "/usr/bin/find",
+      arguments = "/",
+      workDirectory = "/home/jopasserat/toto"
+    )
 
     println("then the job has been submitted")
     val j = slurmService.submit(description)
@@ -86,12 +86,12 @@ object Main {
     println("a CUDA job is successfully submitted, requesting a gres")
 
     println("a CUDA job")
-    val description = new SLURMJobDescription {
-      def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
-      def arguments = ""
-      def workDirectory = "/home/jopasserat/toto"
-      override def gres = List(new Gres("gpu", 1))
-    }
+    val description = SLURMJobDescription(
+      executable = "/opt/cuda/C/bin/linux/release/matrixMul",
+      arguments = "",
+      workDirectory = "/home/jopasserat/toto",
+      gres = List(new Gres("gpu", 1))
+    )
 
     println("then the job has been submitted")
     val j = slurmService.submit(description)
@@ -111,12 +111,12 @@ object Main {
     println("a job is successfully submitted, requesting a tesla&fermi node")
 
     println("a CUDA job")
-    val description = new SLURMJobDescription {
-      def executable = "/opt/cuda/C/bin/linux/release/matrixMul"
-      def arguments = ""
-      def workDirectory = "/home/jopasserat/toto"
-      override def constraints = List("tesla", "fermi")
-    }
+    val description = SLURMJobDescription(
+      executable = "/opt/cuda/C/bin/linux/release/matrixMul",
+      arguments = "",
+      workDirectory = "/home/jopasserat/toto",
+      constraints = List("tesla", "fermi")
+    )
 
     println("then the job has been submitted")
     val j = slurmService.submit(description)

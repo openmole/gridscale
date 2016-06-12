@@ -17,8 +17,6 @@
 package fr.iscpif.gridscale.egi
 
 import java.io.File
-
-import fr.iscpif.gridscale.jobservice.JobDescription
 import spray.json.{ JsArray, JsObject, JsString }
 
 import scala.concurrent.duration.Duration
@@ -40,7 +38,7 @@ case class DIRACJobDescription(
     inputSandbox: Seq[File] = List.empty,
     outputSandbox: Seq[(String, File)] = List.empty,
     platforms: Seq[String] = Seq.empty,
-    cpuTime: Option[Duration] = None) extends JobDescription {
+    cpuTime: Option[Duration] = None) {
 
   def toJSON(group: Option[String] = None) = {
     def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)): _*)

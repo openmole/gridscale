@@ -17,8 +17,7 @@
 
 package fr.iscpif.gridscale.ssh
 
-import fr.iscpif.gridscale.jobservice.JobDescription
-
-trait SSHJobDescription extends JobDescription {
-  def workDirectory: String
-}
+case class SSHJobDescription(
+  executable: String,
+  arguments: String,
+  workDirectory: String)

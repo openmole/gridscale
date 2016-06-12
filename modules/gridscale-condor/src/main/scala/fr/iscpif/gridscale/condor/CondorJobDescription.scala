@@ -19,23 +19,24 @@
 package fr.iscpif.gridscale.condor
 
 import java.util.UUID
-
-import fr.iscpif.gridscale.jobservice.JobDescription
 import fr.iscpif.gridscale.tools.ScriptBuffer
 
-trait CondorJobDescription extends JobDescription {
+case class CondorJobDescription(
+    executable: String,
+    arguments: String,
+    workDirectory: String,
+    memory: Option[Int] = None,
+    nodes: Option[Int] = None,
+    coreByNode: Option[Int] = None,
+    requirements: Option[CondorRequirement] = None) {
+
   val uniqId = UUID.randomUUID.toString
-  def workDirectory: String
   // not available yet
   //  def queue: Option[String] = None
   //  def wallTime: Option[Duration] = None
-  def memory: Option[Int] = None
-  def nodes: Option[Int] = None
-  def coreByNode: Option[Int] = None
+
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
-
-  def requirements: Option[CondorRequirement] = None
 
   def toCondor = {
     val buffer = new ScriptBuffer

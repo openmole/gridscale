@@ -25,11 +25,11 @@ object SSHJobExample extends App {
 
   val js = SSHJobService("localhost")(UserPassword("test", "test"))
 
-  val description = new SSHJobDescription {
-    override def workDirectory: String = "/tmp/"
-    override def arguments: String = "30"
-    override def executable: String = "sleep"
-  }
+  val description = SSHJobDescription(
+    workDirectory = "/tmp/",
+    arguments = "30",
+    executable = "sleep"
+  )
 
   val id = js.submit(description)
 

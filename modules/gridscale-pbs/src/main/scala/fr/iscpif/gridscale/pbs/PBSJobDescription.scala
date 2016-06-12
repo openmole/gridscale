@@ -24,14 +24,17 @@ import fr.iscpif.gridscale.tools._
 
 import scala.concurrent.duration.Duration
 
-trait PBSJobDescription extends JobDescription {
+case class PBSJobDescription(
+    executable: String,
+    arguments: String,
+    workDirectory: String,
+    queue: Option[String] = None,
+    wallTime: Option[Duration] = None,
+    memory: Option[Int] = None,
+    nodes: Option[Int] = None,
+    coreByNode: Option[Int] = None) {
   val uniqId = UUID.randomUUID.toString
-  def workDirectory: String
-  def queue: Option[String] = None
-  def wallTime: Option[Duration] = None
-  def memory: Option[Int] = None
-  def nodes: Option[Int] = None
-  def coreByNode: Option[Int] = None
+
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
 

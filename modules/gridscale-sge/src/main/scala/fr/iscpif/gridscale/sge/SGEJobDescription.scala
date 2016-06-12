@@ -19,21 +19,21 @@
 package fr.iscpif.gridscale.sge
 
 import java.util.UUID
-
-import fr.iscpif.gridscale.jobservice.JobDescription
 import fr.iscpif.gridscale.tools.ScriptBuffer
 
 import scala.concurrent.duration.Duration
 
-trait SGEJobDescription extends JobDescription {
+case class SGEJobDescription(
+    executable: String,
+    arguments: String,
+    workDirectory: String,
+    queue: Option[String] = None,
+    memory: Option[Int] = None,
+    wallTime: Option[Duration] = None) {
 
   val uniqId = UUID.randomUUID.toString
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
-  def workDirectory: String
-  def queue: Option[String] = None
-  def memory: Option[Int] = None
-  def wallTime: Option[Duration] = None
 
   def toSGE = {
     val buffer = new ScriptBuffer

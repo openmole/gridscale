@@ -25,18 +25,18 @@ import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.condor._
 import fr.iscpif.gridscale.ssh._
 
-object Main {
+object CondorExample {
 
   def submitEchoAndDone(condorService: CondorJobService) = {
 
     println("a job is successfully submitted, runs then its results are retrieved normally")
 
     println("a simple job")
-    val description = new CondorJobDescription {
-      def executable = "/bin/echo"
-      def arguments = "success > test_success.txt"
-      def workDirectory = "/homes/jpassera/toto"
-    }
+    val description = CondorJobDescription(
+      executable = "/bin/echo",
+      arguments = "success > test_success.txt",
+      workDirectory = "/tmp/"
+    )
 
     println("job to submit:")
     println(description.toCondor)
@@ -58,12 +58,12 @@ object Main {
 
     println("a job is successfully submitted, then cancelled")
 
-    println("an infinite job")
-    val description = new CondorJobDescription {
-      def executable = "/usr/bin/find"
-      def arguments = "/"
-      def workDirectory = "/homes/jpassera/toto"
-    }
+    println("a long job")
+    val description = CondorJobDescription(
+      executable = "/usr/bin/find",
+      arguments = "/",
+      workDirectory = "/tmp"
+    )
 
     println("then the job has been submitted")
     val j = condorService.submit(description)
@@ -86,15 +86,15 @@ object Main {
     println("a job is successfully submitted, requesting a tesla&fermi node")
 
     println("a Java job")
-    val description = new CondorJobDescription {
-      def executable = "/usr/bin/java"
-      def arguments = "-version"
-      def workDirectory = "/homes/jpassera/toto"
-      override def requirements = """JavaVersion == "1.7.0_03"""" &&
+    val description = CondorJobDescription(
+      executable = "/usr/bin/java",
+      arguments = "-version",
+      workDirectory = "/homes/jpassera/toto",
+      requirements = """JavaVersion == "1.7.0_03"""" &&
         ("""OpSysShortName == "Ubuntu"""" &&
           ("OpSysMajorVer == 14" || "OpSysMajorVer == 12" || "OpSysMajorVer == 13")
         )
-    }
+    )
 
     println("then the job has been submitted")
     val j = condorService.submit(description)

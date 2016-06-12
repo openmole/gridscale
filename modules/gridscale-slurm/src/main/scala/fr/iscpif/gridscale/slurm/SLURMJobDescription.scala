@@ -19,8 +19,6 @@
 package fr.iscpif.gridscale.slurm
 
 import java.util.UUID
-
-import fr.iscpif.gridscale.jobservice.JobDescription
 import fr.iscpif.gridscale.tools.{ ScriptBuffer, _ }
 
 import scala.concurrent.duration.Duration
@@ -36,20 +34,23 @@ object Gres {
   }
 }
 
-trait SLURMJobDescription extends JobDescription {
+case class SLURMJobDescription(
+    executable: String,
+    arguments: String,
+    workDirectory: String,
+    queue: Option[String] = None,
+    wallTime: Option[Duration] = None,
+    memory: Option[Int] = None,
+    nodes: Option[Int] = None,
+    coresByNode: Option[Int] = None,
+    qos: Option[String] = None,
+    gres: List[Gres] = List(),
+    constraints: List[String] = List()) {
 
   val uniqId = UUID.randomUUID.toString
-  def workDirectory: String
-  def queue: Option[String] = None
-  def wallTime: Option[Duration] = None
-  def memory: Option[Int] = None
-  def nodes: Option[Int] = None
-  def coresByNode: Option[Int] = None
+
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
-  def qos: Option[String] = None
-  def gres: List[Gres] = List()
-  def constraints: List[String] = List()
 
   def toSLURM = {
     val buffer = new ScriptBuffer

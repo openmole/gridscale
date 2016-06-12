@@ -18,31 +18,30 @@
 package fr.iscpif.gridscale.egi
 
 import java.io.File
-
-import fr.iscpif.gridscale.jobservice.JobDescription
 import fr.iscpif.gridscale.tools.ScriptBuffer
 
 import scala.concurrent.duration.Duration
 
-trait WMSJobDescription extends JobDescription {
-  def inputSandbox: Iterable[File]
-  def outputSandbox: Iterable[(String, File)]
-
-  def rank = "(-other.GlueCEStateEstimatedResponseTime)"
-  def fuzzy: Boolean = false
-  def stdOutput = ""
-  def stdError = ""
-  def memory: Option[Int] = None
-  def cpuTime: Option[Duration] = None
-  def cpuNumber: Option[Int] = None
-  def wallTime: Option[Duration] = None
-  def jobType: Option[String] = None
-  def smpGranularity: Option[Int] = None
-  def retryCount: Option[Int] = None
-  def shallowRetryCount: Option[Int] = None
-  def myProxyServer: Option[String] = None
-  def architecture: Option[String] = None
-  def ce: Option[Iterable[String]] = None
+case class WMSJobDescription(
+    executable: String,
+    arguments: String,
+    inputSandbox: Iterable[File] = List.empty,
+    outputSandbox: Iterable[(String, File)] = List.empty,
+    rank: String = "(-other.GlueCEStateEstimatedResponseTime)",
+    fuzzy: Boolean = false,
+    stdOutput: Option[String] = None,
+    stdError: Option[String] = None,
+    memory: Option[Int] = None,
+    cpuTime: Option[Duration] = None,
+    cpuNumber: Option[Int] = None,
+    wallTime: Option[Duration] = None,
+    jobType: Option[String] = None,
+    smpGranularity: Option[Int] = None,
+    retryCount: Option[Int] = None,
+    shallowRetryCount: Option[Int] = None,
+    myProxyServer: Option[String] = None,
+    architecture: Option[String] = None,
+    ce: Option[Iterable[String]] = None) {
 
   def requirements =
     "other.GlueCEStateStatus == \"Production\"" +
@@ -62,8 +61,8 @@ trait WMSJobDescription extends JobDescription {
     if (!inputSandbox.isEmpty) script += "InputSandbox = " + sandboxTxt(inputSandbox.map(_.getPath)) + ";"
     if (!outputSandbox.isEmpty) script += "OutputSandbox = " + sandboxTxt(outputSandbox.unzip._1) + ";"
 
-    if (!stdOutput.isEmpty) script += "StdOutput = \"" + stdOutput + "\";"
-    if (!stdError.isEmpty) script += "StdError = \"" + stdError + "\";"
+    stdOutput.foreach(stdOutput ⇒ script += "StdOutput = \"" + stdOutput + "\";")
+    stdError.foreach(stdError ⇒ script += "StdError = \"" + stdError + "\";")
 
     cpuNumber.foreach(script += "CpuNumber = " + _ + ";")
     smpGranularity.foreach(script += "SMPGranularity = " + _ + ";")

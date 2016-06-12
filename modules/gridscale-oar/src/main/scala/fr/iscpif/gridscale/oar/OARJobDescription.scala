@@ -24,16 +24,20 @@ import fr.iscpif.gridscale.tools._
 
 import scala.concurrent.duration.Duration
 
-trait OARJobDescription extends JobDescription {
+case class OARJobDescription(
+    executable: String,
+    arguments: String,
+    workDirectory: String,
+    queue: Option[String] = None,
+    cpu: Option[Int] = None,
+    core: Option[Int] = None,
+    wallTime: Option[Duration] = None,
+    bestEffort: Boolean = false) {
+
   val uniqId = UUID.randomUUID.toString
+
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
-  def workDirectory: String
-  def queue: Option[String] = None
-  def cpu: Option[Int] = None
-  def core: Option[Int] = None
-  def wallTime: Option[Duration] = None
-  def bestEffort: Boolean = false
 
   def commandLineResources =
     (List(cpu.map(c ⇒ s"cpu=$c"), core.map(c ⇒ s"core=$c")).flatten match {
