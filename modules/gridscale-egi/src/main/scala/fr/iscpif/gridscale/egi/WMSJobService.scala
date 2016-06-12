@@ -71,7 +71,7 @@ trait WMSJobService extends JobService {
   lazy val delegationCache =
     new SingleValueAsynchronousCache[String] {
       def compute = delegate
-      def expiresIn(s: String) = delegationRenewal
+      def expiresInterval(s: String) = delegationRenewal
     }
 
   def delegationId = delegationCache()

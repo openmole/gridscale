@@ -17,27 +17,20 @@
 
 package fr.iscpif.gridscale.cache
 
-import java.util.concurrent.{ Executors, Future }
 import scala.concurrent.duration.Duration
 import scala.util.{ Success, Failure, Try }
 
 trait SingleValueAsynchronousCache[T] extends (() ⇒ T) {
 
-  @transient private var cached: Option[Try[(T, Long)]] = None
-  @transient private var caching: Option[Thread] = None
+  @volatile private var cached: Option[Try[(T, Long)]] = None
+  @volatile private var caching: Option[Thread] = None
 
   def compute(): T
-  def expiresIn(t: T): Duration
+  def expiresInterval(t: T): Duration
 
   def apply(): T = synchronized {
-    def cache = {
-      val value = compute()
-      cached = computeCache(Success(value))
-      value
-    }
-
     def computeCache(t: Try[T]) =
-      Some(t.map { value ⇒ (value, System.currentTimeMillis + expiresIn(value).toMillis) })
+      Some(t.map { value ⇒ (value, System.currentTimeMillis + expiresInterval(value).toMillis) })
 
     def refreshThread = {
       val thread = new Thread(new Runnable {
@@ -53,8 +46,13 @@ trait SingleValueAsynchronousCache[T] extends (() ⇒ T) {
       thread
     }
 
-    (caching, cached) match {
-      case (_, None) ⇒ cache
+    val values = (caching, cached)
+
+    values match {
+      case (_, None) ⇒
+        val value = compute()
+        cached = computeCache(Success(value))
+        value
       case (_, Some(Failure(t))) ⇒
         cached = None
         caching = None
