@@ -69,9 +69,8 @@ trait WMSJobService extends JobService {
   def proxy(): GlobusAuthentication.Proxy
 
   lazy val delegationCache =
-    new SingleValueAsynchronousCache[String] {
-      def compute = delegate
-      def expiresInterval(s: String) = delegationRenewal
+    SingleValueAsynchronousCache(delegationRenewal) {
+      () ⇒ delegate
     }
 
   def delegationId = delegationCache()

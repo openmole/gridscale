@@ -20,6 +20,18 @@ package fr.iscpif.gridscale.cache
 import scala.concurrent.duration.Duration
 import scala.util.{ Success, Failure, Try }
 
+object SingleValueAsynchronousCache {
+
+  def apply[T](_expireInterval: Duration)(_compute: () ⇒ T): SingleValueAsynchronousCache[T] =
+    apply[T]((t: T) ⇒ _expireInterval)(_compute)
+
+  def apply[T](_expireInterval: T ⇒ Duration)(_compute: () ⇒ T): SingleValueAsynchronousCache[T] =
+    new SingleValueAsynchronousCache[T] {
+      override def compute(): T = _compute()
+      override def expiresInterval(t: T): Duration = _expireInterval(t)
+    }
+}
+
 trait SingleValueAsynchronousCache[T] extends (() ⇒ T) {
 
   @volatile private var cached: Option[Try[(T, Long)]] = None

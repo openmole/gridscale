@@ -44,8 +44,4 @@ package object gridscale {
 
   implicit val nothingImplicit: Unit = Unit
 
-  implicit class RenewDecorator[T](f: () ⇒ T) {
-    def cache(time: Duration) = gscache.cache[T](f)(time)
-  }
-
 }
