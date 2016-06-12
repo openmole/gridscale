@@ -143,7 +143,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
         f ⇒ builder.addBinaryBody(f.getName, f)
       }
       builder.addTextBody("access_token", tokenCache().token)
-      builder.addTextBody("manifest", jobDescription.toJSON)
+      builder.addTextBody("manifest", jobDescription.toJSON(Some(jobsServiceJobGroup)))
       builder.build
     }
 

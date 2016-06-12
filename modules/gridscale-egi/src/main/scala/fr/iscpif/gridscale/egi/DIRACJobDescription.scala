@@ -40,10 +40,9 @@ case class DIRACJobDescription(
     inputSandbox: Seq[File] = List.empty,
     outputSandbox: Seq[(String, File)] = List.empty,
     platforms: Seq[String] = Seq.empty,
-    cpuTime: Option[Duration] = None,
-    group: Option[String] = None) extends JobDescription {
+    cpuTime: Option[Duration] = None) extends JobDescription {
 
-  def toJSON = {
+  def toJSON(group: Option[String] = None) = {
     def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)): _*)
     def outputSandboxArray = JsArray(outputSandbox.map(f ⇒ JsString(f._1)): _*)
     def platformsArray = JsArray(platforms.map(f ⇒ JsString(f)): _*)
