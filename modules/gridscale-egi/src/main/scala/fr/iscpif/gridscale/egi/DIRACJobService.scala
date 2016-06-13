@@ -242,7 +242,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
         .setParameter("access_token", tokenCache().token)
         .setParameter("jobGroup", group)
         .setParameter("startJob", 0.toString)
-        .setParameter("maxJob", Int.MaxValue.toString)
+        .setParameter("maxJobs", Int.MaxValue.toString)
         .build
 
     val get = new HttpGet(uri)
