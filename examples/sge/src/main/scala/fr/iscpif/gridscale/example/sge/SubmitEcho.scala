@@ -33,8 +33,6 @@ object SubmitEcho extends App {
   )
 
   val j = service.submit(description)
-
   val s2 = service.untilFinished(j) { println }
-
-  service.purge(j)
+  service.delete(j)
 }

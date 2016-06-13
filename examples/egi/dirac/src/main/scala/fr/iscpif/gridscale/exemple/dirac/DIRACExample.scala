@@ -47,9 +47,8 @@ object DIRACExample extends App {
   )
 
   val j = js.submit(jobDesc)
-
   js.untilFinished(j, sleepTime = 0 second) { println }
-
   js.downloadOutputSandbox(jobDesc, j)
+  js.delete(j)
 
 }

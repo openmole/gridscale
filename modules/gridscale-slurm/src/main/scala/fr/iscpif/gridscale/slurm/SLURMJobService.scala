@@ -24,6 +24,7 @@ import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 object SLURMJobService {
 
@@ -93,7 +94,7 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
 
   }
 
-  def cancel(job: J): Unit = withConnection { implicit connection ⇒
+  private def cancel(job: J): Unit = withConnection { implicit connection ⇒
     execReturnCodeOutput("scancel " + job.slurmId) match {
       case (0, _, _) ⇒
       case (1, _, error) if (error.matches(".*Invalid job id specified")) ⇒ throw new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id")
@@ -102,10 +103,13 @@ trait SLURMJobService extends JobService with SSHHost with SSHStorage with BashS
   }
 
   //Purge output error job script
-  def purge(job: J) = withSftpClient { c ⇒
-    rmFileWithClient(slurmScriptPath(job.description))(c)
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)
+  def delete(job: J) = Try {
+    try cancel(job)
+    finally withSftpClient { c ⇒
+      rmFileWithClient(slurmScriptPath(job.description))(c)
+      rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
+      rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)
+    }
   }
 
   private def slurmScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".slurm"

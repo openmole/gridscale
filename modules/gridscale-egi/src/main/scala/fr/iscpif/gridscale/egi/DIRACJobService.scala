@@ -34,6 +34,7 @@ import spray.json._
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.sys.process.BasicIO
+import scala.util.Try
 
 object DIRACJobService {
 
@@ -72,11 +73,13 @@ object DIRACJobService {
 
   def supportedVOs(timeout: Duration = 1 minute) = getServices(timeout).keys
 
+  case class Job(id: String, submissionTime: Long)
+
 }
 
 trait DIRACJobService extends JobService with HTTPSClient {
 
-  type J = String
+  type J = DIRACJobService.Job
   type D = DIRACJobDescription
 
   case class Token(token: String, expires_in: Long)
@@ -103,7 +106,10 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   lazy val jobsServiceJobGroup = UUID.randomUUID().toString.filter(_ != '-')
   @transient lazy val statusesCache = groupStatusQuery.map { queryInterval ⇒
-    ValueCache(queryInterval) { () ⇒ queryGroupStatus(jobsServiceJobGroup).toMap }
+    ValueCache(queryInterval) { () ⇒
+      val time = System.currentTimeMillis
+      (time, queryGroupStatus(jobsServiceJobGroup).toMap)
+    }
   }
 
   def delegate(p12: File, password: String) = {
@@ -136,7 +142,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
     }
   }
 
-  def submit(jobDescription: D): String = {
+  def submit(jobDescription: D): J = {
     def files = {
       val builder = MultipartEntityBuilder.create()
       jobDescription.inputSandbox.foreach {
@@ -152,7 +158,8 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val post = new HttpPost(uri)
     post.setEntity(files)
     request(post) { r ⇒
-      r.parseJson.asJsObject.getFields("jids").head.toJson.convertTo[JsArray].elements.head.toString
+      val id = r.parseJson.asJsObject.getFields("jids").head.toJson.convertTo[JsArray].elements.head.toString
+      DIRACJobService.Job(id, System.currentTimeMillis)
     }
   }
 
@@ -160,7 +167,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
     statusesCache match {
       case None ⇒
         val uri =
-          new URIBuilder(jobs + "/" + jobId)
+          new URIBuilder(jobs + "/" + jobId.id)
             .setParameter("access_token", tokenCache().token)
             .build
 
@@ -170,7 +177,13 @@ trait DIRACJobService extends JobService with HTTPSClient {
           val s = r.parseJson.asJsObject.getFields("status").head.toJson.convertTo[String]
           translateState(s)
         }
-      case Some(cache) ⇒ cache().getOrElse(jobId, Submitted)
+      case Some(cache) ⇒
+        val (cacheTime, c) = cache()
+        c.get(jobId.id) match {
+          case None if cacheTime <= jobId.submissionTime ⇒ Submitted
+          case None                                      ⇒ Failed
+          case Some(s)                                   ⇒ s
+        }
     }
 
   def translateState(s: String) =
@@ -193,7 +206,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val outputSandboxMap = desc.outputSandbox.toMap
 
     val uri =
-      new URIBuilder(jobs + "/" + jobId + "/outputsandbox")
+      new URIBuilder(jobs + "/" + jobId.id + "/outputsandbox")
         .setParameter("access_token", tokenCache().token)
         .build
 
@@ -213,20 +226,17 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   }
 
-  def cancel(jobId: J) = {
+  def delete(job: J) = Try {
     val uri =
-      new URIBuilder(jobs + "/" + jobId)
+      new URIBuilder(jobs + "/" + job.id)
         .setParameter("access_token", tokenCache().token)
         .build
 
     val delete = new HttpDelete(uri)
-
-    request(delete) { identity }
+    request(delete) { identity }: Unit
   }
 
-  def purge(job: J) = {}
-
-  def queryGroupStatus(group: String = jobsServiceJobGroup): Seq[(J, JobState)] = {
+  def queryGroupStatus(group: String = jobsServiceJobGroup): Seq[(String, JobState)] = {
     val uri =
       new URIBuilder(jobs)
         .setParameter("access_token", tokenCache().token)
@@ -238,11 +248,15 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val get = new HttpGet(uri)
 
     request(get) { r ⇒
-      r.parseJson.asJsObject.fields("jobs").convertTo[JsArray].elements.map {
+      r.parseJson.asJsObject.fields("jobs").convertTo[JsArray].elements.flatMap {
         j ⇒
           val jsObject = j.asJsObject
-          jsObject.fields("jid").convertTo[Long].toString ->
-            translateState(jsObject.fields("status").convertTo[String])
+          val status = jsObject.fields("status").convertTo[String]
+
+          status match {
+            case "Killed" | "Deleted" ⇒ None
+            case _                    ⇒ Some(jsObject.fields("jid").convertTo[Long].toString -> translateState(status))
+          }
       }
     }
   }

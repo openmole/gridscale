@@ -100,16 +100,20 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
     }
   }
 
+  //FIXME should not throw exception if job does not exist
   def cancel(job: J) = withConnection { exec("qdel " + job.sgeId)(_) }
 
-  //Purge output error job script
   // TODO purge log as well
-  def purge(job: J) = withSftpClient { implicit c ⇒
-    rmFileWithClient(sgeScriptPath(job.description))
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.output)
-    Try(rmFileWithClient(job.description.workDirectory + "/" + job.description.error))
+  def delete(job: J) = Try {
+    try cancel(job)
+    finally withSftpClient { implicit c ⇒
+      rmFileWithClient(sgeScriptPath(job.description))
+      rmFileWithClient(job.description.workDirectory + "/" + job.description.output)
+      Try(rmFileWithClient(job.description.workDirectory + "/" + job.description.error))
+    }
   }
 
   def sgeScriptName(description: D) = "job" + description.uniqId + ".sge"
   def sgeScriptPath(description: D) = description.workDirectory + "/" + sgeScriptName(description)
+
 }

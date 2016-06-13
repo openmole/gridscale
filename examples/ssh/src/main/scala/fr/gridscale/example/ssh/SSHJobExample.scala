@@ -32,9 +32,7 @@ object SSHJobExample extends App {
   )
 
   val id = js.submit(description)
-
   js.untilFinished(id) { println }
-
-  js.purge(id)
+  js.delete(id)
 
 }

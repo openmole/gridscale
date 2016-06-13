@@ -33,6 +33,7 @@ import org.globus.gsi.bc.BouncyCastleCertProcessingFactory
 import org.globus.io.streams.{ GridFTPInputStream, GridFTPOutputStream }
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 case class WMSLocation(url: URI)
 
@@ -92,9 +93,10 @@ trait WMSJobService extends JobService {
     }
   }
 
-  def cancel(jobId: J) = wmsService.jobCancel(jobId.id).get
-
-  def purge(jobId: J) = wmsService.jobPurge(jobId.id).get
+  def delete(jobId: J) = Try {
+    try wmsService.jobCancel(jobId.id).get
+    finally wmsService.jobPurge(jobId.id).get
+  }
 
   def state(jobId: J) = translateState(rawState(jobId).state)
 

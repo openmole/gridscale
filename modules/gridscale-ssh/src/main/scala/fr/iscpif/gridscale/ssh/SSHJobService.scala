@@ -25,6 +25,7 @@ import fr.iscpif.gridscale.tools.shell._
 import net.schmizz.sshj.common.IOUtils
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 object SSHJobService {
 
@@ -125,7 +126,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
     val (command, jobId) = toScript(description, background = false)
     val (ret, out, err) = execReturnCodeOutput(command)
     try if (ret != 0) throw exception(ret, command, out, err)
-    finally { purge(JobId(jobId, description.workDirectory)) }
+    finally { delete(JobId(jobId, description.workDirectory)) }
   }
 
   def submit(description: D): J = {
@@ -147,14 +148,13 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
       } else Failed
     }
 
-  def cancel(job: J) = withConnection { implicit connection ⇒
-    val cde = s"kill `cat ${pidFile(job.workDirectory, job.jobId)}`;"
-    exec(cde)
-  }
-
-  def purge(job: J) = withConnection { implicit connection ⇒
-    val cde = s"rm -rf ${job.workDirectory}/${job.jobId}*"
-    exec(cde)
+  def delete(job: J) = Try {
+    withConnection { implicit connection ⇒
+      val kill = s"kill `cat ${pidFile(job.workDirectory, job.jobId)}`;"
+      val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
+      try exec(kill)
+      finally exec(rm)
+    }
   }
 
   private def jobIsRunning(job: J) = {

@@ -17,12 +17,13 @@
 
 package fr.iscpif.gridscale.jobservice
 
+import scala.util.Try
+
 trait JobService {
   type J
   type D
 
   def submit(description: D): J
   def state(job: J): JobState
-  def cancel(job: J)
-  def purge(job: J)
+  def delete(job: J): Try[Unit]
 }

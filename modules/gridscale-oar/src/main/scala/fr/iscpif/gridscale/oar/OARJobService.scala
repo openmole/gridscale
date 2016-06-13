@@ -23,6 +23,7 @@ import fr.iscpif.gridscale.ssh.{ SSHAuthentication, SSHHost, SSHStorage }
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 object OARJobService {
 
@@ -102,10 +103,13 @@ trait OARJobService extends JobService with SSHHost with SSHStorage with BashShe
     exec("oar " + job.id)(_)
   }
 
-  def purge(job: J) = withSftpClient { implicit c ⇒
-    rmFileWithClient(oarScriptPath(job.description))
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.output)
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.error)
+  def delete(job: J) = Try {
+    try cancel(job)
+    finally withSftpClient { implicit c ⇒
+      rmFileWithClient(oarScriptPath(job.description))
+      rmFileWithClient(job.description.workDirectory + "/" + job.description.output)
+      rmFileWithClient(job.description.workDirectory + "/" + job.description.error)
+    }
   }
 
   def oarScriptName(description: D) = "job" + description.uniqId + ".oar"

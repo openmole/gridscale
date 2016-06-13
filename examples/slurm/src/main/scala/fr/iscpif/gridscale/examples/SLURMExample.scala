@@ -51,7 +51,7 @@ object SLURMExample {
     println("it should complete one day or another")
     val s2 = slurmService.untilFinished(j) { s ⇒ println(s); Thread.sleep(5000) }
 
-    slurmService.purge(j)
+    slurmService.delete(j)
   }
 
   def submitAndCancel(slurmService: SLURMJobService) = {
@@ -73,12 +73,7 @@ object SLURMExample {
     println(slurmService.state(j))
 
     println("it can be cancelled")
-    val s1 = slurmService.cancel(j)
-
-    println("it should appear as done")
-    val s2 = slurmService.untilFinished(j) { println }
-
-    slurmService.purge(j)
+    val s1 = slurmService.delete(j)
   }
 
   def submitWithGres(slurmService: SLURMJobService) = {
@@ -103,7 +98,7 @@ object SLURMExample {
     println("it should appear as done")
     val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
 
-    slurmService.purge(j)
+    slurmService.delete(j)
   }
 
   def submitWithConstraints(slurmService: SLURMJobService) = {
@@ -128,7 +123,7 @@ object SLURMExample {
     println("it should appear as done")
     val s2 = untilFinished { Thread.sleep(5000); val s = slurmService.state(j); println(s); s }
 
-    slurmService.purge(j)
+    slurmService.delete(j)
   }
 
   def main(argv: Array[String]): Unit = {

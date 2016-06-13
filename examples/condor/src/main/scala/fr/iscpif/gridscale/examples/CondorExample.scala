@@ -51,7 +51,7 @@ object CondorExample {
     println("it should complete one day or another")
     val s2 = condorService.untilFinished(j) { s ⇒ println(s); Thread.sleep(5000) }
 
-    condorService.purge(j)
+    condorService.delete(j)
   }
 
   def submitAndCancel(condorService: CondorJobService) = {
@@ -73,12 +73,7 @@ object CondorExample {
     println(condorService.state(j))
 
     println("it can be cancelled")
-    val s1 = condorService.cancel(j)
-
-    println("it should appear as done")
-    val s2 = condorService.untilFinished(j) { s ⇒ println(s); Thread.sleep(5000) }
-
-    condorService.purge(j)
+    val s1 = condorService.delete(j)
   }
 
   def submitWithRequirements(condorService: CondorJobService) = {
@@ -106,7 +101,7 @@ object CondorExample {
     println("it should appear as done")
     val s2 = condorService.untilFinished(j) { println }
 
-    condorService.purge(j)
+    condorService.delete(j)
   }
 
   def main(argv: Array[String]): Unit = {

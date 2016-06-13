@@ -24,6 +24,7 @@ import fr.iscpif.gridscale.ssh._
 import fr.iscpif.gridscale.tools.shell.BashShell
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 object CondorJobService {
 
@@ -110,13 +111,16 @@ trait CondorJobService extends JobService with SSHHost with SSHStorage with Bash
 
   }
 
-  def cancel(job: J) = withConnection { exec("condor_rm " + job.condorId)(_) }
+  private def cancel(job: J) = withConnection { exec("condor_rm " + job.condorId)(_) }
 
   // Purge output, error and job script
-  def purge(job: J) = withSftpClient { c ⇒
-    rmFileWithClient(condorScriptPath(job.description))(c)
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
-    rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)
+  def delete(job: J) = Try {
+    try cancel(job)
+    finally withSftpClient { c ⇒
+      rmFileWithClient(condorScriptPath(job.description))(c)
+      rmFileWithClient(job.description.workDirectory + "/" + job.description.output)(c)
+      rmFileWithClient(job.description.workDirectory + "/" + job.description.error)(c)
+    }
   }
 
   def condorScriptPath(description: D) = description.workDirectory + "/" + description.uniqId + ".condor"

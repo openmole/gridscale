@@ -65,13 +65,11 @@ class CondorJobServiceTests extends FunSuite with MockitoSugar {
 
     val jobService = mock[CondorJobService]
 
-    val description = new CondorJobDescription {
-      def executable = "/bin/echo"
-
-      def arguments = "success > test_success.txt"
-
-      def workDirectory = "/homes/toto/"
-    }
+    val description = CondorJobDescription (
+      executable = "/bin/echo",
+      arguments = "success > test_success.txt",
+      workDirectory = "/homes/toto/"
+    )
 
     when(jobService.submit(description)).thenReturn(CondorJobService.CondorJob(description, "42"))
 
@@ -83,27 +81,25 @@ class CondorJobServiceTests extends FunSuite with MockitoSugar {
 
 class CondorJobDescriptionTests extends FunSuite {
 
-  val completeDescription = new CondorJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "success > test_success.txt"
-    def workDirectory = "/homes/toto/"
-    override def memory = Some(2048)
-    override def nodes = Some(4)
+  val completeDescription = CondorJobDescription (
+    executable = "/bin/echo",
+    arguments = "success > test_success.txt",
+    workDirectory = "/homes/toto/",
+    memory = Some(2048),
+    nodes = Some(4),
     // TODO rename in job description
-    override def coreByNode = Some(8)
-    override def output = "foo.out"
-    override def error = "foo.err"
-    override def requirements = """JavaVersion == "1.7.0_03"""" &&
+    coreByNode = Some(8),
+    requirements = """JavaVersion == "1.7.0_03"""" &&
       ("""OpSysShortName == "Ubuntu"""" &&
         ("OpSysMajorVer == 14" || "OpSysMajorVer == 12" || "OpSysMajorVer == 13")
       )
-  }
+  )
 
-  val emptyDescription = new CondorJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "success > test_success.txt"
-    def workDirectory = "/homes/toto/"
-  }
+  val emptyDescription = CondorJobDescription (
+    executable = "/bin/echo",
+    arguments = "success > test_success.txt",
+    workDirectory = "/homes/toto/"
+  )
 
   val workDirectoryPattern = "initialdir = "
   test("WorkDirectory (compulsory)") {
@@ -141,25 +137,6 @@ class CondorJobDescriptionTests extends FunSuite {
     assert(expectedDescription.findFirstIn(emptyDescription.toCondor) === None)
   }
 
-  val outputPattern = "output = "
-  test("Output file specified") {
-    val expectedDescription = (outputPattern + "foo.out").r
-    assert(expectedDescription.findFirstIn(completeDescription.toCondor) != None)
-  }
-  test("Output file empty") {
-    val expectedDescription = (outputPattern + "[0-9a-z-]+.out").r
-    assert(expectedDescription.findFirstIn(emptyDescription.toCondor) != None)
-  }
-
-  val errorPattern = "error = "
-  test("Error file specified") {
-    val expectedDescription = (errorPattern + "foo.err").r
-    assert(expectedDescription.findFirstIn(completeDescription.toCondor) != None)
-  }
-  test("Error file empty") {
-    val expectedDescription = (errorPattern + "[0-9a-z-]+.err").r
-    assert(expectedDescription.findFirstIn(emptyDescription.toCondor) != None)
-  }
 
   val requirementsPattern = "requirements = "
   test("Requirements specified") {
