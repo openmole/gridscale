@@ -100,8 +100,7 @@ trait SGEJobService extends JobService with SSHHost with SSHStorage with BashShe
     }
   }
 
-  //FIXME should not throw exception if job does not exist
-  def cancel(job: J) = withConnection { exec("qdel " + job.sgeId)(_) }
+  def cancel(job: J) = withConnection { execReturnCode("qdel " + job.sgeId)(_) }
 
   // TODO purge log as well
   def delete(job: J) = Try {

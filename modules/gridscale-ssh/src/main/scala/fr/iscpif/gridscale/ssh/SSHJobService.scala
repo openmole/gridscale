@@ -152,8 +152,13 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
     withConnection { implicit connection ⇒
       val kill = s"kill `cat ${pidFile(job.workDirectory, job.jobId)}`;"
       val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
-      try exec(kill)
-      finally exec(rm)
+      try {
+        val (ret, out, err) = execReturnCodeOutput(kill)
+        ret match {
+          case 0 | 1 ⇒
+          case r     ⇒ throw exception(r, kill, out, err)
+        }
+      } finally exec(rm)
     }
   }
 
