@@ -72,7 +72,8 @@ trait ValueAsyncCache[T] extends (() ⇒ T) {
       case (None, Some(Success((v, expireTime)))) if expireTime < System.currentTimeMillis ⇒
         caching = Some(refreshThread)
         v
-      case (Some(_), Some(Success((v, expireTime)))) ⇒ v
+      case (Some(_), Some(Success((v, _)))) ⇒ v
+      case (None, Some(Success((v, _))))    ⇒ v
     }
   }
 
