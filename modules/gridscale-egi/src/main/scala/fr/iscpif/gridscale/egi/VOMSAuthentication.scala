@@ -23,6 +23,7 @@ import java.util.UUID
 
 import fr.iscpif.gridscale.authentication.AuthenticationException
 import fr.iscpif.gridscale.cache._
+import fr.iscpif.gridscale.tools._
 import org.glite.voms.contact.{ VOMSProxyBuilder, VOMSProxyInit, VOMSRequestOptions, VOMSServerInfo }
 import org.globus.gsi.GSIConstants.CertificateType
 import org.globus.gsi.X509Credential
@@ -38,24 +39,6 @@ object VOMSAuthentication {
   def setCARepository(directory: File) = {
     System.setProperty("X509_CERT_DIR", directory.getCanonicalPath)
     System.setProperty("CADIR", directory.getCanonicalPath)
-  }
-
-  def findWorking[T](servers: Seq[String], f: String ⇒ T): T = {
-    def findWorking0(servers: List[String]): Try[T] =
-      servers match {
-        case Nil      ⇒ Failure(new RuntimeException("Server list is empty"))
-        case h :: Nil ⇒ Try(f(h))
-        case h :: tail ⇒
-          Try(f(h)) match {
-            case Failure(_) ⇒ findWorking0(tail)
-            case s          ⇒ s
-          }
-      }
-
-    findWorking0(servers.toList) match {
-      case Failure(t) ⇒ throw new RuntimeException(s"No server is working among $servers", t)
-      case Success(t) ⇒ t
-    }
   }
 
 }
@@ -92,8 +75,7 @@ trait VOMSAuthentication {
       case e: Throwable ⇒ throw AuthenticationException("Error during VOMS authentication", e)
     }
 
-  def proxy(): GlobusProxies =
-    VOMSAuthentication.findWorking(serverURLs, s ⇒ proxy(s))
+  def proxy(): GlobusProxies = findWorking(serverURLs, proxy)
 
   case class GlobusProxies(gt2: X509Credential, gt4: X509Credential)
 

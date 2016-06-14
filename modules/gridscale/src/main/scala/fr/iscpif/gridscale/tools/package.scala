@@ -21,6 +21,7 @@ import java.io._
 import java.util.concurrent._
 
 import scala.concurrent.duration.Duration
+import scala.util.{ Failure, Success, Try }
 
 package object tools {
 
@@ -97,6 +98,24 @@ package object tools {
       val millis = d.toMillis
 
       f"${millis / (1000 * 60 * 60)}%02d:${(millis % (1000 * 60 * 60)) / (1000 * 60)}%02d:${((millis % (1000 * 60 * 60)) % (1000 * 60)) / 1000}%02d"
+    }
+  }
+
+  def findWorking[S, T](servers: Seq[S], f: S ⇒ T): T = {
+    def findWorking0(servers: List[S]): Try[T] =
+      servers match {
+        case Nil      ⇒ Failure(new RuntimeException("Server list is empty"))
+        case h :: Nil ⇒ Try(f(h))
+        case h :: tail ⇒
+          Try(f(h)) match {
+            case Failure(_) ⇒ findWorking0(tail)
+            case s          ⇒ s
+          }
+      }
+
+    findWorking0(servers.toList) match {
+      case Failure(t) ⇒ throw new RuntimeException(s"No server is working among $servers", t)
+      case Success(t) ⇒ t
     }
   }
 }
