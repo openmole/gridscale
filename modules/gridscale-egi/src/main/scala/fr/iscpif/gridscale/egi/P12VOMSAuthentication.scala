@@ -60,9 +60,13 @@ trait P12VOMSAuthentication extends VOMSAuthentication {
     import fr.iscpif.gridscale.egi._
     def userCredential = UserCredentials.instance(p12Authentication.certificate, p12Authentication.password)
     val url = new URI(serverURL)
-    val credential = VOMSRestAPI.query(url.getHost, url.getPort, lifetime = Some(this.lifeTime.toSeconds.toInt))(p12Authentication)
-    val gt2Proxy = credential.getCredential(userCredential, VOMSProxyBuilder.GT2_PROXY)
-    val gt4Proxy = credential.getCredential(userCredential, CertificateType.GSI_4_IMPERSONATION_PROXY)
+
+    val (gt2Proxy, gt4Proxy) = VOMSRestAPI.query(url.getHost, url.getPort, lifetime = Some(this.lifeTime.toSeconds.toInt))(p12Authentication) { credential ⇒
+      val gt2Proxy = credential.getCredential(userCredential, VOMSProxyBuilder.GT2_PROXY)
+      val gt4Proxy = credential.getCredential(userCredential, CertificateType.GSI_4_IMPERSONATION_PROXY)
+      (gt2Proxy, gt4Proxy)
+    }
+
     GlobusProxies(gt2Proxy, gt4Proxy)
   }
 

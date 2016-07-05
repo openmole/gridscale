@@ -29,12 +29,12 @@ import scala.io.Source
 
 object VOMSRestAPI {
 
-  def query[A: HTTPSAuthentication](
+  def query[A: HTTPSAuthentication, T](
     host: String,
     port: Int,
     lifetime: Option[Int] = None,
     fquan: Option[String] = None,
-    timeout: Duration = 1 minutes)(authentication: A) = {
+    timeout: Duration = 1 minutes)(authentication: A)(f: RESTVOMSResponse ⇒ T): T = {
     val _timeout = timeout
     val client = new HTTPSClient {
       override val timeout = _timeout
@@ -58,7 +58,7 @@ object VOMSRestAPI {
       val parse = new RESTVOMSResponseParsingStrategy()
       val parsed = parse.parse(r.getEntity.getContent)
 
-      parsed
+      f(parsed)
     }
   }
 }
