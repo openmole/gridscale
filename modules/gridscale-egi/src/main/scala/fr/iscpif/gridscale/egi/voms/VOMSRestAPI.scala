@@ -19,7 +19,9 @@ package fr.iscpif.gridscale.egi.voms
 
 import java.net.URI
 
+import fr.iscpif.gridscale.authentication.AuthenticationException
 import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient }
+import org.apache.commons.httpclient.HttpStatus
 import org.apache.http.client.methods.HttpGet
 
 import scala.concurrent.duration._
@@ -49,6 +51,9 @@ object VOMSRestAPI {
       val uri = new URI(s"https://$host:$port/generate-ac${if (!options.isEmpty) "?" + options else ""}")
       val get = new HttpGet(uri)
       val r = c.execute(get)
+
+      if (r.getStatusLine.getStatusCode != HttpStatus.SC_OK)
+        throw new AuthenticationException("VOMS server returned " + r.getStatusLine.toString)
 
       val parse = new RESTVOMSResponseParsingStrategy()
       val parsed = parse.parse(r.getEntity.getContent)

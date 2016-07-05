@@ -16,4 +16,4 @@
  */
 package fr.iscpif.gridscale.authentication
 
-case class AuthenticationException(msg: String, cause: Throwable) extends Exception(msg, cause)
+case class AuthenticationException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
