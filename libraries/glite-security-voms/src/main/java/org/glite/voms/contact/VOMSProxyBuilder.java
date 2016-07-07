@@ -474,6 +474,7 @@ public class VOMSProxyBuilder {
         GregorianCalendar notAfter = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
         notAfter.add(Calendar.SECOND, lifetime);
         certGen.setNotAfter(notAfter.getTime());
+
       //  }
 
         /*new X509v3CertificateBuilder(

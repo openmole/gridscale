@@ -24,7 +24,7 @@ import fr.iscpif.gridscale.egi.voms.VOMSRestAPI
 import org.glite.voms.contact._
 import org.globus.gsi.GSIConstants.CertificateType
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 object P12VOMSAuthentication {
 
@@ -33,18 +33,18 @@ object P12VOMSAuthentication {
     lifeTime: Duration,
     serverURLs: Seq[String],
     voName: String,
-    renewRatio: Double = 0.2,
+    renewTime: Duration = 1 hour,
     fqan: Option[String] = None,
     proxySize: Int = 1024) = {
-    val (_lifeTime, _serverURLs, _voName, _renewRatio, _fqan, _proxySize) =
-      (lifeTime, serverURLs, voName, renewRatio, fqan, proxySize)
+    val (_lifeTime, _serverURLs, _voName, _renewTime, _fqan, _proxySize) =
+      (lifeTime, serverURLs, voName, renewTime, fqan, proxySize)
 
     new P12VOMSAuthentication {
       override val p12Authentication = p12
       override val lifeTime: Duration = _lifeTime
       override val voName: String = _voName
       override val serverURLs: Seq[String] = _serverURLs
-      override val renewRation: Double = _renewRatio
+      override val renewTime = _renewTime
       override val fqan = _fqan
       override val proxySize = _proxySize
     }
