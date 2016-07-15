@@ -18,6 +18,7 @@
 package fr.iscpif.gridscale.cache
 
 import scala.concurrent.duration._
+import scala.concurrent.stm._
 
 object ValueCache {
 
@@ -49,7 +50,46 @@ trait ValueCache[T] extends (() ⇒ T) {
         cached = Some((value, System.currentTimeMillis + expiresInterval(value).toMillis))
         value
       case Some((v, _)) ⇒ v
-
     }
   }
+}
+
+object AsyncValueCache {
+
+  def apply[T](_expireInterval: Duration)(_compute: () ⇒ T): AsyncValueCache[T] =
+    new AsyncValueCache[T] {
+      override def expiresInterval(t: T): Duration = _expireInterval
+      override def compute(): T = _compute()
+    }
+
+}
+
+trait AsyncValueCache[T] extends (() ⇒ T) {
+  private val cached = Ref(None: Option[(T, Long)])
+  private val refreshing = Ref(false)
+
+  def compute(): T
+  def expiresInterval(t: T): Duration
+
+  override def apply(): T = atomic { implicit ctx ⇒
+    def refresh = {
+      refreshing() = true
+      try {
+        val value = compute()
+        cached() = Some((value, System.currentTimeMillis + expiresInterval(value).toMillis))
+        value
+      } finally refreshing() = false
+    }
+
+    cached() match {
+      case None ⇒
+        if (refreshing()) retry
+        else refresh
+      case Some((v, expireTime)) if expireTime < System.currentTimeMillis ⇒
+        if (refreshing()) v
+        else refresh
+      case Some((v, _)) ⇒ v
+    }
+  }
+
 }

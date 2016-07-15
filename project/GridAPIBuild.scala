@@ -148,7 +148,10 @@ trait Modules <: Libraries with Settings {
 
   lazy val httpComponentsVersion = "4.5.2"
 
-  lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(libraryDependencies += scalaTest)
+  lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"), settings = defaultSettings ++ exportSettings) settings(
+    libraryDependencies += scalaTest,
+    libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.7"
+    )
 
 
   lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (

@@ -116,7 +116,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   lazy val jobsServiceJobGroup = UUID.randomUUID().toString.filter(_ != '-')
   @transient lazy val statusesCache = groupStatusQuery.map { queryInterval ⇒
-    ValueCache(queryInterval) { () ⇒
+    AsyncValueCache(queryInterval) { () ⇒
       val time = System.currentTimeMillis
       (time, queryGroupStatus(jobsServiceJobGroup).toMap)
     }
