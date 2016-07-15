@@ -28,15 +28,16 @@ import org.apache.http.client.methods._
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.{ HttpHost, HttpRequest }
-import spray.json.DefaultJsonProtocol._
-import spray.json._
-
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.sys.process.BasicIO
 import scala.util.Try
 
 object DIRACJobService {
+
+  implicit def format = DefaultFormats
 
   def directoryURL = "http://dirac.france-grilles.fr/defaults/DiracServices.json"
 
@@ -67,7 +68,14 @@ object DIRACJobService {
     val is = HTTPStorage.toInputStream(uri, HTTPStorage.newClient(timeout))
     try {
       val page = Source.fromInputStream(is).mkString
-      page.parseJson.asJsObject.fields.mapValues(_.asJsObject.fields).mapValues(parsed ⇒ Service("https://" + parsed("RESTServer").convertTo[String], parsed("DIRACDefaultGroup").convertTo[String]))
+      parse(page).children.map {
+        s ⇒
+          val vo = (s \ "DIRACVOName").extract[String]
+          val server = (s \ "RESTServer").extract[String]
+          val group = (s \ "DIRACDefaultGroup").extract[String]
+
+          vo -> Service("https://" + server, group)
+      }.toMap
     } finally is.close
   }
 
@@ -76,6 +84,8 @@ object DIRACJobService {
   case class Job(id: String, submissionTime: Long)
 
 }
+
+import DIRACJobService.format
 
 trait DIRACJobService extends JobService with HTTPSClient {
 
@@ -137,8 +147,8 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val get = new HttpGet(uri)
 
     request(get) { r ⇒
-      val f = r.trim.parseJson.asJsObject.getFields("token", "expires_in")
-      Token(f(0).convertTo[String], f(1).convertTo[Long])
+      val parsed = parse(r.trim)
+      Token((parsed \ "token").extract[String], (parsed \ "expires_in").extract[Long])
     }
   }
 
@@ -158,7 +168,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val post = new HttpPost(uri)
     post.setEntity(files)
     request(post) { r ⇒
-      val id = r.parseJson.asJsObject.getFields("jids").head.toJson.convertTo[JsArray].elements.head.toString
+      val id = (parse(r) \ "jids")(0).extract[String]
       DIRACJobService.Job(id, System.currentTimeMillis)
     }
   }
@@ -174,7 +184,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
         val get = new HttpGet(uri)
 
         request(get) { r ⇒
-          val s = r.parseJson.asJsObject.getFields("status").head.toJson.convertTo[String]
+          val s = (parse(r) \ "status").extract[String]
           translateState(s)
         }
       case Some(cache) ⇒
@@ -248,14 +258,13 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val get = new HttpGet(uri)
 
     request(get) { r ⇒
-      r.parseJson.asJsObject.fields("jobs").convertTo[JsArray].elements.flatMap {
+      (parse(r) \ "jobs").children flatMap {
         j ⇒
-          val jsObject = j.asJsObject
-          val status = jsObject.fields("status").convertTo[String]
+          val status = (j \ "status").extract[String]
 
           status match {
             case "Killed" | "Deleted" ⇒ None
-            case _                    ⇒ Some(jsObject.fields("jid").convertTo[Long].toString -> translateState(status))
+            case _                    ⇒ Some((j \ "jid").extract[String] -> translateState(status))
           }
       }
     }

@@ -18,8 +18,6 @@
 package fr.iscpif.gridscale.exemple.dirac
 
 import java.io.File
-
-import com.sun.java.util.jar.pack.Package
 import fr.iscpif.gridscale._
 import fr.iscpif.gridscale.authentication.P12Authentication
 import fr.iscpif.gridscale.egi._

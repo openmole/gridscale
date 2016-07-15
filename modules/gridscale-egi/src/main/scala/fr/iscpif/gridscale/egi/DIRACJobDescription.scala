@@ -17,8 +17,8 @@
 package fr.iscpif.gridscale.egi
 
 import java.io.File
-import spray.json.{ JsArray, JsObject, JsString }
-
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 import scala.concurrent.duration.Duration
 
 object DIRACJobDescription {
@@ -41,22 +41,22 @@ case class DIRACJobDescription(
     cpuTime: Option[Duration] = None) {
 
   def toJSON(jobGroup: Option[String] = None) = {
-    def inputSandboxArray = JsArray(inputSandbox.map(f ⇒ JsString(f.getName)): _*)
-    def outputSandboxArray = JsArray(outputSandbox.map(f ⇒ JsString(f._1)): _*)
-    def platformsArray = JsArray(platforms.map(f ⇒ JsString(f)): _*)
+    def inputSandboxArray = JArray(inputSandbox.map(f ⇒ JString(f.getName)).toList)
+    def outputSandboxArray = JArray(outputSandbox.map(f ⇒ JString(f._1)).toList)
+    def platformsArray = JArray(platforms.map(f ⇒ JString(f)).toList)
 
-    val fields = Seq(
-      "Executable" -> JsString(executable),
-      "Arguments" -> JsString(arguments)) ++
-      stdOut.map(s ⇒ "StdOutput" -> JsString(s)) ++
-      stdErr.map(s ⇒ "StdError" -> JsString(s)) ++
+    val fields = List(
+      "Executable" -> JString(executable),
+      "Arguments" -> JString(arguments)) ++
+      stdOut.map(s ⇒ "StdOutput" -> JString(s)) ++
+      stdErr.map(s ⇒ "StdError" -> JString(s)) ++
       (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++
       (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None) ++
-      cpuTime.map(s ⇒ "CPUTime" -> JsString(s.toSeconds.toString)) ++
+      cpuTime.map(s ⇒ "CPUTime" -> JString(s.toSeconds.toString)) ++
       (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None) ++
-      jobGroup.map(s ⇒ "JobGroup" -> JsString(s))
+      jobGroup.map(s ⇒ "JobGroup" -> JString(s))
 
-    JsObject(fields: _*).compactPrint
+    pretty(JObject(fields: _*))
   }
 
 }
