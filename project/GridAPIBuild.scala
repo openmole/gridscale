@@ -157,7 +157,8 @@ trait Modules <: Libraries with Settings {
   lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
     libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.0",
-    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10"
+    libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10",
+    libraryDependencies += "com.google.guava" % "guava" % "19.0"
     )
 
   lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscale) settings (

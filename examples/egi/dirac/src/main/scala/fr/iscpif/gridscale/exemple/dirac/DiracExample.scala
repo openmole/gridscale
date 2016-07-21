@@ -24,16 +24,15 @@ import fr.iscpif.gridscale.egi._
 
 import scala.concurrent.duration._
 
-object DIRACExample extends App {
+object DiracExample extends App {
 
   val certificate = new File("/home/reuillon/.globus/certificate.p12")
   val password = "password"
 
   val p12 = P12Authentication(certificate, password)
-  val js = DIRACJobService("vo.complex-systems.eu")(p12)
+  val js = DiracJobService("vo.complex-systems.eu")(p12)
 
   js.delegate(certificate, password)
-
   val jobDesc = DIRACJobDescription(
     executable = "/bin/echo",
     arguments = "hello",

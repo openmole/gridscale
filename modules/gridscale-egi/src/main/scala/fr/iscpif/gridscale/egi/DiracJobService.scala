@@ -19,7 +19,10 @@ package fr.iscpif.gridscale.egi
 import java.io._
 import java.net.{ URI, URL }
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
+import com.fasterxml.jackson.core.JsonParser
+import com.google.common.cache.{ CacheBuilder, CacheLoader }
 import fr.iscpif.gridscale.cache._
 import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient, HTTPStorage }
 import fr.iscpif.gridscale.jobservice._
@@ -30,12 +33,13 @@ import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.{ HttpHost, HttpRequest }
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.sys.process.BasicIO
 import scala.util.Try
 
-object DIRACJobService {
+object DiracJobService {
 
   implicit def format = DefaultFormats
 
@@ -44,15 +48,13 @@ object DIRACJobService {
   def apply[A: HTTPSAuthentication](
     vo: String,
     service: Option[Service] = None,
-    groupStatusQuery: Option[Duration] = None,
     timeout: Duration = 1 minutes)(authentication: A) = {
     val s = service.getOrElse(getService(vo, timeout))
 
-    val (_timeout, _groupStatusQuery) = (timeout, groupStatusQuery)
-    new DIRACJobService {
+    val (_timeout) = (timeout)
+    new DiracJobService {
       override val timeout = _timeout
       override val group: String = s.group
-      override val groupStatusQuery = _groupStatusQuery
       override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
       override val service: String = s.service
     }
@@ -81,15 +83,13 @@ object DIRACJobService {
 
   def supportedVOs(timeout: Duration = 1 minute) = getServices(timeout).keys
 
-  case class Job(id: String, submissionTime: Long)
-
 }
 
-import DIRACJobService.format
+import DiracJobService.format
 
-trait DIRACJobService extends JobService with HTTPSClient {
+trait DiracJobService extends JobService with HTTPSClient {
 
-  type J = DIRACJobService.Job
+  type J = String
   type D = DIRACJobDescription
 
   case class Token(token: String, expires_in: Long)
@@ -104,23 +104,12 @@ trait DIRACJobService extends JobService with HTTPSClient {
   def jobs = service + "/jobs"
   def delegation = service + s"/proxy/unknown/$group"
 
-  def groupStatusQuery: Option[Duration]
-  def groupQuery = groupStatusQuery.isDefined
-
   def tokenExpirationMargin = 10 -> MINUTES
 
   @transient lazy val tokenCache =
     ValueCache[Token]((t: Token) ⇒ (t.expires_in, SECONDS) - tokenExpirationMargin) {
       () ⇒ token
     }
-
-  lazy val jobsServiceJobGroup = UUID.randomUUID().toString.filter(_ != '-')
-  @transient lazy val statusesCache = groupStatusQuery.map { queryInterval ⇒
-    AsyncValueCache(queryInterval) { () ⇒
-      val time = System.currentTimeMillis
-      (time, queryGroupStatus(jobsServiceJobGroup).toMap)
-    }
-  }
 
   def delegate(p12: File, password: String) = {
     val files = MultipartEntityBuilder.create()
@@ -152,14 +141,16 @@ trait DIRACJobService extends JobService with HTTPSClient {
     }
   }
 
-  def submit(jobDescription: D): J = {
+  def submit(jobDescription: D): J = submit(jobDescription, None)
+
+  def submit(jobDescription: D, group: Option[String]): J = {
     def files = {
       val builder = MultipartEntityBuilder.create()
       jobDescription.inputSandbox.foreach {
         f ⇒ builder.addBinaryBody(f.getName, f)
       }
       builder.addTextBody("access_token", tokenCache().token)
-      builder.addTextBody("manifest", jobDescription.toJSON(Some(jobsServiceJobGroup)))
+      builder.addTextBody("manifest", jobDescription.toJSON(group))
       builder.build
     }
 
@@ -168,33 +159,23 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val post = new HttpPost(uri)
     post.setEntity(files)
     request(post) { r ⇒
-      val id = (parse(r) \ "jids")(0).extract[String]
-      DIRACJobService.Job(id, System.currentTimeMillis)
+      (parse(r) \ "jids")(0).extract[String]
     }
   }
 
-  def state(jobId: J) =
-    statusesCache match {
-      case None ⇒
-        val uri =
-          new URIBuilder(jobs + "/" + jobId.id)
-            .setParameter("access_token", tokenCache().token)
-            .build
+  def state(jobId: J) = {
+    val uri =
+      new URIBuilder(jobs + "/" + jobId.id)
+        .setParameter("access_token", tokenCache().token)
+        .build
 
-        val get = new HttpGet(uri)
+    val get = new HttpGet(uri)
 
-        request(get) { r ⇒
-          val s = (parse(r) \ "status").extract[String]
-          translateState(s)
-        }
-      case Some(cache) ⇒
-        val (cacheTime, c) = cache()
-        c.get(jobId.id) match {
-          case None if cacheTime <= jobId.submissionTime ⇒ Submitted
-          case None                                      ⇒ Failed
-          case Some(s)                                   ⇒ s
-        }
+    request(get) { r ⇒
+      val s = (parse(r) \ "status").extract[String]
+      translateState(s)
     }
+  }
 
   def translateState(s: String) =
     s match {
@@ -246,30 +227,6 @@ trait DIRACJobService extends JobService with HTTPSClient {
     request(delete) { identity }: Unit
   }
 
-  def queryGroupStatus(group: String = jobsServiceJobGroup): Seq[(String, JobState)] = {
-    val uri =
-      new URIBuilder(jobs)
-        .setParameter("access_token", tokenCache().token)
-        .setParameter("jobGroup", group)
-        .setParameter("startJob", 0.toString)
-        .setParameter("maxJobs", Int.MaxValue.toString)
-        .build
-
-    val get = new HttpGet(uri)
-
-    request(get) { r ⇒
-      (parse(r) \ "jobs").children flatMap {
-        j ⇒
-          val status = (j \ "status").extract[String]
-
-          status match {
-            case "Killed" | "Deleted" ⇒ None
-            case _                    ⇒ Some((j \ "jid").extract[String] -> translateState(status))
-          }
-      }
-    }
-  }
-
   def httpHost: HttpHost = {
     val uri = new URI(service)
     new HttpHost(uri.getHost, uri.getPort, uri.getScheme)
@@ -290,3 +247,104 @@ trait DIRACJobService extends JobService with HTTPSClient {
     }
 }
 
+object DiracGroupedJobService {
+  case class Job(id: DiracJobService#J, submissionTime: Long, group: String)
+  case class Updatable[T](var value: T) {
+    def update(f: T ⇒ T) = synchronized {
+      value = f(value)
+      value
+    }
+  }
+
+  def apply[A: HTTPSAuthentication](
+                                     vo: String,
+                                     service: Option[DiracJobService.Service] = None,
+                                     statusQueryInterval: Duration = 1 minute,
+                                     jobByGroup: Int = 10000,
+                                     timeout: Duration = 1 minutes)(authentication: A) = {
+
+    val (_statusQueryInterval, _jobByGroup) = (statusQueryInterval, jobByGroup)
+    new DiracGroupedJobService {
+      override val jobService = DiracJobService(vo, service, timeout)(authentication)
+      override val statusQueryInterval: Duration = _statusQueryInterval
+      override def jobByGroup: Int = _jobByGroup
+    }
+  }
+}
+
+trait DiracGroupedJobService extends JobService {
+  import DiracGroupedJobService._
+
+  type J = Job
+  type D = DIRACJobDescription
+
+  def jobService: DiracJobService
+  def jobByGroup: Int
+
+  def statusQueryInterval: Duration
+
+  def newGroup = UUID.randomUUID().toString.filter(_ != '-')
+  @transient lazy val jobsServiceJobGroup = Updatable((newGroup, 0))
+
+  @transient lazy val statusesCache =
+    CacheBuilder.newBuilder().
+      expireAfterWrite(statusQueryInterval.toMillis, TimeUnit.MILLISECONDS).
+      build(
+        new CacheLoader[String, (Long, Map[DiracJobService#J, JobState])] {
+          def load(group: String) = {
+            val time = System.currentTimeMillis
+            (time, queryGroupStatus(group).toMap)
+          }
+        }
+      )
+
+  def submit(d: D): J = {
+    val (group, _) =
+      jobsServiceJobGroup.update {
+        case (group, jobs) ⇒
+          if (jobs >= jobByGroup) (newGroup, 1) else (group, jobs + 1)
+      }
+
+    val jid = jobService.submit(d, Some(group))
+    val time = System.currentTimeMillis
+    Job(jid, time, group)
+  }
+
+  def queryGroupStatus(groupId: String): Seq[(String, JobState)] = {
+    val uri =
+      new URIBuilder(jobService.jobs)
+        .setParameter("access_token", jobService.tokenCache().token)
+        .setParameter("jobGroup", groupId)
+        .setParameter("startJob", 0.toString)
+        .setParameter("maxJobs", Int.MaxValue.toString)
+        .build
+
+    val get = new HttpGet(uri)
+
+    jobService.requestContent(get) { is ⇒
+      (parse(is) \ "jobs").children.foldLeft(List[(String, JobState)]()) {
+        (acc, j) ⇒
+          val status = (j \ "status").extract[String]
+
+          status match {
+            case "Killed" | "Deleted" ⇒ acc
+            case _                    ⇒ (j \ "jid").extract[String] -> jobService.translateState(status) :: acc
+          }
+      }
+    }
+  }
+
+  def state(j: J) = {
+    val (cacheTime, c) = statusesCache.get(j.group)
+    c.get(j.id) match {
+      case None if cacheTime <= j.submissionTime ⇒ Submitted
+      case None                                  ⇒ Failed
+      case Some(s)                               ⇒ s
+    }
+  }
+
+  def delegate(p12: File, password: String) = jobService.delegate(p12, password)
+  def downloadOutputSandbox(desc: D, jobId: J) = jobService.downloadOutputSandbox(desc, jobId.id)
+  override def delete(job: Job): Try[Unit] = jobService.delete(job.id)
+
+}
