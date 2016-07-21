@@ -39,7 +39,7 @@ import scala.io.Source
 import scala.sys.process.BasicIO
 import scala.util.Try
 
-object DiracJobService {
+object DIRACJobService {
 
   implicit def format = DefaultFormats
 
@@ -52,7 +52,7 @@ object DiracJobService {
     val s = service.getOrElse(getService(vo, timeout))
 
     val (_timeout) = (timeout)
-    new DiracJobService {
+    new DIRACJobService {
       override val timeout = _timeout
       override val group: String = s.group
       override val factory = implicitly[HTTPSAuthentication[A]].factory(authentication)
@@ -85,9 +85,9 @@ object DiracJobService {
 
 }
 
-import DiracJobService.format
+import DIRACJobService.format
 
-trait DiracJobService extends JobService with HTTPSClient {
+trait DIRACJobService extends JobService with HTTPSClient {
 
   type J = String
   type D = DIRACJobDescription
@@ -247,8 +247,8 @@ trait DiracJobService extends JobService with HTTPSClient {
     }
 }
 
-object DiracGroupedJobService {
-  case class Job(id: DiracJobService#J, submissionTime: Long, group: String)
+object DIRACGroupedJobService {
+  case class Job(id: DIRACJobService#J, submissionTime: Long, group: String)
   case class Updatable[T](var value: T) {
     def update(f: T ⇒ T) = synchronized {
       value = f(value)
@@ -258,27 +258,27 @@ object DiracGroupedJobService {
 
   def apply[A: HTTPSAuthentication](
                                      vo: String,
-                                     service: Option[DiracJobService.Service] = None,
+                                     service: Option[DIRACJobService.Service] = None,
                                      statusQueryInterval: Duration = 1 minute,
                                      jobByGroup: Int = 10000,
                                      timeout: Duration = 1 minutes)(authentication: A) = {
 
     val (_statusQueryInterval, _jobByGroup) = (statusQueryInterval, jobByGroup)
-    new DiracGroupedJobService {
-      override val jobService = DiracJobService(vo, service, timeout)(authentication)
+    new DIRACGroupedJobService {
+      override val jobService = DIRACJobService(vo, service, timeout)(authentication)
       override val statusQueryInterval: Duration = _statusQueryInterval
       override def jobByGroup: Int = _jobByGroup
     }
   }
 }
 
-trait DiracGroupedJobService extends JobService {
-  import DiracGroupedJobService._
+trait DIRACGroupedJobService extends JobService {
+  import DIRACGroupedJobService._
 
   type J = Job
   type D = DIRACJobDescription
 
-  def jobService: DiracJobService
+  def jobService: DIRACJobService
   def jobByGroup: Int
 
   def statusQueryInterval: Duration
@@ -290,7 +290,7 @@ trait DiracGroupedJobService extends JobService {
     CacheBuilder.newBuilder().
       expireAfterWrite(statusQueryInterval.toMillis, TimeUnit.MILLISECONDS).
       build(
-        new CacheLoader[String, (Long, Map[DiracJobService#J, JobState])] {
+        new CacheLoader[String, (Long, Map[DIRACJobService#J, JobState])] {
           def load(group: String) = {
             val time = System.currentTimeMillis
             (time, queryGroupStatus(group).toMap)
