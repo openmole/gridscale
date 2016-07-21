@@ -21,8 +21,6 @@ import java.net.{ URI, URL }
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-import com.fasterxml.jackson.core.JsonParser
-import com.google.common.cache.{ CacheBuilder, CacheLoader }
 import fr.iscpif.gridscale.cache._
 import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient, HTTPStorage }
 import fr.iscpif.gridscale.jobservice._
@@ -257,36 +255,37 @@ object DIRACGroupedJobService {
   }
 
   def apply[A: HTTPSAuthentication](
-                                     vo: String,
-                                     service: Option[DIRACJobService.Service] = None,
-                                     statusQueryInterval: Duration = 1 minute,
-                                     jobByGroup: Int = 10000,
-                                     timeout: Duration = 1 minutes)(authentication: A) = {
+    vo: String,
+    service: Option[DIRACJobService.Service] = None,
+    statusQueryInterval: Duration = 1 minute,
+    jobsByGroup: Int = 10000,
+    timeout: Duration = 1 minutes)(authentication: A) = {
 
-    val (_statusQueryInterval, _jobByGroup) = (statusQueryInterval, jobByGroup)
+    val (_statusQueryInterval, _jobsByGroup) = (statusQueryInterval, jobsByGroup)
     new DIRACGroupedJobService {
       override val jobService = DIRACJobService(vo, service, timeout)(authentication)
       override val statusQueryInterval: Duration = _statusQueryInterval
-      override def jobByGroup: Int = _jobByGroup
+      override def jobsByGroup: Int = _jobsByGroup
     }
   }
 }
 
 trait DIRACGroupedJobService extends JobService {
   import DIRACGroupedJobService._
+  import com.google.common.cache.{ CacheBuilder, CacheLoader }
 
   type J = Job
   type D = DIRACJobDescription
 
   def jobService: DIRACJobService
-  def jobByGroup: Int
+  def jobsByGroup: Int
 
   def statusQueryInterval: Duration
 
   def newGroup = UUID.randomUUID().toString.filter(_ != '-')
   @transient lazy val jobsServiceJobGroup = Updatable((newGroup, 0))
 
-  @transient lazy val statusesCache =
+  @transient private lazy val statusesCache = {
     CacheBuilder.newBuilder().
       expireAfterWrite(statusQueryInterval.toMillis, TimeUnit.MILLISECONDS).
       build(
@@ -297,12 +296,13 @@ trait DIRACGroupedJobService extends JobService {
           }
         }
       )
+  }
 
   def submit(d: D): J = {
     val (group, _) =
       jobsServiceJobGroup.update {
         case (group, jobs) ⇒
-          if (jobs >= jobByGroup) (newGroup, 1) else (group, jobs + 1)
+          if (jobs >= jobsByGroup) (newGroup, 1) else (group, jobs + 1)
       }
 
     val jid = jobService.submit(d, Some(group))
@@ -334,7 +334,7 @@ trait DIRACGroupedJobService extends JobService {
     }
   }
 
-  def state(j: J) = {
+  def state(j: J): JobState = {
     val (cacheTime, c) = statusesCache.get(j.group)
     c.get(j.id) match {
       case None if cacheTime <= j.submissionTime ⇒ Submitted
