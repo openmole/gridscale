@@ -288,16 +288,13 @@ trait DIRACGroupedJobService extends JobService {
 
   @transient private lazy val statusesCache = {
     CacheBuilder.newBuilder().
-      expireAfterWrite(statusQueryInterval.toMillis, TimeUnit.MILLISECONDS).
-      build(
-        CacheLoader.asyncReloading(
-          new CacheLoader[String, (Long, Map[DIRACJobService#J, JobState])] {
-            def load(group: String) = {
-              val time = System.currentTimeMillis
-              (time, queryGroupStatus(group).toMap)
-            }
-          }, fr.iscpif.gridscale.tools.defaultExecutor
-        )
+      expireAfterAccess(statusQueryInterval.toMillis, TimeUnit.MILLISECONDS).build(
+        new CacheLoader[String, AsyncValueCache[(Long, Map[DIRACJobService#J, JobState])]] {
+          def load(group: String) = AsyncValueCache(statusQueryInterval) { () ⇒
+            val time = System.currentTimeMillis
+            (time, queryGroupStatus(group).toMap)
+          }
+        }
       )
   }
 
@@ -338,7 +335,7 @@ trait DIRACGroupedJobService extends JobService {
   }
 
   def state(j: J): JobState = {
-    val (cacheTime, c) = statusesCache.get(j.group)
+    val (cacheTime, c) = statusesCache.get(j.group)()
     c.get(j.id) match {
       case None if cacheTime <= j.submissionTime ⇒ Submitted
       case None                                  ⇒ Failed
