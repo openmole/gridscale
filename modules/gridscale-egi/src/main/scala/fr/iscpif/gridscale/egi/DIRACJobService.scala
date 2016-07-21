@@ -19,8 +19,9 @@ package fr.iscpif.gridscale.egi
 import java.io._
 import java.net.{ URI, URL }
 import java.util.UUID
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ Executors, ThreadFactory, TimeUnit }
 
+import com.google.common.cache
 import fr.iscpif.gridscale.cache._
 import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient, HTTPStorage }
 import fr.iscpif.gridscale.jobservice._
@@ -289,12 +290,14 @@ trait DIRACGroupedJobService extends JobService {
     CacheBuilder.newBuilder().
       expireAfterWrite(statusQueryInterval.toMillis, TimeUnit.MILLISECONDS).
       build(
-        new CacheLoader[String, (Long, Map[DIRACJobService#J, JobState])] {
-          def load(group: String) = {
-            val time = System.currentTimeMillis
-            (time, queryGroupStatus(group).toMap)
-          }
-        }
+        CacheLoader.asyncReloading(
+          new CacheLoader[String, (Long, Map[DIRACJobService#J, JobState])] {
+            def load(group: String) = {
+              val time = System.currentTimeMillis
+              (time, queryGroupStatus(group).toMap)
+            }
+          }, fr.iscpif.gridscale.tools.defaultExecutor
+        )
       )
   }
 
