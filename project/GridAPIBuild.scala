@@ -155,7 +155,7 @@ trait Modules <: Libraries with Settings {
 
 
   lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
-    libraryDependencies += "org.jglobus" % "io" % jglobusVersion,
+    libraryDependencies += "fr.iscpif.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.0",
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10",
     libraryDependencies += "com.google.guava" % "guava" % "19.0"
@@ -200,7 +200,7 @@ trait Libraries <: Settings {
   import sbtscalaxb.Plugin.ScalaxbKeys._
   import sbtscalaxb.Plugin._
 
-  lazy val jglobusVersion = "2.2.0-20150814"
+  lazy val jglobusVersion = "2.2.0-20160825"
 
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
 
@@ -246,8 +246,8 @@ trait Libraries <: Settings {
 
   lazy val globusHttp = Project(id = "globushttp", base = file("libraries/globushttp"), settings = defaultSettings) settings(
     resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
-    libraryDependencies += "org.jglobus" % "ssl-proxies" % jglobusVersion,
-    libraryDependencies += "org.jglobus" % "gss" % jglobusVersion,
+    libraryDependencies += "fr.iscpif.jglobus" % "ssl-proxies" % jglobusVersion,
+    libraryDependencies += "fr.iscpif.jglobus" % "gss" % jglobusVersion,
     libraryDependencies += httpClient
     )
 
@@ -264,7 +264,7 @@ trait Libraries <: Settings {
   lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("libraries/glite-security-voms"), settings = defaultSettings) settings(
     libraryDependencies += bouncyCastle,
     libraryDependencies += log4j,
-    libraryDependencies += "org.jglobus" % "myproxy" % jglobusVersion,
+    libraryDependencies += "fr.iscpif.jglobus" % "myproxy" % jglobusVersion,
     libraryDependencies += "commons-lang" % "commons-lang" % "2.3",
     libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
     libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
