@@ -33,7 +33,6 @@ trait Settings <: Build {
         .setPreference(RewriteArrowSymbols, true),
     organization := "fr.iscpif.gridscale",
     resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository",
-    resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
     publishTo <<= isSnapshot { snapshot =>
       val nexus = "https://oss.sonatype.org/"
       if (snapshot) Some("snapshots" at nexus + "content/repositories/snapshots")
