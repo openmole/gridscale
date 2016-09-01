@@ -87,6 +87,8 @@ object HTTPStorage {
     response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
       response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
 
+  def toInputStream(uri: URI, timeout: Duration = 1 minute): InputStream = toInputStream(uri, newClient(timeout))
+
   def toInputStream(uri: URI, httpClient: CloseableHttpClient): InputStream = {
     val get = new HttpGet(uri)
     get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
