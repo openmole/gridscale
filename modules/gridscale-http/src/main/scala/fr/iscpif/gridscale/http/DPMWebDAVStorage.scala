@@ -61,15 +61,6 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     "https://" + trimSlashes(location.host) + ":" + location.port + "/" + trimSlashes(location.basePath) + "/" + trimSlashes(path)
 
   override def _write(is: InputStream, path: String) = {
-    val countIS = new InputStream {
-      var size = 0
-      override def read(): Int = {
-        val ret = is.read()
-        if(ret != -1) size += 1
-        ret
-      }
-    }
-
     val put = new HttpPut(fullUrl(path))
     put.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
     put.setEntity(new InputStreamEntity(new ByteArrayInputStream(Array())))
@@ -79,16 +70,13 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
 
     val uri = new DefaultRedirectStrategy().getLocationURI(put, redirect, new HttpClientContext())
 
-    val entity = new InputStreamEntity(countIS, -1)
+    val entity = new InputStreamEntity(is, -1)
     val putOnDiskNode = new HttpPut(uri)
     putOnDiskNode.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
     putOnDiskNode.setEntity(entity)
 
     val response = withClient { _.execute(putOnDiskNode) }
     HTTPStorage.testResponse(response).get
-
-    val writtenSize = listProp(path).head.getContentLength
-    if(writtenSize != countIS.size.toLong) throw new IOException(s"Size of the written file is $writtenSize and does'nt match ${countIS.size} (response was ${response.getStatusLine})")
   }
 
   override def _read(path: String): InputStream = HTTPStorage.toInputStream(new URI(fullUrl(path)), newClient)
