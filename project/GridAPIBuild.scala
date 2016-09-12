@@ -244,7 +244,6 @@ trait Libraries <: Settings {
 
 
   lazy val globusHttp = Project(id = "globushttp", base = file("libraries/globushttp"), settings = defaultSettings) settings(
-    resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/",
     libraryDependencies += "fr.iscpif.jglobus" % "ssl-proxies" % jglobusVersion,
     libraryDependencies += "fr.iscpif.jglobus" % "gss" % jglobusVersion,
     libraryDependencies += httpClient

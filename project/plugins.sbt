@@ -12,7 +12,5 @@ addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
 
 addSbtPlugin("org.scala-sbt.plugins" % "sbt-onejar" % "0.8")
 
-resolvers += "ISC-PIF" at "http://maven.iscpif.fr/public/"
-
 resolvers += Resolver.sonatypeRepo("public")
 
