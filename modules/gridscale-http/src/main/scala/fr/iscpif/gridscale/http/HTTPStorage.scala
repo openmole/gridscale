@@ -158,6 +158,12 @@ object HTTPStorage {
     }
   }
 
+  def download[T](url: String)(action: InputStream ⇒ T): T = {
+    val is = toInputStream(new java.net.URI(url))
+    try action(is)
+    finally is.close
+  }
+
 }
 
 trait HTTPStorage extends Storage {
