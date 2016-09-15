@@ -65,7 +65,6 @@ trait Settings <: Build {
 
 trait Examples <: Modules with Settings{
   lazy val egicreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
-  lazy val egisrmExample  = Project(id = "egisrmexample", base = file("examples/egi/srm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val egiwmsExample  = Project(id = "egiwmsexample", base = file("examples/egi/wms"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
   lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
@@ -145,7 +144,7 @@ trait Modules <: Libraries with Settings {
     )
 
 
-  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, srmStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, wmsStub, lbStub, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
     libraryDependencies += "fr.iscpif.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.0",
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10",
@@ -209,14 +208,6 @@ trait Libraries <: Settings {
   lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.50"
   lazy val log4j = "log4j" % "log4j" % "1.2.17"
 
-  lazy val srmStub = Project(id = "srmstub", base = file("libraries/srmstub"), settings = defaultSettings) settings (
-    scalaxbSettings ++ Seq(
-      async in (Compile, scalaxb) := false,
-      sourceGenerators in Compile <+= scalaxb in Compile,
-      packageName in scalaxb in Compile := "fr.iscpif.gridscale.libraries.srmstub",
-      libraryDependencies += dispatch, xml): _*
-    )
-
   lazy val wmsStub = Project(id = "wmsstub", base = file("libraries/wmsstub"), settings = defaultSettings) settings (
     scalaxbSettings ++ Seq(
       async in (Compile, scalaxb) := false,
@@ -233,7 +224,6 @@ trait Libraries <: Settings {
       wrapContents in scalaxb in Compile := Seq("{http://schemas.ogf.org/glue/2008/05/spec_2.0_d42_r01}ComputingService_t"),
       libraryDependencies += dispatch, xml): _*
     )
-
 
   lazy val globusHttp = Project(id = "globushttp", base = file("libraries/globushttp"), settings = defaultSettings) settings(
     libraryDependencies += "fr.iscpif.jglobus" % "ssl-proxies" % jglobusVersion,

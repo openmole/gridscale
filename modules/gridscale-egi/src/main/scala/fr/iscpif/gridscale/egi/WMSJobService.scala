@@ -98,6 +98,8 @@ trait WMSJobService extends JobService {
 
   def state(jobId: J) = translateState(rawState(jobId).state)
 
+  private def gridFtpPort(p: Int) = if (p == -1) 2811 else p
+
   def downloadOutputSandbox(desc: D, jobId: J) = {
     val indexed = desc.outputSandbox.groupBy(_._1).map { case (k, v) ⇒ k -> v.head }
 
@@ -105,7 +107,7 @@ trait WMSJobService extends JobService {
       from ⇒
         val url = new URI(from.name)
         val file = indexed(new File(url.getPath).getName)._2
-        val is = new GridFTPInputStream(proxy().gt2Credential, url.getHost, SRMStorage.gridFtpPort(url.getPort), url.getPath)
+        val is = new GridFTPInputStream(proxy().gt2Credential, url.getHost, gridFtpPort(url.getPort), url.getPath)
         try copy(is, file, copyBufferSize, timeout)
         finally is.close
     }
@@ -115,7 +117,7 @@ trait WMSJobService extends JobService {
     val inputSandboxURL = new URI(wmsService.getSandboxDestURI(jobId, "gsiftp").get.Item(0))
     desc.inputSandbox.foreach {
       file ⇒
-        val os = new GridFTPOutputStream(proxy().gt2Credential, inputSandboxURL.getHost, SRMStorage.gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
+        val os = new GridFTPOutputStream(proxy().gt2Credential, inputSandboxURL.getHost, gridFtpPort(inputSandboxURL.getPort), inputSandboxURL.getPath + "/" + file.getName, false)
         try copy(file, os, copyBufferSize, timeout)
         finally os.close
     }

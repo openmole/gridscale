@@ -34,7 +34,6 @@ object BDII {
 
 class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
 
-  val srmServiceType = "SRM"
   val wmsServiceType = "org.glite.wms.WMProxy"
   val creamCEServiceType = "org.glite.ce.CREAM"
 
@@ -55,35 +54,6 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
       pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
       path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
     } yield WebDAVLocation(urlObject.getHost, path, urlObject.getPort)
-  }
-
-  def querySRMLocations(vo: String): Seq[SRMLocation] = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
-    def searchPhrase = searchService(vo, srmServiceType)
-    val res = q.query(searchPhrase)
-
-    val srms =
-      for {
-        r ← res
-        if r.getAttributes.get("GlueServiceVersion").get().toString.takeWhile(_ != '.').toInt >= 2
-      } yield {
-        val serviceEndPoint = r.getAttributes.get("GlueServiceEndpoint").get().toString()
-        val httpgURI = new URI(serviceEndPoint)
-        val host = httpgURI.getHost
-        val port = httpgURI.getPort
-
-        Try {
-          val resForPath = q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
-          val path = resForPath.get(0).getAttributes.get("GlueVOInfoPath").get().toString
-          SRMLocation(host, port, path)
-        } match {
-          case Success(s) ⇒ Some(s)
-          case Failure(ex) ⇒
-            Logger.getLogger(classOf[BDII].getName()).log(Level.FINE, "Error interrogating the BDII.", ex)
-            None
-        }
-      }
-
-    srms.flatten.toSeq
   }
 
   def queryWMSLocations(vo: String) = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
