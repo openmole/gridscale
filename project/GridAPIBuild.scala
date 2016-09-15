@@ -142,7 +142,7 @@ trait Modules <: Libraries with Settings {
     libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.7"
     )
 
-  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, globusHttp, gliteSecurityDelegation, gliteSecurityVoms, gridscaleHTTP) settings (
+  lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gliteSecurityVoms, gridscaleHTTP) settings (
     libraryDependencies += "fr.iscpif.jglobus" % "io" % jglobusVersion,
     libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.0",
     libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10",
@@ -187,37 +187,12 @@ trait Libraries <: Settings {
 
   lazy val jglobusVersion = "2.2.0-20160826"
 
-  lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
-
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 
   lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
 
-  lazy val httpClient = "commons-httpclient" % "commons-httpclient" % "3.1"
-
-  lazy val xml =
-    libraryDependencies ++=
-      (if (!scalaVersion.value.startsWith("2.10")) Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1")
-      else Seq.empty)
-
   lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.50"
   lazy val log4j = "log4j" % "log4j" % "1.2.17"
-
-  lazy val globusHttp = Project(id = "globushttp", base = file("libraries/globushttp"), settings = defaultSettings) settings(
-    libraryDependencies += "fr.iscpif.jglobus" % "ssl-proxies" % jglobusVersion,
-    libraryDependencies += "fr.iscpif.jglobus" % "gss" % jglobusVersion,
-    libraryDependencies += httpClient
-    )
-
-  lazy val gliteSecurityDelegation = Project(id = "glite-security-delegation", base = file("libraries/glite-security-delegation"), settings = defaultSettings) dependsOn(gliteSecurityUtil, gliteSecurityVoms) settings(
-    libraryDependencies += bouncyCastle,
-    libraryDependencies += log4j
-    )
-
-  lazy val gliteSecurityUtil = Project(id = "glite-security-util", base = file("libraries/glite-security-util"), settings = defaultSettings) settings(
-    libraryDependencies += bouncyCastle,
-    libraryDependencies += log4j
-    )
 
   lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("libraries/glite-security-voms"), settings = defaultSettings) settings(
     libraryDependencies += bouncyCastle,
@@ -225,7 +200,6 @@ trait Libraries <: Settings {
     libraryDependencies += "fr.iscpif.jglobus" % "myproxy" % jglobusVersion,
     libraryDependencies += "commons-lang" % "commons-lang" % "2.3",
     libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
-    libraryDependencies += "commons-cli" % "commons-cli" % "1.1"
-    )
+    libraryDependencies += "commons-cli" % "commons-cli" % "1.1")
 
 }

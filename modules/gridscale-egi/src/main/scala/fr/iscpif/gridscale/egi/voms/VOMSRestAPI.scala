@@ -21,11 +21,10 @@ import java.net.URI
 
 import fr.iscpif.gridscale.authentication.AuthenticationException
 import fr.iscpif.gridscale.http.{ HTTPSAuthentication, HTTPSClient }
-import org.apache.commons.httpclient.HttpStatus
+import org.apache.http.HttpStatus
 import org.apache.http.client.methods.HttpGet
 
 import scala.concurrent.duration._
-import scala.io.Source
 
 object VOMSRestAPI {
 
