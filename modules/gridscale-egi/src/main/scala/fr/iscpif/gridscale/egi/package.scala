@@ -22,7 +22,6 @@ import fr.iscpif.gridscale.egi.https._
 import fr.iscpif.gridscale.http._
 
 package object egi {
-  implicit def stringToJobId(s: String) = WMSJobId(s)
 
   implicit def VOMSHTTSAuthentication[T: GlobusAuthenticationProvider] = new HTTPSAuthentication[T] {
     override def factory(t: T) = {
@@ -41,4 +40,5 @@ package object egi {
       socketFactory(auth.sslContext)
     }
   }
+
 }

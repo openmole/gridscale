@@ -1,4 +1,3 @@
-addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.2.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.8.0")
 

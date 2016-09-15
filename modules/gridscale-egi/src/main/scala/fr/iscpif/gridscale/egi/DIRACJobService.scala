@@ -164,7 +164,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   def state(jobId: J) = {
     val uri =
-      new URIBuilder(jobs + "/" + jobId.id)
+      new URIBuilder(jobs + "/" + jobId)
         .setParameter("access_token", tokenCache().token)
         .build
 
@@ -196,7 +196,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
     val outputSandboxMap = desc.outputSandbox.toMap
 
     val uri =
-      new URIBuilder(jobs + "/" + jobId.id + "/outputsandbox")
+      new URIBuilder(jobs + "/" + jobId + "/outputsandbox")
         .setParameter("access_token", tokenCache().token)
         .build
 
@@ -218,7 +218,7 @@ trait DIRACJobService extends JobService with HTTPSClient {
 
   def delete(job: J) = Try {
     val uri =
-      new URIBuilder(jobs + "/" + job.id)
+      new URIBuilder(jobs + "/" + job)
         .setParameter("access_token", tokenCache().token)
         .build
 

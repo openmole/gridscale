@@ -34,7 +34,6 @@ object BDII {
 
 class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
 
-  val wmsServiceType = "org.glite.wms.WMProxy"
   val creamCEServiceType = "org.glite.ce.CREAM"
 
   def queryWebDAVLocations(vo: String) = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
@@ -54,26 +53,6 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
       pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
       path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
     } yield WebDAVLocation(urlObject.getHost, path, urlObject.getPort)
-  }
-
-  def queryWMSLocations(vo: String) = BDIIQuery.withBDIIQuery(host, port, timeout) { q ⇒
-
-    def searchPhrase = searchService(vo, wmsServiceType)
-    val res = q.query(searchPhrase)
-
-    val wmsURIs = new mutable.HashSet[URI]
-
-    for (r ← res) {
-      try {
-        val wmsURI = new URI(r.getAttributes.get("GlueServiceEndpoint").get().toString)
-        wmsURIs += wmsURI
-      } catch {
-        case ex: NamingException   ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", ex);
-        case e: URISyntaxException ⇒ Logger.getLogger(classOf[BDII].getName()).log(Level.WARNING, "Error creating URI for WMS.", e);
-      }
-    }
-
-    wmsURIs.toSeq.map { WMSLocation(_) }
   }
 
   case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
