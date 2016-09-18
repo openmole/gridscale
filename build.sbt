@@ -89,6 +89,7 @@ lazy val defaultSettings =
     dir
   },
 
+  publishMavenStyle := false,
   publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
 
   licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
