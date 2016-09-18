@@ -89,7 +89,7 @@ lazy val defaultSettings =
     dir
   },
 
-  publishTo := Some(Resolver.file("ipfs", publishDir.value)),
+  publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
 
   licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
   homepage := Some(url("https://github.com/openmole/gridscale")),
