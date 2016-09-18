@@ -32,6 +32,7 @@ SBT
 -------------
 GridScale is cross compiled against serveral versions of scala. To use on of its modules add a dependency like:
 
+    resolvers += "ipfs-iscpif" at "https://ipfs.io/ipns/QmXTLZWz1VQqv9nFKersuNnRgPmMEkiHuRnS8i1c8A9XSF/ivy/"
     libraryDependencies += "fr.iscpif.gridscale" %% "gridscalepbs" % version
 
 Examples
