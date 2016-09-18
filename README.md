@@ -34,6 +34,8 @@ GridScale is cross compiled against serveral versions of scala. To use on of it
 
     resolvers += "ipfs-iscpif" at "https://ipfs.io/ipns/QmXTLZWz1VQqv9nFKersuNnRgPmMEkiHuRnS8i1c8A9XSF/ivy/"
     libraryDependencies += "fr.iscpif.gridscale" %% "gridscalepbs" % version
+    
+The resolvers can be set to any ipfs proxy.
 
 Examples
 --------
