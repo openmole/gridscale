@@ -89,18 +89,18 @@ lazy val defaultSettings =
     dir
   },
 
-  publishMavenStyle := false,
-  publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
+  //publishMavenStyle := false,
+  //publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
 
   licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
   homepage := Some(url("https://github.com/openmole/gridscale")),
 
-  /*publishTo <<= isSnapshot { snapshot =>
+  publishTo <<= isSnapshot { snapshot =>
     val nexus = "https://oss.sonatype.org/"
     if (snapshot) Some("snapshots" at nexus + "content/repositories/snapshots")
     else Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
-  pomIncludeRepository := { _ => false},*/
+  pomIncludeRepository := { _ => false},
 
 
   scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git")),
