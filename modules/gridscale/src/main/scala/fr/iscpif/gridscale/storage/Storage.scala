@@ -22,14 +22,6 @@ import java.nio.file.Path
 
 object Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
-}
-
-case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Long] = None)
-
-trait Storage {
-
-  def child(parent: String, child: String) = Storage.child(parent, child)
-
   def parent(path: String): Option[String] = {
     val cleaned = path.reverse.dropWhile(c ⇒ c == '/' || c == '\\').reverse
     cleaned match {
@@ -37,8 +29,17 @@ trait Storage {
       case _  ⇒ Some(cleaned.dropRight(name(path).length))
     }
   }
-
   def name(path: String) = new File(path).getName
+}
+
+case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Long] = None)
+
+trait Storage {
+
+  def child(parent: String, child: String) = Storage.child(parent, child)
+  def parent(path: String): Option[String] = Storage.parent(path)
+  def name(path: String) = Storage.name(path)
+
   def listNames(path: String) = _list(path).map(_.name)
   def list(path: String): Seq[ListEntry] = wrapException(s"list $path on ${this}")(_list(path))
   def makeDir(path: String) = wrapException(s"make dir $path on ${this}")(_makeDir(path))
