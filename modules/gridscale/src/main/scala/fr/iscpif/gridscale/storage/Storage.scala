@@ -58,6 +58,7 @@ trait Storage {
   def _rmDir(path: String)
   def _rmFile(path: String)
   def _mv(from: String, to: String)
+
   def _exists(path: String) =
     parent(path).
       map(parentPath ⇒ listNames(parentPath).exists(_ == name(path))).

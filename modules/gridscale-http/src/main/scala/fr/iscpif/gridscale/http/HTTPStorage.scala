@@ -87,9 +87,9 @@ object HTTPStorage {
     response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
       response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
 
-  def toInputStream(uri: URI, timeout: Duration = 1 minute): InputStream with Progress = toInputStream(uri, newClient(timeout))
+  def toInputStream(uri: URI, timeout: Duration = 1 minute): (InputStream, Long) = toInputStream(uri, newClient(timeout))
 
-  def toInputStream(uri: URI, httpClient: CloseableHttpClient): InputStream with Progress = {
+  def toInputStream(uri: URI, httpClient: CloseableHttpClient): (InputStream, Long) = {
     val get = new HttpGet(uri)
     get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
     val response = httpClient.execute(get)
@@ -104,15 +104,14 @@ object HTTPStorage {
 
     val stream = response.getEntity.getContent
 
-    new InputStream with Progress {
-      val progressBar = new ProgressBar(response.getEntity.getContentLength)
-      override def read(): Int = progressBar.read(stream.read())
+    new InputStream {
+      override def read(): Int = stream.read()
       override def close() = {
         get.releaseConnection()
         response.close()
         httpClient.close()
       }
-    }
+    } -> response.getEntity.getContentLength
   }
 
   def apply(url: String, timeout: Duration = 1 minute) = {
@@ -159,8 +158,8 @@ object HTTPStorage {
     }
   }
 
-  def download[T](url: String)(action: InputStream with Progress ⇒ T): T = {
-    val is = toInputStream(new java.net.URI(url))
+  def download[T](url: String)(action: InputStream ⇒ T): T = {
+    val is = toInputStream(new java.net.URI(url))._1
     try action(is)
     finally is.close
   }
@@ -192,7 +191,7 @@ trait HTTPStorage extends Storage {
     throw new RuntimeException("Operation not supported for http protocol")
 
   def _read(path: String): InputStream =
-    HTTPStorage.toInputStream(new URI(url + "/" + path), HTTPStorage.newClient(timeout))
+    HTTPStorage.toInputStream(new URI(url + "/" + path), HTTPStorage.newClient(timeout))._1
 
   def _write(is: InputStream, path: String) =
     throw new RuntimeException("Operation not supported for http protocol")
