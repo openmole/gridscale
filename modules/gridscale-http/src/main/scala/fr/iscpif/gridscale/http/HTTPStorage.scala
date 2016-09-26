@@ -87,9 +87,9 @@ object HTTPStorage {
     response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
       response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
 
-  def toInputStream(uri: URI, timeout: Duration = 1 minute): InputStream = toInputStream(uri, newClient(timeout))
+  def toInputStream(uri: URI, timeout: Duration = 1 minute): InputStream with Progress = toInputStream(uri, newClient(timeout))
 
-  def toInputStream(uri: URI, httpClient: CloseableHttpClient): InputStream = {
+  def toInputStream(uri: URI, httpClient: CloseableHttpClient): InputStream with Progress = {
     val get = new HttpGet(uri)
     get.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE)
     val response = httpClient.execute(get)
@@ -104,8 +104,9 @@ object HTTPStorage {
 
     val stream = response.getEntity.getContent
 
-    new InputStream {
-      override def read(): Int = stream.read()
+    new InputStream with Progress {
+      val progressBar = new ProgressBar(response.getEntity.getContentLength)
+      override def read(): Int = progressBar.read(stream.read())
       override def close() = {
         get.releaseConnection()
         response.close()
@@ -158,7 +159,7 @@ object HTTPStorage {
     }
   }
 
-  def download[T](url: String)(action: InputStream ⇒ T): T = {
+  def download[T](url: String)(action: InputStream with Progress ⇒ T): T = {
     val is = toInputStream(new java.net.URI(url))
     try action(is)
     finally is.close
