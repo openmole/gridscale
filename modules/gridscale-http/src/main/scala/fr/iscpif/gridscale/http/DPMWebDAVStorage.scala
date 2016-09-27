@@ -79,7 +79,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     HTTPStorage.testResponse(response).get
   }
 
-  override def _read(path: String): InputStream = HTTPStorage.toInputStream(new URI(fullUrl(path)), newClient)._1
+  override def _read(path: String): InputStream = HTTPStorage.toInputStream(new URI(fullUrl(path)), newClient).stream
 
   override def _makeDir(path: String): Unit = withClient { httpClient =>
     val mkcol = new HttpMkCol(fullUrl(path))

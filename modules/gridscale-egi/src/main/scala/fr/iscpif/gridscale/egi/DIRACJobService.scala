@@ -66,7 +66,7 @@ object DIRACJobService {
 
   def getServices(timeout: Duration) = {
     val uri: URI = new URI(directoryURL)
-    val is = HTTPStorage.toInputStream(uri, HTTPStorage.newClient(timeout))._1
+    val is = HTTPStorage.toInputStream(uri, HTTPStorage.newClient(timeout)).stream
     try {
       val page = Source.fromInputStream(is).mkString
       parse(page).children.map {
