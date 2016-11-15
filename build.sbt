@@ -57,8 +57,8 @@ scalariformSettings
 
 
 def settings = Seq (
-  scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.11.8"),
+  scalaVersion := "2.12.0",
+  crossScalaVersions := Seq("2.11.8", "2.12.0"),
   javacOptions in (Compile, compile) ++= Seq("-source", "1.7", "-target", "1.7"),
   scalacOptions += "-target:jvm-1.7"
 )
@@ -82,6 +82,9 @@ lazy val defaultSettings =
 
   organization := "fr.iscpif.gridscale",
 
+  resolvers += "ISCPIF" at "https://repository.iscpif.fr/maven/",
+
+
   publishDir := {
     import java.io.File
     val dir = new File("/export/ivy/")
@@ -95,13 +98,11 @@ lazy val defaultSettings =
   licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
   homepage := Some(url("https://github.com/openmole/gridscale")),
 
-  publishTo <<= isSnapshot { snapshot =>
+  publishTo := {
     val nexus = "https://oss.sonatype.org/"
-    if (snapshot) Some("snapshots" at nexus + "content/repositories/snapshots")
-    else Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
+    if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+    else Some("releases" at nexus + "service/local/staging/deploy/maven2")},
   pomIncludeRepository := { _ => false},
-
 
   scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git")),
 
@@ -201,7 +202,7 @@ lazy val gridscale = Project(id = "gridscale", base = file("modules/gridscale"),
 
 lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi"), settings = defaultSettings ++ exportSettings) dependsOn(gridscale, gliteSecurityVoms, gridscaleHTTP) settings (
   libraryDependencies += "fr.iscpif.jglobus" % "io" % jglobusVersion,
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.0",
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.apache.commons" % "commons-compress" % "1.10",
   libraryDependencies += "com.google.guava" % "guava" % "19.0"
   )
@@ -240,7 +241,7 @@ lazy val gridscaleOAR = Project(id = "oar", base = file("modules/gridscale-oar")
 
 lazy val jglobusVersion = "2.2.0-20160826"
 
-lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.1" % "test"
+lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
 

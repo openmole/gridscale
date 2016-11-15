@@ -23,15 +23,8 @@ import fr.iscpif.gridscale.tools.{ ScriptBuffer, _ }
 
 import scala.concurrent.duration.Duration
 
-/** Represent Gres by extending Tuple2 in order to override toString */
-class Gres(val gresName: String, val gresValue: Int) extends Tuple2[String, Int](gresName, gresValue) {
-  override def toString = _1 + ":" + _2.toString
-}
-
-object Gres {
-  def apply(inGresName: String, inGresValue: Int) = {
-    new Gres(inGresName, inGresValue)
-  }
+case class Gres(gresName: String, gresValue: Int) {
+  override def toString = gresName + ":" + gresValue.toString
 }
 
 case class SLURMJobDescription(
