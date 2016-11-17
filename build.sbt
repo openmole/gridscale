@@ -3,13 +3,9 @@ import com.github.retronym.SbtOneJar
 import com.typesafe.sbt.osgi
 import osgi.OsgiKeys._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
-
 import scalariform.formatter.preferences._
 
-organization := "fr.iscpif"
-name := "gridscale-root"
-
-lazy val root = (project in file(".")).
+lazy val root = (project in file(".")).settings(settings: _*).
   aggregate(
     gridscale,
     gridscaleEGI,
@@ -30,6 +26,7 @@ lazy val root = (project in file(".")).
     sgeBundle,
     oarBundle
   ) settings(
+    name := "gridscale-root",
     publishArtifact := false
   )
 
@@ -56,11 +53,20 @@ releaseProcess := Seq[ReleaseStep](
 scalariformSettings
 
 
+lazy val javaByteCodeVersion = SettingKey[String]("javaByteCodeVersion")
+
 def settings = Seq (
+  organization := "fr.iscpif",
   scalaVersion := "2.12.0",
-  crossScalaVersions := Seq("2.11.8", "2.12.0"),
-  javacOptions in (Compile, compile) ++= Seq("-source", "1.7", "-target", "1.7"),
-  scalacOptions += "-target:jvm-1.7"
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0"),
+  javaByteCodeVersion :=
+    (scalaVersion.value.split('.').take(2).mkString(".") match {
+      case "2.10" | "2.11" => "1.7"
+      case "2.12" => "1.8"
+      case _ => sbt.fail("unknown scala version " + scalaVersion.value)
+    }),
+  javacOptions in (Compile, compile) ++= Seq("-source", javaByteCodeVersion.value, "-target", javaByteCodeVersion.value),
+  scalacOptions += s"-target:jvm-${javaByteCodeVersion.value}"
 )
 
 def exportSettings = Seq(
@@ -81,9 +87,6 @@ lazy val defaultSettings =
       .setPreference(RewriteArrowSymbols, true),
 
   organization := "fr.iscpif.gridscale",
-
-  resolvers += "ISCPIF" at "https://repository.iscpif.fr/maven/",
-
 
   publishDir := {
     import java.io.File
