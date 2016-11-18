@@ -27,7 +27,7 @@ lazy val root = (project in file(".")).settings(settings: _*).
     oarBundle
   ) settings(
     name := "gridscale-root",
-    publishArtifact := false,
+    publishArtifact := false
   ) disablePlugins(AssemblyPlugin)
 
 releaseVersionBump := sbtrelease.Version.Bump.Minor
