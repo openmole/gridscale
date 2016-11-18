@@ -50,13 +50,11 @@ class SLURMJobServiceTests extends FunSuite with MockitoSugar {
 
     val jobService = mock[SLURMJobService]
 
-    val description = new SLURMJobDescription {
-      def executable = "/bin/echo"
-
-      def arguments = "success > test_success.txt"
-
-      def workDirectory = "/homes/toto/"
-    }
+    val description = SLURMJobDescription(
+      executable = "/bin/echo",
+      arguments = "success > test_success.txt",
+      workDirectory = "/homes/toto/"
+    )
 
     when(jobService.submit(description)).thenReturn(SLURMJobService.SLURMJob(description, "42"))
 
@@ -68,27 +66,25 @@ class SLURMJobServiceTests extends FunSuite with MockitoSugar {
 
 class SLURMJobDescriptionTests extends FunSuite {
 
-  val completeDescription = new SLURMJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "success > test_success.txt"
-    def workDirectory = "/homes/toto/"
-    override def queue = Some("myPartition")
-    override def wallTime = Some(20 minutes)
-    override def memory = Some(2048)
-    override def nodes = Some(4)
-    override def coresByNode = Some(8)
-    override def output = "foo.out"
-    override def error = "foo.err"
-    override def qos = Some("SuperQoS")
-    override def gres = List(Gres("gpu", 1))
-    override def constraints = List("tesla", "fermi")
-  }
+  val completeDescription = SLURMJobDescription(
+    executable = "/bin/echo",
+    arguments = "success > test_success.txt",
+    workDirectory = "/homes/toto/",
+    queue = Some("myPartition"),
+    wallTime = Some(20 minutes),
+    memory = Some(2048),
+    nodes = Some(4),
+    coresByNode = Some(8),
+    qos = Some("SuperQoS"),
+    gres = List(Gres("gpu", 1)),
+    constraints = List("tesla", "fermi")
+  )
 
-  val emptyDescription = new SLURMJobDescription {
-    def executable = "/bin/echo"
-    def arguments = "success > test_success.txt"
-    def workDirectory = "/homes/toto/"
-  }
+  val emptyDescription = SLURMJobDescription(
+    executable = "/bin/echo",
+    arguments = "success > test_success.txt",
+    workDirectory = "/homes/toto/"
+  )
 
   val slurmPrefix = "#SBATCH"
 
@@ -149,23 +145,15 @@ class SLURMJobDescriptionTests extends FunSuite {
   }
 
   val outputPattern = s"${slurmPrefix} -o "
-  test("Output file specified") {
-    val expectedDescription = (outputPattern + "foo.out").r
+  test("Output file (unique)") {
+    val expectedDescription = (outputPattern + completeDescription.output).r
     assert(expectedDescription.findFirstIn(completeDescription.toSLURM) != None)
-  }
-  test("Output file empty") {
-    val expectedDescription = (outputPattern + "[0-9a-z-]+.out").r
-    assert(expectedDescription.findFirstIn(emptyDescription.toSLURM) != None)
   }
 
   val errorPattern = s"${slurmPrefix} -e "
-  test("Error file specified") {
-    val expectedDescription = (errorPattern + "foo.err").r
+  test("Error file (unique)") {
+    val expectedDescription = (errorPattern + completeDescription.error).r
     assert(expectedDescription.findFirstIn(completeDescription.toSLURM) != None)
-  }
-  test("Error file empty") {
-    val expectedDescription = (errorPattern + "[0-9a-z-]+.err").r
-    assert(expectedDescription.findFirstIn(emptyDescription.toSLURM) != None)
   }
 
   val qosPattern = s"${slurmPrefix} --qos="

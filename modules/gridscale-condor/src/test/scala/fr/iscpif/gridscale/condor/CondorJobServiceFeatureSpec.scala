@@ -65,7 +65,7 @@ class CondorJobServiceTests extends FunSuite with MockitoSugar {
 
     val jobService = mock[CondorJobService]
 
-    val description = CondorJobDescription (
+    val description = CondorJobDescription(
       executable = "/bin/echo",
       arguments = "success > test_success.txt",
       workDirectory = "/homes/toto/"
@@ -81,7 +81,7 @@ class CondorJobServiceTests extends FunSuite with MockitoSugar {
 
 class CondorJobDescriptionTests extends FunSuite {
 
-  val completeDescription = CondorJobDescription (
+  val completeDescription = CondorJobDescription(
     executable = "/bin/echo",
     arguments = "success > test_success.txt",
     workDirectory = "/homes/toto/",
@@ -95,7 +95,7 @@ class CondorJobDescriptionTests extends FunSuite {
       )
   )
 
-  val emptyDescription = CondorJobDescription (
+  val emptyDescription = CondorJobDescription(
     executable = "/bin/echo",
     arguments = "success > test_success.txt",
     workDirectory = "/homes/toto/"
@@ -136,7 +136,6 @@ class CondorJobDescriptionTests extends FunSuite {
     val expectedDescription = (coresByNodePattern).r
     assert(expectedDescription.findFirstIn(emptyDescription.toCondor) === None)
   }
-
 
   val requirementsPattern = "requirements = "
   test("Requirements specified") {
