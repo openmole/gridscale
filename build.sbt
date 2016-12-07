@@ -57,8 +57,8 @@ lazy val javaByteCodeVersion = SettingKey[String]("javaByteCodeVersion")
 
 def settings = Seq (
   organization := "fr.iscpif",
-  scalaVersion := "2.12.0",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0"),
+  scalaVersion := "2.12.1",
+  crossScalaVersions := Seq("2.11.8", "2.12.1"),
   javaByteCodeVersion :=
     (scalaVersion.value.split('.').take(2).mkString(".") match {
       case "2.10" | "2.11" => "1.7"
