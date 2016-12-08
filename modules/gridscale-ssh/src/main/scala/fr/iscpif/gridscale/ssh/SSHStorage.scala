@@ -45,12 +45,10 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   object FilePermission {
 
     sealed abstract class FilePermission
-
     case object USR_RWX extends FilePermission
-
     case object GRP_RWX extends FilePermission
-
     case object OTH_RWX extends FilePermission
+
     def toMask(fps: Set[FilePermission]): Int = {
 
       import net.schmizz.sshj.xfer.{ FilePermission ⇒ SSHJFilePermission }

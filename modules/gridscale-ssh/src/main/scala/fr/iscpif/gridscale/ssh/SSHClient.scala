@@ -33,10 +33,8 @@ class SSHClient {
   private lazy val peer: SSHJSSHClient = new SSHJSSHClient(sshDefaultConfig)
 
   def startSession: SSHSession = new SSHSession {
-
     implicit val peerSession = peer.startSession
     import impl.SSHJSession
-
     override def close() = SSHJSession.close()
     override def exec(command: String) = SSHJSession.exec(command)
   }
@@ -56,6 +54,7 @@ class SSHClient {
       case e: Throwable ⇒ throw AuthenticationException("Error during ssh login/password authentication", e)
     }
   }
+
   def authPrivateKey(privateKey: PrivateKey) = {
     try {
       val kp = peer.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)
@@ -69,10 +68,8 @@ class SSHClient {
   def isConnected: Boolean = peer.isConnected
 
   def newSFTPClient = new SFTPClient {
-
     import impl.SSHJSFTPClient
     implicit val peerSFTPClient = peer.newSFTPClient()
-
     override def fileOutputStream(is: InputStream, path: String) = SSHJSFTPClient.fileOutputStream(is, path)
     override def rename(oldName: String, newName: String) = SSHJSFTPClient.rename(oldName, newName)
     override def canonicalize(path: String) = SSHJSFTPClient.canonicalize(path)

@@ -57,8 +57,8 @@ lazy val javaByteCodeVersion = SettingKey[String]("javaByteCodeVersion")
 
 def settings = Seq (
   organization := "fr.iscpif",
-  scalaVersion := "2.12.1",
-  crossScalaVersions := Seq("2.11.8", "2.12.1"),
+  scalaVersion := "2.12.0",
+  crossScalaVersions := Seq("2.11.8", "2.12.0"),
   javaByteCodeVersion :=
     (scalaVersion.value.split('.').take(2).mkString(".") match {
       case "2.10" | "2.11" => "1.7"
@@ -275,3 +275,27 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
   libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
   libraryDependencies += "commons-cli" % "commons-cli" % "1.1")
 
+
+/* -------------- gridscale dsl ------------------ */
+
+def freedslVersion = "1.0-SNAPSHOT"
+
+def dslSettings = defaultSettings ++ Seq(
+  scalaOrganization := "org.typelevel",
+  scalacOptions += "-Ypartial-unification",
+  libraryDependencies += "fr.iscpif.freedsl" %% "dsl" % freedslVersion,
+  resolvers += Resolver.sonatypeRepo("snapshots"),
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+)
+
+lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"), settings = dslSettings) settings(
+  libraryDependencies += scalaTest,
+  libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8")
+
+lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/gridscale-ssh"), settings = dslSettings) dependsOn (gridscaleDSL) settings (
+  libraryDependencies += "com.hierynomus" % "sshj" % "0.19.0",
+  libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3",
+  libraryDependencies += "fr.iscpif.freedsl" %% "util" % freedslVersion,
+  libraryDependencies += "fr.iscpif.freedsl" %% "random" % freedslVersion % "test"
+)
