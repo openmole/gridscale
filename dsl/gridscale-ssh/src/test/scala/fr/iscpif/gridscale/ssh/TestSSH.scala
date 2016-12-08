@@ -6,15 +6,13 @@ import concurrent.duration._
 
 object TestSSH extends App {
 
+  import freek._
+  import cats.implicits._
   import freedsl.random._
   import freedsl.util._
 
   val c = freedsl.dsl.merge(Util, SSH, Random)
   import c._
-
-  import cats._
-  import cats.implicits._
-  import freek._
 
   def randomData[M[_]](implicit randomM: Random[M]) = randomM.shuffle(Seq(1, 2, 2, 3, 3, 3))
 
