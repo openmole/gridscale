@@ -278,12 +278,13 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
 
 /* -------------- gridscale dsl ------------------ */
 
-def freedslVersion = "1.0-SNAPSHOT"
+def freedslVersion = "0.3-SNAPSHOT"
 
 def dslSettings = defaultSettings ++ Seq(
   scalaOrganization := "org.typelevel",
   scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.freedsl" %% "dsl" % freedslVersion,
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.0.0",
   resolvers += Resolver.sonatypeRepo("snapshots"),
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")

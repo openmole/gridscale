@@ -44,6 +44,6 @@ object TestSSH extends App {
       Util.interpreter :&:
       Random.interpreter(42)
 
-  try println(result.getOption(prg.value.interpret(interpreter))) //.map(_.leftMap(_.asInstanceOf[SSH.ConnectionError].t.printStackTrace)))
+  try println(result(prg.value.interpret(interpreter)))
   finally sshClient.foreach(_.close())
 }

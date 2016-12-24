@@ -6,9 +6,8 @@ import cats._
 import cats.data._
 import cats.implicits._
 import fr.iscpif.gridscale.ssh.sshj.{ SFTPClient, SSHClient }
-import fr.iscpif.gridscale.tools._
-
-import scala.concurrent.duration._
+import squants._
+import time.TimeConversions._
 
 package object ssh {
 
@@ -32,7 +31,7 @@ package object ssh {
     def client(
       server: Server,
       authentication: Authentication,
-      timeout: Duration = 1 minute): util.Either[ConnectionError, Client] = {
+      timeout: Time = 1 minutes): util.Either[ConnectionError, Client] = {
       val ssh = new SSHClient
 
       // disable strict host key checking
@@ -42,8 +41,8 @@ package object ssh {
 
       authentication(ssh) match {
         case util.Success(_) ⇒
-          ssh.setConnectTimeout(timeout.toMillis.toInt)
-          ssh.setTimeout(timeout.toMillis.toInt)
+          ssh.setConnectTimeout(timeout.millis.toInt)
+          ssh.setTimeout(timeout.millis.toInt)
           util.Right(Client(ssh, ssh.newSFTPClient))
         case util.Failure(e) ⇒
           ssh.disconnect()
@@ -66,14 +65,22 @@ package object ssh {
             val is = c.sFTPClient.readAheadFileInputStream(path)
             try f(is) finally is.close
           }
+        case wrongReturnCode(command, executionResult) ⇒ Left(ReturnCodeError(command, executionResult))
       }
     }
+
+    case class ReturnCodeError(command: String, executionResult: ExecutionResult) extends Error {
+      import executionResult._
+      override def toString = s"Unexpected return code $returnCode, when running $command (stdout=${executionResult.stdOut}, stderr=${executionResult.stdErr})"
+    }
+
   }
 
   @dsl trait SSH[M[_]] {
     def execute(s: String): M[ExecutionResult]
     def fileExists(path: String): M[Boolean]
     def readFile[T](path: String, f: java.io.InputStream ⇒ T): M[T]
+    def wrongReturnCode(command: String, executionResult: ExecutionResult): M[Unit]
   }
 
   case class Server(host: String, port: Int = 22)
@@ -88,6 +95,11 @@ package object ssh {
   def stdOut[M[_]](jobId: JobId)(implicit ssh: SSH[M]) =
     ssh.readFile(
       SSHJobDescription.outFile(jobId.workDirectory, jobId.jobId),
+      io.Source.fromInputStream(_).mkString)
+
+  def stdErr[M[_]](jobId: JobId)(implicit ssh: SSH[M]) =
+    ssh.readFile(
+      SSHJobDescription.errFile(jobId.workDirectory, jobId.jobId),
       io.Source.fromInputStream(_).mkString)
 
   def state[M[_]: Monad](jobId: JobId)(implicit ssh: SSH[M]) =
@@ -106,18 +118,18 @@ package object ssh {
         }
     }
 
-  //    def state[M[_]](jobId: JobId) =
-  //        if (jobIsRunning(job)) Running
-  //        else {
-  //          if (exists(endCodeFile(job.workDirectory, job.jobId))) {
-  //            val is = _read(endCodeFile(job.workDirectory, job.jobId))
-  //            val content =
-  //              try getBytes(is, bufferSize, timeout)
-  //              finally is.close
-  //
-  //            translateState(new String(content).takeWhile(_.isDigit).toInt)
-  //          } else Failed
-  //        }
+  def clean[M[_]: Monad](job: JobId)(implicit ssh: SSH[M]) = {
+    val kill = s"kill `cat ${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}`;"
+    val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
+    for {
+      k ← ssh.execute(kill)
+      _ ← ssh.execute(rm)
+      _ ← k.returnCode match {
+        case 0 | 1 ⇒ ().pure[M]
+        case _     ⇒ ssh.wrongReturnCode(kill, k)
+      }
+    } yield ()
+  }
 
   def fileExists[M[_]](path: String)(implicit ssh: SSH[M]) =
     ssh.fileExists(path)
