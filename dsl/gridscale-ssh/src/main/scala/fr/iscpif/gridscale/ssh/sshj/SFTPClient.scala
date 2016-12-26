@@ -19,17 +19,18 @@ package fr.iscpif.gridscale.ssh.sshj
 
 import fr.iscpif.gridscale._
 import java.io.InputStream
+import util.Try
 
 trait SFTPClient {
-  def ls(path: String)(predicate: String ⇒ Boolean): Vector[ListEntry]
-  def chmod(path: String, perms: Int)
-  def close()
-  def canonicalize(path: String): String
-  def exists(path: String): Boolean
-  def mkdir(path: String)
-  def rmdir(path: String)
-  def rm(path: String)
-  def rename(oldName: String, newName: String)
-  def readAheadFileInputStream(path: String): InputStream
-  def fileOutputStream(is: InputStream, path: String)
+  def ls(path: String)(predicate: String ⇒ Boolean): Try[Vector[ListEntry]]
+  def chmod(path: String, perms: Int): Try[Unit]
+  def close(): Try[Unit]
+  def canonicalize(path: String): Try[String]
+  def exists(path: String): Try[Boolean]
+  def mkdir(path: String): Try[Unit]
+  def rmdir(path: String): Try[Unit]
+  def rm(path: String): Try[Unit]
+  def rename(oldName: String, newName: String): Try[Unit]
+  def readAheadFileInputStream(path: String): Try[InputStream]
+  def writeFile(is: InputStream, path: String): Try[Unit]
 }

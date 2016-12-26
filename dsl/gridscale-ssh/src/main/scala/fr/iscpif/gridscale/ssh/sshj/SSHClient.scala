@@ -51,7 +51,7 @@ object SSHClient {
   //    val retCode = execReturnCode(client)(cde)
   //    if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode + " while executing " + cde)
   //  }
-
+  case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
 }
 
 class SSHClient {
@@ -96,17 +96,53 @@ class SSHClient {
   def isConnected: Boolean = peer.isConnected
 
   def newSFTPClient = new SFTPClient {
-    lazy val peerSFTPClient = peer.newSFTPClient()
-    override def fileOutputStream(is: InputStream, path: String) = SSHJSFTPClient.fileOutputStream(peerSFTPClient)(is, path)
-    override def rename(oldName: String, newName: String) = SSHJSFTPClient.rename(peerSFTPClient)(oldName, newName)
-    override def canonicalize(path: String) = SSHJSFTPClient.canonicalize(peerSFTPClient)(path)
-    override def rmdir(path: String) = SSHJSFTPClient.rmdir(peerSFTPClient)(path)
-    override def chmod(path: String, perms: Int) = SSHJSFTPClient.chmod(peerSFTPClient)(path, perms)
-    override def readAheadFileInputStream(path: String) = SSHJSFTPClient.readAheadFileInputStream(peerSFTPClient)(path)
-    override def close() = SSHJSFTPClient.close(peerSFTPClient)
-    override def rm(path: String) = SSHJSFTPClient.rm(peerSFTPClient)(path)
-    override def mkdir(path: String) = SSHJSFTPClient.mkdir(peerSFTPClient)(path)
-    override def exists(path: String) = SSHJSFTPClient.exists(peerSFTPClient)(path)
-    override def ls(path: String)(predicate: String ⇒ Boolean) = SSHJSFTPClient.ls(peerSFTPClient)(path, predicate)
+    def wrap[T](f: ⇒ T) =
+      util.Try(f) match {
+        case s @ util.Success(_) ⇒ s
+        case util.Failure(e: net.schmizz.sshj.sftp.SFTPException) if e.getMessage == "No such file" ⇒
+          util.Failure(new SSHClient.NoSuchFileException(e.getMessage))
+        case e ⇒ e
+      }
+
+    private lazy val peerSFTPClient = wrap(peer.newSFTPClient())
+
+    private def withClient[T](f: net.schmizz.sshj.sftp.SFTPClient ⇒ T) =
+      for {
+        c ← peerSFTPClient
+        r ← wrap(f(c))
+      } yield r
+
+    override def writeFile(is: InputStream, path: String) =
+      withClient { c ⇒ SSHJSFTPClient.fileOutputStream(c)(is, path) }
+
+    override def rename(oldName: String, newName: String) =
+      withClient { c ⇒ SSHJSFTPClient.rename(c)(oldName, newName) }
+
+    override def canonicalize(path: String) =
+      withClient { c ⇒ SSHJSFTPClient.canonicalize(c)(path) }
+
+    override def rmdir(path: String) =
+      withClient { c ⇒ SSHJSFTPClient.rmdir(c)(path) }
+
+    override def chmod(path: String, perms: Int) =
+      withClient { c ⇒ SSHJSFTPClient.chmod(c)(path, perms) }
+
+    override def readAheadFileInputStream(path: String) =
+      withClient { c ⇒ SSHJSFTPClient.readAheadFileInputStream(c)(path) }
+
+    override def close() =
+      withClient { c ⇒ SSHJSFTPClient.close(c) }
+
+    override def rm(path: String) =
+      withClient { c ⇒ SSHJSFTPClient.rm(c)(path) }
+
+    override def mkdir(path: String) =
+      withClient { c ⇒ SSHJSFTPClient.mkdir(c)(path) }
+
+    override def exists(path: String) =
+      withClient { c ⇒ SSHJSFTPClient.exists(c)(path) }
+
+    override def ls(path: String)(predicate: String ⇒ Boolean) =
+      withClient { c ⇒ SSHJSFTPClient.ls(c)(path, predicate) }
   }
 }

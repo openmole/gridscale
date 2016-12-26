@@ -1,30 +1,25 @@
 package fr.iscpif.gridscale
 
-import freedsl.dsl._
-import freedsl.util._
-import cats._
-import cats.data._
-import cats.implicits._
-import fr.iscpif.gridscale.ssh.sshj.{ SFTPClient, SSHClient }
-import squants._
-import time.TimeConversions._
-
 package object ssh {
+
+  import freedsl.dsl._
+  import freedsl.util._
+  import cats._
+  import cats.implicits._
+  import fr.iscpif.gridscale.ssh.sshj.{ SFTPClient, SSHClient }
+  import squants._
+  import time.TimeConversions._
 
   case class ExecutionResult(returnCode: Int, stdOut: String, stdErr: String)
 
   object SSH {
 
-    case class ConnectionError(t: Throwable) extends Error
-
-    case class ExecutionError(t: Throwable) extends Error
-
     type Authentication = SSHClient ⇒ util.Try[Unit]
 
     case class Client(client: SSHClient, sFTPClient: SFTPClient) {
       def close() = {
-        sFTPClient.close()
-        client.close()
+        try sFTPClient.close()
+        finally client.close()
       }
     }
 
@@ -52,23 +47,35 @@ package object ssh {
 
     def interpreter(client: util.Either[ConnectionError, Client]) = new Interpreter[Id] {
 
+      def sftpClient = client.map(_.sFTPClient)
+
       def interpret[_] = {
         case execute(s) ⇒
           for {
             c ← client
             r ← SSHClient.exec(c.client)(s).toEither.leftMap(t ⇒ ExecutionError(t))
           } yield r
-        case fileExists(path) ⇒
-          client.map(_.sFTPClient.exists(path))
+
+        case sftp(f) ⇒
+          for {
+            c ← sftpClient
+            r ← f(c).toEither.leftMap(t ⇒ SFTPError(t))
+          } yield r
+
         case readFile(path, f) ⇒
-          client.map { c ⇒
-            val is = c.sFTPClient.readAheadFileInputStream(path)
-            try f(is) finally is.close
-          }
+          for {
+            c ← sftpClient
+            is ← c.readAheadFileInputStream(path).toEither.leftMap(t ⇒ SFTPError(t))
+            res = try f(is) finally is.close
+          } yield res
+
         case wrongReturnCode(command, executionResult) ⇒ Left(ReturnCodeError(command, executionResult))
       }
     }
 
+    case class ConnectionError(t: Throwable) extends Error
+    case class ExecutionError(t: Throwable) extends Error
+    case class SFTPError(t: Throwable) extends Error
     case class ReturnCodeError(command: String, executionResult: ExecutionResult) extends Error {
       import executionResult._
       override def toString = s"Unexpected return code $returnCode, when running $command (stdout=${executionResult.stdOut}, stderr=${executionResult.stdErr})"
@@ -78,13 +85,15 @@ package object ssh {
 
   @dsl trait SSH[M[_]] {
     def execute(s: String): M[ExecutionResult]
-    def fileExists(path: String): M[Boolean]
+    def sftp[T](f: SFTPClient ⇒ util.Try[T]): M[T]
     def readFile[T](path: String, f: java.io.InputStream ⇒ T): M[T]
     def wrongReturnCode(command: String, executionResult: ExecutionResult): M[Unit]
   }
 
   case class Server(host: String, port: Int = 22)
   case class JobId(jobId: String, workDirectory: String)
+
+  /* ----------------------- Job managment --------------------- */
 
   def submit[M[_]: Monad: Util](description: SSHJobDescription)(implicit ssh: SSH[M]) = for {
     j ← SSHJobDescription.toScript[M](description)
@@ -93,12 +102,12 @@ package object ssh {
   } yield JobId(jobId, description.workDirectory)
 
   def stdOut[M[_]](jobId: JobId)(implicit ssh: SSH[M]) =
-    ssh.readFile(
+    readFile(
       SSHJobDescription.outFile(jobId.workDirectory, jobId.jobId),
       io.Source.fromInputStream(_).mkString)
 
   def stdErr[M[_]](jobId: JobId)(implicit ssh: SSH[M]) =
-    ssh.readFile(
+    readFile(
       SSHJobDescription.errFile(jobId.workDirectory, jobId.jobId),
       io.Source.fromInputStream(_).mkString)
 
@@ -106,7 +115,7 @@ package object ssh {
     SSHJobDescription.jobIsRunning[M](jobId).flatMap {
       case true ⇒ (JobState.Running: JobState).pure[M]
       case false ⇒
-        ssh.fileExists(SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)).flatMap {
+        fileExists[M](SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)).flatMap {
           case true ⇒
             for {
               // FIXME Limit the size of the read
@@ -130,12 +139,6 @@ package object ssh {
       }
     } yield ()
   }
-
-  def fileExists[M[_]](path: String)(implicit ssh: SSH[M]) =
-    ssh.fileExists(path)
-
-  def readFile[M[_], T](path: String, f: java.io.InputStream ⇒ T)(implicit ssh: SSH[M]) =
-    ssh.readFile(path, f)
 
   case class SSHJobDescription(command: String, workDirectory: String)
 
@@ -185,6 +188,64 @@ package object ssh {
       }
     }
   }
+
+  /* ------------------------ sftp ---------------------------- */
+
+  object FilePermission {
+
+    sealed abstract class FilePermission
+    case object USR_RWX extends FilePermission
+    case object GRP_RWX extends FilePermission
+    case object OTH_RWX extends FilePermission
+
+    def toMask(fps: Set[FilePermission]): Int = {
+
+      import net.schmizz.sshj.xfer.{ FilePermission ⇒ SSHJFilePermission }
+      import collection.JavaConverters._
+
+      SSHJFilePermission.toMask(
+        fps map {
+          case USR_RWX ⇒ SSHJFilePermission.USR_RWX
+          case GRP_RWX ⇒ SSHJFilePermission.GRP_RWX
+          case OTH_RWX ⇒ SSHJFilePermission.OTH_RWX
+        } asJava
+      )
+    }
+  }
+
+  def fileExists[M[_]](path: String)(implicit ssh: SSH[M]) = ssh.sftp(_.exists(path))
+  def readFile[M[_], T](path: String, f: java.io.InputStream ⇒ T)(implicit ssh: SSH[M]) = ssh.readFile(path, f)
+  def writeFile[M[_]](is: java.io.InputStream, path: String)(implicit ssh: SSH[M]): M[Unit] = ssh.sftp(_.writeFile(is, path))
+  def home[M[_]](implicit ssh: SSH[M]) = ssh.sftp(_.canonicalize("."))
+  def exists[M[_]](path: String)(implicit ssh: SSH[M]) = ssh.sftp(_.exists(path))
+  def chmod[M[_]](path: String, perms: FilePermission.FilePermission*)(implicit ssh: SSH[M]) =
+    ssh.sftp(_.chmod(path, FilePermission.toMask(perms.toSet[FilePermission.FilePermission])))
+  def list[M[_]](path: String)(implicit ssh: SSH[M]) = ssh.sftp { _.ls(path)(e ⇒ e == "." || e == "..") }
+  def makeDir[M[_]](path: String)(implicit ssh: SSH[M]) = ssh.sftp(_.mkdir(path))
+
+  def rmDir[M[_]: Monad](path: String)(implicit ssh: SSH[M]): M[Unit] = {
+    import cats.implicits._
+
+    def remove(entry: ListEntry): M[Unit] = {
+      import FileType._
+      val child = path + "/" + entry.name
+      entry.`type` match {
+        case File      ⇒ rmFile[M](child)
+        case Link      ⇒ rmFile[M](child)
+        case Directory ⇒ rmDir[M](child)
+        case Unknown   ⇒ rmFile[M](child)
+      }
+    }
+
+    for {
+      entries ← list[M](path)
+      _ ← entries.traverse(remove)
+      _ ← ssh.sftp(_.rmdir(path))
+    } yield ()
+  }
+
+  def rmFile[M[_]](path: String)(implicit ssh: SSH[M]) = ssh.sftp(_.rm(path))
+  def mv[M[_]](from: String, to: String)(implicit ssh: SSH[M]) = ssh.sftp(_.rename(from, to))
 
 }
 
