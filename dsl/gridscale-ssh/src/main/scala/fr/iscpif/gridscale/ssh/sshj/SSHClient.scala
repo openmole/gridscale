@@ -31,14 +31,6 @@ object SSHClient {
     finally session.close
   }
 
-  //  def execReturnCode(client: SSHClient)(cde: String) = withSession(client) { session ⇒
-  //    val cmd = session.exec(cde.toString)
-  //    try {
-  //      cmd.join
-  //      cmd.getExitStatus
-  //    } finally cmd.close
-  //  }
-
   def exec(client: SSHClient)(cde: String) = withSession(client) { session ⇒
     val cmd = session.exec(cde.toString)
     try {
@@ -47,10 +39,6 @@ object SSHClient {
     } finally cmd.close
   }
 
-  //  def exec(client: SSHClient)(cde: String) = withSession(client) { session ⇒
-  //    val retCode = execReturnCode(client)(cde)
-  //    if (retCode != 0) throw new RuntimeException("Return code was no 0 but " + retCode + " while executing " + cde)
-  //  }
   case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
 }
 

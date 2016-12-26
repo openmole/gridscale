@@ -1,5 +1,9 @@
 package fr.iscpif.gridscale
 
+import fr.iscpif.gridscale.authentication.{ PrivateKey, UserPassword }
+
+import scala.util.Try
+
 package object ssh {
 
   import freedsl.dsl._
@@ -14,7 +18,23 @@ package object ssh {
 
   object SSH {
 
-    type Authentication = SSHClient ⇒ util.Try[Unit]
+    object Authentication {
+
+      implicit def userPassword = new Authentication[UserPassword] {
+        override def authenticate(t: UserPassword, sshClient: SSHClient): Try[Unit] =
+          sshClient.authPassword(t.user, t.password)
+      }
+
+      implicit def key = new Authentication[PrivateKey] {
+        override def authenticate(t: PrivateKey, sshClient: SSHClient): Try[Unit] =
+          sshClient.authPrivateKey(t)
+      }
+
+    }
+
+    trait Authentication[T] {
+      def authenticate(t: T, sshClient: SSHClient): util.Try[Unit]
+    }
 
     case class Client(client: SSHClient, sFTPClient: SFTPClient) {
       def close() = {
@@ -23,9 +43,9 @@ package object ssh {
       }
     }
 
-    def client(
+    def client[A: Authentication](
       server: Server,
-      authentication: Authentication,
+      authentication: A,
       timeout: Time = 1 minutes): util.Either[ConnectionError, Client] = {
       val ssh = new SSHClient
 
@@ -34,7 +54,7 @@ package object ssh {
       ssh.useCompression()
       ssh.connect(server.host, server.port)
 
-      authentication(ssh) match {
+      implicitly[Authentication[A]].authenticate(authentication, ssh) match {
         case util.Success(_) ⇒
           ssh.setConnectTimeout(timeout.millis.toInt)
           ssh.setTimeout(timeout.millis.toInt)

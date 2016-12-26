@@ -1,49 +1,31 @@
 package fr.iscpif.gridscale.ssh
-import java.io.File
-
-import fr.iscpif.gridscale.authentication._
-import concurrent.duration._
 
 object TestSSH extends App {
 
+  import fr.iscpif.gridscale.authentication._
+  import fr.iscpif.gridscale._
   import freek._
-  import cats.implicits._
-  import freedsl.random._
   import freedsl.util._
 
-  val c = freedsl.dsl.merge(Util, SSH, Random)
+  val c = freedsl.dsl.merge(SSH, Util)
   import c._
+  import c.implicits._
 
-  def randomData[M[_]](implicit randomM: Random[M]) = randomM.shuffle(Seq(1, 2, 2, 3, 3, 3))
-
-  def job(data: String) =
-    SSHJobDescription(
-      command = s"echo -n $data",
-      workDirectory = "/tmp/")
+  def job = SSHJobDescription(command = s"sleep 30", workDirectory = "/tmp/")
 
   val prg =
     for {
-      sData ← randomData[M]
-      jobId ← submit[M](job(sData.mkString(", ")))
-      _ ← implicitly[Util[M]].sleep(2 second)
-      s ← state[M](jobId)
+      jobId ← submit[M](job)
+      _ ← waitUntilEnded(state[M](jobId))
       out ← stdOut[M](jobId)
-    } yield s"""Job status is $s, stdout is "$out"."""
+      _ ← clean[M](jobId)
+    } yield s"""Job  stdout is "$out"."""
 
-  val zebulon = Server("zebulon.iscpif.fr")
-  val key = PrivateKey("reuillon", new File("/home/reuillon/.ssh/id_rsa"), "")
+  val localhost = Server("localhost")
+  val authentication = UserPassword("test", "test")
+  val sshClient = SSH.client(localhost, authentication)
+  val interpreter = SSH.interpreter(sshClient) :&: Util.interpreter
 
-  val sshClient =
-    SSH.client(
-      zebulon,
-      _.authPrivateKey(key)
-    )
-
-  val interpreter =
-    SSH.interpreter(sshClient) :&:
-      Util.interpreter :&:
-      Random.interpreter(42)
-
-  try println(result(prg.value.interpret(interpreter)))
-  finally sshClient.foreach(_.close())
+  println(result(prg, interpreter))
+  sshClient.foreach(_.close())
 }

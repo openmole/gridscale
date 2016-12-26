@@ -22,16 +22,7 @@ import java.security.KeyStore
 
 object P12Authentication {
 
-  def apply(certificate: File, password: String) = {
-    val (_certificate, _password) = (certificate, password)
-
-    new P12Authentication {
-      override val certificate: File = _certificate
-      override val password: String = _password
-    }
-  }
-
-  def loadKeyStore(a: P12Authentication) = {
+  def loadKeyStore(a: P12Authentication) = util.Try {
     val ks = KeyStore.getInstance("pkcs12")
 
     val in = new FileInputStream(a.certificate)
@@ -44,7 +35,4 @@ object P12Authentication {
 
 }
 
-trait P12Authentication {
-  def certificate: File
-  def password: String
-}
+case class P12Authentication(certificate: File, password: String)
