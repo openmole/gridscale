@@ -1,17 +1,17 @@
-package fr.iscpif.gridscale.ssh
+package gridscale.ssh
 
 object TestSSH extends App {
 
-  import fr.iscpif.gridscale.authentication._
-  import fr.iscpif.gridscale._
-  import freek._
+  import gridscale._
+  import gridscale.authentication._
   import freedsl.system._
+  import freek._
 
   val c = freedsl.dsl.merge(SSH, System)
   import c._
   import c.implicits._
 
-  def job = SSHJobDescription(command = s"sleep 30", workDirectory = "/tmp/")
+  def job = SSHJobDescription(command = s"""echo -n Hello SSH World""", workDirectory = "/tmp/")
 
   val prg =
     for {
@@ -22,7 +22,7 @@ object TestSSH extends App {
     } yield s"""Job  stdout is "$out"."""
 
   val localhost = Server("localhost")
-  val authentication = UserPassword("test", "test")
+  val authentication = UserPassword("test", "test!")
   val sshClient = SSH.client(localhost, authentication)
   val interpreter = SSH.interpreter(sshClient) :&: System.interpreter
 

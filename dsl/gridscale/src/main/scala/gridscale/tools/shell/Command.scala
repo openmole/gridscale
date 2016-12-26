@@ -1,8 +1,8 @@
-/**
- * Copyright (C) 2016 Jonathan Passerat-Palmbach
+/*
+ * Copyright (C) 2014 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -15,20 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.ssh.sshj
+package gridscale.tools.shell
 
-import java.io.InputStream
-
-trait SSHSession {
-  def close()
-  def exec(command: String): SessionCommand
-}
-
-trait SessionCommand {
-
-  def join()
-  def close()
-  def getExitStatus: Int
-  def getInputStream: InputStream
-  def getErrorStream: InputStream
+trait Command {
+  def toString: String
 }

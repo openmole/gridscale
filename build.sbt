@@ -287,7 +287,9 @@ def dslSettings = defaultSettings ++ Seq(
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.0.0",
   resolvers += Resolver.sonatypeRepo("snapshots"),
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"),
+  resolvers += Resolver.bintrayRepo("projectseptemberinc", "maven"),
+  resolvers += Resolver.sonatypeRepo("snapshots")
 )
 
 lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"), settings = dslSettings) settings(
@@ -301,4 +303,5 @@ lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/gridscale-ssh
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
+lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/gridscale-pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleSSHDSL)
 

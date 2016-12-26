@@ -15,22 +15,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.ssh.sshj
+package gridscale.ssh.sshj
 
-import fr.iscpif.gridscale._
 import java.io.InputStream
-import util.Try
 
-trait SFTPClient {
-  def ls(path: String)(predicate: String ⇒ Boolean): Try[Vector[ListEntry]]
-  def chmod(path: String, perms: Int): Try[Unit]
-  def close(): Try[Unit]
-  def canonicalize(path: String): Try[String]
-  def exists(path: String): Try[Boolean]
-  def mkdir(path: String): Try[Unit]
-  def rmdir(path: String): Try[Unit]
-  def rm(path: String): Try[Unit]
-  def rename(oldName: String, newName: String): Try[Unit]
-  def readAheadFileInputStream(path: String): Try[InputStream]
-  def writeFile(is: InputStream, path: String): Try[Unit]
+trait SSHSession {
+  def close()
+  def exec(command: String): SessionCommand
+}
+
+trait SessionCommand {
+
+  def join()
+  def close()
+  def getExitStatus: Int
+  def getInputStream: InputStream
+  def getErrorStream: InputStream
 }

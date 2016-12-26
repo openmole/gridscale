@@ -1,16 +1,15 @@
-package fr.iscpif.gridscale
-
-import fr.iscpif.gridscale.authentication.{ PrivateKey, UserPassword }
+package gridscale
 
 import scala.util.Try
 
 package object ssh {
 
-  import freedsl.dsl._
-  import freedsl.system._
   import cats._
   import cats.implicits._
-  import fr.iscpif.gridscale.ssh.sshj.{ SFTPClient, SSHClient }
+  import gridscale.ssh.sshj.{ SFTPClient, SSHClient }
+  import gridscale.authentication._
+  import freedsl.dsl._
+  import freedsl.system._
   import squants._
   import time.TimeConversions._
 
@@ -47,22 +46,32 @@ package object ssh {
       server: Server,
       authentication: A,
       timeout: Time = 1 minutes): util.Either[ConnectionError, Client] = {
-      val ssh = new SSHClient
 
-      // disable strict host key checking
-      ssh.disableHostChecking()
-      ssh.useCompression()
-      ssh.connect(server.host, server.port)
+      val ssh =
+        util.Try {
+          val ssh = new SSHClient
+          // disable strict host key checking
+          ssh.disableHostChecking()
+          ssh.useCompression()
+          ssh.connect(server.host, server.port)
+          ssh
+        }.toEither.leftMap(t ⇒ ConnectionError(t))
 
-      implicitly[Authentication[A]].authenticate(authentication, ssh) match {
-        case util.Success(_) ⇒
-          ssh.setConnectTimeout(timeout.millis.toInt)
-          ssh.setTimeout(timeout.millis.toInt)
-          util.Right(Client(ssh, ssh.newSFTPClient))
-        case util.Failure(e) ⇒
-          ssh.disconnect()
-          util.Left(ConnectionError(e))
-      }
+      def authenticate(ssh: SSHClient) =
+        implicitly[Authentication[A]].authenticate(authentication, ssh) match {
+          case util.Success(_) ⇒
+            ssh.setConnectTimeout(timeout.millis.toInt)
+            ssh.setTimeout(timeout.millis.toInt)
+            util.Right(Client(ssh, ssh.newSFTPClient))
+          case util.Failure(e) ⇒
+            ssh.disconnect()
+            util.Left(ConnectionError(e))
+        }
+
+      for {
+        client ← ssh
+        a ← authenticate(client)
+      } yield a
     }
 
     def interpreter(client: util.Either[ConnectionError, Client]) = new Interpreter[Id] {
@@ -221,6 +230,7 @@ package object ssh {
     def toMask(fps: Set[FilePermission]): Int = {
 
       import net.schmizz.sshj.xfer.{ FilePermission ⇒ SSHJFilePermission }
+
       import collection.JavaConverters._
 
       SSHJFilePermission.toMask(

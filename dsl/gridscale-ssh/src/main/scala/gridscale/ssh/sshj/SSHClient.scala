@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.ssh.sshj
+package gridscale.ssh.sshj
 
-import fr.iscpif.gridscale.authentication._
-import fr.iscpif.gridscale.tools._
+import gridscale.authentication._
+import gridscale.tools._
 import java.io.InputStream
 
 import net.schmizz.sshj.common.IOUtils
@@ -35,7 +35,7 @@ object SSHClient {
     val cmd = session.exec(cde.toString)
     try {
       cmd.join
-      fr.iscpif.gridscale.ssh.ExecutionResult(cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
+      gridscale.ssh.ExecutionResult(cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
   }
 

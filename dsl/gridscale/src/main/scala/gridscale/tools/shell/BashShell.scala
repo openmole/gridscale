@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.tools.shell
+package gridscale.tools.shell
 
 trait BashShell <: Shell {
 

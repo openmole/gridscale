@@ -1,4 +1,4 @@
-package fr.iscpif.gridscale
+package gridscale
 
 package object authentication {
   case class UserPassword(user: String, password: String)

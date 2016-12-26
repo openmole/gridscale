@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.ssh.sshj
+package gridscale.ssh.sshj
 
 import java.io.InputStream
 

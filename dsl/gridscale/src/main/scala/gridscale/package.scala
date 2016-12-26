@@ -1,5 +1,3 @@
-package fr.iscpif
-
 import cats.data.Kleisli
 
 package object gridscale {
@@ -26,12 +24,12 @@ package object gridscale {
     def isFinal(s: JobState) = s == Done || s == Failed
   }
 
-  import freedsl.tool._
-  import freedsl.system._
-  import squants._
-  import squants.time.TimeConversions._
   import cats._
   import cats.implicits._
+  import freedsl.system._
+  import freedsl.tool._
+  import squants._
+  import squants.time.TimeConversions._
 
   def waitUntilEnded[M[_]: Monad](f: M[JobState], wait: Time = 10 seconds)(implicit system: System[M]) = {
     def pull = for {

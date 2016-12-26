@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fr.iscpif.gridscale.authentication
+package gridscale.authentication
 
 import java.io.{ IOException, FileInputStream, File }
 import java.security.KeyStore

@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package fr.iscpif.gridscale.tools
+package gridscale.tools
 
 class ScriptBuffer {
   var script = ""

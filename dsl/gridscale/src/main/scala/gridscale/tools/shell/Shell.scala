@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Romain Reuillon
+ * Copyright (C) 2014 Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,6 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.iscpif.gridscale.authentication
 
-case class AuthenticationException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
+package gridscale.tools.shell
+
+trait Shell {
+  implicit def stringToCommand(cmd: String) = command(cmd)
+  def command(cmd: String): Command
+}
