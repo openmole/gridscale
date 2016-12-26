@@ -5,9 +5,9 @@ object TestSSH extends App {
   import fr.iscpif.gridscale.authentication._
   import fr.iscpif.gridscale._
   import freek._
-  import freedsl.util._
+  import freedsl.system._
 
-  val c = freedsl.dsl.merge(SSH, Util)
+  val c = freedsl.dsl.merge(SSH, System)
   import c._
   import c.implicits._
 
@@ -24,7 +24,7 @@ object TestSSH extends App {
   val localhost = Server("localhost")
   val authentication = UserPassword("test", "test")
   val sshClient = SSH.client(localhost, authentication)
-  val interpreter = SSH.interpreter(sshClient) :&: Util.interpreter
+  val interpreter = SSH.interpreter(sshClient) :&: System.interpreter
 
   println(result(prg, interpreter))
   sshClient.foreach(_.close())

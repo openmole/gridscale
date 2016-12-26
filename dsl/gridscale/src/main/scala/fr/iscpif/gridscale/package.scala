@@ -27,17 +27,17 @@ package object gridscale {
   }
 
   import freedsl.tool._
-  import freedsl.util._
+  import freedsl.system._
   import squants._
   import squants.time.TimeConversions._
   import cats._
   import cats.implicits._
 
-  def waitUntilEnded[M[_]: Monad](f: M[JobState], wait: Time = 10 seconds)(implicit util: Util[M]) = {
+  def waitUntilEnded[M[_]: Monad](f: M[JobState], wait: Time = 10 seconds)(implicit system: System[M]) = {
     def pull = for {
       s ← f
       end = JobState.isFinal(s)
-      _ ← if (!end) util.sleep(wait) else ().pure[M]
+      _ ← if (!end) system.sleep(wait) else ().pure[M]
     } yield (end, s)
 
     pull.until(Kleisli { v: (Boolean, JobState) ⇒ v._1.pure[M] }).map(_._2)

@@ -7,7 +7,7 @@ import scala.util.Try
 package object ssh {
 
   import freedsl.dsl._
-  import freedsl.util._
+  import freedsl.system._
   import cats._
   import cats.implicits._
   import fr.iscpif.gridscale.ssh.sshj.{ SFTPClient, SSHClient }
@@ -115,7 +115,7 @@ package object ssh {
 
   /* ----------------------- Job managment --------------------- */
 
-  def submit[M[_]: Monad: Util](description: SSHJobDescription)(implicit ssh: SSH[M]) = for {
+  def submit[M[_]: Monad: System](description: SSHJobDescription)(implicit ssh: SSH[M]) = for {
     j ← SSHJobDescription.toScript[M](description)
     (command, jobId) = j
     _ ← ssh.execute(command)
@@ -182,9 +182,9 @@ package object ssh {
     def errFile(dir: String, jobId: String) = file(dir, jobId, "err")
 
     // FIXME bash shell.
-    def toScript[M[_]: Monad](description: SSHJobDescription, background: Boolean = true)(implicit utilM: Util[M]) = {
+    def toScript[M[_]: Monad](description: SSHJobDescription, background: Boolean = true)(implicit system: System[M]) = {
       for {
-        jobId ← utilM.randomUUID.map(_.toString)
+        jobId ← system.randomUUID.map(_.toString)
       } yield {
         def absolute(path: String) = description.workDirectory + "/" + path
         def executable = description.command

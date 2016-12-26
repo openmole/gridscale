@@ -292,12 +292,13 @@ def dslSettings = defaultSettings ++ Seq(
 
 lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"), settings = dslSettings) settings(
   libraryDependencies += scalaTest,
-  libraryDependencies += "fr.iscpif.freedsl" %% "util" % freedslVersion,
+  libraryDependencies += "fr.iscpif.freedsl" %% "system" % freedslVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "tool" % freedslVersion,
   libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8")
 
 lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/gridscale-ssh"), settings = dslSettings) dependsOn (gridscaleDSL) settings (
   libraryDependencies += "com.hierynomus" % "sshj" % "0.19.0",
-  libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3",
-  libraryDependencies += "fr.iscpif.freedsl" %% "random" % freedslVersion % "test"
+  libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
+
+
