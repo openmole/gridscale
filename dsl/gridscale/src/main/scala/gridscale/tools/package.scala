@@ -20,7 +20,7 @@ package gridscale
 import java.io._
 import java.util.concurrent._
 
-import scala.concurrent.duration.Duration
+import squants._
 import scala.util.{ Failure, Success, Try }
 
 package object tools {
@@ -35,15 +35,15 @@ package object tools {
 
   val defaultExecutor = Executors.newCachedThreadPool(daemonThreadFactory)
 
-  def timeout[F](f: ⇒ F)(timeout: Duration)(implicit executor: ExecutorService = defaultExecutor): F = {
+  def timeout[F](f: ⇒ F)(timeout: Time)(implicit executor: ExecutorService = defaultExecutor): F = {
     val r = executor.submit(new Callable[F] { def call = f })
-    try r.get(timeout.length, timeout.unit)
+    try r.get(timeout.millis, TimeUnit.MILLISECONDS)
     catch {
       case e: TimeoutException ⇒ r.cancel(true); throw e
     }
   }
 
-  def copy(from: File, to: OutputStream, buffSize: Int, timeout: Duration) = {
+  def copy(from: File, to: OutputStream, buffSize: Int, timeout: Time) = {
     val inputStream = new BufferedInputStream(new FileInputStream(from))
 
     try Iterator.continually {
@@ -55,7 +55,7 @@ package object tools {
     } finally inputStream.close
   }
 
-  def copy(from: InputStream, to: File, buffSize: Int, timeout: Duration) = {
+  def copy(from: InputStream, to: File, buffSize: Int, timeout: Time) = {
     val outputStream = new BufferedOutputStream(new FileOutputStream(to))
 
     try Iterator.continually {
@@ -67,7 +67,7 @@ package object tools {
     } finally outputStream.close
   }
 
-  def getBytes(from: InputStream, buffSize: Int, timeout: Duration) = {
+  def getBytes(from: InputStream, buffSize: Int, timeout: Time) = {
     val os = new ByteArrayOutputStream
     Iterator.continually {
       val b = Array.ofDim[Byte](buffSize)
@@ -93,9 +93,9 @@ package object tools {
     }
   }
 
-  implicit class DurationDecorator(d: Duration) {
+  implicit class TimeDecorator(d: Time) {
     def toHHmmss = {
-      val millis = d.toMillis
+      val millis = d.millis
 
       f"${millis / (1000 * 60 * 60)}%02d:${(millis % (1000 * 60 * 60)) / (1000 * 60)}%02d:${((millis % (1000 * 60 * 60)) % (1000 * 60)) / 1000}%02d"
     }

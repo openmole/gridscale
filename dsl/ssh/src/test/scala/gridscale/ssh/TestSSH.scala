@@ -23,9 +23,10 @@ object TestSSH extends App {
 
   val localhost = Server("localhost")
   val authentication = UserPassword("test", "test!")
+
   val sshClient = SSH.client(localhost, authentication)
   val interpreter = SSH.interpreter(sshClient) :&: System.interpreter
-
   println(result(prg, interpreter))
   sshClient.foreach(_.close())
+
 }

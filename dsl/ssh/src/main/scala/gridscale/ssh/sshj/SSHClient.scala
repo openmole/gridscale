@@ -35,7 +35,7 @@ object SSHClient {
     val cmd = session.exec(cde.toString)
     try {
       cmd.join
-      gridscale.ssh.ExecutionResult(cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
+      gridscale.ExecutionResult(cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
   }
 

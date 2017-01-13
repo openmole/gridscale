@@ -13,8 +13,6 @@ package object ssh {
   import squants._
   import time.TimeConversions._
 
-  case class ExecutionResult(returnCode: Int, stdOut: String, stdErr: String)
-
   object SSH {
 
     object Authentication {
@@ -106,8 +104,7 @@ package object ssh {
     case class ExecutionError(t: Throwable) extends Error
     case class SFTPError(t: Throwable) extends Error
     case class ReturnCodeError(command: String, executionResult: ExecutionResult) extends Error {
-      import executionResult._
-      override def toString = s"Unexpected return code $returnCode, when running $command (stdout=${executionResult.stdOut}, stderr=${executionResult.stdErr})"
+      override def toString = ExecutionResult.error(command, executionResult)
     }
 
   }

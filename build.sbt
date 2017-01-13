@@ -278,7 +278,7 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
 
 /* -------------- gridscale dsl ------------------ */
 
-def freedslVersion = "0.3"
+def freedslVersion = "0.5-SNAPSHOT"
 
 def dslSettings = defaultSettings ++ Seq(
   scalaOrganization := "org.typelevel",
@@ -298,10 +298,14 @@ lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"
   libraryDependencies += "fr.iscpif.freedsl" %% "tool" % freedslVersion,
   libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8")
 
-lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/gridscale-ssh"), settings = dslSettings) dependsOn (gridscaleDSL) settings (
+lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settings = dslSettings) dependsOn (gridscaleDSL) settings (
   libraryDependencies += "com.hierynomus" % "sshj" % "0.19.0",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
-lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/gridscale-pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleSSHDSL)
+lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleSSHDSL)
+
+lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL) settings (
+  libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion
+)
 

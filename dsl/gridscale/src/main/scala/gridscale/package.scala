@@ -41,4 +41,13 @@ package object gridscale {
     pull.until(Kleisli { v: (Boolean, JobState) ⇒ v._1.pure[M] }).map(_._2)
   }
 
+  case class ExecutionResult(returnCode: Int, stdOut: String, stdErr: String)
+
+  object ExecutionResult {
+    def error(command: String, executionResult: ExecutionResult) = {
+      import executionResult._
+      s"Unexpected return code $returnCode, when running $command (stdout=${executionResult.stdOut}, stderr=${executionResult.stdErr})"
+    }
+  }
+
 }
