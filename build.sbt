@@ -309,3 +309,14 @@ lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settin
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion
 )
 
+lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), settings = dslSettings) dependsOn(gridscaleDSL) settings (
+  libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
+  libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6" excludeAll (ExclusionRule("org.apache.httpcomponents")),
+  libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
+  libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion
+)
+
+lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL) settings (
+  libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0"
+)
