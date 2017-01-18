@@ -29,8 +29,9 @@ object TestPBS extends App {
     } yield s
 
   val sshClient = SSH.client(localhost, authentication)
-  val interpreter = SSH.interpreter(sshClient) :&: System.interpreter :&: IO.interpreter
-  println(context.result(res, interpreter))
+
+  val interpreter = merge(SSH.interpreter(sshClient), System.interpreter, IO.interpreter)
+  println(interpreter.run(res))
   sshClient.foreach(_.close)
 
 }
