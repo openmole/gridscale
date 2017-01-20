@@ -12,6 +12,7 @@ package object ssh {
   import freedsl.system._
   import squants._
   import time.TimeConversions._
+  import gridscale.tools._
 
   object SSH {
 
@@ -40,64 +41,64 @@ package object ssh {
       }
     }
 
-    def client[A: Authentication](
-      server: Server,
-      authentication: A,
-      timeout: Time = 1 minutes): util.Either[ConnectionError, Client] = {
+    def interpreter[A: Authentication](server: Server, authentication: A, timeout: Time = 1 minutes) = new Interpreter[Id] {
 
-      val ssh =
-        util.Try {
-          val ssh = new SSHClient
-          // disable strict host key checking
-          ssh.disableHostChecking()
-          ssh.useCompression()
-          ssh.connect(server.host, server.port)
-          ssh
-        }.toEither.leftMap(t ⇒ ConnectionError(t))
+      def client = {
+        val ssh =
+          util.Try {
+            val ssh = new SSHClient
+            // disable strict host key checking
+            ssh.disableHostChecking()
+            ssh.useCompression()
+            ssh.connect(server.host, server.port)
+            ssh
+          }.toEither.leftMap(t ⇒ ConnectionError(t))
 
-      def authenticate(ssh: SSHClient) =
-        implicitly[Authentication[A]].authenticate(authentication, ssh) match {
-          case util.Success(_) ⇒
-            ssh.setConnectTimeout(timeout.millis.toInt)
-            ssh.setTimeout(timeout.millis.toInt)
-            util.Right(Client(ssh, ssh.newSFTPClient))
-          case util.Failure(e) ⇒
-            ssh.disconnect()
-            util.Left(ConnectionError(e))
+        def authenticate(ssh: SSHClient) = {
+          ssh.setConnectTimeout(timeout.millis.toInt)
+          ssh.setTimeout(timeout.millis.toInt)
+          implicitly[Authentication[A]].authenticate(authentication, ssh) match {
+            case util.Success(_) ⇒
+              util.Right(Client(ssh, ssh.newSFTPClient))
+            case util.Failure(e) ⇒
+              ssh.disconnect()
+              util.Left(AuthenticationException("Error authenticating to ssh server", e))
+          }
         }
 
-      for {
-        client ← ssh
-        a ← authenticate(client)
-      } yield a
-    }
+        for {
+          client ← ssh
+          a ← authenticate(client)
+        } yield a
+      }
 
-    def interpreter(client: util.Either[ConnectionError, Client]) = new Interpreter[Id] {
-
-      def sftpClient = client.map(_.sFTPClient)
+      //def sftpClient = clientCache.get.map(_.sFTPClient)
+      val clientCache = DisposableCache(() ⇒ client)
 
       def interpret[_] = {
         case execute(s) ⇒
           for {
-            c ← client
+            c ← clientCache.get
             r ← SSHClient.exec(c.client)(s).toEither.leftMap(t ⇒ ExecutionError(t))
           } yield r
 
         case sftp(f) ⇒
           for {
-            c ← sftpClient
-            r ← f(c).toEither.leftMap(t ⇒ SFTPError(t))
+            c ← clientCache.get
+            r ← f(c.sFTPClient).toEither.leftMap(t ⇒ SFTPError(t))
           } yield r
 
         case readFile(path, f) ⇒
           for {
-            c ← sftpClient
-            is ← c.readAheadFileInputStream(path).toEither.leftMap(t ⇒ SFTPError(t))
+            c ← clientCache.get
+            is ← c.sFTPClient.readAheadFileInputStream(path).toEither.leftMap(t ⇒ SFTPError(t))
             res = try f(is) finally is.close
           } yield res
 
         case wrongReturnCode(command, executionResult) ⇒ Left(ReturnCodeError(command, executionResult))
       }
+
+      override def terminate = Right(clientCache.foreach(_.foreach(_.close())))
     }
 
     case class ConnectionError(t: Throwable) extends Error

@@ -278,7 +278,7 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
 
 /* -------------- gridscale dsl ------------------ */
 
-def freedslVersion = "0.5-SNAPSHOT"
+def freedslVersion = "0.5"
 
 def dslSettings = defaultSettings ++ Seq(
   scalaOrganization := "org.typelevel",
@@ -296,7 +296,9 @@ lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"
   libraryDependencies += scalaTest,
   libraryDependencies += "fr.iscpif.freedsl" %% "system" % freedslVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "tool" % freedslVersion,
-  libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8")
+  libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8",
+  libraryDependencies += "com.jsuereth" %% "scala-arm" % "2.0"
+)
 
 lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settings = dslSettings) dependsOn (gridscaleDSL) settings (
   libraryDependencies += "com.hierynomus" % "sshj" % "0.19.0",
@@ -316,7 +318,9 @@ lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), set
   libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion
 )
 
-lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL) settings (
+lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0"
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.50",
+  libraryDependencies += "eu.eu-emi.security" % "canl" % "2.4.1"
 )

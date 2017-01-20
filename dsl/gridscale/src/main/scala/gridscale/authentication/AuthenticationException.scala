@@ -16,4 +16,4 @@
  */
 package gridscale.authentication
 
-case class AuthenticationException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
+case class AuthenticationException(msg: String, cause: Throwable = null) extends Exception(msg, cause) with freedsl.dsl.Error

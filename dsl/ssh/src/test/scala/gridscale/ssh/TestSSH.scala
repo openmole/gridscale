@@ -5,28 +5,25 @@ object TestSSH extends App {
   import gridscale._
   import gridscale.authentication._
   import freedsl.system._
-  import freek._
+  import freedsl.dsl._
 
-  val c = freedsl.dsl.merge(SSH, System)
-  import c._
+  val c = merge(SSH, System)
   import c.implicits._
 
   def job = SSHJobDescription(command = s"""echo -n Hello SSH World""", workDirectory = "/tmp/")
 
   val prg =
     for {
-      jobId ← submit[M](job)
-      _ ← waitUntilEnded(state[M](jobId))
-      out ← stdOut[M](jobId)
-      _ ← clean[M](jobId)
+      jobId ← submit[c.M](job)
+      _ ← waitUntilEnded(state[c.M](jobId))
+      out ← stdOut[c.M](jobId)
+      _ ← clean[c.M](jobId)
     } yield s"""Job  stdout is "$out"."""
 
   val localhost = Server("localhost")
   val authentication = UserPassword("test", "test!")
 
-  val sshClient = SSH.client(localhost, authentication)
-  val interpreter = SSH.interpreter(sshClient) :&: System.interpreter
-  println(result(prg, interpreter))
-  sshClient.foreach(_.close())
+  val interpreter = merge(SSH.interpreter(localhost, authentication), System.interpreter)
+  println(interpreter.run(prg))
 
 }

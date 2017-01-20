@@ -127,6 +127,24 @@ package object tools {
       }
   }
 
+  case class DisposableCache[T](f: () ⇒ T) {
+    private var cached: Option[T] = None
+
+    def get = synchronized {
+      cached match {
+        case None ⇒
+          val res = f()
+          cached = Some(res)
+          res
+        case Some(t) ⇒ t
+      }
+    }
+
+    def map[A](f: T ⇒ A) = synchronized(cached.map(f))
+    def foreach[A](f: T ⇒ A) = synchronized(cached.foreach[A](f))
+    def dispose = synchronized(cached = None)
+  }
+
   //  implicit class EitherDecorator[A, B](e: Either[A, B]) {
   //    def leftMap[C](f: A ⇒ C): Either[C, B] = e match {
   //      case Left(v)  ⇒ Left(f(v))
