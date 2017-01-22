@@ -10,8 +10,8 @@ import freek._
 
 object TestPBS extends App {
 
-  val localhost = Server("localhost", 10022)
   val authentication = UserPassword("testuser", "testuser")
+  val localhost = SSHServer("localhost", 10022)(authentication)
 
   val context = merge(SSH, System, IO)
 
@@ -22,13 +22,13 @@ object TestPBS extends App {
 
   val res =
     for {
-      job ← submit[M](jobDescription)
-      s ← waitUntilEnded[M](state[M](job))
-      out ← stdOut[M](job)
-      _ ← clean[M](job)
+      job ← submit[M, SSHServer[_]](localhost, jobDescription)
+      s ← waitUntilEnded[M](state[M, SSHServer[_]](localhost, job))
+      out ← stdOut[M, SSHServer[_]](localhost, job)
+      _ ← clean[M, SSHServer[_]](localhost, job)
     } yield s
 
-  val interpreter = merge(SSH.interpreter(localhost, authentication), System.interpreter, IO.interpreter)
+  val interpreter = merge(SSH.interpreter, System.interpreter, IO.interpreter)
   println(interpreter.run(res))
 
 }

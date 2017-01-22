@@ -7,18 +7,18 @@ import ssh._
 
 object HeadNode {
 
-  implicit def sshHeadNode[M[_]](implicit sshM: SSH[M]) = new HeadNode[M] {
-    override def execute(cmd: String) = sshM.execute(cmd)
-    override def write(bytes: Array[Byte], path: String) = sshM.sftp(_.writeFile(new ByteArrayInputStream(bytes), path))
-    override def read(path: String) = sshM.readFile(path, io.Source.fromInputStream(_).mkString)
-    override def rm(path: String): M[Unit] = sshM.sftp(_.rm(path))
+  implicit def sshHeadNode[M[_]](implicit sshM: SSH[M]) = new HeadNode[SSHServer[_], M] {
+    override def execute(server: SSHServer[_], cmd: String) = sshM.execute(server, cmd)
+    override def write(server: SSHServer[_], bytes: Array[Byte], path: String) = sshM.sftp(server, _.writeFile(new ByteArrayInputStream(bytes), path))
+    override def read(server: SSHServer[_], path: String) = sshM.readFile(server, path, io.Source.fromInputStream(_).mkString)
+    override def rm(server: SSHServer[_], path: String): M[Unit] = sshM.sftp(server, _.rm(path))
   }
 
 }
 
-trait HeadNode[M[_]] {
-  def execute(cmd: String): M[ExecutionResult]
-  def write(bytes: Array[Byte], path: String): M[Unit]
-  def read(path: String): M[String]
-  def rm(path: String): M[Unit]
+trait HeadNode[S, M[_]] {
+  def execute(server: S, cmd: String): M[ExecutionResult]
+  def write(server: S, bytes: Array[Byte], path: String): M[Unit]
+  def read(server: S, path: String): M[String]
+  def rm(server: S, path: String): M[Unit]
 }
