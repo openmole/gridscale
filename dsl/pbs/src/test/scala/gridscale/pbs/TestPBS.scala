@@ -22,10 +22,10 @@ object TestPBS extends App {
 
   val res =
     for {
-      job ← submit[M, SSHServer[_]](localhost, jobDescription)
-      s ← waitUntilEnded[M](state[M, SSHServer[_]](localhost, job))
-      out ← stdOut[M, SSHServer[_]](localhost, job)
-      _ ← clean[M, SSHServer[_]](localhost, job)
+      job ← submit[M, SSHServer](localhost, jobDescription)
+      s ← waitUntilEnded[M](state[M, SSHServer](localhost, job))
+      out ← stdOut[M, SSHServer](localhost, job)
+      _ ← clean[M, SSHServer](localhost, job)
     } yield s
 
   val interpreter = merge(SSH.interpreter, System.interpreter, IO.interpreter)
