@@ -278,7 +278,7 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
 
 /* -------------- gridscale dsl ------------------ */
 
-def freedslVersion = "0.5"
+def freedslVersion = "0.6-SNAPSHOT"
 
 def dslSettings = defaultSettings ++ Seq(
   scalaOrganization := "org.typelevel",

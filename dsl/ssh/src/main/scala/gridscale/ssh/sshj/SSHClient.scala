@@ -31,12 +31,18 @@ object SSHClient {
     finally session.close
   }
 
-  def exec(client: SSHClient)(cde: String) = withSession(client) { session ⇒
+  def exec(client: SSHClient, cde: String) = withSession(client) { session ⇒
     val cmd = session.exec(cde.toString)
     try {
       cmd.join
       gridscale.ExecutionResult(cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
     } finally cmd.close
+  }
+
+  def sftp[T](client: SSHClient, f: SFTPClient ⇒ T) = util.Try {
+    val sftp = client.newSFTPClient
+    try f(sftp)
+    finally sftp.close
   }
 
   case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)

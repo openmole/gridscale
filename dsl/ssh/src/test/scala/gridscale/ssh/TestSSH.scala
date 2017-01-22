@@ -12,18 +12,18 @@ object TestSSH extends App {
 
   def job = SSHJobDescription(command = s"""echo -n Hello SSH World""", workDirectory = "/tmp/")
 
+  val localhost = SSHServer("localhost", port = 2222)(UserPassword("root", "root"))
+
   val prg =
     for {
-      jobId ← submit[c.M](job)
-      _ ← waitUntilEnded(state[c.M](jobId))
-      out ← stdOut[c.M](jobId)
-      _ ← clean[c.M](jobId)
+      jobId ← submit[c.M](localhost, job)
+      _ ← waitUntilEnded(state[c.M](localhost, jobId))
+      out ← stdOut[c.M](localhost, jobId)
+      _ ← clean[c.M](localhost, jobId)
     } yield s"""Job  stdout is "$out"."""
 
-  val localhost = Server("localhost")
-  val authentication = UserPassword("test", "test!")
-
-  val interpreter = merge(SSH.interpreter(localhost, authentication), System.interpreter)
+  val interpreter = merge(SSH.interpreter, System.interpreter)
+  println(interpreter.run(prg))
   println(interpreter.run(prg))
 
 }
