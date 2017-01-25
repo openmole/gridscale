@@ -7,13 +7,12 @@ object TestHTTP extends App {
   val server =
     HTTPSServer(
       "https://ccdirac05.in2p3.fr/",
-      HTTPS.keyStoreFactory("/gridscale/http/dirac-truststore", "emptypassword")
+      HTTPS.socketFactory("/gridscale/http/dirac-truststore", "emptypassword")
     )
 
-  val intp = merge(HTTP.interpreter(server))
+  val intp = merge(HTTP.interpreter)
   import intp.implicits._
-  println(
-    intp.run(read[intp.M](""))
-  )
+
+  println(intp.run(read[intp.M](server, "")))
 
 }

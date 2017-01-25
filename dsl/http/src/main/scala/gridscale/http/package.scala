@@ -1,18 +1,16 @@
 package gridscale
 
-import java.security.{ KeyStore, SecureRandom }
-import javax.net.ssl._
+import java.io.ByteArrayInputStream
+import java.nio.charset.StandardCharsets
+import java.security.KeyStore.{ PasswordProtection, PrivateKeyEntry }
+import java.security.PrivateKey
+import java.security.cert.{ Certificate, CertificateFactory }
 
-import org.apache.http.config.{ RegistryBuilder, SocketConfig }
-import org.apache.http.conn.socket.ConnectionSocketFactory
-import org.apache.http.conn.ssl.{ BrowserCompatHostnameVerifier, SSLConnectionSocketFactory }
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager
-import org.apache.http.ssl.SSLContexts
-import squants.information.Information
+import org.apache.commons.codec.binary
+import sun.security.provider.X509Factory
 import sun.security.util.Password
 
-import scala.concurrent.duration.Duration
+import scala.io.Source
 
 package object http {
 
@@ -40,6 +38,9 @@ package object http {
   import scala.util.Try
   import gridscale.tools._
   import java.io.InputStream
+  import org.apache.http.config.{ RegistryBuilder, SocketConfig }
+  import org.apache.http.conn.socket.ConnectionSocketFactory
+  import squants.information.Information
 
   object HTTP {
 
@@ -57,10 +58,10 @@ package object http {
         }
     }
 
-    def client(server: Server, timeout: Time) =
+    def client(server: Server) =
       server match {
-        case s: HTTPServer  ⇒ httpClient(timeout)
-        case s: HTTPSServer ⇒ HTTPS.newClient(s.sockerFactor, timeout)
+        case s: HTTPServer  ⇒ httpClient(s.timeout)
+        case s: HTTPSServer ⇒ HTTPS.newClient(s.sockerFactor, s.timeout)
       }
 
     def requestConfig(timeout: Time) =
@@ -95,9 +96,9 @@ package object http {
       if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
     }
 
-    def interpreter(server: Server, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) = new Interpreter[Id] {
+    def interpreter = new Interpreter[Id] {
 
-      def withInputStream[T](path: String, f: InputStream ⇒ T): Try[T] = {
+      def withInputStream[T](server: Server, path: String, f: InputStream ⇒ T): Try[T] = {
         val uri = new URI(server.url + "/" + path)
         val get = new HttpGet(uri)
         get.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
@@ -105,7 +106,7 @@ package object http {
         import util._
 
         for {
-          httpClient ← Try(client(server, timeout))
+          httpClient ← Try(client(server))
           response ← Try(httpClient.execute(get))
           _ ← Try(testResponse(response))
           stream ← Try(response.getEntity.getContent)
@@ -120,106 +121,28 @@ package object http {
       }
 
       def interpret[_] = {
-        case request(path, f) ⇒ withInputStream(path, f).toEither.leftMap(t ⇒ HTTPError(t))
-        case content(path) ⇒
-          def getString(is: InputStream) = new String(getBytes(is, bufferSize.toBytes.toInt, timeout))
-          withInputStream(path, getString).toEither.leftMap(t ⇒ HTTPError(t))
+        case request(server, path, f) ⇒ withInputStream(server, path, f).toEither.leftMap(t ⇒ HTTPError(t))
+        case content(server, path) ⇒
+          def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
+          withInputStream(server, path, getString).toEither.leftMap(t ⇒ HTTPError(t))
       }
     }
 
     case class HTTPError(t: Throwable) extends Error
   }
 
-  object HTTPS {
-    import squants._
-    import javax.net.ssl.X509TrustManager
-    import java.security.cert.CertificateException
-    import java.security.cert.X509Certificate
-
-    type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
-
-    class TrustManagerDelegate(val mainTrustManager: X509TrustManager, val fallbackTrustManager: X509TrustManager) extends X509TrustManager {
-      override def checkClientTrusted(x509Certificates: Array[X509Certificate], authType: String) =
-        try {
-          mainTrustManager.checkClientTrusted(x509Certificates, authType)
-        } catch {
-          case ignored: CertificateException ⇒ fallbackTrustManager.checkClientTrusted(x509Certificates, authType)
-        }
-
-      override def checkServerTrusted(x509Certificates: Array[X509Certificate], authType: String) =
-        try {
-          mainTrustManager.checkServerTrusted(x509Certificates, authType)
-        } catch {
-          case ignored: CertificateException ⇒ fallbackTrustManager.checkServerTrusted(x509Certificates, authType)
-        }
-
-      override def getAcceptedIssuers() = fallbackTrustManager.getAcceptedIssuers()
-    }
-
-    def createSSLContext(path: String, password: String) = {
-      val sslContext = javax.net.ssl.SSLContext.getInstance("TLS")
-      val javaDefaultTrustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-      javaDefaultTrustManager.init(null: KeyStore)
-      val customCaTrustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-      customCaTrustManager.init(getKeyStore(path, password))
-
-      sslContext.init(
-        null,
-        Array[TrustManager](
-          new TrustManagerDelegate(
-            customCaTrustManager.getTrustManagers()(0).asInstanceOf[X509TrustManager],
-            javaDefaultTrustManager.getTrustManagers()(0).asInstanceOf[X509TrustManager]
-          )
-        ), new SecureRandom()
-      )
-
-      sslContext
-    }
-
-    def getKeyStore(path: String, password: String) = {
-      val ks = KeyStore.getInstance("JKS")
-      val is = this.getClass.getResourceAsStream(path)
-      try ks.load(is, password.toCharArray())
-      finally is.close()
-      ks
-    }
-
-    def socketFactory(sslContext: SSLContext): SSLSocketFactory =
-      (timeout: Time) ⇒
-        new org.apache.http.conn.ssl.SSLConnectionSocketFactory(sslContext) {
-          override protected def prepareSocket(socket: SSLSocket) = {
-            socket.setSoTimeout(timeout.millis.toInt)
-          }
-        }
-
-    def keyStoreFactory(path: String, password: String) = socketFactory(createSSLContext(path, password))
-
-    def connectionManager(factory: org.apache.http.conn.ssl.SSLConnectionSocketFactory) = {
-      val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory).build()
-      val client = new BasicHttpClientConnectionManager(registry)
-      val socketConfig = SocketConfig.custom().build()
-      client.setSocketConfig(socketConfig)
-      client
-    }
-
-    def newClient(factory: SSLSocketFactory, timeout: Time) =
-      HttpClients.custom().
-        setRedirectStrategy(HTTP.redirectStrategy).
-        setConnectionManager(connectionManager(factory(timeout))).
-        setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
-
-  }
-
   @dsl trait HTTP[M[_]] {
-    def request[T](path: String, f: java.io.InputStream ⇒ T): M[T]
-    def content(path: String): M[String]
+    def request[T](server: Server, path: String, f: java.io.InputStream ⇒ T): M[T]
+    def content(server: Server, path: String): M[String]
   }
 
   sealed trait Server {
     def url: String
+    def timeout: Time
+    def bufferSize: Information
   }
-  case class HTTPServer(url: String) extends Server
-  case class HTTPSServer(url: String, sockerFactor: HTTPS.SSLSocketFactory) extends Server
+  case class HTTPServer(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) extends Server
+  case class HTTPSServer(url: String, sockerFactor: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) extends Server
 
   def parseHTMLListing(page: String) = {
     val parser = new Parser
@@ -244,6 +167,134 @@ package object http {
     }.toVector
   }
 
-  def list[M[_]: Monad](path: String)(implicit http: HTTP[M]) = http.content(path).map(parseHTMLListing)
-  def read[M[_]: Monad](path: String)(implicit http: HTTP[M]) = http.content(path)
+  def list[M[_]: Monad](server: Server, path: String)(implicit http: HTTP[M]) = http.content(server, path).map(parseHTMLListing)
+  def read[M[_]: Monad](server: Server, path: String)(implicit http: HTTP[M]) = http.content(server, path)
+  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T)(implicit http: HTTP[M]): M[T] = http.request(server, path, f)
+
+  object HTTPS {
+
+    import squants._
+    import javax.net.ssl.X509TrustManager
+    import java.security.cert.CertificateException
+    import java.security.cert.X509Certificate
+    import java.security.{ KeyStore, SecureRandom }
+    import java.util.Base64
+    import javax.net.ssl._
+    import org.apache.http.conn.ssl.{ BrowserCompatHostnameVerifier, SSLConnectionSocketFactory }
+
+    type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
+
+    def trustManager(keyStore: KeyStore) = {
+      val customCaTrustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+      customCaTrustManager.init(keyStore)
+      customCaTrustManager.getTrustManagers()(0).asInstanceOf[X509TrustManager]
+    }
+
+    def createSSLContext(keyStore: KeyStore, password: Option[String]): SSLContext = {
+      class TrustManagerDelegate(val mainTrustManager: X509TrustManager, val fallbackTrustManager: X509TrustManager) extends X509TrustManager {
+        override def checkClientTrusted(x509Certificates: Array[X509Certificate], authType: String) =
+          try {
+            mainTrustManager.checkClientTrusted(x509Certificates, authType)
+          } catch {
+            case ignored: CertificateException ⇒ fallbackTrustManager.checkClientTrusted(x509Certificates, authType)
+          }
+
+        override def checkServerTrusted(x509Certificates: Array[X509Certificate], authType: String) =
+          try {
+            mainTrustManager.checkServerTrusted(x509Certificates, authType)
+          } catch {
+            case ignored: CertificateException ⇒ fallbackTrustManager.checkServerTrusted(x509Certificates, authType)
+          }
+
+        override def getAcceptedIssuers() = fallbackTrustManager.getAcceptedIssuers()
+      }
+
+      val javaDefaultTrustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+      javaDefaultTrustManager.init(null: KeyStore)
+
+      createSSLContext(
+        keyStore,
+        new TrustManagerDelegate(
+          trustManager(keyStore),
+          javaDefaultTrustManager.getTrustManagers()(0).asInstanceOf[X509TrustManager]
+        ),
+        password
+      )
+    }
+
+    def createSSLContext(path: String, password: String): SSLContext = createSSLContext(getKeyStore(path, password), Some(password))
+
+    def createSSLContext(keyStore: KeyStore, trustManager: TrustManager, password: Option[String]) = {
+      val sslContext = javax.net.ssl.SSLContext.getInstance("TLS")
+      val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+      kmf.init(keyStore, password.map(_.toCharArray).getOrElse(null))
+      sslContext.init(kmf.getKeyManagers, Array[TrustManager](trustManager), new SecureRandom())
+      sslContext
+    }
+
+    def getKeyStore(path: String, password: String) = {
+      val ks = KeyStore.getInstance("JKS")
+      val is = this.getClass.getResourceAsStream(path)
+      try ks.load(is, password.toCharArray())
+      finally is.close()
+      ks
+    }
+
+    def socketFactory(sslContext: SSLContext): SSLSocketFactory =
+      (timeout: Time) ⇒
+        new org.apache.http.conn.ssl.SSLConnectionSocketFactory(sslContext) {
+          override protected def prepareSocket(socket: SSLSocket) = {
+            socket.setSoTimeout(timeout.millis.toInt)
+          }
+        }
+
+    def socketFactory(path: String, password: String): SSLSocketFactory =
+      socketFactory(createSSLContext(path, password))
+
+    def connectionManager(factory: org.apache.http.conn.ssl.SSLConnectionSocketFactory) = {
+      val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory).build()
+      val client = new BasicHttpClientConnectionManager(registry)
+      val socketConfig = SocketConfig.custom().build()
+      client.setSocketConfig(socketConfig)
+      client
+    }
+
+    def newClient(factory: SSLSocketFactory, timeout: Time) =
+      HttpClients.custom().
+        setRedirectStrategy(HTTP.redirectStrategy).
+        setConnectionManager(connectionManager(factory(timeout))).
+        setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
+
+    import resource._
+
+    def readPem(pem: java.io.File) =
+      for {
+        content ← managed(Source.fromFile(pem)).map(_.mkString)
+      } yield {
+        val stripped = content.replaceAll(X509Factory.BEGIN_CERT, "").replaceAll(X509Factory.END_CERT, "")
+        val decoded = new binary.Base64().decode(stripped)
+        CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decoded))
+      }
+
+    def emptyKeyStore = {
+      val ks = KeyStore.getInstance(KeyStore.getDefaultType)
+      ks.load(null, "".toCharArray)
+      ks
+    }
+
+    def addToKeyStore(pems: Vector[java.io.File], ks: KeyStore = emptyKeyStore) = {
+      for {
+        (file, i) ← pems.zipWithIndex
+        pem ← readPem(file).tried
+      } Try(ks.setCertificateEntry(i.toString, pem))
+      ks
+    }
+
+    def addToKeyStore(key: PrivateKey, certficate: Vector[Certificate], ks: KeyStore, password: String) = {
+      val entry = new PrivateKeyEntry(key, certficate.toArray)
+      ks.setEntry("test", entry, new PasswordProtection(password.toCharArray))
+    }
+
+  }
+
 }
