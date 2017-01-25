@@ -98,7 +98,7 @@ package object ssh {
     case class ConnectionError(message: String, t: Throwable) extends Exception(message, t) with Error
     case class ExecutionError(message: String, t: Throwable) extends Exception(message, t) with Error
     case class SFTPError(message: String, t: Throwable) extends Exception(message, t) with Error
-    case class ReturnCodeError(server: String, command: String, executionResult: ExecutionResult) extends Error {
+    case class ReturnCodeError(server: String, command: String, executionResult: ExecutionResult) extends Exception with Error {
       override def toString = ExecutionResult.error(command, executionResult) + " on server $server"
     }
 
