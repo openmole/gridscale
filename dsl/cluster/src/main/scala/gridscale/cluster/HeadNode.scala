@@ -2,6 +2,8 @@ package gridscale.cluster
 
 import java.io.ByteArrayInputStream
 
+import scala.language.higherKinds
+
 import gridscale._
 import ssh._
 

@@ -7,6 +7,7 @@ import freedsl.io._
 import gridscale.cluster.HeadNode
 import gridscale.tools._
 import squants._
+import scala.language.higherKinds
 
 package object pbs {
 
@@ -51,7 +52,7 @@ package object pbs {
   def pbsScriptName(uniqId: String) = uniqId + ".pbs"
   def pbsScriptPath(workDirectory: String, uniqId: String) = workDirectory + "/" + pbsScriptName(uniqId)
 
-  def translateStatus[M[_]](retCode: Int, status: String) =
+  def translateStatus(retCode: Int, status: String) =
     status match {
       case "R" | "E" | "H" | "S" ⇒ Right(JobState.Running)
       case "Q" | "W" | "T"       ⇒ Right(JobState.Submitted)

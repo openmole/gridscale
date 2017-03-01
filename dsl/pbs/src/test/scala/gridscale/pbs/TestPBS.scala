@@ -6,7 +6,6 @@ import gridscale._
 import gridscale.authentication._
 import gridscale.ssh._
 import freedsl.dsl._
-import freek._
 
 object TestPBS extends App {
 
