@@ -66,7 +66,11 @@ def settings = Seq (
       case _ => sbt.fail("unknown scala version " + scalaVersion.value)
     }),
   javacOptions in (Compile, compile) ++= Seq("-source", javaByteCodeVersion.value, "-target", javaByteCodeVersion.value),
-  scalacOptions += s"-target:jvm-${javaByteCodeVersion.value}",
+  scalacOptions ++= Seq(
+    s"-target:jvm-${javaByteCodeVersion.value}",
+    "-deprecation",
+    "-feature"
+  ),
   test in assembly := {}
 )
 
@@ -308,6 +312,10 @@ lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settin
 lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleSSHDSL)
 
 lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL) settings (
+  libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion
+)
+
+lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion
 )
 
