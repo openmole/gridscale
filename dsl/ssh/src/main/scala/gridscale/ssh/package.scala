@@ -36,7 +36,7 @@ package object ssh {
       def authenticate(t: T, sshClient: SSHClient): util.Try[Unit]
     }
 
-    def interpreter = new Interpreter[Id] {
+    def interpreter = new Interpreter {
 
       def client(server: SSHServer) = {
         val ssh =
@@ -68,29 +68,25 @@ package object ssh {
 
       val clientCache = KeyValueCache(client)
 
-      def interpret[_] = {
-        case execute(server, s) ⇒
-          for {
-            c ← clientCache.get(server)
-            r ← SSHClient.exec(c, s).toEither.leftMap(t ⇒ ExecutionError(s"Error executing $s on $server", t))
-          } yield r
+      def execute(server: SSHServer, s: String)(implicit context: Context) = for {
+        c ← clientCache.get(server)
+        r ← SSHClient.exec(c, s).toEither.leftMap(t ⇒ ExecutionError(s"Error executing $s on $server", t))
+      } yield r
 
-        case sftp(server, f) ⇒
-          for {
-            c ← clientCache.get(server)
-            r ← SSHClient.sftp(c, f).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
-          } yield r
+      def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T])(implicit context: Context) = for {
+        c ← clientCache.get(server)
+        r ← SSHClient.sftp(c, f).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+      } yield r
 
-        case readFile(server, path, f) ⇒
-          for {
-            c ← clientCache.get(server)
-            res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
-          } yield res
+      def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T)(implicit context: Context) = for {
+        c ← clientCache.get(server)
+        res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+      } yield res
 
-        case wrongReturnCode(server, command, executionResult) ⇒ Left(ReturnCodeError(server, command, executionResult))
-      }
+      def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult)(implicit context: Context) =
+        Left(ReturnCodeError(server, command, executionResult))
 
-      override def terminate = Right {
+      override def terminate(implicit context: Context) = Right {
         clientCache.values.flatMap(_.right.toOption).foreach(_.close())
         clientCache.clear()
         ()
