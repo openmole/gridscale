@@ -17,6 +17,8 @@
 
 package fr.iscpif.gridscale.tools.shell
 
+import scala.language.implicitConversions
+
 trait Shell {
   implicit def stringToCommand(cmd: String) = command(cmd)
   def command(cmd: String): Command

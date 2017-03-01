@@ -14,6 +14,7 @@ object TestPBS extends App {
 
   val context = merge(SSH, System, IO)
 
+  import scala.language.reflectiveCalls
   import context.M
   import context.implicits._
 

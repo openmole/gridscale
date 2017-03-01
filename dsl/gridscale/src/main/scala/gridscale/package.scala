@@ -1,5 +1,7 @@
 import cats.data.Kleisli
 
+import scala.language.{ higherKinds, postfixOps }
+
 package object gridscale {
 
   sealed trait FileType

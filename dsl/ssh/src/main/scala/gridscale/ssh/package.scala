@@ -2,6 +2,8 @@ package gridscale
 
 import scala.util.Try
 
+import scala.language.{ higherKinds, postfixOps }
+
 package object ssh {
 
   import cats._
