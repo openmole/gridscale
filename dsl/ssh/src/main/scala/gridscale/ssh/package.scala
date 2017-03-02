@@ -75,12 +75,12 @@ package object ssh {
 
       def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T])(implicit context: Context) = for {
         c ← clientCache.get(server)
-        r ← SSHClient.sftp(c, f).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+        r ← SSHClient.sftp(c, f).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer to $server", t))
       } yield r
 
       def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T)(implicit context: Context) = for {
         c ← clientCache.get(server)
-        res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+        res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer to $server", t))
       } yield res
 
       def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult)(implicit context: Context) =
