@@ -3,7 +3,7 @@ package gridscale
 import cats._
 import cats.implicits._
 import freedsl.system._
-import freedsl.io._
+import freedsl.errorhandler._
 import gridscale.cluster.HeadNode
 import gridscale.tools._
 import squants._
@@ -92,7 +92,7 @@ package object slurm {
 
   def slurmScriptPath(workDirectory: String, uniqId: String) = workDirectory + "/" + slurmScriptName(uniqId)
 
-  def translateStatus[M[_]](retCode: Int, status: String): Either[String, JobState] = {
+  def translateStatus[M[_]](retCode: Int, status: String): Either[RuntimeException, JobState] = {
     import JobState._
     status match {
       case "COMPLETED" ⇒ Right(Done)
@@ -101,27 +101,27 @@ package object slurm {
       case "RUNNING" | "COMPLETING" ⇒ Right(Running)
       case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Right(Submitted)
       case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Right(Failed)
-      case _ ⇒ Left("Unrecognized state " + status)
+      case _ ⇒ Left(new RuntimeException("Unrecognized state " + status))
     }
   }
 
   def retrieveJobID(submissionOutput: String) = submissionOutput.trim.reverse.takeWhile(_ != ' ').reverse
 
-  def submit[M[_]: Monad](description: SlurmJobDescription)(implicit hn: HeadNode[M], system: System[M], io: IO[M]) = for {
-    _ ← hn.execute(s"mkdir -p ${description.workDirectory}")
+  def submit[M[_]: Monad, S](server: S, description: SlurmJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]) = for {
+    _ ← hn.execute(server, s"mkdir -p ${description.workDirectory}")
     uniqId ← system.randomUUID.map(_.toString)
     script = toScript(description, uniqId)
-    _ ← hn.write(script.getBytes, slurmScriptPath(description.workDirectory, uniqId))
+    _ ← hn.write(server, script.getBytes, slurmScriptPath(description.workDirectory, uniqId))
     command = s"cd ${description.workDirectory} && sbatch ${slurmScriptName(uniqId)}"
-    cmdRet ← hn.execute(command)
+    cmdRet ← hn.execute(server, command)
     ExecutionResult(ret, out, error) = cmdRet
     slurmID = retrieveJobID(out)
-    _ ← if (ret != 0 || slurmID.isEmpty) io.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
+    _ ← if (ret != 0 || slurmID.isEmpty) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
   } yield SlurmJob(uniqId, slurmID, description.workDirectory)
 
   lazy val jobStateAttribute = "JobState"
 
-  def state[M[_]: Monad](job: SlurmJob)(implicit hn: HeadNode[M], io: IO[M]): M[JobState] = {
+  def state[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M], errorHandler: ErrorHandler[M]): M[JobState] = {
     val command = "scontrol show job " + job.slurmId
 
     def parseState(cmdRet: ExecutionResult) = {
@@ -138,27 +138,27 @@ package object slurm {
     }
 
     for {
-      cmdRet ← hn.execute(command)
-      s ← io.errorMessageOrResult(parseState(cmdRet))
+      cmdRet ← hn.execute(server, command)
+      s ← errorHandler.get[JobState](parseState(cmdRet))
     } yield s
   }
 
-  def stdOut[M[_]](job: SlurmJob)(implicit hn: HeadNode[M]) = hn.read(job.workDirectory + "/" + output(job.uniqId))
+  def stdOut[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M]) = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
 
-  def stdErr[M[_]](job: SlurmJob)(implicit hn: HeadNode[M]) = hn.read(job.workDirectory + "/" + error(job.uniqId))
+  def stdErr[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M]) = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
 
   // compiles thanks to a divine intervention
-  def processCancel[M[_]: Monad](cancelRet: ExecutionResult, job: SlurmJob)(implicit io: IO[M]) = cancelRet match {
+  def processCancel[M[_]: Monad](cancelRet: ExecutionResult, job: SlurmJob)(implicit errorHandler: ErrorHandler[M]) = cancelRet match {
     case ExecutionResult(0, _, _) ⇒ ().pure[M]
-    case ExecutionResult(1, _, error) if error.matches(".*Invalid job id specified") ⇒ io.exception(new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id"))
-    case _ ⇒ io.exception(new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}"))
+    case ExecutionResult(1, _, error) if error.matches(".*Invalid job id specified") ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id"))
+    case _ ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}"))
   }
 
-  def clean[M[_]: Monad](job: SlurmJob)(implicit hn: HeadNode[M], io: IO[M]) = for {
-    cmdRet ← hn.execute(s"scancel ${job.slurmId}")
-    _ ← hn.rm(slurmScriptPath(job.workDirectory, job.uniqId))
-    _ ← hn.rm(job.workDirectory + "/" + output(job.uniqId))
-    _ ← hn.rm(job.workDirectory + "/" + error(job.uniqId))
+  def clean[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M], errorHandler: ErrorHandler[M]) = for {
+    cmdRet ← hn.execute(server, s"scancel ${job.slurmId}")
+    _ ← hn.rm(server, slurmScriptPath(job.workDirectory, job.uniqId))
+    _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniqId))
+    _ ← hn.rm(server, job.workDirectory + "/" + error(job.uniqId))
   } yield ()
 
 }
