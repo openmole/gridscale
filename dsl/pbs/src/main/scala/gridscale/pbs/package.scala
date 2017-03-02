@@ -3,7 +3,7 @@ package gridscale
 import cats._
 import cats.implicits._
 import freedsl.system._
-import freedsl.io._
+import freedsl.errorhandler._
 import gridscale.cluster.HeadNode
 import gridscale.tools._
 import squants._
@@ -56,10 +56,10 @@ package object pbs {
     status match {
       case "R" | "E" | "H" | "S" ⇒ Right(JobState.Running)
       case "Q" | "W" | "T"       ⇒ Right(JobState.Submitted)
-      case _                     ⇒ Left("Unrecognized state " + status)
+      case _                     ⇒ Left(new RuntimeException("Unrecognized state " + status))
     }
 
-  def submit[M[_]: Monad, S](server: S, description: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], io: IO[M]) = for {
+  def submit[M[_]: Monad, S](server: S, description: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]) = for {
     _ ← hn.execute(server, s"mkdir -p ${description.workDirectory}")
     uniqId ← system.randomUUID.map(_.toString)
     script = toScript(description, uniqId)
@@ -67,16 +67,16 @@ package object pbs {
     command = s"cd ${description.workDirectory} && qsub ${pbsScriptName(uniqId)}"
     cmdRet ← hn.execute(server, command)
     ExecutionResult(ret, out, error) = cmdRet
-    _ ← if (ret != 0) io.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
-    _ ← if (out == null) io.errorMessage("qsub did not return a JobID") else ().pure[M]
+    _ ← if (ret != 0) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
+    _ ← if (out == null) errorHandler.errorMessage("qsub did not return a JobID") else ().pure[M]
     pbsId = out.split("\n").head
   } yield PBSJob(uniqId, pbsId, description.workDirectory)
 
-  def state[M[_]: Monad, S](server: S, job: PBSJob)(implicit hn: HeadNode[S, M], io: IO[M]): M[JobState] = {
+  def state[M[_]: Monad, S](server: S, job: PBSJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
     val command = "qstat -f " + job.pbsId
     val jobStateAttribute = "JOB_STATE"
 
-    def parseState(cmdRet: ExecutionResult) =
+    def parseState(cmdRet: ExecutionResult): Either[RuntimeException, JobState] =
       cmdRet.returnCode match {
         case 153 ⇒ Right(JobState.Done)
         case 0 ⇒
@@ -89,14 +89,14 @@ package object pbs {
 
           state match {
             case Some(s) ⇒ translateStatus(cmdRet.returnCode, s)
-            case None    ⇒ Left("State not found in qstat output: " + cmdRet.stdOut)
+            case None    ⇒ Left(new RuntimeException("State not found in qstat output: " + cmdRet.stdOut))
           }
-        case r ⇒ Left(ExecutionResult.error(command, cmdRet))
+        case _ ⇒ Left(new RuntimeException(ExecutionResult.error(command, cmdRet)))
       }
 
     for {
       cmdRet ← hn.execute(server, command)
-      s ← io.errorMessageOrResult(parseState(cmdRet))
+      s ← error.get[JobState](parseState(cmdRet))
     } yield s
   }
 

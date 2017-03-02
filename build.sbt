@@ -312,7 +312,7 @@ lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settin
 lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleSSHDSL)
 
 lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL) settings (
-  libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion
+  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion
 )
 
 lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL) settings (
