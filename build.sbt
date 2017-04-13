@@ -5,30 +5,34 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scalariform.formatter.preferences._
 
 
-lazy val root = (project in file(".")).settings(settings: _*).
-  aggregate(
-    gridscale,
-    gridscaleEGI,
-    gridscaleHTTP,
-    gridscaleSSH,
-    gridscaleCondor,
-    gridscalePBS,
-    gridscaleSLURM,
-    gridscaleSGE,
-    gridscaleOAR,
-    gridscaleBundle,
-    egiBundle,
-    httpBundle,
-    sshBundle,
-    condorBundle,
-    pbsBundle,
-    slurmBundle,
-    sgeBundle,
-    oarBundle
-  ) settings(
-    name := "gridscale-root",
-    publishArtifact := false
-  ) disablePlugins(AssemblyPlugin)
+//lazy val root = (project in file(".")).settings(settings: _*).
+//  aggregate(
+//    gridscale,
+//    gridscaleEGI,
+//    gridscaleHTTP,
+//    gridscaleSSH,
+//    gridscaleCondor,
+//    gridscalePBS,
+//    gridscaleSLURM,
+//    gridscaleSGE,
+//    gridscaleOAR,
+//    gridscaleBundle,
+//    egiBundle,
+//    httpBundle,
+//    sshBundle,
+//    condorBundle,
+//    pbsBundle,
+//    slurmBundle,
+//    sgeBundle,
+//    oarBundle
+//  ) settings(
+//    name := "gridscale-root",
+//    publishArtifact := false
+//  ) disablePlugins(AssemblyPlugin)
+
+publish := {}
+PgpKeys.publishSigned := {}
+crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 releaseVersionBump := sbtrelease.Version.Bump.Minor
 
