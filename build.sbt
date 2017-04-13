@@ -31,9 +31,37 @@ import scalariform.formatter.preferences._
 //  ) disablePlugins(AssemblyPlugin)
 
 
-organization := "fr.iscpif"
+organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
-crossScalaVersions := Seq("2.11.8", "2.12.1")
+
+crossScalaVersions in ThisBuild := Seq("2.11.8", "2.12.1")
+licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
+homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
+
+publishTo in ThisBuild := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+  else Some("releases" at nexus + "service/local/staging/deploy/maven2")}
+
+pomIncludeRepository in ThisBuild := { _ => false}
+scmInfo in ThisBuild := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
+
+pomExtra in ThisBuild := {
+  <!-- Developer contact information -->
+    <developers>
+      <developer>
+        <id>romainreuillon</id>
+        <name>Romain Reuillon</name>
+        <url>https://github.com/romainreuillon/</url>
+      </developer>
+      <developer>
+        <id>jopasserat</id>
+        <name>Jonathan Passerat-Palmbach</name>
+        <url>https://github.com/jopasserat/</url>
+      </developer>
+    </developers>
+}
+
 
 releaseVersionBump := sbtrelease.Version.Bump.Minor
 
@@ -57,13 +85,9 @@ releaseProcess := Seq[ReleaseStep](
 
 scalariformSettings
 
-
 lazy val javaByteCodeVersion = SettingKey[String]("javaByteCodeVersion")
 
 def settings = Seq (
-  organization := "fr.iscpif",
-  scalaVersion := "2.12.1",
-  crossScalaVersions := Seq("2.11.8", "2.12.1"),
   javaByteCodeVersion :=
     (scalaVersion.value.split('.').take(2).mkString(".") match {
       case "2.10" | "2.11" => "1.7"
@@ -81,7 +105,6 @@ def exportSettings = Seq(exportJars := true)
 lazy val publishDir = settingKey[File]("Publishing directory")
 lazy val publishIpfs = taskKey[Unit]("Publish to IPFS")
 
-
 lazy val defaultSettings =
   settings ++
     scalariformSettings ++ Seq(
@@ -97,37 +120,10 @@ lazy val defaultSettings =
     val dir = new File("/export/ivy/")
     dir.mkdirs()
     dir
-  },
+  }
 
   //publishMavenStyle := false,
   //publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
-
-  licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/")),
-  homepage := Some(url("https://github.com/openmole/gridscale")),
-
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-    else Some("releases" at nexus + "service/local/staging/deploy/maven2")},
-  pomIncludeRepository := { _ => false},
-
-  scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git")),
-
-  pomExtra := {
-    <!-- Developer contact information -->
-    <developers>
-      <developer>
-        <id>romainreuillon</id>
-        <name>Romain Reuillon</name>
-        <url>https://github.com/romainreuillon/</url>
-      </developer>
-      <developer>
-        <id>jopasserat</id>
-        <name>Jonathan Passerat-Palmbach</name>
-        <url>https://github.com/jopasserat/</url>
-      </developer>
-    </developers>
-  }
 )
 
 lazy val examples = (project in file("examples")).settings(settings: _*).
