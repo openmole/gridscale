@@ -30,8 +30,9 @@ import scalariform.formatter.preferences._
 //    publishArtifact := false
 //  ) disablePlugins(AssemblyPlugin)
 
-publish := {}
-PgpKeys.publishSigned := {}
+
+organization := "fr.iscpif"
+name := "gridscale"
 crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 releaseVersionBump := sbtrelease.Version.Bump.Minor
