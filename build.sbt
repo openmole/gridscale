@@ -34,7 +34,8 @@ import scalariform.formatter.preferences._
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-crossScalaVersions in ThisBuild := Seq("2.11.8", "2.12.1")
+scalaVersion in ThisBuild := "2.12.2"
+crossScalaVersions in ThisBuild := Seq("2.11.11", "2.12.2")
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
@@ -228,11 +229,10 @@ lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi")
   libraryDependencies += "com.google.guava" % "guava" % "19.0"
   )
 
-lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
+lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale, sardine) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6" excludeAll (ExclusionRule("org.apache.httpcomponents")),
-  libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
-  libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion)
+  //libraryDependencies += "com.github.lookfirst" % "sardine" % "5.8-SNAPSHOT" excludeAll (ExclusionRule("org.apache.httpcomponents")),
+  libraryDependencies ++= httpComponents)
 
 lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
   libraryDependencies += "net.schmizz" % "sshj" % "0.10.0",
@@ -268,6 +268,10 @@ lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
 lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.50"
 lazy val log4j = "log4j" % "log4j" % "1.2.17"
 
+lazy val httpComponents = Seq(
+  "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
+  "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion)
+
 lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("libraries/glite-security-voms"), settings = defaultSettings) settings(
   libraryDependencies += bouncyCastle,
   libraryDependencies += log4j,
@@ -275,4 +279,9 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
   libraryDependencies += "commons-lang" % "commons-lang" % "2.3",
   libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
   libraryDependencies += "commons-cli" % "commons-cli" % "1.1")
+
+lazy val sardine = Project(id = "sardine", base = file("libraries/sardine"), settings = defaultSettings) settings (
+  libraryDependencies ++= httpComponents,
+  libraryDependencies += "org.apache.ant" % "ant" % "1.9.4" % "provided"
+)
 
