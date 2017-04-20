@@ -32,33 +32,35 @@ object WebDavExample extends App {
 
   val location = new BDII("topbdii.grif.fr", 2170).queryWebDAVLocations("vo.complex-systems.eu").find(_.host.contains("lal")).get
   VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
-  val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "password")
+  val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "dontt0uch!")
 
   val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr"), "vo.complex-systems.eu")
 
   val dav = DPMWebDAVStorage(location)(authentication)
 
-  def dir = "/test/"
-  println(Try(dav.rmDir(dir)))
-  dav.makeDir(dir)
+  println(dav.listProp("/"))
 
-  for (i ← (0 to 10)) {
-    val d = s"$dir/dir$i"
-    dav.makeDir(d)
-    val testFile = s"$d/testdav$i.txt"
-
-    Try {
-      dav.write("Life is great\n".getBytes, testFile)
-
-      val in = dav._read(testFile)
-      try assert(Source.fromInputStream(in).mkString == "Life is great\n", "File content is not right")
-      finally in.close
-    } match {
-      case Failure(e) ⇒
-        println(s"Failed $testFile $e")
-        e.printStackTrace()
-      case Success(_) ⇒ println(s"Written $testFile")
-    }
-  }
+  //  def dir = "/test/"
+  //  println(Try(dav.rmDir(dir)))
+  //  dav.makeDir(dir)
+  //
+  //  for (i ← (0 to 10)) {
+  //    val d = s"$dir/dir$i"
+  //    dav.makeDir(d)
+  //    val testFile = s"$d/testdav$i.txt"
+  //
+  //    Try {
+  //      dav.write("Life is great\n".getBytes, testFile)
+  //
+  //      val in = dav._read(testFile)
+  //      try assert(Source.fromInputStream(in).mkString == "Life is great\n", "File content is not right")
+  //      finally in.close
+  //    } match {
+  //      case Failure(e) ⇒
+  //        println(s"Failed $testFile $e")
+  //        e.printStackTrace()
+  //      case Success(_) ⇒ println(s"Written $testFile")
+  //    }
+  //  }
 
 }

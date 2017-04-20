@@ -56,10 +56,10 @@ object DPMWebDAVStorage {
     Vector(
       "yyyy-MM-dd'T'HH:mm:ss'Z'",
       "EEE, dd MMM yyyy HH:mm:ss zzz",
-      "yyyy-MM-dd'T'HH:mm:ss.sss'Z'",
+      //"yyyy-MM-dd'T'HH:mm:ss.sss'Z'",
       "yyyy-MM-dd'T'HH:mm:ssZ",
       "EEE MMM dd HH:mm:ss zzz yyyy",
-      "EEEEEE, dd-MMM-yy HH:mm:ss zzz",
+//      "EEEEEE, dd-MMM-yy HH:mm:ss zzz",
       "EEE MMMM d HH:mm:ss yyyy"
     ).map(createFormat)
   }
