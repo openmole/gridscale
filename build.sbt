@@ -4,38 +4,11 @@ import osgi.OsgiKeys._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scalariform.formatter.preferences._
 
-
-//lazy val root = (project in file(".")).settings(settings: _*).
-//  aggregate(
-//    gridscale,
-//    gridscaleEGI,
-//    gridscaleHTTP,
-//    gridscaleSSH,
-//    gridscaleCondor,
-//    gridscalePBS,
-//    gridscaleSLURM,
-//    gridscaleSGE,
-//    gridscaleOAR,
-//    gridscaleBundle,
-//    egiBundle,
-//    httpBundle,
-//    sshBundle,
-//    condorBundle,
-//    pbsBundle,
-//    slurmBundle,
-//    sgeBundle,
-//    oarBundle
-//  ) settings(
-//    name := "gridscale-root",
-//    publishArtifact := false
-//  ) disablePlugins(AssemblyPlugin)
-
-
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.1"
-crossScalaVersions in ThisBuild := Seq("2.11.8", "2.12.1")
+scalaVersion in ThisBuild := "2.12.2"
+crossScalaVersions in ThisBuild := Seq("2.11.11", "2.12.2")
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
@@ -96,10 +69,8 @@ def settings = Seq (
       case _ => sbt.fail("unknown scala version " + scalaVersion.value)
     }),
   javacOptions in (Compile, compile) ++= Seq("-source", javaByteCodeVersion.value, "-target", javaByteCodeVersion.value),
-  scalacOptions ++= Seq(
-    s"-target:jvm-${javaByteCodeVersion.value}",
-    "-deprecation"
-  ),
+  scalacOptions += s"-target:jvm-${javaByteCodeVersion.value}",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
   test in assembly := {}
 )
 
@@ -234,9 +205,7 @@ lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi")
 
 lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6" excludeAll (ExclusionRule("org.apache.httpcomponents")),
-  libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
-  libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion)
+  libraryDependencies ++= httpComponents)
 
 lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
   libraryDependencies += "net.schmizz" % "sshj" % "0.10.0",
@@ -260,7 +229,6 @@ lazy val gridscaleSGE = Project(id = "sge", base = file("modules/gridscale-sge")
 lazy val gridscaleOAR = Project(id = "oar", base = file("modules/gridscale-oar"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn(gridscale, gridscaleSSH)
 
 
-
 /* ---------------- Libraries --------------------*/
 
 lazy val jglobusVersion = "2.2.0-20160826"
@@ -271,6 +239,10 @@ lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
 
 lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.50"
 lazy val log4j = "log4j" % "log4j" % "1.2.17"
+
+lazy val httpComponents = Seq(
+  "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
+  "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion)
 
 lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("libraries/glite-security-voms"), settings = defaultSettings) settings(
   libraryDependencies += bouncyCastle,

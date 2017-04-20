@@ -19,6 +19,7 @@ package fr.iscpif.gridscale.storage
 
 import java.io._
 import java.nio.file.Path
+import java.time.{ LocalDate, ZoneId }
 
 object Storage {
   def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
@@ -32,7 +33,11 @@ object Storage {
   def name(path: String) = new File(path).getName
 }
 
-case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Long] = None)
+object ListEntry {
+  def dateFromEpoch(t: Long, zoneId: ZoneId = java.time.ZoneId.systemDefault()) = java.time.Instant.ofEpochMilli(t).atZone(zoneId).toLocalDate()
+}
+
+case class ListEntry(name: String, `type`: FileType, modificationTime: Option[LocalDate] = None)
 
 trait Storage {
 

@@ -20,7 +20,7 @@ package fr.iscpif.gridscale.http
 import java.io.{ IOException, File, InputStream, OutputStream }
 import java.net.{ HttpURLConnection, URI }
 
-import com.github.sardine.impl.methods.HttpPropFind
+import fr.iscpif.gridscale.http.methods.HttpPropFind
 import fr.iscpif.gridscale._
 import fr.iscpif.gridscale.storage._
 import fr.iscpif.gridscale.tools.{ _ }

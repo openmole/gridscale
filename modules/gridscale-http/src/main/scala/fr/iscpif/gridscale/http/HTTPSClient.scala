@@ -16,13 +16,6 @@
  */
 package fr.iscpif.gridscale.http
 
-import com.github.sardine.impl.SardineRedirectStrategy
-import com.github.sardine.impl.methods.HttpPropFind
-import org.apache.http.client.methods.{ RequestBuilder, HttpPut, HttpUriRequest }
-import org.apache.http.protocol.HttpContext
-import org.apache.http.{ HttpStatus, HttpEntityEnclosingRequest, HttpResponse, HttpRequest }
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.config.{ SocketConfig, RegistryBuilder }
 import org.apache.http.conn.socket._
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
