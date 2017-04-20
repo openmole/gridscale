@@ -17,27 +17,20 @@
 package fr.iscpif.gridscale.http
 
 import java.io._
-import java.lang.Thread.UncaughtExceptionHandler
 import java.net.URI
-import java.util.concurrent.{TimeUnit, _}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
-
-import com.github.sardine.DavResource
-import com.github.sardine.impl.handler.MultiStatusResponseHandler
-import com.github.sardine.impl.methods.{HttpMkCol, HttpMove, HttpPropFind}
+import fr.iscpif.gridscale.http.methods._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
-import org.apache.http.client.ResponseHandler
 import org.apache.http.client.methods._
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.DefaultRedirectStrategy
 import org.apache.http.protocol.{HTTP, HttpContext}
+import org.joda.time.format._
 
-import scala.annotation.tailrec
-import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util._
+import scala.xml._
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
@@ -50,6 +43,40 @@ object DPMWebDAVStorage {
       override def timeout = _timeout
     }
   }
+
+  def dateFormats = {
+    def createFormat(f: String) = DateTimeFormat.forPattern(f).withLocale(java.util.Locale.US).withZoneUTC()
+
+    Vector(
+      "yyyy-MM-dd'T'HH:mm:ss'Z'",
+      "EEE, dd MMM yyyy HH:mm:ss zzz",
+      "yyyy-MM-dd'T'HH:mm:ss.sss'Z'",
+      "yyyy-MM-dd'T'HH:mm:ssZ",
+      "EEE MMM dd HH:mm:ss zzz yyyy",
+      "EEEEEE, dd-MMM-yy HH:mm:ss zzz",
+      "EEE MMMM d HH:mm:ss yyyy"
+    ).map(createFormat)
+  }
+
+
+  def parseDate(s: String) =
+    dateFormats.view.flatMap { p ⇒ Try(p.parseDateTime(s).toDate).toOption }.headOption
+
+  case class Prop(
+    displayName: String,
+    isCollection: Boolean,
+    modified: java.util.Date)
+
+  def parseProp(n: Node) =
+    Prop(
+      displayName = n \\ "displayname" text,
+      isCollection = (n \\ "iscollection" text) == "1",
+      modified = parseDate(n \\ "getlastmodified" text).get
+    )
+
+  def parsePropsResponse(r: String) =
+    (XML.loadString(r) \\ "multistatus" \\ "response" \\ "propstat" \\ "prop").map(parseProp)
+
 }
 
 trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
@@ -97,22 +124,21 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     HTTPStorage.execute(httpClient.execute, delete)
   }
 
-  def listProp(path: String)=   withClient { httpClient =>
+  def listProp(path: String) = withClient { httpClient =>
       val entity = new HttpPropFind(fullUrl(path))
       entity.setDepth(1.toString)
       try {
-        val multistatus = httpClient.execute(entity, new MultiStatusResponseHandler)
-        val responses = multistatus.getResponse
-        responses.map(new DavResource(_))
+        val multistatus = httpClient.execute(entity)
+        DPMWebDAVStorage.parsePropsResponse(scala.io.Source.fromInputStream(multistatus.getEntity.getContent).mkString)
       } finally entity.releaseConnection
    }
 
   override def _list(path: String): Seq[ListEntry] = {
     for { r ← listProp(path).drop(1) } yield {
       ListEntry(
-        name = r.getName,
-        `type` = if (r.isDirectory) DirectoryType else FileType,
-        Some(r.getModified.getTime)
+        name = r.displayName,
+        `type` = if (r.isCollection) DirectoryType else FileType,
+        Some(r.modified.getTime)
       )
     }
   }

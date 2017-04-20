@@ -16,8 +16,9 @@
  */
 package fr.iscpif.gridscale.example.egi
 
-import java.io.{ FileOutputStream, File }
+import java.io.{ File, FileOutputStream }
 import java.net.URI
+import java.text.SimpleDateFormat
 
 import fr.iscpif.gridscale.authentication._
 import fr.iscpif.gridscale.http._
@@ -25,10 +26,12 @@ import fr.iscpif.gridscale.egi._
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.glite.voms.contact.UserCredentials
+import org.joda.time.format.{ DateTimeFormat, DateTimeParser }
 
 import scala.concurrent.duration._
 import scala.io.Source
-import scala.util.{ Success, Failure, Try }
+import scala.util.{ Failure, Success, Try }
+import xml.XML
 
 object WebDavExample extends App {
 

@@ -1,3 +1,0 @@
-[submodule "libraries/sardine"]
-	path = libraries/sardine
-	url = https://github.com/lookfirst/sardine.git

@@ -97,6 +97,7 @@ def settings = Seq (
     }),
   javacOptions in (Compile, compile) ++= Seq("-source", javaByteCodeVersion.value, "-target", javaByteCodeVersion.value),
   scalacOptions += s"-target:jvm-${javaByteCodeVersion.value}",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
   test in assembly := {}
 )
 
@@ -229,9 +230,9 @@ lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi")
   libraryDependencies += "com.google.guava" % "guava" % "19.0"
   )
 
-lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale, sardine) settings (
+lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  //libraryDependencies += "com.github.lookfirst" % "sardine" % "5.8-SNAPSHOT" excludeAll (ExclusionRule("org.apache.httpcomponents")),
+  libraryDependencies += jodaTime,
   libraryDependencies ++= httpComponents)
 
 lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
@@ -280,8 +281,5 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
   libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
   libraryDependencies += "commons-cli" % "commons-cli" % "1.1")
 
-lazy val sardine = Project(id = "sardine", base = file("libraries/sardine"), settings = defaultSettings) settings (
-  libraryDependencies ++= httpComponents,
-  libraryDependencies += "org.apache.ant" % "ant" % "1.9.4" % "provided"
-)
+lazy val jodaTime = "joda-time" % "joda-time" % "2.9.9"
 
