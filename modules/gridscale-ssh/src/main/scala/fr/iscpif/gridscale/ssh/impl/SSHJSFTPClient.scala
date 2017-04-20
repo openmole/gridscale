@@ -40,7 +40,11 @@ object SSHJSFTPClient {
             case FileMode.Type.SYMKLINK  ⇒ LinkType
             case _                       ⇒ FileType
           }
-        ListEntry(e.getName, t, Some(e.getAttributes.getMtime))
+        ListEntry(
+          e.getName,
+          t,
+          Some(ListEntry.dateFromEpoch(e.getAttributes.getMtime))
+        )
     }.toList // FIXME is it because the List<> gets converted to a buffer?
   }
 

@@ -18,6 +18,8 @@ package fr.iscpif.gridscale.http
 
 import java.io._
 import java.net.URI
+import java.time.ZoneId
+
 import fr.iscpif.gridscale.http.methods._
 import fr.iscpif.gridscale.storage._
 import org.apache.http._
@@ -35,6 +37,7 @@ case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
 
 
 object DPMWebDAVStorage {
+
   def apply[A: HTTPSAuthentication](location: WebDAVLocation, timeout: Duration = 1 minute)(authentication: A) = {
     val (_location, _timeout) = (location, timeout)
     new DPMWebDAVStorage {
@@ -44,16 +47,39 @@ object DPMWebDAVStorage {
     }
   }
 
+  def gmt = ZoneId.of("GMT")
+
+  private def dateFormats = {
+    import java.time.format._
+    def createFormat(f: String) = DateTimeFormatter.ofPattern(f).withLocale(java.util.Locale.US).withZone(gmt)
+
+    Vector(
+      "yyyy-MM-dd'T'HH:mm:ss'Z'",
+      "EEE, dd MMM yyyy HH:mm:ss zzz",
+      "yyyy-MM-dd'T'HH:mm:ss.sss'Z'",
+      "yyyy-MM-dd'T'HH:mm:ssZ",
+      "EEE MMM dd HH:mm:ss zzz yyyy",
+      "EEEEEE, dd-MMM-yy HH:mm:ss zzz",
+      "EEE MMMM d HH:mm:ss yyyy"
+    ).map(createFormat)
+  }
+
+  private def parseDate(s: String) = {
+    import java.time._
+    dateFormats.view.flatMap { format ⇒ Try { LocalDate.parse(s, format) }.toOption }.headOption
+  }
+
+
   case class Prop(
     displayName: String,
     isCollection: Boolean,
-    modified: java.util.Date)
+    modified: java.time.LocalDate)
 
   def parseProp(n: Node) =
     Prop(
       displayName = n \\ "displayname" text,
       isCollection = (n \\ "iscollection" text) == "1",
-      modified = internal.parseDate(n \\ "getlastmodified" text).get
+      modified = parseDate(n \\ "getlastmodified" text).get
     )
 
   def parsePropsResponse(r: String) =
@@ -120,7 +146,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
       ListEntry(
         name = r.displayName,
         `type` = if (r.isCollection) DirectoryType else FileType,
-        Some(r.modified.getTime)
+        Some(r.modified)
       )
     }
   }
@@ -130,7 +156,7 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
     HTTPStorage.execute(httpClient.execute, delete)
   }
 
-  override def _exists(path: String): Boolean =  withClient { httpClient =>
+  override def _exists(path: String): Boolean = withClient { httpClient =>
     val head = new HttpHead(fullUrl(path))
     try {
       val response = httpClient.execute(head)

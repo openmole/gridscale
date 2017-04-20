@@ -154,15 +154,15 @@ lazy val gridscaleBundle = Project(id = "gridscalebundle", base = file("bundles/
 lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin) settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleEGI, gridscaleBundle, gridscaleHTTP) settings(
   name := "egi",
   importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "!sun.misc", "!org.tukaani.xz.*", "!org.apache.tools.ant.*", "*"),
-  privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "!org.apache.http.*", "!org.apache.commons.codec.*", "!org.joda.*") ++ privatePackage.value,
+  privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value,
   exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*"))
 
 lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin) settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleHTTP, gridscaleBundle) settings (
   name := "http",
   libraryDependencies += "org.apache.httpcomponents" % "httpcore-osgi" % "4.4.4",
   libraryDependencies += "org.osgi" % "org.osgi.compendium" % "4.2.0",
-  importPackage := Seq("!javax.*", "!org.apache.tools.ant.*", "!org.joda.*", "*"),
-  privatePackage := Seq("org.apache.http.entity.mime.*", "!org.apache.http.*", "!org.apache.commons.codec.*", "fr.iscpif.gridscale.http.internal.*") ++ privatePackage.value)
+  importPackage := Seq("!javax.*", "!org.apache.tools.ant.*", "*"),
+  privatePackage := Seq("org.apache.http.entity.mime.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value)
 
 lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleSSH, gridscaleBundle) settings(
   name := "ssh",
@@ -205,7 +205,6 @@ lazy val gridscaleEGI = Project(id = "egi", base = file("modules/gridscale-egi")
 
 lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-http"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += jodaTime,
   libraryDependencies ++= httpComponents)
 
 lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
@@ -252,6 +251,4 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
   libraryDependencies += "commons-lang" % "commons-lang" % "2.3",
   libraryDependencies += "commons-logging" % "commons-logging" % "1.1",
   libraryDependencies += "commons-cli" % "commons-cli" % "1.1")
-
-lazy val jodaTime = "joda-time" % "joda-time" % "2.9.9"
 

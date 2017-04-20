@@ -45,7 +45,7 @@ trait LocalStorage extends Storage {
           else if (f.isDirectory) DirectoryType
           else FileType
 
-        ListEntry(name = f.getName, `type` = ftype, modificationTime = Some(f.lastModified()))
+        ListEntry(name = f.getName, `type` = ftype, modificationTime = Some(ListEntry.dateFromEpoch(f.lastModified())))
     }
 
   def _makeDir(path: String) =
