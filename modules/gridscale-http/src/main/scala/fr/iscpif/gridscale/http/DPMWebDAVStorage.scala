@@ -26,13 +26,13 @@ import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.DefaultRedirectStrategy
 import org.apache.http.protocol.{HTTP, HttpContext}
-import org.joda.time.format._
 
 import scala.concurrent.duration._
 import scala.util._
 import scala.xml._
 
 case class WebDAVLocation(host: String, basePath: String, port: Int = 443)
+
 
 object DPMWebDAVStorage {
   def apply[A: HTTPSAuthentication](location: WebDAVLocation, timeout: Duration = 1 minute)(authentication: A) = {
@@ -44,24 +44,6 @@ object DPMWebDAVStorage {
     }
   }
 
-  def dateFormats = {
-    def createFormat(f: String) = DateTimeFormat.forPattern(f).withLocale(java.util.Locale.US).withZoneUTC()
-
-    Vector(
-      "yyyy-MM-dd'T'HH:mm:ss'Z'",
-      "EEE, dd MMM yyyy HH:mm:ss zzz",
-      "yyyy-MM-dd'T'HH:mm:ss.sss'Z'",
-      "yyyy-MM-dd'T'HH:mm:ssZ",
-      "EEE MMM dd HH:mm:ss zzz yyyy",
-      "EEEEEE, dd-MMM-yy HH:mm:ss zzz",
-      "EEE MMMM d HH:mm:ss yyyy"
-    ).map(createFormat)
-  }
-
-
-  def parseDate(s: String) =
-    dateFormats.view.flatMap { p ⇒ Try(p.parseDateTime(s).toDate).toOption }.headOption
-
   case class Prop(
     displayName: String,
     isCollection: Boolean,
@@ -71,7 +53,7 @@ object DPMWebDAVStorage {
     Prop(
       displayName = n \\ "displayname" text,
       isCollection = (n \\ "iscollection" text) == "1",
-      modified = parseDate(n \\ "getlastmodified" text).get
+      modified = internal.parseDate(n \\ "getlastmodified" text).get
     )
 
   def parsePropsResponse(r: String) =

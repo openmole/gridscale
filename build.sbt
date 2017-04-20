@@ -4,33 +4,6 @@ import osgi.OsgiKeys._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scalariform.formatter.preferences._
 
-
-//lazy val root = (project in file(".")).settings(settings: _*).
-//  aggregate(
-//    gridscale,
-//    gridscaleEGI,
-//    gridscaleHTTP,
-//    gridscaleSSH,
-//    gridscaleCondor,
-//    gridscalePBS,
-//    gridscaleSLURM,
-//    gridscaleSGE,
-//    gridscaleOAR,
-//    gridscaleBundle,
-//    egiBundle,
-//    httpBundle,
-//    sshBundle,
-//    condorBundle,
-//    pbsBundle,
-//    slurmBundle,
-//    sgeBundle,
-//    oarBundle
-//  ) settings(
-//    name := "gridscale-root",
-//    publishArtifact := false
-//  ) disablePlugins(AssemblyPlugin)
-
-
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
@@ -181,15 +154,15 @@ lazy val gridscaleBundle = Project(id = "gridscalebundle", base = file("bundles/
 lazy val egiBundle = Project(id = "egibundle", base = file("bundles/egi"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin) settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleEGI, gridscaleBundle, gridscaleHTTP) settings(
   name := "egi",
   importPackage := Seq("!org.glassfish.grizzly.*", "!org.jboss.*", "!com.google.protobuf.*", "!javax.*", "!com.google.common.util.*", "!sun.misc", "!org.tukaani.xz.*", "!org.apache.tools.ant.*", "*"),
-  privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value,
+  privatePackage := Seq("fr.iscpif.gridscale.libraries.*", "fr.iscpif.gridscale.globushttp.*", "!org.apache.http.*", "!org.apache.commons.codec.*", "!org.joda.*") ++ privatePackage.value,
   exportPackage := exportPackage.value ++ Seq("org.glite.*", "org.globus.*", "org.ogf.*"))
 
 lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin) settings(gridscaleOsgiSettings:_*)  dependsOn (gridscaleHTTP, gridscaleBundle) settings (
   name := "http",
   libraryDependencies += "org.apache.httpcomponents" % "httpcore-osgi" % "4.4.4",
   libraryDependencies += "org.osgi" % "org.osgi.compendium" % "4.2.0",
-  importPackage := Seq("!javax.*", "!org.apache.tools.ant.*", "*"),
-  privatePackage := Seq("org.apache.http.entity.mime.*", "!org.apache.http.*", "!org.apache.commons.codec.*") ++ privatePackage.value)
+  importPackage := Seq("!javax.*", "!org.apache.tools.ant.*", "!org.joda.*", "*"),
+  privatePackage := Seq("org.apache.http.entity.mime.*", "!org.apache.http.*", "!org.apache.commons.codec.*", "fr.iscpif.gridscale.http.internal.*") ++ privatePackage.value)
 
 lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleSSH, gridscaleBundle) settings(
   name := "ssh",
@@ -255,7 +228,6 @@ lazy val gridscaleSGE = Project(id = "sge", base = file("modules/gridscale-sge")
   )
 
 lazy val gridscaleOAR = Project(id = "oar", base = file("modules/gridscale-oar"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn(gridscale, gridscaleSSH)
-
 
 
 /* ---------------- Libraries --------------------*/
