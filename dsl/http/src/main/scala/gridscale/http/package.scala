@@ -44,6 +44,11 @@ package object http {
 
   object HTTP {
 
+    type Method = URI ⇒ HttpRequestBase
+
+    val get: Method = u ⇒ new HttpGet(u)
+    val propFind: Method = u ⇒ new HttpPropFind(u)
+
     def redirectStrategy = new LaxRedirectStrategy {
       override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
         assert(response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST, "Error while redirecting request")
@@ -98,9 +103,10 @@ package object http {
 
     def interpreter = new Interpreter {
 
-      def withInputStream[T](server: Server, path: String, f: InputStream ⇒ T): Try[T] = {
+      def withInputStream[T](server: Server, path: String, f: InputStream ⇒ T, method: URI ⇒ HttpRequestBase): Try[T] = {
         val uri = new URI(server.url + "/" + path)
-        val get = new HttpGet(uri)
+
+        val get = method(uri)
         get.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
 
         import util._
@@ -120,11 +126,11 @@ package object http {
         } yield res
       }
 
-      def request[T](server: Server, path: String, f: java.io.InputStream ⇒ T)(implicit context: Context) = result(withInputStream(server, path, f).toEither.leftMap(t ⇒ HTTPError(t)))
+      def request[T](server: Server, path: String, f: java.io.InputStream ⇒ T, method: HTTP.Method)(implicit context: Context) = result(withInputStream(server, path, f, method).toEither.leftMap(t ⇒ HTTPError(t)))
 
-      def content(server: Server, path: String)(implicit context: Context) = {
+      def content(server: Server, path: String, method: HTTP.Method)(implicit context: Context) = {
         def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
-        withInputStream(server, path, getString).toEither.leftMap(t ⇒ HTTPError(t))
+        withInputStream(server, path, getString, method).toEither.leftMap(t ⇒ HTTPError(t))
       }
 
     }
@@ -135,8 +141,8 @@ package object http {
   }
 
   @dsl trait HTTP[M[_]] {
-    def request[T](server: Server, path: String, f: java.io.InputStream ⇒ T): M[T]
-    def content(server: Server, path: String): M[String]
+    def request[T](server: Server, path: String, f: java.io.InputStream ⇒ T, method: HTTP.Method = HTTP.get): M[T]
+    def content(server: Server, path: String, method: HTTP.Method = HTTP.get): M[String]
   }
 
   sealed trait Server {
@@ -171,8 +177,8 @@ package object http {
   }
 
   def list[M[_]: Monad](server: Server, path: String)(implicit http: HTTP[M]) = http.content(server, path).map(parseHTMLListing)
-  def read[M[_]: Monad](server: Server, path: String)(implicit http: HTTP[M]) = http.content(server, path)
-  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T)(implicit http: HTTP[M]): M[T] = http.request(server, path, f)
+  def read[M[_]: Monad](server: Server, path: String, method: HTTP.Method = HTTP.get)(implicit http: HTTP[M]) = http.content(server, path, method)
+  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T, method: HTTP.Method = HTTP.get)(implicit http: HTTP[M]): M[T] = http.request(server, path, f, method)
 
   object HTTPS {
 

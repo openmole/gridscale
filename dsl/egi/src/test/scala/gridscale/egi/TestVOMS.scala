@@ -4,10 +4,12 @@ import freedsl.dsl._
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import gridscale.http._
+import gridscale.webdav._
 
 object TestVOMS extends App {
 
-  val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), "password")
+  val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
+  val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/CACertificates/")
 
   val intp = merge(HTTP.interpreter, FileSystem.interpreter, ErrorHandler.interpreter)
@@ -21,7 +23,7 @@ object TestVOMS extends App {
         "https://grid05.lal.in2p3.fr/dpm/lal.in2p3.fr/home/vo.complex-systems.eu/",
         factory
       )
-      c ← read[intp.M](webdav, "")
+      c ← listProperties[intp.M](webdav, "/")
     } yield c
 
   println(intp.run(prg).toTry.get)
