@@ -292,13 +292,14 @@ lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), 
 
 lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), settings = dslSettings) dependsOn(gridscaleDSL) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6" excludeAll (ExclusionRule("org.apache.httpcomponents")),
   libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
   libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion
 )
 
-lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
+lazy val gridscaleWebDAVDSL = Project(id = "webdavDSL", base = file("dsl/webdav"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL)
+
+lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL, gridscaleWebDAVDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,

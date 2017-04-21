@@ -8,13 +8,12 @@ import java.security.cert.{ Certificate, CertificateFactory }
 
 import org.apache.commons.codec.binary
 import sun.security.provider.X509Factory
-import sun.security.util.Password
 
 import scala.io.Source
 
 package object http {
 
-  import com.github.sardine.impl.methods.HttpPropFind
+  import gridscale.http.methods._
   import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
   import org.apache.http.client.config.RequestConfig
   import org.apache.http.client.methods.HttpUriRequest
