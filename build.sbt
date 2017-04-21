@@ -7,8 +7,8 @@ import scalariform.formatter.preferences._
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.2"
-crossScalaVersions in ThisBuild := Seq("2.11.11", "2.12.2")
+scalaVersion in ThisBuild := "2.12.1"
+crossScalaVersions in ThisBuild := Seq("2.11.9", "2.12.1")
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
@@ -59,17 +59,16 @@ releaseProcess := Seq[ReleaseStep](
 
 scalariformSettings
 
-lazy val javaByteCodeVersion = SettingKey[String]("javaByteCodeVersion")
+def javaByteCodeVersion(scalaVersion: String) = {
+  val majorVersion = scalaVersion.split('.').take(2).mkString(".")
+  majorVersion match {
+    case "2.10" | "2.11" => "1.7"
+    case "2.12" => "1.8"
+    case _ => sbt.fail("unknown scala version " + majorVersion)
+  }
+}
 
 def settings = Seq (
-  javaByteCodeVersion :=
-    (scalaVersion.value.split('.').take(2).mkString(".") match {
-      case "2.10" | "2.11" => "1.7"
-      case "2.12" => "1.8"
-      case _ => sbt.fail("unknown scala version " + scalaVersion.value)
-    }),
-  javacOptions in (Compile, compile) ++= Seq("-source", javaByteCodeVersion.value, "-target", javaByteCodeVersion.value),
-  scalacOptions += s"-target:jvm-${javaByteCodeVersion.value}",
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
   test in assembly := {}
 )
@@ -273,12 +272,11 @@ lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"
   libraryDependencies += scalaTest,
   libraryDependencies += "fr.iscpif.freedsl" %% "system" % freedslVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "tool" % freedslVersion,
-  libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8",
-  libraryDependencies += "com.jsuereth" %% "scala-arm" % "2.0"
+  libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8"
 )
 
 lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settings = dslSettings) dependsOn (gridscaleDSL) settings (
-  libraryDependencies += "com.hierynomus" % "sshj" % "0.19.0",
+  libraryDependencies += "com.hierynomus" % "sshj" % "0.19.1",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
@@ -296,11 +294,14 @@ lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), set
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "com.github.lookfirst" % "sardine" % "5.6" excludeAll (ExclusionRule("org.apache.httpcomponents")),
   libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
-  libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion
+  libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
+  libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion
 )
 
 lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,
+  libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion,
+  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.50",
   libraryDependencies += "eu.eu-emi.security" % "canl" % "2.4.1"

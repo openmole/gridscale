@@ -22,3 +22,4 @@ nbactions.xml
 .settings/
 .settings/*
 *.bak
+dsl/egi/src/test/scala/gridscale/egi/
