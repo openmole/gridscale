@@ -13,14 +13,17 @@ object TestVOMS extends App {
   val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
   val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/CACertificates/")
+  val bdii = BDII.Server("topbdii.grif.fr", 2170)
 
-  val intp = merge(HTTP.interpreter, FileSystem.interpreter, ErrorHandler.interpreter)
+  val intp = merge(HTTP.interpreter, FileSystem.interpreter, ErrorHandler.interpreter, BDII.interpreter)
   import intp.implicits._
 
   val prg =
     for {
       proxy ← VOMS.proxy[intp.M]("voms.hellasgrid.gr:15160", p12, certificateDirectory)
       factory ← VOMS.sockerFactory(proxy)
+      webdavs ← BDII[intp.M].webDAVs(bdii, "vo.complex-systems.eu")
+      webdavLocation = webdavs.find(_.contains("lal"))
       webdav = HTTPSServer(
         "https://grid05.lal.in2p3.fr/dpm/lal.in2p3.fr/home/vo.complex-systems.eu/",
         factory

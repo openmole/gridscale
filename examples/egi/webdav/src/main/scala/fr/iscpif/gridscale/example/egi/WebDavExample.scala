@@ -32,7 +32,7 @@ object WebDavExample extends App {
 
   val location = new BDII("topbdii.grif.fr", 2170).queryWebDAVLocations("vo.complex-systems.eu").find(_.host.contains("lal")).get
   VOMSAuthentication.setCARepository(new File("/home/reuillon/.openmole/simplet/CACertificates"))
-  val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "dontt0uch!")
+  val p12 = P12Authentication(new File("/home/reuillon/.globus/certificate.p12"), "")
 
   val authentication = P12VOMSAuthentication(p12, 24 hours, Seq("voms://voms.hellasgrid.gr:15160/C=GR/O=HellasGrid/OU=hellasgrid.gr/CN=voms.hellasgrid.gr"), "vo.complex-systems.eu")
 

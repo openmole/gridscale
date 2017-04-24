@@ -142,8 +142,11 @@ package object http {
               (putInstance, headers, Some(stream))
           }
 
-        headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
         methodInstance.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
+        headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
+
+        // For some reason this make the header be effectively present in the method
+        methodInstance.getAllHeaders
 
         import util._
 
