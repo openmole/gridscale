@@ -22,12 +22,8 @@ object TestVOMS extends App {
     for {
       proxy ← VOMS.proxy[intp.M]("voms.hellasgrid.gr:15160", p12, certificateDirectory)
       factory ← VOMS.sockerFactory(proxy)
-      webdavs ← BDII[intp.M].webDAVs(bdii, "vo.complex-systems.eu")
-      webdavLocation = webdavs.find(_.contains("lal"))
-      webdav = HTTPSServer(
-        "https://grid05.lal.in2p3.fr/dpm/lal.in2p3.fr/home/vo.complex-systems.eu/",
-        factory
-      )
+      lal ← BDII[intp.M].webDAVs(bdii, "vo.complex-systems.eu").map(_.find(_.contains("lal")).get)
+      webdav = HTTPSServer(lal, factory)
       c ← listProperties[intp.M](webdav, "/")
       _ ← rmFile[intp.M](webdav, "youpi.txt")
       _ ← writeStream[intp.M](webdav, "youpi.txt", () ⇒ new ByteArrayInputStream("youpi doky\n".getBytes))

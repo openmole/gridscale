@@ -55,23 +55,6 @@ package object http {
     case class Delete(headers: Headers = Seq.empty) extends Method
     case class Put(inputsStream: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
 
-    //    object Method {
-    //      def apply[T](f: URI ⇒ (HttpRequestBase, T), c: T => Unit = (t: T) => {}): Method[T] =
-    //        new Method[T] {
-    //          def open(uri: URI) = f(uri)
-    //          def close(t: T) = c(t)
-    //        }
-    //    }
-    //
-    //    trait Method[T] {
-    //      def open(uri: URI): (HttpRequestBase, T)
-    //      def close(t: T): Unit
-    //    }
-    //
-    //    def get = Method(u ⇒ new HttpGet(u))
-    //    def propFind = Method(u ⇒ new HttpPropFind(u))
-    //    def delete = Method(u ⇒ new HttpDelete(u))
-
     def redirectStrategy = new LaxRedirectStrategy {
       override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
         assert(response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST, "Error while redirecting request")
@@ -145,9 +128,6 @@ package object http {
         methodInstance.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
         headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
 
-        // For some reason this make the header be effectively present in the method
-        methodInstance.getAllHeaders
-
         import util._
 
         Try {
@@ -175,7 +155,7 @@ package object http {
 
     }
 
-    case class HTTPError(t: Throwable) extends Error {
+    case class HTTPError(t: Throwable) extends Exception(t) with Error {
       override def toString = "HTTP error: " + t.toString
     }
   }
