@@ -25,7 +25,6 @@ package object webdav {
   def readStream[M[_]: Monad: http.HTTP, T](server: http.Server, path: String, f: InputStream ⇒ T): M[T] = http.readStream[M, T](server, path, f)
 
   def writeStream[M[_]: Monad: http.HTTP](server: http.Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true) = {
-
     def redirectedServer =
       if (!redirect) server.pure[M]
       else
@@ -85,7 +84,9 @@ package object webdav {
       (XML.loadString(r) \\ "multistatus" \\ "response" \\ "propstat" \\ "prop").map(parseProp)
 
     def emptyStream() = new java.io.ByteArrayInputStream(Array())
-    def getRedirectURI(put: HttpRequest, redirect: HttpResponse) = new DefaultRedirectStrategy().getLocationURI(put, redirect, new HttpClientContext())
+    def getRedirectURI(put: HttpRequest, redirect: HttpResponse) =
+      new DefaultRedirectStrategy().getLocationURI(put, redirect, new HttpClientContext())
+
     def doNothing(put: HttpRequest, redirect: HttpResponse) = {}
 
   }

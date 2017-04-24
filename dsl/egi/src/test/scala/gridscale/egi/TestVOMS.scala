@@ -25,8 +25,8 @@ object TestVOMS extends App {
       lal ← BDII[intp.M].webDAVs(bdii, "vo.complex-systems.eu").map(_.find(_.contains("lal")).get)
       webdav = HTTPSServer(lal, factory)
       c ← listProperties[intp.M](webdav, "/")
-      _ ← rmFile[intp.M](webdav, "youpi.txt")
-      _ ← writeStream[intp.M](webdav, "youpi.txt", () ⇒ new ByteArrayInputStream("youpi doky\n".getBytes))
+      _ ← rmFile[intp.M](webdav, "/youpi.txt")
+      _ ← writeStream[intp.M](webdav, "/youpi.txt", () ⇒ new ByteArrayInputStream("youpi doky\n".getBytes))
     } yield c
 
   println(intp.run(prg).toTry.get)

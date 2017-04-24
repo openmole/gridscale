@@ -103,9 +103,8 @@ package object http {
       response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
         response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
 
-    def testResponse(response: HttpResponse) = Try {
+    def testResponse(response: HttpResponse) =
       if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
-    }
 
     def interpreter = new Interpreter {
 
@@ -127,7 +126,7 @@ package object http {
 
         methodInstance.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
         headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
-
+        
         import util._
 
         Try {
