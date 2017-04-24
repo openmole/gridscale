@@ -7,8 +7,8 @@ import scalariform.formatter.preferences._
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.1"
-crossScalaVersions in ThisBuild := Seq("2.11.9", "2.12.1")
+scalaVersion in ThisBuild := "2.12.2"
+crossScalaVersions in ThisBuild := Seq("2.11.11", "2.12.2")
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
@@ -254,10 +254,9 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
 
 /* -------------- gridscale dsl ------------------ */
 
-def freedslVersion = "0.10"
+def freedslVersion = "0.11"
 
 def dslSettings = defaultSettings ++ Seq(
-  scalaOrganization := "org.typelevel",
   scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.freedsl" %% "dsl" % freedslVersion,
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.0.0",

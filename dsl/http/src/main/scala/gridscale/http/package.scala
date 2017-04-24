@@ -7,6 +7,9 @@ import java.security.PrivateKey
 import java.security.cert.{ Certificate, CertificateFactory }
 
 import org.apache.commons.codec.binary
+import org.apache.http.client
+import org.apache.http.client.methods
+import org.apache.http.entity.InputStreamEntity
 import sun.security.provider.X509Factory
 
 import scala.io.Source
@@ -44,10 +47,30 @@ package object http {
 
   object HTTP {
 
-    type Method = URI ⇒ HttpRequestBase
+    type Headers = Seq[(String, String)]
 
-    val get: Method = u ⇒ new HttpGet(u)
-    val propFind: Method = u ⇒ new HttpPropFind(u)
+    sealed trait Method
+    case class Get(headers: Headers = Seq.empty) extends Method
+    case class PropFind(headers: Headers = Seq.empty) extends Method
+    case class Delete(headers: Headers = Seq.empty) extends Method
+    case class Put(inputsStream: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
+
+    //    object Method {
+    //      def apply[T](f: URI ⇒ (HttpRequestBase, T), c: T => Unit = (t: T) => {}): Method[T] =
+    //        new Method[T] {
+    //          def open(uri: URI) = f(uri)
+    //          def close(t: T) = c(t)
+    //        }
+    //    }
+    //
+    //    trait Method[T] {
+    //      def open(uri: URI): (HttpRequestBase, T)
+    //      def close(t: T): Unit
+    //    }
+    //
+    //    def get = Method(u ⇒ new HttpGet(u))
+    //    def propFind = Method(u ⇒ new HttpPropFind(u))
+    //    def delete = Method(u ⇒ new HttpDelete(u))
 
     def redirectStrategy = new LaxRedirectStrategy {
       override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
@@ -58,7 +81,7 @@ package object http {
       override protected def isRedirectable(method: String) =
         method match {
           case HttpPropFind.METHOD_NAME ⇒ true
-          //  case HttpPut.METHOD_NAME      ⇒ true
+          case HttpPut.METHOD_NAME      ⇒ true
           case _                        ⇒ super.isRedirectable(method)
         }
     }
@@ -66,7 +89,7 @@ package object http {
     def client(server: Server) =
       server match {
         case s: HTTPServer  ⇒ httpClient(s.timeout)
-        case s: HTTPSServer ⇒ HTTPS.newClient(s.sockerFactor, s.timeout)
+        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout)
       }
 
     def requestConfig(timeout: Time) =
@@ -103,34 +126,48 @@ package object http {
 
     def interpreter = new Interpreter {
 
-      def withInputStream[T](server: Server, path: String, f: InputStream ⇒ T, method: URI ⇒ HttpRequestBase): Try[T] = {
-        val uri = new URI(server.url + "/" + path)
+      def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method): Try[T] = {
+        val uri = new URI(server.url + path)
 
-        val get = method(uri)
-        get.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
+        val (methodInstance, headers, closeable) =
+          method match {
+            case Get(headers)      ⇒ (new HttpGet(uri), headers, None)
+            case PropFind(headers) ⇒ (new HttpPropFind(uri), headers, None)
+            case Delete(headers)   ⇒ (new HttpDelete(uri), headers, None)
+            case Put(fis, headers) ⇒
+              val stream = fis()
+              val putInstance = new HttpPut(uri)
+              val entity = new InputStreamEntity(stream, -1)
+              putInstance.setEntity(entity)
+              (putInstance, headers, Some(stream))
+          }
+
+        headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
+        methodInstance.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
 
         import util._
 
-        for {
-          httpClient ← Try(client(server))
-          response ← Try(httpClient.execute(get))
-          _ ← Try(testResponse(response))
-          stream ← Try(response.getEntity.getContent)
-          res ← Try(f(stream))
-          _ ← Try {
-            stream.close()
-            get.releaseConnection()
-            response.close()
-            httpClient.close()
-          }
-        } yield res
+        Try {
+          try {
+            val httpClient = client(server)
+            try {
+              val response = httpClient.execute(methodInstance)
+              try {
+                testResponse(response)
+                f(methodInstance, response)
+              } finally response.close()
+            } finally httpClient.close()
+          } finally closeable.foreach(_.close)
+        }
       }
 
-      def request[T](server: Server, path: String, f: java.io.InputStream ⇒ T, method: HTTP.Method)(implicit context: Context) = result(withInputStream(server, path, f, method).toEither.leftMap(t ⇒ HTTPError(t)))
+      def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method)(implicit context: Context) =
+        result(withInputStream(server, path, f, method).toEither.leftMap(t ⇒ HTTPError(t)))
 
       def content(server: Server, path: String, method: HTTP.Method)(implicit context: Context) = {
         def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
-        withInputStream(server, path, getString, method).toEither.leftMap(t ⇒ HTTPError(t))
+        def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
+        withInputStream(server, path, (_, r) ⇒ getContent(r), method).toEither.leftMap(t ⇒ HTTPError(t))
       }
 
     }
@@ -141,8 +178,8 @@ package object http {
   }
 
   @dsl trait HTTP[M[_]] {
-    def request[T](server: Server, path: String, f: java.io.InputStream ⇒ T, method: HTTP.Method = HTTP.get): M[T]
-    def content(server: Server, path: String, method: HTTP.Method = HTTP.get): M[String]
+    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method): M[T]
+    def content(server: Server, path: String, method: HTTP.Method = HTTP.Get()): M[String]
   }
 
   sealed trait Server {
@@ -151,7 +188,15 @@ package object http {
     def bufferSize: Information
   }
   case class HTTPServer(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) extends Server
-  case class HTTPSServer(url: String, sockerFactor: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) extends Server
+  case class HTTPSServer(url: String, socketFactory: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) extends Server
+
+  object Server {
+    def copy(s: Server)(url: String = s.url) =
+      s match {
+        case s: HTTPServer  ⇒ s.copy(url = url)
+        case s: HTTPSServer ⇒ s.copy(url = url)
+      }
+  }
 
   def parseHTMLListing(page: String) = {
     val parser = new Parser
@@ -177,8 +222,9 @@ package object http {
   }
 
   def list[M[_]: Monad](server: Server, path: String)(implicit http: HTTP[M]) = http.content(server, path).map(parseHTMLListing)
-  def read[M[_]: Monad](server: Server, path: String, method: HTTP.Method = HTTP.get)(implicit http: HTTP[M]) = http.content(server, path, method)
-  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T, method: HTTP.Method = HTTP.get)(implicit http: HTTP[M]): M[T] = http.request(server, path, f, method)
+  def read[M[_]: Monad](server: Server, path: String, method: HTTP.Method = HTTP.Get())(implicit http: HTTP[M]) = http.content(server, path, method)
+  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T, method: HTTP.Method = HTTP.Get())(implicit http: HTTP[M]): M[T] =
+    http.request(server, path, (_, r) ⇒ f(r.getEntity.getContent), method)
 
   object HTTPS {
 

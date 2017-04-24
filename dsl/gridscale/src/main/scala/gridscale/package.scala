@@ -1,3 +1,5 @@
+import java.io.InputStream
+
 import cats.data.Kleisli
 
 import scala.language.{ higherKinds, postfixOps }

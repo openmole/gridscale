@@ -1,5 +1,7 @@
 package gridscale.egi
 
+import java.io.ByteArrayInputStream
+
 import freedsl.dsl._
 import freedsl.errorhandler._
 import freedsl.filesystem._
@@ -24,6 +26,8 @@ object TestVOMS extends App {
         factory
       )
       c ← listProperties[intp.M](webdav, "/")
+      _ ← rmFile[intp.M](webdav, "youpi.txt")
+      _ ← writeStream[intp.M](webdav, "youpi.txt", () ⇒ new ByteArrayInputStream("youpi doky\n".getBytes))
     } yield c
 
   println(intp.run(prg).toTry.get)
