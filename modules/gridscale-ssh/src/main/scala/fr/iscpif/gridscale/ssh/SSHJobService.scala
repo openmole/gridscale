@@ -150,7 +150,7 @@ trait SSHJobService extends JobService with SSHHost with SSHStorage with BashShe
 
   def delete(job: J) = Try {
     withConnection { implicit connection ⇒
-      val kill = s"kill `cat ${pidFile(job.workDirectory, job.jobId)}`;"
+      val kill = s"kill -9 `cat ${pidFile(job.workDirectory, job.jobId)}`;"
       val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
       try {
         val (ret, out, err) = execReturnCodeOutput(kill)
