@@ -31,7 +31,11 @@ trait BashShell <: Shell {
     // resulting in is this combination...
     override def toString =
       s"""
-        |bash -ci bash <<EOF
+        |env -i bash <<EOF
+        |source /etc/profile 2>/dev/null
+        |source ~/.bash_profile 2>/dev/null
+        |source ~/.bash_login 2>/dev/null
+        |source ~/.profile 2>/dev/null
         |$cmd
         |EOF
       """.stripMargin
