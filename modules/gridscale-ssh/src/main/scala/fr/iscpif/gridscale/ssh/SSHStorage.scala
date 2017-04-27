@@ -84,7 +84,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
   }
 
   def _list(path: String) = withSftpClient {
-    _.ls(path)(e ⇒ e == "." || e == "..")
+    _.ls(path)(e ⇒ e != "." || e != "..")
   }
 
   def _makeDir(path: String) = withSftpClient {

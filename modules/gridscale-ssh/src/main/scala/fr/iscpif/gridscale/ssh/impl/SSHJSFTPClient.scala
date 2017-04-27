@@ -30,9 +30,7 @@ object SSHJSFTPClient {
 
   def ls(path: String)(predicate: String ⇒ Boolean)(implicit sshjSFTPClient: SFTPClient): List[ListEntry] = {
 
-    sshjSFTPClient.ls(path).filterNot(e ⇒ {
-      predicate(e.getName)
-    }).map {
+    sshjSFTPClient.ls(path).filter(e ⇒ predicate(e.getName)).map {
       e ⇒
         val t =
           e.getAttributes.getType match {
