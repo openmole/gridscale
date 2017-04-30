@@ -19,6 +19,7 @@ package fr.iscpif.gridscale.http
 import java.io._
 import java.net.URI
 import java.time.ZoneId
+import java.util.concurrent.TimeoutException
 
 import fr.iscpif.gridscale.http.methods._
 import fr.iscpif.gridscale.storage._
@@ -169,6 +170,15 @@ trait DPMWebDAVStorage <: HTTPSClient with Storage { dav ⇒
         }
       } finally response.close()
     } finally head.releaseConnection()
+  }
+
+
+  override def errorWrapping(operation: String, t: Throwable): Throwable = {
+    t match {
+      case e: org.apache.http.conn.ConnectTimeoutException => new fr.iscpif.gridscale.ConnectionError(operation, e)
+      case _ => super.errorWrapping(operation, t)
+    }
+
   }
 
   override def toString = fullUrl("")

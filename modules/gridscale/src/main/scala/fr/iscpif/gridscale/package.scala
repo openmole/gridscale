@@ -44,4 +44,6 @@ package object gridscale {
 
   implicit val nothingImplicit: Unit = Unit
 
+  class ConnectionError(message: String, cause: Throwable) extends Exception(message, cause)
+
 }
