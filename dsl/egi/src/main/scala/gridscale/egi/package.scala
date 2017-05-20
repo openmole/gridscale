@@ -1,5 +1,27 @@
 package gridscale
 
+import java.io.ByteArrayInputStream
+import java.math.BigInteger
+import java.security.{ KeyPair, KeyPairGenerator, Security }
+import java.util.{ Calendar, GregorianCalendar, TimeZone }
+import javax.net.ssl.{ SSLContext, SSLSocket }
+
+//import eu.emi.security.authn.x509.X509CertChainValidatorExt
+//import eu.emi.security.authn.x509.helpers.BinaryCertChainValidator
+//import eu.emi.security.authn.x509.impl.X500NameUtils
+//import org.bouncycastle.asn1.pkcs.CertificationRequest
+
+//import eu.emi.security.authn.x509.helpers.proxy.{ ProxyHelper, RFCProxyCertInfoExtension }
+import gridscale.http.HTTPS.KeyStoreOperations
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
+
+import scala.concurrent.duration.Duration
+
+//import eu.emi.security.authn.x509.impl.CertificateUtils
+//import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding
+import org.bouncycastle.asn1.x509.AttributeCertificate
+
 package object egi {
 
   import java.security.{ KeyStore, PrivateKey }
@@ -318,7 +340,7 @@ package object egi {
     import cats.instances.all._
     import cats.syntax.all._
 
-    case class Proxy(ac: String, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate])
+    case class VOMSCredential(certificate: HTTPS.KeyStoreOperations.Credential, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate], ending: java.util.Date)
 
     case class ProxyError(reason: Reason, message: Option[String]) extends Throwable {
       override def toString = s"${reason}: ${message.getOrElse("No message")}"
@@ -344,8 +366,10 @@ package object egi {
       voms: String,
       p12: P12Authentication,
       certificateDirectory: java.io.File,
-      lifetime: Option[Int] = None,
-      fquan: Option[String] = None): M[Proxy] = {
+      lifetime: Time = 24 hours,
+      fquan: Option[String] = None) = {
+
+      case class VOMSProxy(ac: String, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate])
 
       def parseAC(s: String, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate]) = {
         val xml = scala.xml.XML.loadString(s)
@@ -353,7 +377,7 @@ package object egi {
         def error = (xml \\ "voms" \\ "error")
 
         content match {
-          case Some(c) ⇒ util.Success(Proxy(c, p12, serverCertificates))
+          case Some(c) ⇒ util.Success(VOMSProxy(c, p12, serverCertificates))
           case None ⇒
             def message = (error \\ "message").headOption.map(_.text)
 
@@ -367,45 +391,119 @@ package object egi {
         }
       }
 
+      def credential(proxy: VOMSProxy) = {
+        import org.bouncycastle.asn1.x500.{ X500Name, X500NameStyle }
+        import org.bouncycastle.asn1.x500.style.RFC4519Style
+        import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
+        import org.bouncycastle.jce.provider.BouncyCastleProvider
+
+        import org.apache.commons.codec.binary.Base64
+        import org.bouncycastle.asn1._
+        import org.bouncycastle.asn1.x509._
+        import java.security.Security
+
+        val acBytes = new Base64().decode(proxy.ac.trim().replaceAll("\n", ""))
+        val asn1InputStream = new ASN1InputStream(acBytes)
+        val asn1Object = asn1InputStream.readObject()
+        val attributeCertificate = AttributeCertificate.getInstance(asn1Object)
+        asn1InputStream.close()
+
+        val cred = P12Authentication.loadPKCS12Credentials(proxy.p12)
+
+        import org.bouncycastle.cert.X509v3CertificateBuilder
+        Security.addProvider(new BouncyCastleProvider)
+
+        val keys = KeyPairGenerator.getInstance("RSA", "BC")
+        keys.initialize(1024)
+        val pair = keys.genKeyPair
+
+        val number = Math.abs(scala.util.Random.nextLong)
+        val serial: BigInteger = new BigInteger(String.valueOf(Math.abs(number)))
+        val issuer: X500Name = new X500Name(RFC4519Style.INSTANCE, cred.certificate.getSubjectDN.getName)
+
+        val now = new java.util.Date()
+        val notBefore: Time = {
+          val notBeforeDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"))
+          notBeforeDate.setGregorianChange(now)
+          notBeforeDate.add(Calendar.MINUTE, -5)
+          new Time(notBeforeDate.getTime)
+        }
+
+        val (notAfter, notAfterDate) = {
+          val notAfterDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"))
+          notAfterDate.setGregorianChange(now)
+          notAfterDate.add(Calendar.SECOND, lifetime.toSeconds.toInt)
+          (new Time(notAfterDate.getTime), notAfterDate.getTime)
+        }
+
+        import org.bouncycastle.asn1.x500.X500NameBuilder
+
+        val subject = new X500Name(RFC4519Style.INSTANCE, cred.certificate.getSubjectDN.getName)
+        val builder = new X500NameBuilder(RFC4519Style.INSTANCE)
+        subject.getRDNs.foreach(rdn ⇒ builder.addMultiValuedRDN(rdn.getTypesAndValues))
+        builder.addRDN(RFC4519Style.cn, number.toString)
+
+        import org.bouncycastle.asn1.ASN1Sequence
+        import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+        val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(pair.getPublic.getEncoded))
+
+        val certGen = new X509v3CertificateBuilder(
+          issuer,
+          serial,
+          notBefore,
+          notAfter,
+          builder.build(),
+          subjectPublicKeyInfo)
+
+        val acVector = new ASN1EncodableVector
+        acVector.add(attributeCertificate)
+        val seqac = new DERSequence(acVector)
+        val seqacwrap = new DERSequence(seqac)
+
+        certGen.addExtension(new ASN1ObjectIdentifier("1.3.6.1.4.1.8005.100.100.5").intern(), false, seqacwrap)
+
+        val PROXY_CERT_INFO_V4_OID: String = "1.3.6.1.5.5.7.1.14"
+        val IMPERSONATION = new ASN1ObjectIdentifier("1.3.6.1.5.5.7.21.1")
+        val INDEPENDENT = new ASN1ObjectIdentifier("1.3.6.1.5.5.7.21.2")
+        val LIMITED = new ASN1ObjectIdentifier("1.3.6.1.4.1.3536.1.1.1.9")
+
+        val proxyTypeVector = new ASN1EncodableVector
+        proxyTypeVector.add(IMPERSONATION)
+        certGen.addExtension(new ASN1ObjectIdentifier(PROXY_CERT_INFO_V4_OID).intern(), true, new DERSequence(new DERSequence(proxyTypeVector)))
+
+        import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
+        val sigGen = new JcaContentSignerBuilder("SHA512WithRSAEncryption").setProvider("BC").build(cred.key)
+
+        val certificateHolder = certGen.build(sigGen)
+        val generatedCertificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certificateHolder)
+
+        (HTTPS.KeyStoreOperations.Credential(pair.getPrivate, Vector(generatedCertificate) ++ cred.chain.toVector, proxy.p12.password), notAfterDate)
+      }
+
       val options =
         List(
-          lifetime.map("lifetime=" + _),
+          Some("lifetime=" + lifetime.toSeconds.toLong),
           fquan.map("fquans=" + _)
         ).flatten.mkString("&")
 
-      val location = s"generate-ac${if (!options.isEmpty) "?" + options else ""}"
+      val location = s"/generate-ac${if (!options.isEmpty) "?" + options else ""}"
 
       for {
         userCertificate ← HTTPS.readP12[M](p12.certificate, p12.password).flatMap(r ⇒ ErrorHandler[M].get(r))
         certificates ← serverCertificates[M](certificateDirectory)
         factory ← ErrorHandler[M].get(HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password))
-        server = HTTPSServer(s"https://$voms/", factory)
+        server = HTTPSServer(s"https://$voms", factory)
         content ← HTTP[M].content(server, location)
         proxy ← ErrorHandler[M].get(parseAC(content, p12, certificates))
-      } yield proxy
-
-    }
-
-    def sockerFactory[M[_]: HTTP: ErrorHandler](proxy: VOMS.Proxy) = {
-      import org.apache.commons.codec.binary.Base64
-      import org.bouncycastle.asn1._
-      import org.bouncycastle.asn1.x509._
-      import eu.emi.security.authn.x509.proxy._
-
-      def certificate = {
-        val acBytes = new Base64().decode(proxy.ac.trim().replaceAll("\n", ""))
-        val asn1InputStream = new ASN1InputStream(acBytes)
-        val attributeCertificate = AttributeCertificate.getInstance(asn1InputStream.readObject)
-        asn1InputStream.close()
-        val cred = P12Authentication.loadPKCS12Credentials(proxy.p12)
-        val proxyOptions = new ProxyCertificateOptions(cred.chain)
-        proxyOptions.setAttributeCertificates(Array[AttributeCertificate](attributeCertificate))
-        val proxyKS = ProxyGenerator.generate(proxyOptions, cred.key).getCredential
-        HTTPS.KeyStoreOperations.Credential(proxyKS.getKey, proxyKS.getCertificateChain.toVector, proxy.p12.password)
+      } yield {
+        val (cred, notAfter) = credential(proxy)
+        VOMSCredential(cred, p12, certificates, notAfter)
       }
 
-      ErrorHandler[M].get(HTTPS.socketFactory(Vector(certificate) ++ proxy.serverCertificates, proxy.p12.password))
     }
+
+    def socketFactory[M[_]: HTTP: ErrorHandler](credential: VOMSCredential) =
+      ErrorHandler[M].get(HTTPS.socketFactory(Vector(credential.certificate) ++ credential.serverCertificates, credential.p12.password))
 
     import squants.time.TimeConversions._
 

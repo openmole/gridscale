@@ -7,6 +7,7 @@ import java.io.{ ByteArrayInputStream, InputStream }
 
 import org.apache.http.{ HttpRequest, HttpResponse }
 import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.DefaultRedirectStrategy
 
 package object webdav {
@@ -21,6 +22,8 @@ package object webdav {
   def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path, http.HTTP.Delete())
   def rmDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path, http.HTTP.Delete(headers = Seq("Depth" -> "infinity")))
 
+  def mkDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path, http.HTTP.MkCol())
+
   def read[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path)
   def readStream[M[_]: Monad: http.HTTP, T](server: http.Server, path: String, f: InputStream ⇒ T): M[T] = http.readStream[M, T](server, path, f)
 
@@ -29,8 +32,8 @@ package object webdav {
       if (!redirect) server.pure[M]
       else
         for {
-          diskURI ← http.HTTP[M].request(server, path, WebDAV.getRedirectURI, http.HTTP.Put(WebDAV.emptyStream))
-          destination = http.Server.copy(server)(url = diskURI.toString)
+          diskURI ← http.HTTP[M].request(server, path, WebDAV.getRedirectURI, http.HTTP.Put(() ⇒ WebDAV.emptyStream(), headers = Seq(http.HTTP.Headers.expectContinue)))
+          destination = http.Server.copy(server)(url = diskURI)
         } yield destination
 
     for {

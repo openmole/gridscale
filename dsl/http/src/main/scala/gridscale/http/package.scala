@@ -49,25 +49,16 @@ package object http {
 
     type Headers = Seq[(String, String)]
 
+    object Headers {
+      def expectContinue = (org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
+    }
+
     sealed trait Method
     case class Get(headers: Headers = Seq.empty) extends Method
     case class PropFind(headers: Headers = Seq.empty) extends Method
     case class Delete(headers: Headers = Seq.empty) extends Method
-    case class Put(inputsStream: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
-
-    def redirectStrategy = new LaxRedirectStrategy {
-      override def getRedirect(request: HttpRequest, response: HttpResponse, context: HttpContext): HttpUriRequest = {
-        assert(response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST, "Error while redirecting request")
-        super.getRedirect(request, response, context)
-      }
-
-      override protected def isRedirectable(method: String) =
-        method match {
-          case HttpPropFind.METHOD_NAME ⇒ true
-          case HttpPut.METHOD_NAME      ⇒ true
-          case _                        ⇒ super.isRedirectable(method)
-        }
-    }
+    case class Put(entity: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
+    case class MkCol(headers: Headers = Seq.empty) extends Method
 
     def client(server: Server) =
       server match {
@@ -77,22 +68,22 @@ package object http {
 
     def requestConfig(timeout: Time) =
       RequestConfig.custom()
-        .setSocketTimeout(timeout.millis.toInt)
-        .setConnectTimeout(timeout.millis.toInt)
-        .setConnectionRequestTimeout(timeout.millis.toInt)
+        .setSocketTimeout(timeout.toMillis.toInt)
+        .setConnectTimeout(timeout.toMillis.toInt)
+        .setConnectionRequestTimeout(timeout.toMillis.toInt)
         .build()
 
     def httpClient(timeout: Time) = {
       def connectionManager(timeout: Time) = {
         val client = new BasicHttpClientConnectionManager()
-        val socketConfig = SocketConfig.custom().setSoTimeout(timeout.millis.toInt).build()
+        val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
         client.setSocketConfig(socketConfig)
         client
       }
 
       def newClient(timeout: Time) =
         HttpClients.custom().
-          setRedirectStrategy(redirectStrategy).
+          //setRedirectStrategy(redirectStrategy).
           setConnectionManager(connectionManager(timeout)).
           setDefaultRequestConfig(requestConfig(timeout)).build()
 
@@ -109,24 +100,24 @@ package object http {
     def interpreter = new Interpreter {
 
       def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method): Try[T] = {
-        val uri = new URI(server.url + path)
+        val uri =
+          if (path.isEmpty) server.url else new URI(server.url.toString + path)
 
         val (methodInstance, headers, closeable) =
           method match {
             case Get(headers)      ⇒ (new HttpGet(uri), headers, None)
             case PropFind(headers) ⇒ (new HttpPropFind(uri), headers, None)
             case Delete(headers)   ⇒ (new HttpDelete(uri), headers, None)
-            case Put(fis, headers) ⇒
-              val stream = fis()
+            case MkCol(headers)    ⇒ (new HttpMkCol(uri), headers, None)
+            case Put(is, headers) ⇒
               val putInstance = new HttpPut(uri)
-              val entity = new InputStreamEntity(stream, -1)
-              putInstance.setEntity(entity)
-              (putInstance, headers, Some(stream))
+              val createdStream = is()
+              putInstance.setEntity(new InputStreamEntity(createdStream))
+              (putInstance, headers, Some(createdStream))
           }
 
-        methodInstance.addHeader(org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
         headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
-        
+
         import util._
 
         Try {
@@ -139,7 +130,7 @@ package object http {
                 f(methodInstance, response)
               } finally response.close()
             } finally httpClient.close()
-          } finally closeable.foreach(_.close)
+          } finally closeable.foreach(_.close())
         }
       }
 
@@ -165,15 +156,27 @@ package object http {
   }
 
   sealed trait Server {
-    def url: String
+    def url: URI
     def timeout: Time
     def bufferSize: Information
   }
-  case class HTTPServer(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) extends Server
-  case class HTTPSServer(url: String, socketFactory: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) extends Server
+
+  object HTTPServer {
+    def apply(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) =
+      new HTTPServer(new URI(url), timeout, bufferSize)
+  }
+
+  case class HTTPServer(url: URI, timeout: Time, bufferSize: Information) extends Server
+
+  object HTTPSServer {
+    def apply(url: String, socketFactory: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) =
+      new HTTPSServer(new URI(url), socketFactory, timeout, bufferSize)
+  }
+
+  case class HTTPSServer(url: URI, socketFactory: HTTPS.SSLSocketFactory, timeout: Time, bufferSize: Information) extends Server
 
   object Server {
-    def copy(s: Server)(url: String = s.url) =
+    def copy(s: Server)(url: URI = s.url) =
       s match {
         case s: HTTPServer  ⇒ s.copy(url = url)
         case s: HTTPSServer ⇒ s.copy(url = url)
@@ -220,7 +223,7 @@ package object http {
     type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
 
     def socketFactory(s: Vector[KeyStoreOperations.Storable], password: String) =
-      Try { KeyStoreOperations.socketFactory(KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password)) }
+      Try { KeyStoreOperations.socketFactory(() ⇒ KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password)) }
 
     object KeyStoreOperations {
 
@@ -241,9 +244,6 @@ package object http {
           ks.setEntry(name, entry, new PasswordProtection(t.password.toCharArray))
         case t: Certificate ⇒
           ks.setCertificateEntry(name, t.certificate)
-        //        case t: Key =>
-        //          ks.setKeyEntry(name, key, password, certificates)
-
       }
 
       sealed trait Storable
@@ -293,16 +293,14 @@ package object http {
         sslContext
       }
 
-      def socketFactory(sslContext: SSLContext): SSLSocketFactory =
+      def socketFactory(sslContext: () ⇒ SSLContext): SSLSocketFactory =
         (timeout: Time) ⇒
-          new org.apache.http.conn.ssl.SSLConnectionSocketFactory(sslContext) {
+          new org.apache.http.conn.ssl.SSLConnectionSocketFactory(sslContext()) {
             override protected def prepareSocket(socket: SSLSocket) = {
+              super.prepareSocket(socket)
               socket.setSoTimeout(timeout.millis.toInt)
             }
           }
-
-      //      def socketFactory(path: String, password: String): SSLSocketFactory =
-      //        socketFactory(createSSLContext(path, password))
 
     }
 
@@ -320,18 +318,17 @@ package object http {
     //      ks
     //    }
 
-    def connectionManager(factory: org.apache.http.conn.ssl.SSLConnectionSocketFactory) = {
+    def connectionManager(factory: org.apache.http.conn.ssl.SSLConnectionSocketFactory, timeout: Time) = {
       val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory).build()
       val client = new BasicHttpClientConnectionManager(registry)
-      val socketConfig = SocketConfig.custom().build()
+      val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
       client.setSocketConfig(socketConfig)
       client
     }
 
     def newClient(factory: SSLSocketFactory, timeout: Time) =
       HttpClients.custom().
-        setRedirectStrategy(HTTP.redirectStrategy).
-        setConnectionManager(connectionManager(factory(timeout))).
+        setConnectionManager(connectionManager(factory(timeout), timeout)).
         setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
 
     def readPem[M[_]: Monad](pem: java.io.File)(implicit fileSystem: FileSystem[M]) =

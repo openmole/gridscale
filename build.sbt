@@ -303,6 +303,5 @@ lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settin
   libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.50",
-  libraryDependencies += "eu.eu-emi.security" % "canl" % "2.4.1"
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.57"
 )
