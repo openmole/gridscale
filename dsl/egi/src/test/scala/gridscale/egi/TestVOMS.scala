@@ -17,13 +17,6 @@ import cats.instances.all._
 
 object TestVOMS extends App {
 
-  def setCARepository(directory: File) = {
-    System.setProperty("X509_CERT_DIR", directory.getCanonicalPath)
-    System.setProperty("CADIR", directory.getCanonicalPath)
-  }
-
-  setCARepository(new File("/home/reuillon/.openmole/simplet/persistent/CACertificates/"))
-
   val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
   val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/persistent/CACertificates/")
