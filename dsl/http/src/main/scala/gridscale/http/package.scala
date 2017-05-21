@@ -59,6 +59,7 @@ package object http {
     case class Delete(headers: Headers = Seq.empty) extends Method
     case class Put(entity: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
     case class MkCol(headers: Headers = Seq.empty) extends Method
+    case class Head(headers: Headers = Seq.empty) extends Method
 
     def client(server: Server) =
       server match {
@@ -90,16 +91,9 @@ package object http {
       newClient(timeout)
     }
 
-    def isResponseOk(response: HttpResponse) =
-      response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
-        response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
-
-    def testResponse(response: HttpResponse) =
-      if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
-
     def interpreter = new Interpreter {
 
-      def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method): Try[T] = {
+      def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method, test: Boolean): Try[T] = {
         val uri =
           if (path.isEmpty) server.url else new URI(server.url.toString + path)
 
@@ -109,6 +103,7 @@ package object http {
             case PropFind(headers) ⇒ (new HttpPropFind(uri), headers, None)
             case Delete(headers)   ⇒ (new HttpDelete(uri), headers, None)
             case MkCol(headers)    ⇒ (new HttpMkCol(uri), headers, None)
+            case Head(headers)     ⇒ (new HttpHead(uri), headers, None)
             case Put(is, headers) ⇒
               val putInstance = new HttpPut(uri)
               val createdStream = is()
@@ -118,6 +113,14 @@ package object http {
 
         headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
 
+        def testResponse(response: HttpResponse) = {
+          def isResponseOk(response: HttpResponse) =
+            response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
+              response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
+
+          if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+        }
+
         import util._
 
         Try {
@@ -126,7 +129,7 @@ package object http {
             try {
               val response = httpClient.execute(methodInstance)
               try {
-                testResponse(response)
+                if (test) testResponse(response)
                 f(methodInstance, response)
               } finally response.close()
             } finally httpClient.close()
@@ -134,13 +137,13 @@ package object http {
         }
       }
 
-      def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method)(implicit context: Context) =
-        result(withInputStream(server, path, f, method).toEither.leftMap(t ⇒ HTTPError(t)))
+      def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method, testResponse: Boolean)(implicit context: Context) =
+        result(withInputStream(server, path, f, method, testResponse).toEither.leftMap(t ⇒ HTTPError(t)))
 
       def content(server: Server, path: String, method: HTTP.Method)(implicit context: Context) = {
         def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
         def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
-        withInputStream(server, path, (_, r) ⇒ getContent(r), method).toEither.leftMap(t ⇒ HTTPError(t))
+        withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).toEither.leftMap(t ⇒ HTTPError(t))
       }
 
     }
@@ -151,7 +154,7 @@ package object http {
   }
 
   @dsl trait HTTP[M[_]] {
-    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method): M[T]
+    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method, testResponse: Boolean = true): M[T]
     def content(server: Server, path: String, method: HTTP.Method = HTTP.Get()): M[String]
   }
 

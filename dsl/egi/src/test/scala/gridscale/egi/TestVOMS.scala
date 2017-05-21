@@ -11,6 +11,7 @@ import freedsl.errorhandler._
 import freedsl.filesystem._
 import gridscale.http._
 import gridscale.webdav._
+import freedsl.tool._
 import cats.syntax._
 import cats.implicits._
 import cats.instances.all._
@@ -32,7 +33,7 @@ object TestVOMS extends App {
       lal ← BDII[intp.M].webDAVs(bdii, "vo.complex-systems.eu").map(_.find(_.contains("lal")).get)
       webdav = HTTPSServer(lal, factory)
       c ← listProperties[intp.M](webdav, "/")
-      _ ← if (c.exists(_.displayName == "youpi2.txt")) rmFile[intp.M](webdav, "youpi2.txt") else implicitly[Monad[intp.M]].pure(())
+      _ ← exists(webdav, "youpi2.txt").ifM(rmFile[intp.M](webdav, "youpi2.txt"), noop[intp.M])
       _ ← writeStream[intp.M](webdav, "youpi2.txt", () ⇒ new ByteArrayInputStream("youpi doky\n".getBytes))
     } yield c
 

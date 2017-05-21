@@ -254,7 +254,7 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
 
 /* -------------- gridscale dsl ------------------ */
 
-def freedslVersion = "0.11"
+def freedslVersion = "0.12"
 
 def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
@@ -296,7 +296,9 @@ lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), set
   libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion
 )
 
-lazy val gridscaleWebDAVDSL = Project(id = "webdavDSL", base = file("dsl/webdav"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL)
+lazy val gridscaleWebDAVDSL = Project(id = "webdavDSL", base = file("dsl/webdav"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
+  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion
+)
 
 lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL, gridscaleWebDAVDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,

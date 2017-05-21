@@ -3,9 +3,10 @@ package gridscale
 import cats._
 import cats.implicits._
 import gridscale.webdav.WebDAV._
-import java.io.{ ByteArrayInputStream, InputStream }
+import java.io.{ ByteArrayInputStream, IOException, InputStream }
 
-import org.apache.http.{ HttpRequest, HttpResponse }
+import freedsl.errorhandler._
+import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.DefaultRedirectStrategy
@@ -19,15 +20,29 @@ package object webdav {
 
   def list[M[_]: http.HTTP: Monad](server: http.Server, path: String) = listProperties[M](server, path).map(_.map(_.displayName))
 
-  def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path, http.HTTP.Delete())
-  def rmDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path, http.HTTP.Delete(headers = Seq("Depth" -> "infinity")))
+  def exists[M[_]: http.HTTP: ErrorHandler: Monad](server: http.Server, path: String): M[Boolean] = {
+    def readResponse(response: HttpResponse) =
+      response.getStatusLine.getStatusCode match {
+        case x if x < HttpStatus.SC_MULTIPLE_CHOICES ⇒ util.Success(true)
+        case HttpStatus.SC_NOT_FOUND                 ⇒ util.Success(false)
+        case _                                       ⇒ util.Failure(new IOException(s"Server responded with an unexpected response: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}"))
+      }
 
-  def mkDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path, http.HTTP.MkCol())
+    for {
+      response ← http.HTTP[M].request(server, path, (_, resp) ⇒ resp, http.HTTP.Head(), testResponse = false)
+      result ← ErrorHandler[M].get(readResponse(response))
+    } yield result
+  }
+
+  def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.Delete()).map(_ ⇒ ())
+  def rmDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.Delete(headers = Seq("Depth" -> "infinity"))).map(_ ⇒ ())
+
+  def mkDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.MkCol()).map(_ ⇒ ())
 
   def read[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path)
   def readStream[M[_]: Monad: http.HTTP, T](server: http.Server, path: String, f: InputStream ⇒ T): M[T] = http.readStream[M, T](server, path, f)
 
-  def writeStream[M[_]: Monad: http.HTTP](server: http.Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true) = {
+  def writeStream[M[_]: Monad: http.HTTP](server: http.Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true): M[Unit] = {
     def redirectedServer =
       if (!redirect) server.pure[M]
       else
