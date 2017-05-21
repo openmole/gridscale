@@ -36,11 +36,7 @@ package object webdav {
 
   def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.Delete()).map(_ ⇒ ())
   def rmDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.Delete(headers = Seq("Depth" -> "infinity"))).map(_ ⇒ ())
-
   def mkDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.MkCol()).map(_ ⇒ ())
-
-  def read[M[_]: http.HTTP: Monad](server: http.Server, path: String) = http.read[M](server, path)
-  def readStream[M[_]: Monad: http.HTTP, T](server: http.Server, path: String, f: InputStream ⇒ T): M[T] = http.readStream[M, T](server, path, f)
 
   def writeStream[M[_]: Monad: http.HTTP](server: http.Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true): M[Unit] = {
     def redirectedServer =

@@ -361,6 +361,13 @@ package object egi {
       case object Unknown extends Reason
     }
 
+    sealed trait ProxySize
+
+    object ProxySize {
+      case object PS1024 extends ProxySize
+      case object PS2048 extends ProxySize
+    }
+
     def serverCertificates[M[_]: HTTP: FileSystem: ErrorHandler: Monad](certificateDirectory: java.io.File) =
       for {
         certificateFiles ← FileSystem[M].list(certificateDirectory)
@@ -372,7 +379,8 @@ package object egi {
       p12: P12Authentication,
       certificateDirectory: java.io.File,
       lifetime: Time = 24 hours,
-      fquan: Option[String] = None) = {
+      fquan: Option[String] = None,
+      proxySize: ProxySize = ProxySize.PS2048) = {
 
       case class VOMSProxy(ac: String, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate])
 
@@ -397,7 +405,7 @@ package object egi {
       }
 
       def credential(proxy: VOMSProxy) = {
-        import org.bouncycastle.asn1.x500.{ X500Name, X500NameStyle }
+        import org.bouncycastle.asn1.x500.{ X500Name }
         import org.bouncycastle.asn1.x500.style.RFC4519Style
         import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
         import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -419,7 +427,12 @@ package object egi {
         Security.addProvider(new BouncyCastleProvider)
 
         val keys = KeyPairGenerator.getInstance("RSA", "BC")
-        keys.initialize(1024)
+
+        proxySize match {
+          case ProxySize.PS1024 ⇒ keys.initialize(1024)
+          case ProxySize.PS2048 ⇒ keys.initialize(2048)
+        }
+
         val pair = keys.genKeyPair
 
         val number = Math.abs(scala.util.Random.nextLong)
