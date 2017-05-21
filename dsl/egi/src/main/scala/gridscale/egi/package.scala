@@ -340,7 +340,12 @@ package object egi {
     import cats.instances.all._
     import cats.syntax.all._
 
-    case class VOMSCredential(certificate: HTTPS.KeyStoreOperations.Credential, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate], ending: java.util.Date)
+    case class VOMSCredential(
+      certificate: HTTPS.KeyStoreOperations.Credential,
+      p12: P12Authentication,
+      serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate],
+      ending: java.util.Date,
+      factory: HTTPS.SSLSocketFactory)
 
     case class ProxyError(reason: Reason, message: Option[String]) extends Throwable {
       override def toString = s"${reason}: ${message.getOrElse("No message")}"
@@ -480,6 +485,9 @@ package object egi {
         (HTTPS.KeyStoreOperations.Credential(pair.getPrivate, Vector(generatedCertificate) ++ cred.chain.toVector, proxy.p12.password), notAfterDate)
       }
 
+      def socketFactory[M[_]: HTTP: ErrorHandler](certificate: HTTPS.KeyStoreOperations.Credential, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate], password: String) =
+        ErrorHandler[M].get(HTTPS.socketFactory(Vector(certificate) ++ serverCertificates, password))
+
       val options =
         List(
           Some("lifetime=" + lifetime.toSeconds.toLong),
@@ -495,15 +503,12 @@ package object egi {
         server = HTTPSServer(s"https://$voms", factory)
         content ← HTTP[M].content(server, location)
         proxy ← ErrorHandler[M].get(parseAC(content, p12, certificates))
-      } yield {
-        val (cred, notAfter) = credential(proxy)
-        VOMSCredential(cred, p12, certificates, notAfter)
-      }
+        (cred, notAfter) = credential(proxy)
+        factory ← socketFactory(cred, certificates, p12.password)
+        vomsCredential = VOMSCredential(cred, p12, certificates, notAfter, factory)
+      } yield vomsCredential
 
     }
-
-    def socketFactory[M[_]: HTTP: ErrorHandler](credential: VOMSCredential) =
-      ErrorHandler[M].get(HTTPS.socketFactory(Vector(credential.certificate) ++ credential.serverCertificates, credential.p12.password))
 
     import squants.time.TimeConversions._
 
