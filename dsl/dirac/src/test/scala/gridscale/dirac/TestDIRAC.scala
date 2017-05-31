@@ -15,12 +15,15 @@ object TestDIRAC extends App {
   val intp = merge(HTTP.interpreter, FileSystem.interpreter, ErrorHandler.interpreter)
   import intp.implicits._
 
+  val description = JobDescription("/bin/echo", "hello")
+
   val prg =
     for {
       service ← getService[intp.M]("vo.complex-systems.eu")
       s ← server[intp.M](service, p12, certificateDirectory)
       t ← token(s)
-    } yield t
+      j ← submit[intp.M](s, description, t, None)
+    } yield j
 
   println(intp.run(prg))
 

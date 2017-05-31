@@ -8,7 +8,7 @@ import java.security.cert.{ Certificate, CertificateFactory }
 
 import freedsl.errorhandler.ErrorHandler
 import org.apache.commons.codec.binary
-import org.apache.http.client
+import org.apache.http.{ HttpEntity, client }
 import org.apache.http.client.methods
 import org.apache.http.entity.InputStreamEntity
 import sun.security.provider.X509Factory
@@ -58,7 +58,8 @@ package object http {
     case class Get(headers: Headers = Seq.empty) extends Method
     case class PropFind(headers: Headers = Seq.empty) extends Method
     case class Delete(headers: Headers = Seq.empty) extends Method
-    case class Put(entity: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
+    case class Put(stream: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
+    case class Post(entity: () ⇒ HttpEntity, headers: Headers = Seq.empty) extends Method
     case class MkCol(headers: Headers = Seq.empty) extends Method
     case class Head(headers: Headers = Seq.empty) extends Method
 
@@ -110,6 +111,10 @@ package object http {
               val createdStream = is()
               putInstance.setEntity(new InputStreamEntity(createdStream))
               (putInstance, headers, Some(createdStream))
+            case Post(fentity, headers) ⇒
+              val postInstance = new HttpPost(uri)
+              postInstance.setEntity(fentity())
+              (postInstance, headers, None)
           }
 
         headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }

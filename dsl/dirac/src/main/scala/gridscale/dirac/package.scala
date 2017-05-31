@@ -9,9 +9,9 @@ import gridscale.http.{ HTTP, HTTPS, HTTPSServer }
 import org.apache.http.client.utils.URIBuilder
 import cats._
 import cats.implicits._
+import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-
 import squants._
 import squants.time.TimeConversions._
 
@@ -19,6 +19,49 @@ package object dirac {
 
   implicit def format = DefaultFormats
 
+  object JobDescription {
+    val Linux_x86_64_glibc_2_11 = "Linux_x86_64_glibc-2.11"
+    val Linux_x86_64_glibc_2_12 = "Linux_x86_64_glibc-2.12"
+    val Linux_x86_64_glibc_2_5 = "Linux_x86_64_glibc-2.5"
+
+    val Linux_i686_glibc_2_34 = "Linux_i686_glibc-2.3.4"
+    val Linux_i686_glibc_2_5 = "Linux_i686_glibc-2.5"
+
+    def toJSON(jobDescription: JobDescription, jobGroup: Option[String] = None) = {
+      import jobDescription._
+
+      def inputSandboxArray = JArray(inputSandbox.map(f ⇒ JString(f.getName)).toList)
+      def outputSandboxArray = JArray(outputSandbox.map(f ⇒ JString(f._1)).toList)
+      def platformsArray = JArray(platforms.map(f ⇒ JString(f)).toList)
+
+      val fields = List(
+        "Executable" -> JString(executable),
+        "Arguments" -> JString(arguments)) ++
+        stdOut.map(s ⇒ "StdOutput" -> JString(s)) ++
+        stdErr.map(s ⇒ "StdError" -> JString(s)) ++
+        (if (!inputSandbox.isEmpty) Some("InputSandbox" -> inputSandboxArray) else None) ++
+        (if (!outputSandbox.isEmpty) Some("OutputSandbox" -> outputSandboxArray) else None) ++
+        cpuTime.map(s ⇒ "CPUTime" -> JString(s.toSeconds.toString)) ++
+        (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None) ++
+        jobGroup.map(s ⇒ "JobGroup" -> JString(s))
+
+      pretty(JObject(fields: _*))
+    }
+
+  }
+
+  case class JobDescription(
+    executable: String,
+    arguments: String,
+    stdOut: Option[String] = None,
+    stdErr: Option[String] = None,
+    inputSandbox: Seq[java.io.File] = List.empty,
+    outputSandbox: Seq[(String, java.io.File)] = List.empty,
+    platforms: Seq[String] = Seq.empty,
+    cpuTime: Option[Time] = None)
+
+  case class Token(token: String, expires_in: Long)
+  case class DIRACServer(server: HTTPSServer, service: Service)
   case class Service(service: String, group: String)
 
   def getService[M[_]: HTTP: Monad: ErrorHandler](vo: String, timeout: Time = 1 minutes) = for {
@@ -48,9 +91,6 @@ package object dirac {
   def supportedVOs[M[_]: HTTP: Monad](timeout: Time = 1 minutes) =
     getServices[M](timeout).map(_.keys)
 
-  case class Token(token: String, expires_in: Long)
-  case class DIRACServer(server: HTTPSServer, service: Service)
-
   def server[M[_]: Monad: HTTP: FileSystem: ErrorHandler](service: Service, p12: P12Authentication, certificateDirectory: java.io.File) =
     for {
       userCertificate ← HTTPS.readP12[M](p12.certificate, p12.password).flatMap(r ⇒ ErrorHandler[M].get(r))
@@ -73,5 +113,39 @@ package object dirac {
       Token((parsed \ "token").extract[String], (parsed \ "expires_in").extract[Long])
     }
   }
+
+  def submit[M[_]: Monad: HTTP](server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String]) = {
+    def files() = {
+      val builder = MultipartEntityBuilder.create()
+      jobDescription.inputSandbox.foreach {
+        f ⇒ builder.addBinaryBody(f.getName, f)
+      }
+      builder.addTextBody("access_token", token.token)
+      builder.addTextBody("manifest", JobDescription.toJSON(jobDescription, jobGroup))
+      builder.build
+    }
+
+    def jobs = "/jobs"
+
+    gridscale.http.read[M](server.server, jobs, HTTP.Post(files)).map { r ⇒
+      (parse(r) \ "jids")(0).extract[String]
+    }
+  }
+
+  def translateState(s: String) =
+    s match {
+      case "Received"  ⇒ JobState.Submitted
+      case "Checking"  ⇒ JobState.Submitted
+      case "Staging"   ⇒ JobState.Submitted
+      case "Waiting"   ⇒ JobState.Submitted
+      case "Matched"   ⇒ JobState.Submitted
+      case "Running"   ⇒ JobState.Running
+      case "Completed" ⇒ JobState.Running
+      case "Stalled"   ⇒ JobState.Running
+      case "Killed"    ⇒ JobState.Failed
+      case "Deleted"   ⇒ JobState.Failed
+      case "Done"      ⇒ JobState.Done
+      case "Failed"    ⇒ JobState.Failed
+    }
 
 }
