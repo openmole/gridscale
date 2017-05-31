@@ -7,8 +7,6 @@ import gridscale.http.{ HTTP, HTTPS, HTTPSServer }
 import org.apache.http.client.utils.URIBuilder
 import cats._
 import cats.implicits._
-import org.apache.http.HttpEntity
-import org.apache.http.client.methods.HttpGet
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -63,7 +61,7 @@ package object dirac {
   case class Token(token: String, expires_in: Long)
   case class DIRACServer(server: HTTPSServer, service: Service)
   case class Service(service: String, group: String)
-  type JobID = String
+  case class JobID(id: String, description: JobDescription)
 
   def getService[M[_]: HTTP: Monad: ErrorHandler](vo: String, timeout: Time = 1 minutes) = for {
     services ← getServices(timeout)
@@ -129,7 +127,8 @@ package object dirac {
     }
 
     gridscale.http.read[M](server.server, jobsLocation, HTTP.Post(files)).map { r ⇒
-      (parse(r) \ "jids")(0).extract[String]
+      val id = (parse(r) \ "jids")(0).extract[String]
+      JobID(id, jobDescription)
     }
   }
 
@@ -161,6 +160,16 @@ package object dirac {
       case "Failed"    ⇒ JobState.Failed
     }
 
+  def delete[M[_]: Monad: HTTP](server: DIRACServer, token: Token, jobId: JobID) = {
+    val uri =
+      new URIBuilder()
+        .setParameter("access_token", token.token)
+        .build
+
+    def location = s"$jobsLocation/${jobId.id}"
+    gridscale.http.read[M](server.server, s"$jobsLocation/$jobId?${uri.getQuery}", HTTP.Delete()).map { _ ⇒ () }
+  }
+
   def delegate[M[_]: Monad: HTTP](server: DIRACServer, p12: P12Authentication, token: Token): M[Unit] = {
     def entity() = {
       val entity = MultipartEntityBuilder.create()
@@ -174,5 +183,32 @@ package object dirac {
 
     gridscale.http.read[M](server.server, delegation, HTTP.Post(entity)).map(_ ⇒ ())
   }
+
+  //  def downloadOutputSandbox[M[_]: Monad: HTTP: FileSystem](server: DIRACServer, id: JobID, token: Token) = {
+  //    val outputSandboxMap = id.description.outputSandbox.toMap
+  //
+  //    def outputSandbox = s"$jobsLocation/${id.id}/outputsandbox"
+  //
+  //    val uri =
+  //      new URIBuilder()
+  //        .setParameter("access_token", token.token)
+  //        .build
+  //
+  //    val get = new HttpGet(uri)
+  //
+  //
+  //    requestContent(get) { str ⇒
+  //      val is = new TarArchiveInputStream(str)
+  //
+  //      Iterator.continually(is.getNextEntry).takeWhile(_ != null).
+  //        filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {
+  //        e ⇒
+  //          val os = new BufferedOutputStream(new FileOutputStream(outputSandboxMap(e.getName)))
+  //          try BasicIO.transferFully(is, os)
+  //          finally os.close
+  //      }
+  //    }
+  //
+  //  }
 
 }

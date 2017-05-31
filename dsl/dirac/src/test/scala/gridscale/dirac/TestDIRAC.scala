@@ -27,7 +27,6 @@ object TestDIRAC extends App {
       t ← token(s)
       j ← submit[M](s, description, t, None)
       st ← waitUntilEnded[M](state[M](s, t, j))
-      //st ← state[M](s, t, j)
     } yield st
 
   println(intp.run(prg))
