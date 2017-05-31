@@ -368,12 +368,6 @@ package object egi {
       case object PS2048 extends ProxySize
     }
 
-    def serverCertificates[M[_]: HTTP: FileSystem: ErrorHandler: Monad](certificateDirectory: java.io.File) =
-      for {
-        certificateFiles ← FileSystem[M].list(certificateDirectory)
-        certificates ← certificateFiles.traverse(f ⇒ HTTPS.readPem[M](f)).map(_.flatMap(_.toOption))
-      } yield certificates
-
     def proxy[M[_]: Monad: ErrorHandler: HTTP: FileSystem](
       voms: String,
       p12: P12Authentication,
@@ -511,7 +505,7 @@ package object egi {
 
       for {
         userCertificate ← HTTPS.readP12[M](p12.certificate, p12.password).flatMap(r ⇒ ErrorHandler[M].get(r))
-        certificates ← serverCertificates[M](certificateDirectory)
+        certificates ← loadPEMCertificates[M](certificateDirectory)
         factory ← ErrorHandler[M].get(HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password))
         server = HTTPSServer(s"https://$voms", factory)
         content ← HTTP[M].content(server, location)

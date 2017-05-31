@@ -6,6 +6,7 @@ import java.security.KeyStore.{ PasswordProtection, PrivateKeyEntry }
 import java.security.PrivateKey
 import java.security.cert.{ Certificate, CertificateFactory }
 
+import freedsl.errorhandler.ErrorHandler
 import org.apache.commons.codec.binary
 import org.apache.http.client
 import org.apache.http.client.methods
@@ -372,6 +373,15 @@ package object http {
       }
 
       for { ks ← keyStore } yield extractCertificate(ks)
+    }
+
+    def readPEMCertificates[M[_]: HTTP: FileSystem: ErrorHandler: Monad](certificateDirectory: java.io.File) = {
+      import cats.implicits._
+
+      for {
+        certificateFiles ← FileSystem[M].list(certificateDirectory)
+        certificates ← certificateFiles.traverse(f ⇒ HTTPS.readPem[M](f)).map(_.flatMap(_.toOption))
+      } yield certificates
     }
 
     // case class Loaded(certficate: X509Certificate, key: PrivateKey, chain: Array[X509Certificate])

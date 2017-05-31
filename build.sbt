@@ -293,12 +293,17 @@ lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), set
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
   libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
+  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion
 )
 
 lazy val gridscaleWebDAVDSL = Project(id = "webdavDSL", base = file("dsl/webdav"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion
 )
+
+lazy val gridscaleDIRACDSL =  Project(id = "diracDSL", base = file("dsl/dirac"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
+  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0")
 
 lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL, gridscaleWebDAVDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,
