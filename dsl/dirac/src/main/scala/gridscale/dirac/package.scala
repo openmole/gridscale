@@ -8,6 +8,7 @@ import org.apache.http.client.utils.URIBuilder
 import cats._
 import cats.implicits._
 import org.apache.http.HttpEntity
+import org.apache.http.client.methods.HttpGet
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -62,6 +63,7 @@ package object dirac {
   case class Token(token: String, expires_in: Long)
   case class DIRACServer(server: HTTPSServer, service: Service)
   case class Service(service: String, group: String)
+  type JobID = String
 
   def getService[M[_]: HTTP: Monad: ErrorHandler](vo: String, timeout: Time = 1 minutes) = for {
     services ← getServices(timeout)
@@ -101,7 +103,7 @@ package object dirac {
   def token[M[_]: HTTP: Monad](server: DIRACServer, setup: String = "Dirac-Production") = {
     def auth2Auth = "/oauth2/token"
 
-    val uri = new URIBuilder(auth2Auth)
+    val uri = new URIBuilder()
       .setParameter("grant_type", "client_credentials")
       .setParameter("group", server.service.group)
       .setParameter("setup", setup)
@@ -113,7 +115,9 @@ package object dirac {
     }
   }
 
-  def submit[M[_]: Monad: HTTP](server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String]) = {
+  def jobsLocation = "/jobs"
+
+  def submit[M[_]: Monad: HTTP](server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String]): M[JobID] = {
     def files() = {
       val builder = MultipartEntityBuilder.create()
       jobDescription.inputSandbox.foreach {
@@ -124,14 +128,24 @@ package object dirac {
       builder.build
     }
 
-    def jobs = "/jobs"
-
-    gridscale.http.read[M](server.server, jobs, HTTP.Post(files)).map { r ⇒
+    gridscale.http.read[M](server.server, jobsLocation, HTTP.Post(files)).map { r ⇒
       (parse(r) \ "jids")(0).extract[String]
     }
   }
 
-  def translateState(s: String) =
+  def state[M[_]: Monad: HTTP](server: DIRACServer, token: Token, jobId: JobID): M[JobState] = {
+    val uri =
+      new URIBuilder()
+        .setParameter("access_token", token.token)
+        .build
+
+    gridscale.http.read[M](server.server, s"$jobsLocation/$jobId?${uri.getQuery}").map { r ⇒
+      val s = (parse(r) \ "status").extract[String]
+      translateState(s)
+    }
+  }
+
+  def translateState(s: String): JobState =
     s match {
       case "Received"  ⇒ JobState.Submitted
       case "Checking"  ⇒ JobState.Submitted
