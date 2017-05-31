@@ -1,7 +1,5 @@
 package gridscale
 
-import java.net.URI
-
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import gridscale.authentication.P12Authentication
@@ -9,6 +7,7 @@ import gridscale.http.{ HTTP, HTTPS, HTTPSServer }
 import org.apache.http.client.utils.URIBuilder
 import cats._
 import cats.implicits._
+import org.apache.http.HttpEntity
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -147,5 +146,19 @@ package object dirac {
       case "Done"      ⇒ JobState.Done
       case "Failed"    ⇒ JobState.Failed
     }
+
+  def delegate[M[_]: Monad: HTTP](server: DIRACServer, p12: P12Authentication, token: Token): M[Unit] = {
+    def entity() = {
+      val entity = MultipartEntityBuilder.create()
+      entity.addBinaryBody("p12", p12.certificate)
+      entity.addTextBody("Password", p12.password)
+      entity.addTextBody("access_token", token.token)
+      entity.build()
+    }
+
+    def delegation = s"/proxy/unknown/${server.service.group}"
+
+    gridscale.http.read[M](server.server, delegation, HTTP.Post(entity)).map(_ ⇒ ())
+  }
 
 }
