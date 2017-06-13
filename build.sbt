@@ -260,6 +260,7 @@ def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.freedsl" %% "dsl" % freedslVersion,
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.0.0",
+  libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.12",
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"),
   resolvers += Resolver.bintrayRepo("projectseptemberinc", "maven"),
@@ -291,6 +292,7 @@ lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), 
 
 lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), settings = dslSettings) dependsOn(gridscaleDSL) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
+  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "3.8.0",
   libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
   libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
   libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
@@ -303,7 +305,9 @@ lazy val gridscaleWebDAVDSL = Project(id = "webdavDSL", base = file("dsl/webdav"
 
 lazy val gridscaleDIRACDSL =  Project(id = "diracDSL", base = file("dsl/dirac"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0")
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
+  libraryDependencies += "com.google.guava" % "guava" % "21.0"
+)
 
 lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL, gridscaleWebDAVDSL) settings (
   libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,

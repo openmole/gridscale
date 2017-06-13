@@ -11,6 +11,7 @@ import org.apache.commons.codec.binary
 import org.apache.http.{ HttpEntity, client }
 import org.apache.http.client.methods
 import org.apache.http.entity.InputStreamEntity
+import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
 
 import scala.io.Source
@@ -62,6 +63,16 @@ package object http {
     case class Post(entity: () ⇒ HttpEntity, headers: Headers = Seq.empty) extends Method
     case class MkCol(headers: Headers = Seq.empty) extends Method
     case class Head(headers: Headers = Seq.empty) extends Method
+    //
+    //    def okClient(server: Server) =
+    //      server match {
+    //        case s: HTTPServer  ⇒
+    //          import okhttp3.OkHttpClient
+    //          val client = new OkHttpClient.Builder().connectionPool()
+    //          c
+    //          httpClient(s.timeout)
+    //        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout)
+    //      }
 
     def client(server: Server) =
       server match {

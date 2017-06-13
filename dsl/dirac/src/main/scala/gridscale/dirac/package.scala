@@ -1,5 +1,6 @@
 package gridscale
 
+import freedsl.dsl._
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import gridscale.authentication.P12Authentication
@@ -62,6 +63,27 @@ package object dirac {
   case class DIRACServer(server: HTTPSServer, service: Service)
   case class Service(service: String, group: String)
   case class JobID(id: String, description: JobDescription)
+  type GroupId = String
+
+  import enumeratum._
+  sealed trait DIRACState extends EnumEntry
+
+  object DIRACState extends Enum[DIRACState] {
+    val values = findValues
+
+    case object Received extends DIRACState
+    case object Checking extends DIRACState
+    case object Staging extends DIRACState
+    case object Waiting extends DIRACState
+    case object Matched extends DIRACState
+    case object Running extends DIRACState
+    case object Completed extends DIRACState
+    case object Stalled extends DIRACState
+    case object Killed extends DIRACState
+    case object Deleted extends DIRACState
+    case object Done extends DIRACState
+    case object Failed extends DIRACState
+  }
 
   def getService[M[_]: HTTP: Monad: ErrorHandler](vo: String, timeout: Time = 1 minutes) = for {
     services ← getServices(timeout)
@@ -145,20 +167,44 @@ package object dirac {
   }
 
   def translateState(s: String): JobState =
-    s match {
-      case "Received"  ⇒ JobState.Submitted
-      case "Checking"  ⇒ JobState.Submitted
-      case "Staging"   ⇒ JobState.Submitted
-      case "Waiting"   ⇒ JobState.Submitted
-      case "Matched"   ⇒ JobState.Submitted
-      case "Running"   ⇒ JobState.Running
-      case "Completed" ⇒ JobState.Running
-      case "Stalled"   ⇒ JobState.Running
-      case "Killed"    ⇒ JobState.Failed
-      case "Deleted"   ⇒ JobState.Failed
-      case "Done"      ⇒ JobState.Done
-      case "Failed"    ⇒ JobState.Failed
+    DIRACState.withName(s) match {
+      case DIRACState.Received  ⇒ JobState.Submitted
+      case DIRACState.Checking  ⇒ JobState.Submitted
+      case DIRACState.Staging   ⇒ JobState.Submitted
+      case DIRACState.Waiting   ⇒ JobState.Submitted
+      case DIRACState.Matched   ⇒ JobState.Submitted
+      case DIRACState.Running   ⇒ JobState.Running
+      case DIRACState.Completed ⇒ JobState.Running
+      case DIRACState.Stalled   ⇒ JobState.Running
+      case DIRACState.Killed    ⇒ JobState.Failed
+      case DIRACState.Deleted   ⇒ JobState.Failed
+      case DIRACState.Done      ⇒ JobState.Done
+      case DIRACState.Failed    ⇒ JobState.Failed
     }
+
+  def queryGroupState[M[_]: Monad: HTTP](
+    server: DIRACServer,
+    token: Token,
+    groupId: GroupId,
+    states: Seq[DIRACState] = DIRACState.values.filter(s ⇒ s != DIRACState.Killed && s != DIRACState.Deleted)): M[Vector[(String, JobState)]] = {
+
+    val uri =
+      new URIBuilder(server.server.url)
+        .setParameter("access_token", token.token)
+        .setParameter("jobGroup", groupId)
+        .setParameter("startJob", 0.toString)
+        .setParameter("maxJobs", Int.MaxValue.toString)
+        .build
+
+    def statusesQuery = states.map(s ⇒ s"status=${s.entryName}").mkString("&")
+
+    gridscale.http.readStream[M, JValue](server.server, s"$jobsLocation?${uri.getQuery}&$statusesQuery", is ⇒ parse(is)).map { json ⇒
+      (json \ "jobs").children.map { j ⇒
+        val status = (j \ "status").extract[String]
+        (j \ "jid").extract[String] -> translateState(status)
+      }.toVector
+    }
+  }
 
   def delete[M[_]: Monad: HTTP](server: DIRACServer, token: Token, jobId: JobID) = {
     val uri =
@@ -166,8 +212,7 @@ package object dirac {
         .setParameter("access_token", token.token)
         .build
 
-    def location = s"$jobsLocation/${jobId.id}"
-    gridscale.http.read[M](server.server, s"$jobsLocation/$jobId?${uri.getQuery}", HTTP.Delete()).map { _ ⇒ () }
+    gridscale.http.read[M](server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}", HTTP.Delete()).map { _ ⇒ () }
   }
 
   def delegate[M[_]: Monad: HTTP](server: DIRACServer, p12: P12Authentication, token: Token): M[Unit] = {
@@ -183,32 +228,5 @@ package object dirac {
 
     gridscale.http.read[M](server.server, delegation, HTTP.Post(entity)).map(_ ⇒ ())
   }
-
-  //  def downloadOutputSandbox[M[_]: Monad: HTTP: FileSystem](server: DIRACServer, id: JobID, token: Token) = {
-  //    val outputSandboxMap = id.description.outputSandbox.toMap
-  //
-  //    def outputSandbox = s"$jobsLocation/${id.id}/outputsandbox"
-  //
-  //    val uri =
-  //      new URIBuilder()
-  //        .setParameter("access_token", token.token)
-  //        .build
-  //
-  //    val get = new HttpGet(uri)
-  //
-  //
-  //    requestContent(get) { str ⇒
-  //      val is = new TarArchiveInputStream(str)
-  //
-  //      Iterator.continually(is.getNextEntry).takeWhile(_ != null).
-  //        filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {
-  //        e ⇒
-  //          val os = new BufferedOutputStream(new FileOutputStream(outputSandboxMap(e.getName)))
-  //          try BasicIO.transferFully(is, os)
-  //          finally os.close
-  //      }
-  //    }
-  //
-  //  }
 
 }
