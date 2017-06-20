@@ -35,7 +35,7 @@ object SSHJSFTPClient {
         val t =
           e.getAttributes.getType match {
             case FileMode.Type.DIRECTORY ⇒ DirectoryType
-            case FileMode.Type.SYMLINK  ⇒ LinkType
+            case FileMode.Type.SYMKLINK  ⇒ LinkType
             case _                       ⇒ FileType
           }
         ListEntry(
