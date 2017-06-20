@@ -144,7 +144,7 @@ lazy val gridscaleOsgiSettings =
   )
 
 lazy val noSSH = privatePackage :=
-  Seq("!net.schmizz.*", "!fr.iscpif.gridscale.ssh.*") ++ privatePackage.value
+  Seq("!net.schmizz.*", "!com.hierynomus.sshj.*", "!djb.*", "!net.i2p.*", "!fr.iscpif.gridscale.ssh.*") ++ privatePackage.value
 
 lazy val gridscaleBundle = Project(id = "gridscalebundle", base = file("bundles/gridscale"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin) settings(gridscaleOsgiSettings:_*) dependsOn (gridscale) settings (
   privatePackage := Seq("fr.iscpif.gridscale.*", "!scala.*"),
@@ -167,6 +167,7 @@ lazy val httpBundle = Project(id = "httpbundle", base = file("bundles/http"), se
 lazy val sshBundle = Project(id = "sshbundle", base = file("bundles/ssh"), settings = defaultSettings) enablePlugins(SbtOsgi) disablePlugins(AssemblyPlugin)  settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleSSH, gridscaleBundle) settings(
   name := "ssh",
   importPackage := Seq("!javax.*", "*"),
+  privatePackage := privatePackage.value ++ Seq(s"**"),
   exportPackage := Seq("!net.schmizz.sshj.*", "!fr.iscpif.gridscale.ssh.impl.*") ++ exportPackage.value)
 
 lazy val condorBundle = Project(id = "condorbundle", base = file("bundles/condor"), settings = defaultSettings) enablePlugins(SbtOsgi)  disablePlugins(AssemblyPlugin) settings(gridscaleOsgiSettings:_*) dependsOn (gridscaleCondor, gridscaleBundle) settings(
@@ -208,7 +209,7 @@ lazy val gridscaleHTTP = Project(id = "http", base = file("modules/gridscale-htt
   libraryDependencies ++= httpComponents)
 
 lazy val gridscaleSSH = Project(id = "ssh", base = file("modules/gridscale-ssh"), settings = defaultSettings ++ exportSettings) disablePlugins(AssemblyPlugin) dependsOn (gridscale) settings (
-  libraryDependencies += "net.schmizz" % "sshj" % "0.10.0",
+  libraryDependencies += "com.hierynomus" % "sshj" % "0.21.1",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
   )
 
