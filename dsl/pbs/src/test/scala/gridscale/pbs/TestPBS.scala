@@ -19,8 +19,9 @@ object TestPBS extends App {
   import scala.language.reflectiveCalls
   import context.M
   import context.implicits._
+  import gridscale.pbs.pbsDSL._
 
-  val jobDescription = PBSJobDescription("hostname", "/work/jpassera/test_gridscale", wallTime = Some(10 minutes))
+  val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/jpassera/test_gridscale", wallTime = Some(10 minutes))
 
   val res = for {
     job ← submit[M, SSHServer](localhost, jobDescription)

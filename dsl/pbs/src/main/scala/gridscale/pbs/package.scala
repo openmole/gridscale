@@ -1,16 +1,18 @@
 package gridscale
 
 import cats._
-import cats.implicits._
 import freedsl.system._
 import freedsl.errorhandler._
-import gridscale.cluster.HeadNode
+import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import squants._
+import monocle.macros.Lenses
+
 import scala.language.higherKinds
 
 package object pbs {
 
+  @Lenses
   case class PBSJobDescription(
     command: String,
     workDirectory: String,
@@ -20,64 +22,46 @@ package object pbs {
     nodes: Option[Int] = None,
     coreByNode: Option[Int] = None)
 
-  def toScript(description: PBSJobDescription, uniqId: String) = {
-    import description._
+  object impl {
 
-    val buffer = new ScriptBuffer
-    buffer += "#!/bin/bash"
+    def toScript(description: PBSJobDescription, uniqId: String) = {
+      import description._
 
-    buffer += "#PBS -o " + output(uniqId)
-    buffer += "#PBS -e " + error(uniqId)
+      val buffer = new ScriptBuffer
+      buffer += "#!/bin/bash"
 
-    queue foreach { q ⇒ buffer += "#PBS -q " + q }
-    // FIXME better way than setting default value?
-    val mem = memory.getOrElse(2048)
-    wallTime foreach { t ⇒ buffer += "#PBS -lwalltime=" + t.toHHmmss }
+      buffer += "#PBS -o " + BatchScheduler.output(uniqId)
+      buffer += "#PBS -e " + BatchScheduler.error(uniqId)
 
-    val nbNodes = nodes.getOrElse(1)
-    val coresPerNode = coreByNode.getOrElse(1)
+      queue foreach { q ⇒ buffer += "#PBS -q " + q }
+      // FIXME better way than setting default value?
+      val mem = memory.getOrElse(2048)
+      wallTime foreach { t ⇒ buffer += "#PBS -lwalltime=" + t.toHHmmss }
 
-    buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
+      val nbNodes = nodes.getOrElse(1)
+      val coresPerNode = coreByNode.getOrElse(1)
 
-    buffer += "cd " + workDirectory
+      buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
 
-    buffer += command
-    buffer.toString
-  }
+      buffer += "cd " + workDirectory
 
-  case class PBSJob(uniquId: String, pbsId: String, workDirectory: String)
-
-  def output(uniqId: String): String = uniqId + ".out"
-  def error(uniqId: String): String = uniqId + ".err"
-
-  def pbsScriptName(uniqId: String) = uniqId + ".pbs"
-  def pbsScriptPath(workDirectory: String, uniqId: String) = workDirectory + "/" + pbsScriptName(uniqId)
-
-  def translateStatus(retCode: Int, status: String) =
-    status match {
-      case "R" | "E" | "H" | "S" ⇒ Right(JobState.Running)
-      case "Q" | "W" | "T"       ⇒ Right(JobState.Submitted)
-      case _                     ⇒ Left(new RuntimeException("Unrecognized state " + status))
+      buffer += command
+      buffer.toString
     }
 
-  def submit[M[_]: Monad, S](server: S, description: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]) = for {
-    _ ← hn.execute(server, s"mkdir -p ${description.workDirectory}")
-    uniqId ← system.randomUUID.map(_.toString)
-    script = toScript(description, uniqId)
-    _ ← hn.write(server, script.getBytes, pbsScriptPath(description.workDirectory, uniqId))
-    command = s"cd ${description.workDirectory} && qsub ${pbsScriptName(uniqId)}"
-    cmdRet ← hn.execute(server, command)
-    ExecutionResult(ret, out, error) = cmdRet
-    _ ← if (ret != 0) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
-    _ ← if (out == null) errorHandler.errorMessage("qsub did not return a JobID") else ().pure[M]
-    pbsId = out.split("\n").head
-  } yield PBSJob(uniqId, pbsId, description.workDirectory)
+    def retrieveJobID(out: String) = out.split("\n").head
 
-  def state[M[_]: Monad, S](server: S, job: PBSJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
-    val command = "qstat -f " + job.pbsId
-    val jobStateAttribute = "JOB_STATE"
+    def translateStatus(retCode: Int, status: String) =
+      status match {
+        case "R" | "E" | "H" | "S" ⇒ Right(JobState.Running)
+        case "Q" | "W" | "T"       ⇒ Right(JobState.Submitted)
+        case _                     ⇒ Left(new RuntimeException("Unrecognized state " + status))
+      }
 
-    def parseState(cmdRet: ExecutionResult): Either[RuntimeException, JobState] =
+    def parseState(cmdRet: ExecutionResult, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
+
+      val jobStateAttribute = "JOB_STATE"
+
       cmdRet.returnCode match {
         case 153 ⇒ Right(JobState.Done)
         case 0 ⇒
@@ -90,25 +74,41 @@ package object pbs {
 
           state match {
             case Some(s) ⇒ translateStatus(cmdRet.returnCode, s)
-            case None    ⇒ Left(new RuntimeException("State not found in qstat output: " + cmdRet.stdOut))
+            case None    ⇒ Left(new RuntimeException("State not found in $command output: " + cmdRet.stdOut))
           }
         case _ ⇒ Left(new RuntimeException(ExecutionResult.error(command, cmdRet)))
       }
 
-    for {
-      cmdRet ← hn.execute(server, command)
-      s ← error.get[JobState](parseState(cmdRet))
-    } yield s
+    }
+
   }
 
-  def stdOut[M[_], S](server: S, job: PBSJob)(implicit hn: HeadNode[S, M]) = hn.read(server, job.workDirectory + "/" + output(job.uniquId))
-  def stdErr[M[_], S](server: S, job: PBSJob)(implicit hn: HeadNode[S, M]) = hn.read(server, job.workDirectory + "/" + error(job.uniquId))
+  implicit val pbsDSL = new BatchScheduler[PBSJobDescription] {
 
-  def clean[M[_]: Monad, S](server: S, job: PBSJob)(implicit hn: HeadNode[S, M]) = for {
-    _ ← hn.execute(server, s"qdel ${job.pbsId}")
-    _ ← hn.rm(server, pbsScriptPath(job.workDirectory, job.uniquId))
-    _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniquId))
-    _ ← hn.rm(server, job.workDirectory + "/" + error(job.uniquId))
-  } yield ()
+    import impl._
+    import BatchScheduler._
 
+    val scriptSuffix = ".pbs"
+
+    override def submit[M[_]: Monad, S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
+      BatchScheduler.submit[M, S, PBSJobDescription](
+        PBSJobDescription.workDirectory.get,
+        toScript,
+        scriptSuffix,
+        "qsub",
+        impl.retrieveJobID
+      )(server, jobDescription)
+
+    override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
+      BatchScheduler.state[M, S](
+        "qstat -f ",
+        parseState
+      )(server, job)
+
+    override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
+      BatchScheduler.clean[M, S](
+        "qdel",
+        scriptSuffix
+      )(server, job)
+  }
 }
