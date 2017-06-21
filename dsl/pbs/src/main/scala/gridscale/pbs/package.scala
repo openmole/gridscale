@@ -30,13 +30,14 @@ package object pbs {
     buffer += "#PBS -e " + error(uniqId)
 
     queue foreach { q ⇒ buffer += "#PBS -q " + q }
-    memory foreach { m ⇒ buffer += "#PBS -lmem=" + m + "mb" }
+    // FIXME better way than setting default value?
+    val mem = memory.getOrElse(2048)
     wallTime foreach { t ⇒ buffer += "#PBS -lwalltime=" + t.toHHmmss }
 
-    nodes match {
-      case Some(n) ⇒ buffer += "#PBS -lnodes=" + n + ":ppn=" + coreByNode.getOrElse(1)
-      case None    ⇒ coreByNode foreach { c ⇒ buffer += "#PBS -lnodes=1:ppn=" + c }
-    }
+    val nbNodes = nodes.getOrElse(1)
+    val coresPerNode = coreByNode.getOrElse(1)
+
+    buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
 
     buffer += "cd " + workDirectory
 
