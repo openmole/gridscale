@@ -94,7 +94,8 @@ lazy val defaultSettings =
     val dir = new File("/export/ivy/")
     dir.mkdirs()
     dir
-  }
+  },
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 
   //publishMavenStyle := false,
   //publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
