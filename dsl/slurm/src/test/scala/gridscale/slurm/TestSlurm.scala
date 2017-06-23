@@ -17,8 +17,9 @@ object TestSlurm extends App {
   import scala.language.reflectiveCalls
   import context.M
   import context.implicits._
+  import gridscale.slurm.slurmDSL._
 
-  val jobDescription = SlurmJobDescription(executable = "/bin/echo", arguments = "hello", workDirectory = "/home/jopasserat/test_gridscale", queue = Some("short"))
+  val jobDescription = SlurmJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale", queue = Some("short"))
 
   val res = for {
     job ← submit[M, SSHServer](headNode, jobDescription)

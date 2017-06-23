@@ -4,8 +4,9 @@ import cats._
 import cats.implicits._
 import freedsl.system._
 import freedsl.errorhandler._
-import gridscale.cluster.HeadNode
+import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
+import monocle.macros.GenLens
 import squants._
 
 import scala.language.higherKinds
@@ -29,103 +30,79 @@ package object slurm {
     gres: List[Gres] = List(),
     constraints: List[String] = List())
 
-  def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
+  object impl {
 
-  def toScript(description: SlurmJobDescription, uniqId: String) = {
-    import description._
+    import BatchScheduler.{ BatchJob, output, error }
 
-    val header = "#!/bin/bash\n"
+    def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
 
-    val core = Seq(
-      "-o " -> Some(output(uniqId)),
-      "-e " -> Some(error(uniqId)),
-      "-p " -> queue,
-      "--mem=" -> memory.map(_.toString),
-      "--nodes=" -> nodes.map(_.toString),
-      "--cpus-per-task=" -> coresByNode.map(_.toString),
-      "--time=" -> wallTime.map(_.toHHmmss),
-      "--qos=" -> qos,
-      "-D " -> Some(workDirectory)
-    ).filter { case (k, v) ⇒ v.isDefined }.
-      map(pair2String).
-      mkString("#SBATCH ", "\n#SBATCH ", "\n")
+    def toScript(description: SlurmJobDescription, uniqId: String) = {
+      import description._
 
-    // must handle empty list separately since it is not done in mkString
-    val gresList = gres match {
-      case List() ⇒ ""
-      case _      ⇒ gres.mkString("#SBATCH --gres=", "--gres=", "")
+      val header = "#!/bin/bash\n"
+
+      val core = Seq(
+        "-o " -> Some(output(uniqId)),
+        "-e " -> Some(error(uniqId)),
+        "-p " -> queue,
+        "--mem=" -> memory.map(_.toString),
+        "--nodes=" -> nodes.map(_.toString),
+        "--cpus-per-task=" -> coresByNode.map(_.toString),
+        "--time=" -> wallTime.map(_.toHHmmss),
+        "--qos=" -> qos,
+        "-D " -> Some(workDirectory)
+      ).filter { case (k, v) ⇒ v.isDefined }.
+        map(pair2String).
+        mkString("#SBATCH ", "\n#SBATCH ", "\n")
+
+      // must handle empty list separately since it is not done in mkString
+      val gresList = gres match {
+        case List() ⇒ ""
+        case _      ⇒ gres.mkString("#SBATCH --gres=", "--gres=", "")
+      }
+      val constraintsList = constraints match {
+        case List() ⇒ ""
+        case _      ⇒ constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
+      }
+
+      s"""$header
+         |$core
+         |$gresList
+         |$constraintsList
+         |
+         |$executable $arguments
+         |""".stripMargin
+      // TODO: handle several srun and split gres accordingly
+      //    buffer += "srun "
+      //    // must handle empty list separately since it is not done in mkString
+      //    gres match {
+      //      case List() ⇒
+      //      case _ ⇒ buffer += gres.mkString("--gres=", "--gres=", "")
+      //    }
+      //    constraints match {
+      //      case List() ⇒
+      //      case _ ⇒ buffer += constraints.mkString("--constraint=\"", "&", "\"")
+      //    }
+
     }
-    val constraintsList = constraints match {
-      case List() ⇒ ""
-      case _      ⇒ constraints.mkString("#SBATCH --constraint=\"", "&", "\"")
+
+    def retrieveJobID(submissionOutput: String) = submissionOutput.trim.reverse.takeWhile(_ != ' ').reverse
+
+    def translateStatus[M[_]](retCode: Int, status: String, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
+      import JobState._
+      status match {
+        case "COMPLETED" ⇒ Right(Done)
+        case "COMPLETED?" if 1 == retCode ⇒ Right(Done)
+        case "COMPLETED?" if 1 != retCode ⇒ Right(Failed)
+        case "RUNNING" | "COMPLETING" ⇒ Right(Running)
+        case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Right(Submitted)
+        case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Right(Failed)
+        case _ ⇒ Left(new RuntimeException(s"Unrecognized state $status returned by $command"))
+      }
     }
 
-    s"""$header
-     |$core
-     |$gresList
-     |$constraintsList
-     |
-     |$executable $arguments
-     |""".stripMargin
-
-    // TODO: handle several srun and split gres accordingly
-    //    buffer += "srun "
-    //    // must handle empty list separately since it is not done in mkString
-    //    gres match {
-    //      case List() ⇒
-    //      case _ ⇒ buffer += gres.mkString("--gres=", "--gres=", "")
-    //    }
-    //    constraints match {
-    //      case List() ⇒
-    //      case _ ⇒ buffer += constraints.mkString("--constraint=\"", "&", "\"")
-    //    }
-
-  }
-
-  case class SlurmJob(uniqId: String, slurmId: String, workDirectory: String)
-
-  def output(uniqId: String): String = uniqId + ".out"
-
-  def error(uniqId: String): String = uniqId + ".err"
-
-  def slurmScriptName(uniqId: String) = uniqId + ".slurm"
-
-  def slurmScriptPath(workDirectory: String, uniqId: String) = workDirectory + "/" + slurmScriptName(uniqId)
-
-  def translateStatus[M[_]](retCode: Int, status: String): Either[RuntimeException, JobState] = {
-    import JobState._
-    status match {
-      case "COMPLETED" ⇒ Right(Done)
-      case "COMPLETED?" if 1 == retCode ⇒ Right(Done)
-      case "COMPLETED?" if 1 != retCode ⇒ Right(Failed)
-      case "RUNNING" | "COMPLETING" ⇒ Right(Running)
-      case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Right(Submitted)
-      case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Right(Failed)
-      case _ ⇒ Left(new RuntimeException("Unrecognized state " + status))
-    }
-  }
-
-  def retrieveJobID(submissionOutput: String) = submissionOutput.trim.reverse.takeWhile(_ != ' ').reverse
-
-  def submit[M[_]: Monad, S](server: S, description: SlurmJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]) = for {
-    _ ← hn.execute(server, s"mkdir -p ${description.workDirectory}")
-    uniqId ← system.randomUUID.map(_.toString)
-    script = toScript(description, uniqId)
-    _ ← hn.write(server, script.getBytes, slurmScriptPath(description.workDirectory, uniqId))
-    command = s"cd ${description.workDirectory} && sbatch ${slurmScriptName(uniqId)}"
-    cmdRet ← hn.execute(server, command)
-    ExecutionResult(ret, out, error) = cmdRet
-    slurmID = retrieveJobID(out)
-    _ ← if (ret != 0 || slurmID.isEmpty) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
-  } yield SlurmJob(uniqId, slurmID, description.workDirectory)
-
-  lazy val jobStateAttribute = "JobState"
-
-  def state[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M], errorHandler: ErrorHandler[M]): M[JobState] = {
-    val command = "scontrol show job " + job.slurmId
-
-    def parseState(cmdRet: ExecutionResult) = {
-
+    def parseState(cmdRet: ExecutionResult, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
+      val jobStateAttribute = "JobState"
       val lines = cmdRet.stdOut.split("\n").map(_.trim)
       val state = lines.filter(_.matches(".*JobState=.*")).map {
         prop ⇒
@@ -134,31 +111,45 @@ package object slurm {
         // consider job COMPLETED when scontrol returns 1: "Invalid job id specified"
         /** @see translateStatus(retCode: Int, status: String) */
       }.toMap.getOrElse(jobStateAttribute, "COMPLETED?")
-      translateStatus(cmdRet.returnCode, state)
+      translateStatus(cmdRet.returnCode, state, command)
     }
 
-    for {
-      cmdRet ← hn.execute(server, command)
-      s ← errorHandler.get[JobState](parseState(cmdRet))
-    } yield s
+    // compiles thanks to a divine intervention
+    def processCancel[M[_]: Monad](cancelRet: ExecutionResult, job: BatchJob)(implicit errorHandler: ErrorHandler[M]) = cancelRet match {
+      case ExecutionResult(0, _, _) ⇒ ().pure[M]
+      case ExecutionResult(1, _, error) if error.matches(".*Invalid job id specified") ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService: ${job.jobId} is an invalid job id"))
+      case _ ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService could not cancel job ${job.jobId}"))
+    }
+
   }
 
-  def stdOut[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M]) = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
+  implicit val slurmDSL = new BatchScheduler[SlurmJobDescription] {
 
-  def stdErr[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M]) = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
+    import impl._
+    import BatchScheduler._
 
-  // compiles thanks to a divine intervention
-  def processCancel[M[_]: Monad](cancelRet: ExecutionResult, job: SlurmJob)(implicit errorHandler: ErrorHandler[M]) = cancelRet match {
-    case ExecutionResult(0, _, _) ⇒ ().pure[M]
-    case ExecutionResult(1, _, error) if error.matches(".*Invalid job id specified") ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService: ${job.slurmId} is an invalid job id"))
-    case _ ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService could not cancel job ${job.slurmId}"))
+    val scriptSuffix = ".slurm"
+
+    override def submit[M[_]: Monad, S](server: S, jobDescription: SlurmJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
+      BatchScheduler.submit[M, S, SlurmJobDescription](
+        GenLens[SlurmJobDescription](_.workDirectory).get,
+        toScript,
+        scriptSuffix,
+        "sbatch",
+        impl.retrieveJobID
+      )(server, jobDescription)
+
+    override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
+      BatchScheduler.state[M, S](
+        "scontrol show job ",
+        parseState
+      )(server, job)
+
+    override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
+      BatchScheduler.clean[M, S](
+        "scancel",
+        scriptSuffix
+      )(server, job)
+
   }
-
-  def clean[M[_]: Monad, S](server: S, job: SlurmJob)(implicit hn: HeadNode[S, M], errorHandler: ErrorHandler[M]) = for {
-    cmdRet ← hn.execute(server, s"scancel ${job.slurmId}")
-    _ ← hn.rm(server, slurmScriptPath(job.workDirectory, job.uniqId))
-    _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniqId))
-    _ ← hn.rm(server, job.workDirectory + "/" + error(job.uniqId))
-  } yield ()
-
 }
