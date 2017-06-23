@@ -6,13 +6,12 @@ import freedsl.errorhandler._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import squants._
-import monocle.macros.Lenses
+import monocle.macros.GenLens
 
 import scala.language.higherKinds
 
 package object pbs {
 
-  @Lenses
   case class PBSJobDescription(
     command: String,
     workDirectory: String,
@@ -92,7 +91,7 @@ package object pbs {
 
     override def submit[M[_]: Monad, S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
       BatchScheduler.submit[M, S, PBSJobDescription](
-        PBSJobDescription.workDirectory.get,
+        GenLens[PBSJobDescription](_.workDirectory).get,
         toScript,
         scriptSuffix,
         "qsub",
