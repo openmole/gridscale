@@ -266,7 +266,9 @@ def dslSettings = defaultSettings ++ Seq(
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"),
   resolvers += Resolver.bintrayRepo("projectseptemberinc", "maven"),
   resolvers += Resolver.sonatypeRepo("snapshots"),
-  resolvers += Resolver.sonatypeRepo("staging")
+  // rename to avoid conflict with publishTo resolver
+  resolvers +=
+    "Sonatype OSS Stagings" at "https://oss.sonatype.org/content/repositories/staging"
 )
 
 lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"), settings = dslSettings) settings(
