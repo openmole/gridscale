@@ -240,9 +240,8 @@ lazy val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
 lazy val bouncyCastle = "org.bouncycastle" % "bcpkix-jdk15on" % "1.50"
 lazy val log4j = "log4j" % "log4j" % "1.2.17"
 
-lazy val httpComponents = Seq(
-  "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
-  "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion)
+lazy val httpComponents = Seq("httpclient-osgi", "httpmime").map(
+  "org.apache.httpcomponents" % _ % httpComponentsVersion)
 
 lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("libraries/glite-security-voms"), settings = defaultSettings) settings(
   libraryDependencies += bouncyCastle,
@@ -255,7 +254,8 @@ lazy val gliteSecurityVoms = Project(id = "glite-security-voms", base = file("li
 
 /* -------------- gridscale dsl ------------------ */
 
-def freedslVersion = "0.12"
+val freedslVersion = "0.12"
+val monocleVersion = "1.4.0"
 
 def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
@@ -273,8 +273,8 @@ def dslSettings = defaultSettings ++ Seq(
 
 lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"), settings = dslSettings) settings(
   libraryDependencies += scalaTest,
-  libraryDependencies += "fr.iscpif.freedsl" %% "system" % freedslVersion,
-  libraryDependencies += "fr.iscpif.freedsl" %% "tool" % freedslVersion,
+  libraryDependencies ++= Seq("system", "tool").map(
+    "fr.iscpif.freedsl" %% _ % freedslVersion),
   libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8"
 )
 
@@ -284,30 +284,20 @@ lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settin
 )
 
 lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleSSHDSL) settings (
-  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
-  libraryDependencies += "fr.iscpif.freedsl" %% "system" % freedslVersion
+  libraryDependencies ++= Seq("errorhandler", "system").map("fr.iscpif.freedsl" %% _ % freedslVersion),
+  libraryDependencies ++= Seq("monocle-core", "monocle-generic", "monocle-macro").map("com.github.julien-truffaut" %% _ % monocleVersion)
 )
 
-val monocleVersion = "1.4.0"
+lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL)
 
-lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL) settings (
-  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
-  libraryDependencies ++= Seq("monocle-core", "monocle-generic", "monocle-macro").map (
-    monocleModule => "com.github.julien-truffaut" %% monocleModule % monocleVersion
-  )
-)
-
-lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL) settings (
-  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion
-)
+lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL)
 
 lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), settings = dslSettings) dependsOn(gridscaleDSL) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "3.8.0",
-  libraryDependencies += "org.apache.httpcomponents" % "httpclient-osgi" % httpComponentsVersion,
-  libraryDependencies += "org.apache.httpcomponents" % "httpmime" % httpComponentsVersion,
-  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
-  libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion
+  libraryDependencies ++= httpComponents,
+  libraryDependencies ++= Seq("errorhandler", "filesystem").map(
+    "fr.iscpif.freedsl" %% _ % freedslVersion)
 )
 
 lazy val gridscaleWebDAVDSL = Project(id = "webdavDSL", base = file("dsl/webdav"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL) settings (
@@ -321,9 +311,8 @@ lazy val gridscaleDIRACDSL =  Project(id = "diracDSL", base = file("dsl/dirac"),
 )
 
 lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleHTTPDSL, gridscaleWebDAVDSL) settings (
-  libraryDependencies += "fr.iscpif.freedsl" %% "io" % freedslVersion,
-  libraryDependencies += "fr.iscpif.freedsl" %% "filesystem" % freedslVersion,
-  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
+  libraryDependencies ++= Seq("io", "filesystem", "errorhandler").map(
+    "fr.iscpif.freedsl" %% _ % freedslVersion),
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.57"
 )
