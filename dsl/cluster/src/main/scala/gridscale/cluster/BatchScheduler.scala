@@ -62,7 +62,7 @@ object BatchScheduler {
     workDirectory: D ⇒ String,
     buildScript: (D, String) ⇒ String,
     scriptSuffix: ⇒ String,
-    submitCommand: ⇒ String,
+    submitCommand: String ⇒ String,
     retrieveJobID: String ⇒ BatchJobID)(
       server: S,
       jobDescription: D)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
@@ -75,7 +75,7 @@ object BatchScheduler {
       script = buildScript(jobDescription, uniqId)
       sName = scriptName(scriptSuffix)(uniqId)
       _ ← hn.write(server, script.getBytes, scriptPath(workDir, scriptSuffix)(uniqId))
-      command = s"cd $workDir && $submitCommand $sName"
+      command = s"cd $workDir && ${submitCommand(sName)}"
       cmdRet ← hn.execute(server, command)
       ExecutionResult(ret, out, error) = cmdRet
       _ ← if (ret != 0) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
@@ -86,11 +86,11 @@ object BatchScheduler {
 
   type Command = String
   def state[M[_]: Monad, S](
-    stateCommand: ⇒ String,
+    stateCommand: String ⇒ String,
     parseState: (ExecutionResult, Command) ⇒ Either[RuntimeException, JobState])(server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
 
     // FIXME might not work for each batch scheduler
-    val command = stateCommand + job.jobId
+    val command = stateCommand(job.jobId)
 
     for {
       cmdRet ← hn.execute(server, command)
@@ -98,7 +98,7 @@ object BatchScheduler {
     } yield s
   }
 
-  def clean[M[_]: Monad, S](cancelCommand: ⇒ String, scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
+  def clean[M[_]: Monad, S](cancelCommand: String ⇒ String, scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
     _ ← hn.execute(server, s"$cancelCommand ${job.jobId}")
     _ ← hn.rm(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
     _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniqId))
