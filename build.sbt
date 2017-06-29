@@ -278,6 +278,8 @@ lazy val gridscaleDSL = Project(id = "gridscaleDSL", base = file("dsl/gridscale"
   libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8"
 )
 
+lazy val gridscaleLocalDSL = Project(id = "localDSL", base = file("dsl/local"), settings = dslSettings) dependsOn (gridscaleDSL)
+
 lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settings = dslSettings) dependsOn (gridscaleDSL) settings (
   libraryDependencies += "com.hierynomus" % "sshj" % "0.21.1",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
