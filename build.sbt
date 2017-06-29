@@ -285,7 +285,7 @@ lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settin
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
-lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleSSHDSL) settings (
+lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleSSHDSL, gridscaleLocalDSL) settings (
   libraryDependencies ++= Seq("errorhandler", "system").map("fr.iscpif.freedsl" %% _ % freedslVersion),
   libraryDependencies ++= Seq("monocle-core", "monocle-generic", "monocle-macro").map("com.github.julien-truffaut" %% _ % monocleVersion)
 )
