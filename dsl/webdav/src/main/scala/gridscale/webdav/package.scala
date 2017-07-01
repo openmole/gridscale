@@ -11,6 +11,8 @@ import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.DefaultRedirectStrategy
 
+import scala.language.{ higherKinds, postfixOps }
+
 package object webdav {
 
   def listProperties[M[_]: http.HTTP: Monad](server: http.Server, path: String) =

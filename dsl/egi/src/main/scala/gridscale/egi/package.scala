@@ -22,6 +22,8 @@ import scala.concurrent.duration.Duration
 //import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding
 import org.bouncycastle.asn1.x509.AttributeCertificate
 
+import scala.language.{ higherKinds, postfixOps }
+
 package object egi {
 
   import java.security.{ KeyStore, PrivateKey }

@@ -14,6 +14,8 @@ import org.json4s.jackson.JsonMethods._
 import squants._
 import squants.time.TimeConversions._
 
+import scala.language.{ higherKinds, postfixOps }
+
 package object dirac {
 
   implicit def format = DefaultFormats

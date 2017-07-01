@@ -16,6 +16,8 @@ import sun.security.provider.X509Factory
 
 import scala.io.Source
 
+import scala.language.{ higherKinds, postfixOps }
+
 package object http {
 
   import gridscale.http.methods._
