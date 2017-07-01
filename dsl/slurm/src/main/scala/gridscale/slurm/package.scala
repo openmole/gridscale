@@ -88,7 +88,7 @@ package object slurm {
 
     def retrieveJobID(submissionOutput: String) = submissionOutput.trim.reverse.takeWhile(_ != ' ').reverse
 
-    def translateStatus[M[_]](retCode: Int, status: String, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
+    def translateStatus(retCode: Int, status: String, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
       import JobState._
       status match {
         case "COMPLETED" ⇒ Right(Done)
@@ -136,7 +136,7 @@ package object slurm {
         toScript,
         scriptSuffix,
         f ⇒ s"sbatch $f",
-        impl.retrieveJobID
+        retrieveJobID
       )(server, jobDescription)
 
     override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
