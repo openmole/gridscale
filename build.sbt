@@ -285,14 +285,16 @@ lazy val gridscaleSSHDSL = Project(id = "sshDSL", base = file("dsl/ssh"), settin
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
-lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleSSHDSL, gridscaleLocalDSL) settings (
+lazy val gridscaleClusterDSL = Project(id = "clusterDSL", base = file("dsl/cluster"), settings = dslSettings) dependsOn (gridscaleDSL, gridscaleSSHDSL, gridscaleLocalDSL) settings (
   libraryDependencies ++= Seq("errorhandler", "system").map("fr.iscpif.freedsl" %% _ % freedslVersion),
   libraryDependencies ++= Seq("monocle-core", "monocle-generic", "monocle-macro").map("com.github.julien-truffaut" %% _ % monocleVersion)
 )
 
-lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL)
+lazy val gridscalePBSDSL = Project(id = "pbsDSL", base = file("dsl/pbs"), settings = dslSettings) dependsOn(gridscaleClusterDSL)
 
-lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), settings = dslSettings) dependsOn(gridscaleDSL, gridscaleClusterDSL)
+lazy val gridscaleSlurmDSL = Project(id = "slurmDSL", base = file("dsl/slurm"), settings = dslSettings) dependsOn(gridscaleClusterDSL)
+
+lazy val gridscaleCondorDSL = Project(id = "condorDSL", base = file("dsl/condor"), settings = dslSettings) dependsOn(gridscaleClusterDSL)
 
 lazy val gridscaleHTTPDSL = Project(id = "httpDSL", base = file("dsl/http"), settings = dslSettings) dependsOn(gridscaleDSL) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",

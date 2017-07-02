@@ -48,6 +48,8 @@ trait BatchScheduler[D] {
 /** Generic functions to be used as building blocks to implement batch schedulers */
 object BatchScheduler {
 
+  import gridscale.tools.shell.BashShell.Command
+
   type BatchJobID = String
   case class BatchJob(uniqId: String, jobId: BatchJobID, workDirectory: String)
 
@@ -62,7 +64,7 @@ object BatchScheduler {
     workDirectory: D ⇒ String,
     buildScript: (D, String) ⇒ String,
     scriptSuffix: ⇒ String,
-    submitCommand: String ⇒ String,
+    submitCommand: Command ⇒ String,
     retrieveJobID: String ⇒ BatchJobID)(
       server: S,
       jobDescription: D)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
@@ -84,12 +86,10 @@ object BatchScheduler {
     } yield BatchJob(uniqId, jobId, workDir)
   }
 
-  type Command = String
   def state[M[_]: Monad, S](
-    stateCommand: String ⇒ String,
-    parseState: (ExecutionResult, Command) ⇒ Either[RuntimeException, JobState])(server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
+    stateCommand: Command ⇒ String,
+    parseState: (ExecutionResult, String) ⇒ Either[RuntimeException, JobState])(server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
 
-    // FIXME might not work for each batch scheduler
     val command = stateCommand(job.jobId)
 
     for {
@@ -98,7 +98,9 @@ object BatchScheduler {
     } yield s
   }
 
-  def clean[M[_]: Monad, S](cancelCommand: String ⇒ String, scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
+  def clean[M[_]: Monad, S](
+    cancelCommand: Command ⇒ String,
+    scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
     _ ← hn.execute(server, s"$cancelCommand ${job.jobId}")
     _ ← hn.rm(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
     _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniqId))

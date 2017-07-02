@@ -17,23 +17,25 @@
 
 package gridscale.tools.shell
 
-trait BashShell <: Shell {
+import scala.language.implicitConversions
 
-  // bash -ci will fake an interactive shell (-i) in order to load the config files
-  // as an interactive ssh shell would (~/.bashrc, /etc/bashrc)
-  // and run the sequence of command without interaction (-c)
-  override def command(cmd: String) = new Command {
+object BashShell {
+
+  type Command = String
+
+  implicit def bashCommand(cmd: String): Command =
     // ugly attempt to "generify" user shell
     // assumption 1: Bash is installed on the target host
     // assumption 2: the env variables required for a successful execution are defined in .bashrc
-    // => bash -ci ensures that .bashrc is loaded
-    // => bash << EOF prevents the defaut shell (which might not be bash) to process the command
-    // resulting in is this combination...
-    override def toString =
-      s"""
-        |bash -ci bash <<EOF
-        |$cmd
-        |EOF
+    // => env -i + the sourced files mimics what happens when a bash login shell is started
+    // => bash << EOF prevents the default shell (which might not be bash) to process the command
+    // resulting in this combination...
+    s"""env -i bash <<EOF
+     |source /etc/profile 2>/dev/null
+     |source ~/.bash_profile 2>/dev/null
+     |source ~/.bash_login 2>/dev/null
+     |source ~/.profile 2>/dev/null
+     |$cmd
+     |EOF
       """.stripMargin
-  }
 }
