@@ -9,7 +9,7 @@ import freedsl.dsl._
 import squants.time.TimeConversions._
 import scala.language.postfixOps
 
-object TestPBS extends App {
+object PBSExample extends App {
 
   val authentication = UserPassword("testuser", "testuser")
   val localhost = SSHServer("localhost", 10022)(authentication)

@@ -1,4 +1,4 @@
-package gridscale.condor
+package gridscale.slurm
 
 import freedsl.system._
 import freedsl.errorhandler._
@@ -7,19 +7,19 @@ import gridscale.authentication._
 import gridscale.ssh._
 import freedsl.dsl._
 
-object TestCondor extends App {
+object SlurmExample extends App {
 
   val authentication = PrivateKey(new java.io.File("/home/jopasserat/.ssh/id_rsa"), "", "jopasserat")
-  val headNode = SSHServer("myhost.co.uk")(authentication)
+  val headNode = SSHServer("localhost", 22)(authentication)
 
   val context = merge(SSH, System, ErrorHandler)
 
   import scala.language.reflectiveCalls
   import context.M
   import context.implicits._
-  import gridscale.condor.condorDSL._
+  import gridscale.slurm.slurmDSL._
 
-  val jobDescription = CondorJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale")
+  val jobDescription = SlurmJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale", queue = Some("short"))
 
   val res = for {
     job ← submit[M, SSHServer](headNode, jobDescription)

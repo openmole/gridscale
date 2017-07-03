@@ -101,35 +101,6 @@ lazy val defaultSettings =
   //publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
 )
 
-lazy val examples = (project in file("examples")).settings(settings: _*).
-  aggregate(
-    egiCreamExample,
-    egiWebDAVExample,
-    egiDiracExample,
-    httpExample,
-    sshExample,
-    condorExample,
-//    pbsExample,
-    slurmExample,
-    sgeExample,
-    oarExample
-  ) settings(
-    name := "gridscale-examples",
-    publishArtifact := false,
-    aggregate in assembly := true // one separate jar per aggregated project
-  )
-
-
-lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
-lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
-lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
-lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleCondor)
-lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSLURM)
-lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSGE)
-lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSSH)
-lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleOAR)
-lazy val httpExample  = Project(id = "httpexample", base = file("examples/http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleHTTP)
-
 
 /* -------------------- OSGI ------------------------*/
 
@@ -320,3 +291,35 @@ lazy val gridscaleEGIDSL = Project(id = "egiDSL", base = file("dsl/egi"), settin
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.57"
 )
+
+/* -------------- examples ------------------ */
+
+lazy val examples = (project in file("examples")).settings(settings: _*).
+  aggregate(
+    egiCreamExample,
+    egiWebDAVExample,
+    egiDiracExample,
+    httpExample,
+    sshExample,
+    condorExample,
+    pbsExample,
+    slurmExample,
+    sgeExample,
+    oarExample
+  ) settings(
+  name := "gridscale-examples",
+  publishArtifact := false,
+  aggregate in assembly := true // one separate jar per aggregated project
+)
+
+
+lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
+lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
+lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleEGI)
+lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = dslSettings ++ exportSettings) dependsOn gridscaleCondorDSL
+lazy val pbsExample  = Project(id = "pbsexample", base = file("examples/pbs"), settings = dslSettings ++ exportSettings) dependsOn gridscalePBSDSL
+lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = dslSettings ++ exportSettings) dependsOn gridscaleSlurmDSL
+lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSGE)
+lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleSSH)
+lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleOAR)
+lazy val httpExample  = Project(id = "httpexample", base = file("examples/http"), settings = defaultSettings ++ exportSettings) dependsOn (gridscaleHTTP)
