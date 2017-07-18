@@ -57,7 +57,7 @@ package object pbs {
         case _                     ⇒ Left(new RuntimeException("Unrecognized state " + status))
       }
 
-    def parseState(cmdRet: ExecutionResult, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
+    def parseState(cmdRet: ExecutionResult, command: String): Either[RuntimeException, JobState] = {
 
       val jobStateAttribute = "JOB_STATE"
 

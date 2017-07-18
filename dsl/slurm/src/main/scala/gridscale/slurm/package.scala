@@ -88,7 +88,7 @@ package object slurm {
 
     def retrieveJobID(submissionOutput: String) = submissionOutput.trim.reverse.takeWhile(_ != ' ').reverse
 
-    def translateStatus(retCode: Int, status: String, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
+    def translateStatus(retCode: Int, status: String, command: String): Either[RuntimeException, JobState] = {
       import JobState._
       status match {
         case "COMPLETED" ⇒ Right(Done)
@@ -101,7 +101,7 @@ package object slurm {
       }
     }
 
-    def parseState(cmdRet: ExecutionResult, command: BatchScheduler.Command): Either[RuntimeException, JobState] = {
+    def parseState(cmdRet: ExecutionResult, command: String): Either[RuntimeException, JobState] = {
       val jobStateAttribute = "JobState"
       val lines = cmdRet.stdOut.split("\n").map(_.trim)
       val state = lines.filter(_.matches(".*JobState=.*")).map {

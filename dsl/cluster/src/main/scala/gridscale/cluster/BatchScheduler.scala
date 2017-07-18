@@ -48,7 +48,7 @@ trait BatchScheduler[D] {
 /** Generic functions to be used as building blocks to implement batch schedulers */
 object BatchScheduler {
 
-  import gridscale.tools.shell.BashShell.Command
+  import gridscale.tools.shell.BashShell
 
   type BatchJobID = String
   case class BatchJob(uniqId: String, jobId: BatchJobID, workDirectory: String)
@@ -64,7 +64,7 @@ object BatchScheduler {
     workDirectory: D ⇒ String,
     buildScript: (D, String) ⇒ String,
     scriptSuffix: ⇒ String,
-    submitCommand: Command ⇒ String,
+    submitCommand: String ⇒ String,
     retrieveJobID: String ⇒ BatchJobID)(
       server: S,
       jobDescription: D)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
@@ -77,7 +77,7 @@ object BatchScheduler {
       script = buildScript(jobDescription, uniqId)
       sName = scriptName(scriptSuffix)(uniqId)
       _ ← hn.write(server, script.getBytes, scriptPath(workDir, scriptSuffix)(uniqId))
-      command = s"cd $workDir && ${submitCommand(sName)}"
+      command = BashShell.remoteBashCommand(s"cd $workDir && ${submitCommand(sName)}")
       cmdRet ← hn.execute(server, command)
       ExecutionResult(ret, out, error) = cmdRet
       _ ← if (ret != 0) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
@@ -87,21 +87,21 @@ object BatchScheduler {
   }
 
   def state[M[_]: Monad, S](
-    stateCommand: Command ⇒ String,
+    stateCommand: String ⇒ String,
     parseState: (ExecutionResult, String) ⇒ Either[RuntimeException, JobState])(server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
 
     val command = stateCommand(job.jobId)
 
     for {
-      cmdRet ← hn.execute(server, command)
+      cmdRet ← hn.execute(server, BashShell.remoteBashCommand(command))
       s ← error.get[JobState](parseState(cmdRet, command))
     } yield s
   }
 
   def clean[M[_]: Monad, S](
-    cancelCommand: Command ⇒ String,
+    cancelCommand: String ⇒ String,
     scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
-    _ ← hn.execute(server, s"$cancelCommand ${job.jobId}")
+    _ ← hn.execute(server, BashShell.remoteBashCommand(s"$cancelCommand ${job.jobId}"))
     _ ← hn.rm(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
     _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniqId))
     _ ← hn.rm(server, job.workDirectory + "/" + error(job.uniqId))
