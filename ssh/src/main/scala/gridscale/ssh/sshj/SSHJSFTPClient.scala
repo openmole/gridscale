@@ -28,10 +28,8 @@ object SSHJSFTPClient {
 
   import collection.JavaConverters._
 
-  def ls(sshjSFTPClient: sftp.SFTPClient)(path: String, predicate: String ⇒ Boolean): Vector[ListEntry] =
-    sshjSFTPClient.ls(path).asScala.filterNot { e ⇒
-      predicate(e.getName)
-    }.map {
+  def ls(sshjSFTPClient: sftp.SFTPClient)(path: String, accept: String ⇒ Boolean): Vector[ListEntry] =
+    sshjSFTPClient.ls(path).asScala.filter { e ⇒ accept(e.getName) }.map {
       e ⇒
         val t =
           e.getAttributes.getType match {

@@ -253,7 +253,9 @@ package object ssh {
   def exists[M[_]](server: SSHServer, path: String)(implicit ssh: SSH[M]) = ssh.sftp(server, _.exists(path))
   def chmod[M[_]](server: SSHServer, path: String, perms: FilePermission.FilePermission*)(implicit ssh: SSH[M]) =
     ssh.sftp(server, _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission.FilePermission])))
-  def list[M[_]](server: SSHServer, path: String)(implicit ssh: SSH[M]) = ssh.sftp(server, _.ls(path)(e ⇒ e == "." || e == ".."))
+
+  def list[M[_]](server: SSHServer, path: String)(implicit ssh: SSH[M]) = ssh.sftp(server, _.ls(path)(e ⇒ e != "." || e != ".."))
+
   def makeDir[M[_]](server: SSHServer, path: String)(implicit ssh: SSH[M]) = ssh.sftp(server, _.mkdir(path))
 
   def rmDir[M[_]: Monad](server: SSHServer, path: String)(implicit ssh: SSH[M]): M[Unit] = {
