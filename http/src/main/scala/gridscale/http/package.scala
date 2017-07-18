@@ -47,6 +47,22 @@ package object http {
   import org.apache.http.conn.socket.ConnectionSocketFactory
   import squants.information.Information
 
+  def get(url: String) = {
+    val scheme = new URI(url).getScheme
+
+    val intp = merge(HTTP.interpreter)
+    import intp.implicits._
+
+    scheme match {
+      case "https" ⇒
+        val server = HTTPSServer(url, HTTPS.SSLSocketFactory.default)
+        intp.run(read[intp.M](server, ""))
+      case "http" ⇒
+        val server = HTTPServer(url)
+        intp.run(read[intp.M](server, ""))
+    }
+  }
+
   object HTTP {
 
     type Headers = Seq[(String, String)]
@@ -239,6 +255,17 @@ package object http {
     import java.security.{ KeyStore, SecureRandom }
     import javax.net.ssl._
     import org.apache.http.conn.ssl.{ BrowserCompatHostnameVerifier, SSLConnectionSocketFactory }
+
+    object SSLSocketFactory {
+      def default = (timeout: Time) ⇒ {
+        new SSLConnectionSocketFactory(org.apache.http.ssl.SSLContexts.createDefault()) {
+          override protected def prepareSocket(socket: SSLSocket) = {
+            super.prepareSocket(socket)
+            socket.setSoTimeout(timeout.millis.toInt)
+          }
+        }
+      }
+    }
 
     type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
 
