@@ -47,7 +47,7 @@ package object http {
   import org.apache.http.conn.socket.ConnectionSocketFactory
   import squants.information.Information
 
-  def get(url: String) = {
+  def get[T](url: String) = {
     val scheme = new URI(url).getScheme
 
     val intp = merge(HTTP.interpreter)
@@ -60,6 +60,22 @@ package object http {
       case "http" ⇒
         val server = HTTPServer(url)
         intp.run(read[intp.M](server, ""))
+    }
+  }
+
+  def getStream[T](url: String)(f: InputStream ⇒ T) = {
+    val scheme = new URI(url).getScheme
+
+    val intp = merge(HTTP.interpreter)
+    import intp.implicits._
+
+    scheme match {
+      case "https" ⇒
+        val server = HTTPSServer(url, HTTPS.SSLSocketFactory.default)
+        intp.run(readStream[intp.M, T](server, "", f))
+      case "http" ⇒
+        val server = HTTPServer(url)
+        intp.run(readStream[intp.M, T](server, "", f))
     }
   }
 
