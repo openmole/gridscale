@@ -63,16 +63,6 @@ package object http {
     case class Post(entity: () ⇒ HttpEntity, headers: Headers = Seq.empty) extends Method
     case class MkCol(headers: Headers = Seq.empty) extends Method
     case class Head(headers: Headers = Seq.empty) extends Method
-    //
-    //    def okClient(server: Server) =
-    //      server match {
-    //        case s: HTTPServer  ⇒
-    //          import okhttp3.OkHttpClient
-    //          val client = new OkHttpClient.Builder().connectionPool()
-    //          c
-    //          httpClient(s.timeout)
-    //        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout)
-    //      }
 
     def client(server: Server) =
       server match {
@@ -149,22 +139,32 @@ package object http {
                 if (test) testResponse(response)
                 f(methodInstance, response)
               } finally response.close()
+            } catch {
+              case e: org.apache.http.conn.ConnectTimeoutException ⇒ throw new ConnectionError(e)
             } finally httpClient.close()
           } finally closeable.foreach(_.close())
         }
       }
 
       def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method, testResponse: Boolean)(implicit context: Context) =
-        result(withInputStream(server, path, f, method, testResponse).toEither.leftMap(t ⇒ HTTPError(t)))
+        result(withInputStream(server, path, f, method, testResponse).toEither.leftMap(wrapError))
 
       def content(server: Server, path: String, method: HTTP.Method)(implicit context: Context) = {
         def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
         def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
-        withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).toEither.leftMap(t ⇒ HTTPError(t))
+        withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).toEither.leftMap(wrapError)
       }
 
     }
 
+    def wrapError(t: Throwable) =
+      t match {
+        case t: ConnectionError ⇒ t
+        case t: HTTPError       ⇒ t
+        case _                  ⇒ HTTPError(t)
+      }
+
+    case class ConnectionError(t: Throwable) extends Exception(t) with Error
     case class HTTPError(t: Throwable) extends Exception(t) with Error {
       override def toString = "HTTP error: " + t.toString
     }
