@@ -160,7 +160,7 @@ package object ssh {
     }
 
   def clean[M[_]: Monad](server: SSHServer, job: JobId)(implicit ssh: SSH[M]) = {
-    val kill = s"kill `cat ${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}`;"
+    val kill = s"kill -9 `cat ${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}`;"
     val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
     for {
       k ← ssh.execute(server, kill)
