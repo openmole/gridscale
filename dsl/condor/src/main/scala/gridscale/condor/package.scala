@@ -124,9 +124,9 @@ package object condor {
     def queryState[M[_]: Monad, S](server: S, job: BatchJob)(hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
 
       // if the job is still running, his state is returned by condor_q...
-      val queryInQueueCommand = shell.BashShell.remoteBashCommand(s"condor_q ${job.jobId} -long -attributes JobStatus")
+      val queryInQueueCommand = s"condor_q ${job.jobId} -long -attributes JobStatus"
       // ...but if the job is already completed, his state is returned by condor_history...
-      val queryFinishedCommand = shell.BashShell.remoteBashCommand(s"condor_history ${job.jobId} -long")
+      val queryFinishedCommand = s"condor_history ${job.jobId} -long"
 
       for {
         cmdRet ← hn.execute(server, queryInQueueCommand)

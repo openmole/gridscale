@@ -1,7 +1,8 @@
 package gridscale
 
-import scala.util.Try
+import gridscale.tools.shell.BashShell
 
+import scala.util.Try
 import scala.language.{ higherKinds, postfixOps }
 
 package object ssh {
@@ -71,7 +72,7 @@ package object ssh {
       def execute(server: SSHServer, s: String)(implicit context: Context) =
         for {
           c ← clientCache.get(server)
-          r ← result(SSHClient.exec(c, s).toEither.leftMap(t ⇒ ExecutionError(s"Error executing $s on $server", t)))
+          r ← result(SSHClient.exec(c, BashShell.remoteBashCommand(s)).toEither.leftMap(t ⇒ ExecutionError(s"Error executing $s on $server", t)))
         } yield r
 
       def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T])(implicit context: Context) =
@@ -193,12 +194,11 @@ package object ssh {
     def outFile(dir: String, jobId: String) = file(dir, jobId, "out")
     def errFile(dir: String, jobId: String) = file(dir, jobId, "err")
 
-    // FIXME bash shell.
     def toScript[M[_]: Monad](description: SSHJobDescription, background: Boolean = true)(implicit system: System[M]) = {
       for {
         jobId ← system.randomUUID.map(_.toString)
       } yield {
-        def absolute(path: String) = description.workDirectory + "/" + path
+
         def executable = description.command
 
         def command =
@@ -209,14 +209,7 @@ package object ssh {
              |echo \\$$! >${pidFile(description.workDirectory, jobId)}
            """.stripMargin
 
-        def shellCommand =
-          s"""
-            |bash -ci bash <<EOF
-            |$command
-            |EOF
-          """.stripMargin
-
-        (shellCommand, jobId)
+        (BashShell.remoteBashCommand(command), jobId)
       }
     }
   }

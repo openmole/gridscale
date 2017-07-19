@@ -77,7 +77,7 @@ object BatchScheduler {
       script = buildScript(jobDescription, uniqId)
       sName = scriptName(scriptSuffix)(uniqId)
       _ ← hn.write(server, script.getBytes, scriptPath(workDir, scriptSuffix)(uniqId))
-      command = BashShell.remoteBashCommand(s"cd $workDir && ${submitCommand(sName)}")
+      command = s"cd $workDir && ${submitCommand(sName)}"
       cmdRet ← hn.execute(server, command)
       ExecutionResult(ret, out, error) = cmdRet
       _ ← if (ret != 0) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
@@ -93,7 +93,7 @@ object BatchScheduler {
     val command = stateCommand(job.jobId)
 
     for {
-      cmdRet ← hn.execute(server, BashShell.remoteBashCommand(command))
+      cmdRet ← hn.execute(server, command)
       s ← error.get[JobState](parseState(cmdRet, command))
     } yield s
   }
@@ -101,7 +101,7 @@ object BatchScheduler {
   def clean[M[_]: Monad, S](
     cancelCommand: String ⇒ String,
     scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
-    _ ← hn.execute(server, BashShell.remoteBashCommand(s"$cancelCommand ${job.jobId}"))
+    _ ← hn.execute(server, s"$cancelCommand ${job.jobId}")
     _ ← hn.rm(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
     _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniqId))
     _ ← hn.rm(server, job.workDirectory + "/" + error(job.uniqId))
