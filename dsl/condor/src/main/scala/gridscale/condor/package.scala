@@ -81,6 +81,8 @@ package object condor {
            |
            |${if (reqList.nonEmpty) "requirements = " + CondorRequirement(reqList.mkString).toCondor else ""}
            |
+           |getenv = True
+           |
            |queue 1
            |""".stripMargin
     }
