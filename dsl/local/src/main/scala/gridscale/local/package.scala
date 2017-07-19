@@ -1,12 +1,11 @@
 package gridscale
 
+import gridscale.tools.shell.BashShell
+
 package object local {
 
-  import cats._
   import cats.implicits._
   import freedsl.dsl._
-  import freedsl.system._
-  import squants._
   import scala.io.Source
   import scala.util.Try
   import java.io.File
@@ -20,11 +19,24 @@ package object local {
 
       def execute(cmd: String)(implicit context: Context) = Try {
         import sys.process._
-        val stdout = new StringBuilder
-        val stderr = new StringBuilder
-        val returnCode = cmd ! ProcessLogger(stdout append _, stderr append _)
 
-        ExecutionResult(returnCode, stdout.mkString, stderr.mkString)
+        val out = new StringBuilder
+        val err = new StringBuilder
+
+        val (shell, commands) = BashShell.localBashCommand(cmd)
+
+        val io = new ProcessIO(
+          stdin ⇒ {
+            stdin.write(commands.getBytes)
+            stdin.close()
+          },
+          stdout ⇒ out append Source.fromInputStream(stdout).mkString(""),
+          stderr ⇒ err append Source.fromInputStream(stderr).mkString("")
+        )
+
+        val proc = shell.run(io)
+        ExecutionResult(proc.exitValue, out.mkString, err.mkString)
+
       }.toEither.leftMap(e ⇒ LocalExecutionError(s"Error executing $cmd on local host", e))
 
       def writeFile(bytes: Array[Byte], path: String)(implicit context: Context) = Try {
