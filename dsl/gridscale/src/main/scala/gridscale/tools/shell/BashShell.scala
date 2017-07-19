@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014 Romain Reuillon
+ * Copyright (C) 2017 Jonathan Passerat-Palmbach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,25 +18,33 @@
 
 package gridscale.tools.shell
 
-import scala.language.implicitConversions
-
+/**
+ * Ugly attempt to "generify" user shell
+ * assumption 1: Bash is installed on the target host
+ * assumption 2: the env variables required for a successful execution are defined in .bashrc
+ * => env -i + the sourced files mimics what happens when a bash login shell is started
+ * => bash << EOF prevents the default shell (which might not be bash) to process the command
+ * resulting in this combination...
+ */
 object BashShell {
 
-  type Command = String
+  val shell = "env -i bash"
 
-  implicit def bashCommand(cmd: String): Command =
-    // ugly attempt to "generify" user shell
-    // assumption 1: Bash is installed on the target host
-    // assumption 2: the env variables required for a successful execution are defined in .bashrc
-    // => env -i + the sourced files mimics what happens when a bash login shell is started
-    // => bash << EOF prevents the default shell (which might not be bash) to process the command
-    // resulting in this combination...
-    s"""env -i bash <<EOF
+  def remoteBashCommand(from: String): String =
+    s"""$shell <<EOF
+        |${buildCommand(from)}
+        |EOF
+        |""".stripMargin
+
+  def localBashCommand(from: String): (String, String) =
+    (shell, buildCommand(from))
+
+  def buildCommand(cmd: String): String =
+    s"""
      |source /etc/profile 2>/dev/null
      |source ~/.bash_profile 2>/dev/null
      |source ~/.bash_login 2>/dev/null
      |source ~/.profile 2>/dev/null
      |$cmd
-     |EOF
-      """.stripMargin
+     |""".stripMargin
 }
