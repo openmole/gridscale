@@ -8,7 +8,7 @@ organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
 scalaVersion in ThisBuild := "2.12.3"
-crossScalaVersions in ThisBuild := Seq("2.11.11", "2.12.3")
+crossScalaVersions in ThisBuild := Seq("2.12.3")
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
