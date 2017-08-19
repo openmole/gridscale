@@ -6,6 +6,8 @@ import java.security.{ KeyPair, KeyPairGenerator, Security }
 import java.util.{ Calendar, GregorianCalendar, TimeZone }
 import javax.net.ssl.{ SSLContext, SSLSocket }
 
+import gridscale.authentication.AuthenticationException
+
 //import eu.emi.security.authn.x509.X509CertChainValidatorExt
 //import eu.emi.security.authn.x509.helpers.BinaryCertChainValidator
 //import eu.emi.security.authn.x509.impl.X500NameUtils
@@ -349,9 +351,11 @@ package object egi {
       ending: java.util.Date,
       factory: HTTPS.SSLSocketFactory)
 
-    case class ProxyError(reason: Reason, message: Option[String]) extends Throwable {
-      override def toString = s"${reason}: ${message.getOrElse("No message")}"
+    object ProxyError {
+      def apply(reason: Reason, message: Option[String]) = new ProxyError(reason, message)
     }
+
+    class ProxyError(val reason: Reason, val message: Option[String]) extends AuthenticationException(s"${reason}: ${message.getOrElse("No message")}")
 
     sealed trait Reason
 
