@@ -102,9 +102,9 @@ object BatchScheduler {
     cancelCommand: String ⇒ String,
     scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
     _ ← hn.execute(server, s"$cancelCommand ${job.jobId}")
-    _ ← hn.rm(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
-    _ ← hn.rm(server, job.workDirectory + "/" + output(job.uniqId))
-    _ ← hn.rm(server, job.workDirectory + "/" + error(job.uniqId))
+    _ ← hn.rmFile(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
+    _ ← hn.rmFile(server, job.workDirectory + "/" + output(job.uniqId))
+    _ ← hn.rmFile(server, job.workDirectory + "/" + error(job.uniqId))
   } yield ()
 
   def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
