@@ -58,12 +58,10 @@ package object local {
   }
 
   @dsl trait Local[M[_]] {
-
     def execute(cmd: String): M[ExecutionResult]
     def writeFile(bytes: Array[Byte], path: String): M[Unit]
     def readFile(path: String): M[String]
     def rm(path: String): M[Unit]
-
   }
 
   case class LocalHost() {

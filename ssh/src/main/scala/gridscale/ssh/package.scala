@@ -147,7 +147,7 @@ package object ssh {
     SSHJobDescription.jobIsRunning[M](server, jobId).flatMap {
       case true ⇒ (JobState.Running: JobState).pure[M]
       case false ⇒
-        fileExists[M](server, SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)).flatMap {
+        exists[M](server, SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)).flatMap {
           case true ⇒
             for {
               // FIXME Limit the size of the read
@@ -239,7 +239,6 @@ package object ssh {
     }
   }
 
-  def fileExists[M[_]](server: SSHServer, path: String)(implicit ssh: SSH[M]) = ssh.sftp(server, _.exists(path))
   def readFile[M[_], T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T)(implicit ssh: SSH[M]) = ssh.readFile(server, path, f)
   def writeFile[M[_]](server: SSHServer, is: java.io.InputStream, path: String)(implicit ssh: SSH[M]): M[Unit] = ssh.sftp(server, _.writeFile(is, path))
   def home[M[_]](server: SSHServer)(implicit ssh: SSH[M]) = ssh.sftp(server, _.canonicalize("."))
