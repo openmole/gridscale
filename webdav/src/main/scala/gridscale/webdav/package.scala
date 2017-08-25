@@ -75,8 +75,7 @@ package object webdav {
         "yyyy-MM-dd'T'HH:mm:ssZ",
         "EEE MMM dd HH:mm:ss zzz yyyy",
         //      "EEEEEE, dd-MMM-yy HH:mm:ss zzz",
-        "EEE MMMM d HH:mm:ss yyyy"
-      ).map(createFormat)
+        "EEE MMMM d HH:mm:ss yyyy").map(createFormat)
     }
 
     private def parseDate(s: String) = {
@@ -93,8 +92,7 @@ package object webdav {
       Prop(
         displayName = n \\ "displayname" text,
         isCollection = (n \\ "iscollection" text) == "1",
-        modified = parseDate(n \\ "getlastmodified" text).get
-      )
+        modified = parseDate(n \\ "getlastmodified" text).get)
 
     def parsePropsResponse(r: String) =
       (XML.loadString(r) \\ "multistatus" \\ "response" \\ "propstat" \\ "prop").map(parseProp)

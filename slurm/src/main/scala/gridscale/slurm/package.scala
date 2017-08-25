@@ -50,8 +50,7 @@ package object slurm {
         "--cpus-per-task=" -> coresByNode.map(_.toString),
         "--time=" -> wallTime.map(_.toHHmmss),
         "--qos=" -> qos,
-        "-D " -> Some(workDirectory)
-      ).filter { case (k, v) ⇒ v.isDefined }.
+        "-D " -> Some(workDirectory)).filter { case (k, v) ⇒ v.isDefined }.
         map(pair2String).
         mkString("#SBATCH ", "\n#SBATCH ", "\n")
 
@@ -136,20 +135,17 @@ package object slurm {
         toScript,
         scriptSuffix,
         f ⇒ s"sbatch $f",
-        retrieveJobID
-      )(server, jobDescription)
+        retrieveJobID)(server, jobDescription)
 
     override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
       BatchScheduler.state[M, S](
         id ⇒ s"scontrol show job $id",
-        parseState
-      )(server, job)
+        parseState)(server, job)
 
     override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
       BatchScheduler.clean[M, S](
         id ⇒ s"scancel $id",
-        scriptSuffix
-      )(server, job)
+        scriptSuffix)(server, job)
 
   }
 }

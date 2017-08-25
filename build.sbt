@@ -1,8 +1,7 @@
 
-import com.typesafe.sbt.osgi
-import osgi.OsgiKeys._
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scalariform.formatter.preferences._
+import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
@@ -57,8 +56,6 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
-scalariformSettings
-
 def javaByteCodeVersion(scalaVersion: String) = {
   val majorVersion = scalaVersion.split('.').take(2).mkString(".")
   majorVersion match {
@@ -81,7 +78,7 @@ lazy val publishIpfs = taskKey[Unit]("Publish to IPFS")
 
 lazy val defaultSettings =
   settings ++
-    scalariformSettings ++ Seq(
+    scalariformSettings(autoformat = true) ++ Seq(
   ScalariformKeys.preferences :=
     ScalariformKeys.preferences.value
       .setPreference(AlignSingleLineCaseStatements, true)

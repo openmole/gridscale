@@ -234,8 +234,7 @@ package object ssh {
           case USR_RWX ⇒ SSHJFilePermission.USR_RWX
           case GRP_RWX ⇒ SSHJFilePermission.GRP_RWX
           case OTH_RWX ⇒ SSHJFilePermission.OTH_RWX
-        } asJava
-      )
+        } asJava)
     }
   }
 

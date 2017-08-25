@@ -106,8 +106,7 @@ package object egi {
               memory = memory,
               maxCPUTime = maxCpuTime,
               maxWallTime = maxWallTime,
-              status = status
-            )
+              status = status)
           }
         }
       }
@@ -504,8 +503,7 @@ package object egi {
       val options =
         List(
           Some("lifetime=" + lifetime.toSeconds.toLong),
-          fquan.map("fquans=" + _)
-        ).flatten.mkString("&")
+          fquan.map("fquans=" + _)).flatten.mkString("&")
 
       val location = s"/generate-ac${if (!options.isEmpty) "?" + options else ""}"
 

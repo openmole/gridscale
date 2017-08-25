@@ -66,8 +66,8 @@ object BatchScheduler {
     scriptSuffix: ⇒ String,
     submitCommand: String ⇒ String,
     retrieveJobID: String ⇒ BatchJobID)(
-      server: S,
-      jobDescription: D)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
+    server: S,
+    jobDescription: D)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
 
     val workDir = workDirectory(jobDescription)
 

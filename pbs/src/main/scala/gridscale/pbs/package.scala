@@ -95,19 +95,16 @@ package object pbs {
         toScript,
         scriptSuffix,
         f ⇒ s"qsub $f",
-        impl.retrieveJobID
-      )(server, jobDescription)
+        impl.retrieveJobID)(server, jobDescription)
 
     override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
       BatchScheduler.state[M, S](
         id ⇒ s"qstat -f $id",
-        parseState
-      )(server, job)
+        parseState)(server, job)
 
     override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
       BatchScheduler.clean[M, S](
         id ⇒ s"qdel $id",
-        scriptSuffix
-      )(server, job)
+        scriptSuffix)(server, job)
   }
 }

@@ -42,8 +42,7 @@ package object condor {
 
         "initialdir = " -> Some(workDirectory),
         "executable = " -> Some(executable),
-        "arguments = " -> Some(s""""$arguments"""")
-      ).filter { case (k, v) ⇒ v.isDefined }.
+        "arguments = " -> Some(s""""$arguments"""")).filter { case (k, v) ⇒ v.isDefined }.
         map(pair2String).
         mkString("\n")
 
@@ -161,16 +160,14 @@ package object condor {
         toScript,
         scriptSuffix,
         f ⇒ s"condor_submit $f",
-        impl.retrieveJobId
-      )(server, jobDescription)
+        impl.retrieveJobId)(server, jobDescription)
 
     override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = queryState(server, job)(hn, error)
 
     override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
       BatchScheduler.clean[M, S](
         id ⇒ s"condor_rm $id",
-        scriptSuffix
-      )(server, job)
+        scriptSuffix)(server, job)
 
   }
 

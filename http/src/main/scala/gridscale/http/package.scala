@@ -253,9 +253,7 @@ package object http {
             ListEntry(
               new java.io.File(java.net.URLDecoder.decode(ret, "utf-8")).getPath,
               if (isDir) FileType.Directory else FileType.File,
-              None
-            )
-          )
+              None))
         } else None
     }.toVector
   }
@@ -342,10 +340,8 @@ package object http {
           keyStore,
           new TrustManagerDelegate(
             trustManager(keyStore),
-            javaDefaultTrustManager.getTrustManagers()(0).asInstanceOf[X509TrustManager]
-          ),
-          password
-        )
+            javaDefaultTrustManager.getTrustManagers()(0).asInstanceOf[X509TrustManager]),
+          password)
       }
 
       //def createSSLContext(path: String, password: String): SSLContext = createSSLContext(getKeyStore(path, password), password)

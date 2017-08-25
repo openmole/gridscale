@@ -34,8 +34,8 @@ object SSHJSFTPClient {
         val t =
           e.getAttributes.getType match {
             case sftp.FileMode.Type.DIRECTORY ⇒ FileType.Directory
-            case sftp.FileMode.Type.SYMLINK  ⇒ FileType.Link
-            case _                       ⇒ FileType.File
+            case sftp.FileMode.Type.SYMLINK   ⇒ FileType.Link
+            case _                            ⇒ FileType.File
           }
         ListEntry(e.getName, t, Some(e.getAttributes.getMtime))
     }.toVector
@@ -65,8 +65,7 @@ object SSHJSFTPClient {
       case e: Throwable ⇒
         close(sshjSFTPClient)
         throw e
-    }
-    finally c.close()
+    } finally c.close()
   }
 
   // FIXME takes care of too much things => should not close the sftpclient for instance
@@ -78,7 +77,7 @@ object SSHJSFTPClient {
   // FIXME this is badly named as it writes but does not return an output stream
   def fileOutputStream(sshjSFTPClient: sftp.SFTPClient)(is: InputStream, path: String): Unit =
     withClosable(sshjSFTPClient, sshjSFTPClient.open(path, util.EnumSet.of(sftp.OpenMode.WRITE, sftp.OpenMode.CREAT, sftp.OpenMode.TRUNC))) {
-      fileHandle => withClosable(sshjSFTPClient, new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)) { copyStream(is, _) }
+      fileHandle ⇒ withClosable(sshjSFTPClient, new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)) { copyStream(is, _) }
     }
 
 }

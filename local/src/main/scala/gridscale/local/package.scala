@@ -31,8 +31,7 @@ package object local {
             stdin.close()
           },
           stdout ⇒ out append Source.fromInputStream(stdout).mkString(""),
-          stderr ⇒ err append Source.fromInputStream(stderr).mkString("")
-        )
+          stderr ⇒ err append Source.fromInputStream(stderr).mkString(""))
 
         val proc = shell.run(io)
         ExecutionResult(proc.exitValue, out.mkString, err.mkString)
