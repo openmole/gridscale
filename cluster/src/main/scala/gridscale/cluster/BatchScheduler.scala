@@ -27,24 +27,6 @@ import gridscale.cluster.BatchScheduler.BatchJob
 
 import scala.language.higherKinds
 
-/**
- * Typeclass reflecting the public API of a BatchScheduler
- *
- * @tparam D Generic JobDescription type
- */
-trait BatchScheduler[D] {
-
-  def submit[M[_]: Monad, S](server: S, jobDescription: D)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob]
-
-  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState]
-
-  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit]
-
-  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)
-  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdErr[M, S](server, job)
-
-}
-
 /** Generic functions to be used as building blocks to implement batch schedulers */
 object BatchScheduler {
 

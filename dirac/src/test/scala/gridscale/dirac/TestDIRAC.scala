@@ -1,6 +1,6 @@
 package gridscale.dirac
 
-import freedsl.dsl.merge
+import cats._
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import freedsl.system._
@@ -16,13 +16,9 @@ object TestDIRAC extends App {
   val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/persistent/CACertificates/")
 
-  val intp = merge(HTTP.interpreter, FileSystem.interpreter, ErrorHandler.interpreter, System.interpreter)
-  import intp.implicits._
-  import intp._
-
   val description = JobDescription("/bin/echo", "hello")
 
-  val prg =
+  def prg[M[_]: Monad: HTTP: ErrorHandler: FileSystem] =
     for {
       service ← getService[M]("vo.complex-systems.eu")
       s ← server[M](service, p12, certificateDirectory)
@@ -33,6 +29,9 @@ object TestDIRAC extends App {
       //st ← waitUntilEnded[M](state[M](s, t, j))
     } yield gs
 
-  println(intp.run(prg).toTry.get)
+  DIRACInterpreter { interpreters ⇒
+    import interpreters._
+    println(prg[util.Try].get)
+  }
 
 }

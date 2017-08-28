@@ -20,4 +20,4 @@ object AuthenticationException {
   def apply(msg: String, cause: Throwable = null) = new AuthenticationException(msg, cause)
 }
 
-class AuthenticationException(msg: String, cause: Throwable = null) extends Exception(msg, cause) with freedsl.dsl.Error
+class AuthenticationException(msg: String, cause: Throwable = null) extends Exception(msg, cause)

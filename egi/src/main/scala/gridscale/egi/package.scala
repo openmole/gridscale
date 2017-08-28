@@ -35,15 +35,17 @@ package object egi {
   import time.TimeConversions._
   import information.InformationConversions._
 
-  import freedsl.dsl._
   import freedsl.filesystem._
   import freedsl.io._
   import cats._
   import cats.implicits._
+  import freestyle.tagless._
+  import scala.util._
 
-  object BDII {
+  case class BDIIServer(host: String, port: Int, timeout: Time = 1 minutes)
+  case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
 
-    case class Server(host: String, port: Int, timeout: Time = 1 minutes)
+  object BDIIIntepreter {
 
     def trimSlashes(path: String) =
       path.reverse.dropWhile(_ == '/').reverse.dropWhile(_ == '/')
@@ -51,72 +53,71 @@ package object egi {
     def location(host: String, port: Int, basePath: String) =
       "https://" + trimSlashes(host) + ":" + port + "/" + trimSlashes(basePath) + "/"
 
-    case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
-
-    def interpreter = new Interpreter {
-      def webDAVs(server: Server, vo: String)(implicit context: Context) = result {
-        val creamCEServiceType = "org.glite.ce.CREAM"
-
-        BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
-          def searchPhrase = "(GLUE2EndpointInterfaceName=webdav)"
-
-          val services =
-            for {
-              webdavService ← q.query(searchPhrase, bindDN = "o=glue").toSeq
-              id = webdavService.getAttributes.get("GLUE2EndpointID").get.toString
-              url = webdavService.getAttributes.get("GLUE2EndpointURL").get.toString
-            } yield (id, url)
-
-          for {
-            (id, url) ← services.toVector
-            urlObject = new java.net.URI(url)
-            host = urlObject.getHost
-            pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
-            path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
-          } yield location(urlObject.getHost, urlObject.getPort, path)
-        }
-      }
-
-      def creamCEs(server: Server, vo: String)(implicit context: Context) = result {
-        BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
-          val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))")
-
-          case class Machine(memory: Int)
-          def machineInfo(host: String) = {
-            val info = q.query(s"(GlueChunkKey=GlueClusterUniqueID=$host)")(0)
-            Machine(memory = info.getAttributes.get("GlueHostMainMemoryRAMSize").get().toString.toInt)
-          }
-
-          for {
-            info ← res.toVector
-            maxWallTime = info.getAttributes.get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
-            maxCpuTime = info.getAttributes.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
-            port = info.getAttributes.get("GlueCEInfoGatekeeperPort").get.toString.toInt
-            uniqueId = info.getAttributes.get("GlueCEUniqueID").get.toString
-            contact = info.getAttributes.get("GlueCEInfoContactString").get.toString
-            status = info.getAttributes.get("GlueCEStateStatus").get.toString
-            hostingCluster = info.getAttributes.get("GlueCEHostingCluster").get.toString
-            memory = machineInfo(hostingCluster).memory
-          } yield {
-            CREAMCELocation(
-              hostingCluster = hostingCluster,
-              port = port,
-              uniqueId = uniqueId,
-              contact = contact,
-              memory = memory,
-              maxCPUTime = maxCpuTime,
-              maxWallTime = maxWallTime,
-              status = status)
-          }
-        }
-      }
-
-    }
   }
 
-  @dsl trait BDII[M[_]] {
-    def webDAVs(server: BDII.Server, vo: String): M[Vector[String]]
-    def creamCEs(server: BDII.Server, vo: String): M[Vector[BDII.CREAMCELocation]]
+  class BDIIIntepreter() extends BDII.Handler[Try] {
+    def webDAVs(server: BDIIServer, vo: String) = Try {
+      val creamCEServiceType = "org.glite.ce.CREAM"
+
+      BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
+        def searchPhrase = "(GLUE2EndpointInterfaceName=webdav)"
+
+        val services =
+          for {
+            webdavService ← q.query(searchPhrase, bindDN = "o=glue").toSeq
+            id = webdavService.getAttributes.get("GLUE2EndpointID").get.toString
+            url = webdavService.getAttributes.get("GLUE2EndpointURL").get.toString
+          } yield (id, url)
+
+        for {
+          (id, url) ← services.toVector
+          urlObject = new java.net.URI(url)
+          host = urlObject.getHost
+          pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
+          path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
+        } yield BDIIIntepreter.location(urlObject.getHost, urlObject.getPort, path)
+      }
+    }
+
+    def creamCEs(server: BDIIServer, vo: String) = Try {
+      BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
+        val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))")
+
+        case class Machine(memory: Int)
+        def machineInfo(host: String) = {
+          val info = q.query(s"(GlueChunkKey=GlueClusterUniqueID=$host)")(0)
+          Machine(memory = info.getAttributes.get("GlueHostMainMemoryRAMSize").get().toString.toInt)
+        }
+
+        for {
+          info ← res.toVector
+          maxWallTime = info.getAttributes.get("GlueCEPolicyMaxWallClockTime").get.toString.toInt
+          maxCpuTime = info.getAttributes.get("GlueCEPolicyMaxCPUTime").get.toString.toInt
+          port = info.getAttributes.get("GlueCEInfoGatekeeperPort").get.toString.toInt
+          uniqueId = info.getAttributes.get("GlueCEUniqueID").get.toString
+          contact = info.getAttributes.get("GlueCEInfoContactString").get.toString
+          status = info.getAttributes.get("GlueCEStateStatus").get.toString
+          hostingCluster = info.getAttributes.get("GlueCEHostingCluster").get.toString
+          memory = machineInfo(hostingCluster).memory
+        } yield {
+          CREAMCELocation(
+            hostingCluster = hostingCluster,
+            port = port,
+            uniqueId = uniqueId,
+            contact = contact,
+            memory = memory,
+            maxCPUTime = maxCpuTime,
+            maxWallTime = maxWallTime,
+            status = status)
+        }
+      }
+    }
+
+  }
+
+  @tagless trait BDII {
+    def webDAVs(server: BDIIServer, vo: String): FS[Vector[String]]
+    def creamCEs(server: BDIIServer, vo: String): FS[Vector[CREAMCELocation]]
   }
 
   //  import

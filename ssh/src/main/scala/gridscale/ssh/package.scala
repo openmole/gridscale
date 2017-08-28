@@ -1,120 +1,127 @@
 package gridscale
 
+import freestyle.tagless.tagless
 import gridscale.tools.shell.BashShell
 
 import scala.util.Try
 import scala.language.{ higherKinds, postfixOps }
+import java.lang.AutoCloseable
 
 package object ssh {
 
   import cats._
   import cats.implicits._
+  import freedsl.tool._
   import gridscale.ssh.sshj.{ SFTPClient, SSHClient }
   import gridscale.authentication._
-  import freedsl.dsl._
   import freedsl.system._
   import squants._
   import time.TimeConversions._
   import gridscale.tools.cache._
 
-  object SSH {
+  object SSHAuthentication {
 
-    object Authentication {
-
-      implicit def userPassword = new Authentication[UserPassword] {
-        override def authenticate(t: UserPassword, sshClient: SSHClient): Try[Unit] =
-          sshClient.authPassword(t.user, t.password)
-      }
-
-      implicit def key = new Authentication[PrivateKey] {
-        override def authenticate(t: PrivateKey, sshClient: SSHClient): Try[Unit] =
-          sshClient.authPrivateKey(t)
-      }
-
+    implicit def userPassword = new SSHAuthentication[UserPassword] {
+      override def authenticate(t: UserPassword, sshClient: SSHClient): Try[Unit] =
+        sshClient.authPassword(t.user, t.password)
     }
 
-    trait Authentication[T] {
-      def authenticate(t: T, sshClient: SSHClient): util.Try[Unit]
-    }
-
-    def interpreter = new Interpreter {
-
-      def client(server: SSHServer) = {
-        val ssh =
-          util.Try {
-            val ssh = new SSHClient
-            // disable strict host key checking
-            ssh.disableHostChecking()
-            ssh.useCompression()
-            ssh.setConnectTimeout(server.timeout.millis.toInt)
-            ssh.setTimeout(server.timeout.millis.toInt)
-            ssh.connect(server.host, server.port)
-            ssh
-          }.toEither.leftMap { t ⇒ ConnectionError(s"Error connecting to $server", t) }
-
-        def authenticate(ssh: SSHClient) = {
-          server.authenticate(ssh) match {
-            case util.Success(_) ⇒ util.Right(ssh)
-            case util.Failure(e) ⇒
-              ssh.disconnect()
-              util.Left(AuthenticationException(s"Error authenticating to $server", e))
-          }
-        }
-
-        for {
-          client ← ssh
-          a ← authenticate(client)
-        } yield a
-      }
-
-      val clientCache = KeyValueCache(client)
-
-      def execute(server: SSHServer, s: String)(implicit context: Context) =
-        for {
-          c ← clientCache.get(server)
-          r ← result(SSHClient.exec(c, BashShell.remoteBashCommand(s)).toEither.leftMap(t ⇒ ExecutionError(s"Error executing $s on $server", t)))
-        } yield r
-
-      def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T])(implicit context: Context) =
-        for {
-          c ← clientCache.get(server)
-          r ← result(SSHClient.sftp(c, f).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t)))
-        } yield r
-
-      def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T)(implicit context: Context) =
-        for {
-          c ← clientCache.get(server)
-          res ← result(SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t)))
-        } yield res
-
-      def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult)(implicit context: Context) = failure(ReturnCodeError(server, command, executionResult))
-
-      override def terminate(implicit context: Context) = Right {
-        clientCache.values.flatMap(_.right.toOption).foreach(_.close())
-        clientCache.clear()
-        ()
-      }
-    }
-
-    case class ConnectionError(message: String, t: Throwable) extends Exception(message, t) with Error
-    case class ExecutionError(message: String, t: Throwable) extends Exception(message, t) with Error
-    case class SFTPError(message: String, t: Throwable) extends Exception(message, t) with Error
-    case class ReturnCodeError(server: String, command: String, executionResult: ExecutionResult) extends Exception with Error {
-      override def toString = ExecutionResult.error(command, executionResult) + " on server $server"
+    implicit def key = new SSHAuthentication[PrivateKey] {
+      override def authenticate(t: PrivateKey, sshClient: SSHClient): Try[Unit] =
+        sshClient.authPrivateKey(t)
     }
 
   }
 
-  @dsl trait SSH[M[_]] {
-    def execute(server: SSHServer, s: String): M[ExecutionResult]
-    def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T]): M[T]
-    def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T): M[T]
-    def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult): M[Unit]
+  trait SSHAuthentication[T] {
+    def authenticate(t: T, sshClient: SSHClient): util.Try[Unit]
+  }
+
+  object SSHInterpreter {
+    def apply[T](f: SSHInterpreter ⇒ T) = {
+      val intp = new SSHInterpreter
+      try f(intp)
+      finally intp.close()
+    }
+  }
+
+  case class SSHInterpreter() extends SSH.Handler[util.Try] with AutoCloseable {
+
+    def client(server: SSHServer): Try[SSHClient] = {
+      val ssh =
+        util.Try {
+          val ssh = new SSHClient
+          // disable strict host key checking
+          ssh.disableHostChecking()
+          ssh.useCompression()
+          ssh.setConnectTimeout(server.timeout.millis.toInt)
+          ssh.setTimeout(server.timeout.millis.toInt)
+          ssh.connect(server.host, server.port)
+          ssh
+        }.mapFailure { t ⇒ ConnectionError(s"Error connecting to $server", t) }
+
+      def authenticate(ssh: SSHClient) = {
+        server.authenticate(ssh) match {
+          case util.Success(s) ⇒ util.Success(ssh)
+          case util.Failure(e) ⇒
+            Try(ssh.disconnect())
+            util.Failure(AuthenticationException(s"Error authenticating to $server", e))
+        }
+      }
+
+      for {
+        client ← ssh
+        a ← authenticate(client)
+      } yield a
+    }
+
+    val clientCache = KeyValueCache(client)
+
+    def execute(server: SSHServer, s: String) =
+      for {
+        c ← clientCache.get(server)
+        r ← SSHClient.exec(c, BashShell.remoteBashCommand(s)).mapFailure(t ⇒ ExecutionError(s"Error executing $s on $server", t))
+      } yield r
+
+    def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T]) =
+      for {
+        c ← clientCache.get(server)
+        r ← SSHClient.sftp(c, f).flatten.mapFailure(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+      } yield r
+
+    def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) =
+      for {
+        c ← clientCache.get(server)
+        res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.mapFailure(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+      } yield res
+
+    def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = util.Failure(ReturnCodeError(server, command, executionResult))
+
+    def close() = {
+      clientCache.values.flatMap(_.toOption).foreach(_.close())
+      clientCache.clear()
+      ()
+    }
+
+  }
+
+  case class ConnectionError(message: String, t: Throwable) extends Exception(message, t)
+  case class ExecutionError(message: String, t: Throwable) extends Exception(message, t)
+  case class SFTPError(message: String, t: Throwable) extends Exception(message, t)
+  case class ReturnCodeError(server: String, command: String, executionResult: ExecutionResult) extends Exception {
+    override def toString = ExecutionResult.error(command, executionResult) + " on server $server"
+  }
+
+  @tagless trait SSH {
+    def execute(server: SSHServer, s: String): FS[ExecutionResult]
+    def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T]): FS[T]
+    def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T): FS[T]
+    def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult): FS[Unit]
   }
 
   object SSHServer {
-    def apply[A: SSH.Authentication](host: String, port: Int = 22, timeout: Time = 1 minutes)(authentication: A): SSHServer =
-      SSHServer(host, port, timeout, (sshClient: SSHClient) ⇒ implicitly[SSH.Authentication[A]].authenticate(authentication, sshClient))
+    def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes)(authentication: A): SSHServer =
+      SSHServer(host, port, timeout, (sshClient: SSHClient) ⇒ implicitly[SSHAuthentication[A]].authenticate(authentication, sshClient))
   }
 
   case class SSHServer(host: String, port: Int, timeout: Time, authenticate: SSHClient ⇒ Try[Unit]) {

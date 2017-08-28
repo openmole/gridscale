@@ -1,34 +1,35 @@
 package gridscale.condor
 
+import cats._
+import cats.implicits._
 import freedsl.system._
 import freedsl.errorhandler._
 import gridscale._
+import gridscale.ssh
 import gridscale.authentication._
-import gridscale.ssh._
-import freedsl.dsl._
+import gridscale.condor._
+import gridscale.cluster.{ SSHClusterInterpreter }
 
 object CondorExample extends App {
 
   val authentication = PrivateKey(new java.io.File("/home/jopasserat/.ssh/id_rsa"), "", "jopasserat")
-  val headNode = SSHServer("myhost.co.uk")(authentication)
-
-  val context = merge(SSH, System, ErrorHandler)
+  val headNode = ssh.SSHServer("myhost.co.uk")(authentication)
 
   import scala.language.reflectiveCalls
-  import context.M
-  import context.implicits._
-  import gridscale.condor.condorDSL._
+  import gridscale.condor._
 
   val jobDescription = CondorJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale")
 
-  val res = for {
-    job ← submit[M, SSHServer](headNode, jobDescription)
-    s ← waitUntilEnded[M](state[M, SSHServer](headNode, job))
-    out ← stdOut[M, SSHServer](headNode, job)
-    _ ← clean[M, SSHServer](headNode, job)
+  def res[M[_]: System: ErrorHandler: ssh.SSH: Monad] = for {
+    job ← submit[M, ssh.SSHServer](headNode, jobDescription)
+    s ← waitUntilEnded[M](state[M, ssh.SSHServer](headNode, job))
+    out ← stdOut[M, ssh.SSHServer](headNode, job)
+    _ ← clean[M, ssh.SSHServer](headNode, job)
   } yield (s, out)
 
-  val interpreter = merge(SSH.interpreter, System.interpreter, ErrorHandler.interpreter)
-  println(interpreter.run(res))
+  SSHClusterInterpreter { intp ⇒
+    import intp._
+    println(res[util.Try])
+  }
 
 }

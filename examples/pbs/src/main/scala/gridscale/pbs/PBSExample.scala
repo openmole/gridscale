@@ -1,12 +1,15 @@
 package gridscale.pbs
 
+import cats._
+import cats.implicits._
 import freedsl.system._
 import freedsl.errorhandler._
 import gridscale._
 import gridscale.authentication._
 import gridscale.ssh._
-import freedsl.dsl._
+import gridscale.cluster.SSHClusterInterpreter
 import squants.time.TimeConversions._
+
 import scala.language.postfixOps
 
 object PBSExample extends App {
@@ -14,23 +17,20 @@ object PBSExample extends App {
   val authentication = UserPassword("testuser", "testuser")
   val localhost = SSHServer("localhost", 10022)(authentication)
 
-  val context = merge(SSH, System, ErrorHandler)
-
-  import scala.language.reflectiveCalls
-  import context.M
-  import context.implicits._
-  import gridscale.pbs.pbsDSL._
+  import gridscale.pbs._
 
   val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/jpassera/test_gridscale", wallTime = Some(10 minutes))
 
-  val res = for {
+  def res[M[_]: SSH: System: ErrorHandler: Monad] = for {
     job ← submit[M, SSHServer](localhost, jobDescription)
     s ← waitUntilEnded[M](state[M, SSHServer](localhost, job))
     out ← stdOut[M, SSHServer](localhost, job)
     _ ← clean[M, SSHServer](localhost, job)
   } yield (s, out)
 
-  val interpreter = merge(SSH.interpreter, System.interpreter, ErrorHandler.interpreter)
-  println(interpreter.run(res))
+  SSHClusterInterpreter { intp ⇒
+    import intp._
+    println(res[util.Try])
+  }
 
 }

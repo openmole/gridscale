@@ -17,7 +17,7 @@ package object webdav {
 
   def listProperties[M[_]: http.HTTP: Monad](server: http.Server, path: String) =
     for {
-      content ← http.read[M](server, path, http.HTTP.PropFind())
+      content ← http.read[M](server, path, http.PropFind())
     } yield parsePropsResponse(content)
 
   def list[M[_]: http.HTTP: Monad](server: http.Server, path: String) = listProperties[M](server, path).map(_.map(_.displayName))
@@ -31,27 +31,27 @@ package object webdav {
       }
 
     for {
-      response ← http.HTTP[M].request(server, path, (_, resp) ⇒ resp, http.HTTP.Head(), testResponse = false)
+      response ← http.HTTP[M].request(server, path, (_, resp) ⇒ resp, http.Head(), testResponse = false)
       result ← ErrorHandler[M].get(readResponse(response))
     } yield result
   }
 
-  def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.Delete()).map(_ ⇒ ())
-  def rmDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.Delete(headers = Seq("Depth" -> "infinity"))).map(_ ⇒ ())
-  def mkDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.HTTP.MkCol()).map(_ ⇒ ())
+  def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.Delete()).map(_ ⇒ ())
+  def rmDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.Delete(headers = Seq("Depth" -> "infinity"))).map(_ ⇒ ())
+  def mkDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.MkCol()).map(_ ⇒ ())
 
   def writeStream[M[_]: Monad: http.HTTP](server: http.Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true): M[Unit] = {
     def redirectedServer =
       if (!redirect) server.pure[M]
       else
         for {
-          diskURI ← http.HTTP[M].request(server, path, WebDAV.getRedirectURI, http.HTTP.Put(() ⇒ WebDAV.emptyStream(), headers = Seq(http.HTTP.Headers.expectContinue)))
+          diskURI ← http.HTTP[M].request(server, path, WebDAV.getRedirectURI, http.Put(() ⇒ WebDAV.emptyStream(), headers = Seq(http.Headers.expectContinue)))
           destination = http.Server.copy(server)(url = diskURI)
         } yield destination
 
     for {
       s ← redirectedServer
-      _ ← http.read[M](s, "", http.HTTP.Put(is))
+      _ ← http.read[M](s, "", http.Put(is))
     } yield {}
   }
 

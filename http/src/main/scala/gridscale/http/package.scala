@@ -28,8 +28,8 @@ package object http {
   import org.apache.http.impl.client.{ HttpClients, LaxRedirectStrategy }
   import org.apache.http.impl.conn.BasicHttpClientConnectionManager
   import org.apache.http.protocol.HttpContext
-  import gridscale._
-  import freedsl.dsl._
+  import freedsl.tool._
+  import freestyle.tagless._
   import freedsl.filesystem._
   import org.htmlparser.Parser
   import org.htmlparser.filters.NodeClassFilter
@@ -52,51 +52,49 @@ package object http {
   def get[T](url: String) = {
     val scheme = new URI(url).getScheme
 
-    val intp = merge(HTTP.interpreter)
-    import intp.implicits._
+    implicit val interpreter = HTTPInterpreter()
 
     scheme match {
       case "https" ⇒
         val server = HTTPSServer(url, HTTPS.SSLSocketFactory.default)
-        intp.run(read[intp.M](server, ""))
+        read[Try](server, "")
       case "http" ⇒
         val server = HTTPServer(url)
-        intp.run(read[intp.M](server, ""))
+        read[Try](server, "")
     }
   }
 
   def getStream[T](url: String)(f: InputStream ⇒ T) = {
     val scheme = new URI(url).getScheme
 
-    val intp = merge(HTTP.interpreter)
-    import intp.implicits._
+    implicit val interpreter = HTTPInterpreter()
 
     scheme match {
       case "https" ⇒
         val server = HTTPSServer(url, HTTPS.SSLSocketFactory.default)
-        intp.run(readStream[intp.M, T](server, "", f))
+        readStream[Try, T](server, "", f)
       case "http" ⇒
         val server = HTTPServer(url)
-        intp.run(readStream[intp.M, T](server, "", f))
+        readStream[Try, T](server, "", f)
     }
   }
 
-  object HTTP {
+  type Headers = Seq[(String, String)]
 
-    type Headers = Seq[(String, String)]
+  object Headers {
+    def expectContinue = (org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
+  }
 
-    object Headers {
-      def expectContinue = (org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
-    }
+  sealed trait HTTPMethod
+  case class Get(headers: Headers = Seq.empty) extends HTTPMethod
+  case class PropFind(headers: Headers = Seq.empty) extends HTTPMethod
+  case class Delete(headers: Headers = Seq.empty) extends HTTPMethod
+  case class Put(stream: () ⇒ InputStream, headers: Headers = Seq.empty) extends HTTPMethod
+  case class Post(entity: () ⇒ HttpEntity, headers: Headers = Seq.empty) extends HTTPMethod
+  case class MkCol(headers: Headers = Seq.empty) extends HTTPMethod
+  case class Head(headers: Headers = Seq.empty) extends HTTPMethod
 
-    sealed trait Method
-    case class Get(headers: Headers = Seq.empty) extends Method
-    case class PropFind(headers: Headers = Seq.empty) extends Method
-    case class Delete(headers: Headers = Seq.empty) extends Method
-    case class Put(stream: () ⇒ InputStream, headers: Headers = Seq.empty) extends Method
-    case class Post(entity: () ⇒ HttpEntity, headers: Headers = Seq.empty) extends Method
-    case class MkCol(headers: Headers = Seq.empty) extends Method
-    case class Head(headers: Headers = Seq.empty) extends Method
+  object HTTPInterpreter {
 
     def client(server: Server) =
       server match {
@@ -128,69 +126,6 @@ package object http {
       newClient(timeout)
     }
 
-    def interpreter = new Interpreter {
-
-      def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method, test: Boolean): Try[T] = {
-        val uri =
-          if (path.isEmpty) server.url else new URI(server.url.toString + path)
-
-        val (methodInstance, headers, closeable) =
-          method match {
-            case Get(headers)      ⇒ (new HttpGet(uri), headers, None)
-            case PropFind(headers) ⇒ (new HttpPropFind(uri), headers, None)
-            case Delete(headers)   ⇒ (new HttpDelete(uri), headers, None)
-            case MkCol(headers)    ⇒ (new HttpMkCol(uri), headers, None)
-            case Head(headers)     ⇒ (new HttpHead(uri), headers, None)
-            case Put(is, headers) ⇒
-              val putInstance = new HttpPut(uri)
-              val createdStream = is()
-              putInstance.setEntity(new InputStreamEntity(createdStream))
-              (putInstance, headers, Some(createdStream))
-            case Post(fentity, headers) ⇒
-              val postInstance = new HttpPost(uri)
-              postInstance.setEntity(fentity())
-              (postInstance, headers, None)
-          }
-
-        headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
-
-        def testResponse(response: HttpResponse) = {
-          def isResponseOk(response: HttpResponse) =
-            response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
-              response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
-
-          if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
-        }
-
-        import util._
-
-        Try {
-          try {
-            val httpClient = client(server)
-            try {
-              val response = httpClient.execute(methodInstance)
-              try {
-                if (test) testResponse(response)
-                f(methodInstance, response)
-              } finally response.close()
-            } catch {
-              case e: org.apache.http.conn.ConnectTimeoutException ⇒ throw new ConnectionError(e)
-            } finally httpClient.close()
-          } finally closeable.foreach(_.close())
-        }
-      }
-
-      def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method, testResponse: Boolean)(implicit context: Context) =
-        result(withInputStream(server, path, f, method, testResponse).toEither.leftMap(wrapError))
-
-      def content(server: Server, path: String, method: HTTP.Method)(implicit context: Context) = {
-        def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
-        def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
-        withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).toEither.leftMap(wrapError)
-      }
-
-    }
-
     def wrapError(t: Throwable) =
       t match {
         case t: ConnectionError ⇒ t
@@ -198,15 +133,78 @@ package object http {
         case _                  ⇒ HTTPError(t)
       }
 
-    case class ConnectionError(t: Throwable) extends Exception(t) with Error
-    case class HTTPError(t: Throwable) extends Exception(t) with Error {
+    case class ConnectionError(t: Throwable) extends Exception(t)
+    case class HTTPError(t: Throwable) extends Exception(t) {
       override def toString = "HTTP error: " + t.toString
     }
   }
 
-  @dsl trait HTTP[M[_]] {
-    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTP.Method, testResponse: Boolean = true): M[T]
-    def content(server: Server, path: String, method: HTTP.Method = HTTP.Get()): M[String]
+  case class HTTPInterpreter() extends HTTP.Handler[Try] {
+
+    def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean): Try[T] = {
+      val uri =
+        if (path.isEmpty) server.url else new URI(server.url.toString + path)
+
+      val (methodInstance, headers, closeable) =
+        method match {
+          case Get(headers)      ⇒ (new HttpGet(uri), headers, None)
+          case PropFind(headers) ⇒ (new HttpPropFind(uri), headers, None)
+          case Delete(headers)   ⇒ (new HttpDelete(uri), headers, None)
+          case MkCol(headers)    ⇒ (new HttpMkCol(uri), headers, None)
+          case Head(headers)     ⇒ (new HttpHead(uri), headers, None)
+          case Put(is, headers) ⇒
+            val putInstance = new HttpPut(uri)
+            val createdStream = is()
+            putInstance.setEntity(new InputStreamEntity(createdStream))
+            (putInstance, headers, Some(createdStream))
+          case Post(fentity, headers) ⇒
+            val postInstance = new HttpPost(uri)
+            postInstance.setEntity(fentity())
+            (postInstance, headers, None)
+        }
+
+      headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
+
+      def testResponse(response: HttpResponse) = {
+        def isResponseOk(response: HttpResponse) =
+          response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
+            response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
+
+        if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+      }
+
+      import util._
+
+      Try {
+        try {
+          val httpClient = HTTPInterpreter.client(server)
+          try {
+            val response = httpClient.execute(methodInstance)
+            try {
+              if (test) testResponse(response)
+              f(methodInstance, response)
+            } finally response.close()
+          } catch {
+            case e: org.apache.http.conn.ConnectTimeoutException ⇒ throw new HTTPInterpreter.ConnectionError(e)
+          } finally httpClient.close()
+        } finally closeable.foreach(_.close())
+      }
+    }
+
+    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean) =
+      withInputStream(server, path, f, method, testResponse).mapFailure(HTTPInterpreter.wrapError)
+
+    def content(server: Server, path: String, method: HTTPMethod) = {
+      def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
+      def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
+      withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).mapFailure(HTTPInterpreter.wrapError)
+    }
+
+  }
+
+  @tagless trait HTTP {
+    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean = true): FS[T]
+    def content(server: Server, path: String, method: HTTPMethod = Get()): FS[String]
   }
 
   sealed trait Server {
@@ -259,8 +257,8 @@ package object http {
   }
 
   def list[M[_]: Monad](server: Server, path: String)(implicit http: HTTP[M]) = http.content(server, path).map(parseHTMLListing)
-  def read[M[_]: Monad](server: Server, path: String, method: HTTP.Method = HTTP.Get())(implicit http: HTTP[M]) = http.content(server, path, method)
-  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T, method: HTTP.Method = HTTP.Get())(implicit http: HTTP[M]): M[T] =
+  def read[M[_]: Monad](server: Server, path: String, method: HTTPMethod = Get())(implicit http: HTTP[M]) = http.content(server, path, method)
+  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T, method: HTTPMethod = Get())(implicit http: HTTP[M]): M[T] =
     http.request(server, path, (_, r) ⇒ f(r.getEntity.getContent), method)
 
   object HTTPS {
@@ -390,7 +388,7 @@ package object http {
     def newClient(factory: SSLSocketFactory, timeout: Time) =
       HttpClients.custom().
         setConnectionManager(connectionManager(factory(timeout), timeout)).
-        setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
+        setDefaultRequestConfig(HTTPInterpreter.requestConfig(timeout)).build()
 
     def readPem[M[_]: Monad](pem: java.io.File)(implicit fileSystem: FileSystem[M]) =
       for {

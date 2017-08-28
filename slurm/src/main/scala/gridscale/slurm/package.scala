@@ -4,6 +4,7 @@ import cats._
 import cats.implicits._
 import freedsl.system._
 import freedsl.errorhandler._
+import gridscale.cluster.BatchScheduler.{ BatchJob, error, output }
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import monocle.macros._
@@ -122,30 +123,30 @@ package object slurm {
 
   }
 
-  implicit val slurmDSL = new BatchScheduler[SlurmJobDescription] {
+  import impl._
+  import BatchScheduler._
 
-    import impl._
-    import BatchScheduler._
+  val scriptSuffix = ".slurm"
 
-    val scriptSuffix = ".slurm"
+  def submit[M[_]: Monad, S](server: S, jobDescription: SlurmJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
+    BatchScheduler.submit[M, S, SlurmJobDescription](
+      SlurmJobDescription.workDirectory.get,
+      toScript,
+      scriptSuffix,
+      f ⇒ s"sbatch $f",
+      retrieveJobID)(server, jobDescription)
 
-    override def submit[M[_]: Monad, S](server: S, jobDescription: SlurmJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-      BatchScheduler.submit[M, S, SlurmJobDescription](
-        SlurmJobDescription.workDirectory.get,
-        toScript,
-        scriptSuffix,
-        f ⇒ s"sbatch $f",
-        retrieveJobID)(server, jobDescription)
+  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
+    BatchScheduler.state[M, S](
+      id ⇒ s"scontrol show job $id",
+      parseState)(server, job)
 
-    override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
-      BatchScheduler.state[M, S](
-        id ⇒ s"scontrol show job $id",
-        parseState)(server, job)
+  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
+    BatchScheduler.clean[M, S](
+      id ⇒ s"scancel $id",
+      scriptSuffix)(server, job)
 
-    override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-      BatchScheduler.clean[M, S](
-        id ⇒ s"scancel $id",
-        scriptSuffix)(server, job)
+  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
+  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
 
-  }
 }

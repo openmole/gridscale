@@ -3,6 +3,7 @@ package gridscale
 import cats._
 import freedsl.system._
 import freedsl.errorhandler._
+import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import squants._
@@ -82,29 +83,30 @@ package object pbs {
 
   }
 
-  implicit val pbsDSL = new BatchScheduler[PBSJobDescription] {
+  import impl._
+  import BatchScheduler._
 
-    import impl._
-    import BatchScheduler._
+  val scriptSuffix = ".pbs"
 
-    val scriptSuffix = ".pbs"
+  def submit[M[_]: Monad, S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
+    BatchScheduler.submit[M, S, PBSJobDescription](
+      PBSJobDescription.workDirectory.get,
+      toScript,
+      scriptSuffix,
+      f ⇒ s"qsub $f",
+      impl.retrieveJobID)(server, jobDescription)
 
-    override def submit[M[_]: Monad, S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-      BatchScheduler.submit[M, S, PBSJobDescription](
-        PBSJobDescription.workDirectory.get,
-        toScript,
-        scriptSuffix,
-        f ⇒ s"qsub $f",
-        impl.retrieveJobID)(server, jobDescription)
+  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
+    BatchScheduler.state[M, S](
+      id ⇒ s"qstat -f $id",
+      parseState)(server, job)
 
-    override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
-      BatchScheduler.state[M, S](
-        id ⇒ s"qstat -f $id",
-        parseState)(server, job)
+  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
+    BatchScheduler.clean[M, S](
+      id ⇒ s"qdel $id",
+      scriptSuffix)(server, job)
 
-    override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-      BatchScheduler.clean[M, S](
-        id ⇒ s"qdel $id",
-        scriptSuffix)(server, job)
-  }
+  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)
+  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdErr[M, S](server, job)
+
 }

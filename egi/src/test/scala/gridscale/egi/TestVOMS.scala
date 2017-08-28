@@ -17,7 +17,7 @@ object TestVOMS extends App {
   val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
   val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/persistent/CACertificates/")
-  val bdii = BDII.Server("topbdii.grif.fr", 2170)
+  val bdii = BDII.BDIIServer("topbdii.grif.fr", 2170)
 
   val intp = merge(HTTP.interpreter, FileSystem.interpreter, ErrorHandler.interpreter, BDII.interpreter)
   import intp.implicits._

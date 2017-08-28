@@ -1,13 +1,13 @@
 package gridscale
 
-import freedsl.dsl._
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import gridscale.authentication.P12Authentication
-import gridscale.http.{ HTTP, HTTPS, HTTPSServer }
+import gridscale.http._
 import org.apache.http.client.utils.URIBuilder
 import cats._
 import cats.implicits._
+import freedsl.system.SystemInterpreter
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -150,7 +150,7 @@ package object dirac {
       builder.build
     }
 
-    gridscale.http.read[M](server.server, jobsLocation, HTTP.Post(files)).map { r ⇒
+    gridscale.http.read[M](server.server, jobsLocation, Post(files)).map { r ⇒
       val id = (parse(r) \ "jids")(0).extract[String]
       JobID(id, jobDescription)
     }
@@ -214,7 +214,7 @@ package object dirac {
         .setParameter("access_token", token.token)
         .build
 
-    gridscale.http.read[M](server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}", HTTP.Delete()).map { _ ⇒ () }
+    gridscale.http.read[M](server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}", Delete()).map { _ ⇒ () }
   }
 
   def delegate[M[_]: Monad: HTTP](server: DIRACServer, p12: P12Authentication, token: Token): M[Unit] = {
@@ -228,7 +228,23 @@ package object dirac {
 
     def delegation = s"/proxy/unknown/${server.service.group}"
 
-    gridscale.http.read[M](server.server, delegation, HTTP.Post(entity)).map(_ ⇒ ())
+    gridscale.http.read[M](server.server, delegation, Post(entity)).map(_ ⇒ ())
+  }
+
+  object DIRACInterpreter {
+
+    class Interpreters {
+      implicit val fileSystemInterpreter = FileSystemInterpreter()
+      implicit val errorHandlerInterpreter = ErrorHandlerInterpreter()
+      implicit val systemInterpreter = SystemInterpreter()
+      implicit val httpInterpreter = HTTPInterpreter()
+    }
+
+    def apply[T](f: Interpreters ⇒ T) = {
+      val interpreters = new Interpreters()
+      f(interpreters)
+    }
+
   }
 
 }

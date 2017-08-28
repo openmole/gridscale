@@ -109,7 +109,7 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 /* -------------- gridscale dsl ------------------ */
 
-val freedslVersion = "0.12"
+val freedslVersion = "0.16"
 val monocleVersion = "1.4.0"
 
 def dslSettings = defaultSettings ++ Seq(
@@ -117,9 +117,9 @@ def dslSettings = defaultSettings ++ Seq(
   libraryDependencies += "fr.iscpif.freedsl" %% "dsl" % freedslVersion,
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.0.0",
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.12",
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"),
-  resolvers += Resolver.bintrayRepo("projectseptemberinc", "maven"),
+
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),
+  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full),
   resolvers += Resolver.sonatypeRepo("snapshots"),
   // rename to avoid conflict with publishTo resolver
   resolvers +=

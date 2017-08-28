@@ -4,8 +4,9 @@ import cats._
 import cats.implicits._
 import freedsl.system._
 import freedsl.errorhandler._
+import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.cluster.{ BatchScheduler, HeadNode }
-import squants._ // TODO switch all memory fields to squants?
+import squants._
 import gridscale.tools._
 import monocle.macros._
 
@@ -99,8 +100,7 @@ package object condor {
       }
 
     def formatError(command: String, cmdRet: ExecutionResult): RuntimeException = {
-      import cmdRet._
-      new RuntimeException(s"Could not retrieve job state from $command [output: $stdOut] [error: $stdErr]")
+      new RuntimeException(s"Could not retrieve job state from $command [output: ${cmdRet.stdOut}] [error: ${cmdRet.stdErr}]")
     }
 
     /**
@@ -146,29 +146,27 @@ package object condor {
 
   }
 
-  implicit val condorDSL = new BatchScheduler[CondorJobDescription] {
+  import impl._
+  import BatchScheduler._
+  import shell.BashShell._
 
-    import impl._
-    import BatchScheduler._
-    import shell.BashShell._
+  val scriptSuffix = ".condor"
 
-    val scriptSuffix = ".condor"
+  def submit[M[_]: Monad, S](server: S, jobDescription: CondorJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
+    BatchScheduler.submit[M, S, CondorJobDescription](
+      CondorJobDescription.workDirectory.get,
+      toScript,
+      scriptSuffix,
+      f ⇒ s"condor_submit $f",
+      impl.retrieveJobId)(server, jobDescription)
 
-    override def submit[M[_]: Monad, S](server: S, jobDescription: CondorJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-      BatchScheduler.submit[M, S, CondorJobDescription](
-        CondorJobDescription.workDirectory.get,
-        toScript,
-        scriptSuffix,
-        f ⇒ s"condor_submit $f",
-        impl.retrieveJobId)(server, jobDescription)
+  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = queryState(server, job)(hn, error)
 
-    override def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = queryState(server, job)(hn, error)
+  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
+    BatchScheduler.clean[M, S](
+      id ⇒ s"condor_rm $id",
+      scriptSuffix)(server, job)
 
-    override def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-      BatchScheduler.clean[M, S](
-        id ⇒ s"condor_rm $id",
-        scriptSuffix)(server, job)
-
-  }
-
+  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)
+  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdErr[M, S](server, job)
 }

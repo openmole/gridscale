@@ -2,24 +2,23 @@ package gridscale.local
 
 object TestLocal extends App {
 
+  import cats._
+  import cats.implicits._
   import freedsl.system._
-  import freedsl.dsl._
-
-  val c = merge(Local, System)
-  import c.implicits._
 
   val filepath = "/tmp/hello.txt"
 
-  val prg = for {
-    _ ← writeFile[c.M]("Hello, world".getBytes, filepath)
-    out ← readFile[c.M](filepath)
-    _ ← writeFile[c.M]((out + " again !!!").getBytes, filepath + "2")
-    _ ← rm[c.M](filepath)
-    res ← execute[c.M]("hostname")
-  } yield s"""Initial stdout was "$res"""
+  def prg[M[_]: System: Local: Monad] = for {
+    _ ← writeFile[M]("Hello, world".getBytes, filepath)
+    out ← readFile[M](filepath)
+    _ ← writeFile[M]((out + " again !!!").getBytes, filepath + "2")
+    _ ← rmFile[M](filepath)
+    res ← execute[M]("hostname")
+  } yield s"""Stdout: ${res.stdOut}"""
 
-  val interpreter = merge(Local.interpreter, System.interpreter)
+  implicit val systemInterpreter = new SystemInterpreter
+  implicit val localIntepreter = new LocalInterpreter
 
-  println(interpreter.run(prg))
+  println(prg[util.Try])
 
 }

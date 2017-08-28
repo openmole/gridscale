@@ -18,7 +18,7 @@
 package gridscale.ssh.sshj
 
 import gridscale.authentication._
-import gridscale.tools._
+import freedsl.tool._
 import java.io.InputStream
 
 import net.schmizz.sshj.common.IOUtils

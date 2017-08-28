@@ -17,33 +17,33 @@
 
 package gridscale.condor
 
-import freedsl.dsl._
+import cats._
+import cats.implicits._
 import freedsl.errorhandler._
 import freedsl.system._
 import gridscale._
+import gridscale.cluster.LocalClusterInterpreter
 import gridscale.local._
 
 object CondorExampleLocal extends App {
 
-  val context = merge(Local, System, ErrorHandler)
-
   import scala.language.reflectiveCalls
-  import gridscale.condor.condorDSL._
-  import context.M
-  import context.implicits._
+  import gridscale.condor._
 
   val headNode = LocalHost()
 
   val jobDescription = CondorJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale")
 
-  val res = for {
+  def res[M[_]: Local: System: ErrorHandler: Monad] = for {
     job ← submit[M, LocalHost](headNode, jobDescription)
     s ← waitUntilEnded[M](state[M, LocalHost](headNode, job))
     out ← stdOut[M, LocalHost](headNode, job)
     _ ← clean[M, LocalHost](headNode, job)
   } yield (s, out)
 
-  val interpreter = merge(Local.interpreter, System.interpreter, ErrorHandler.interpreter)
-  println(interpreter.run(res))
+  LocalClusterInterpreter { intp ⇒
+    import intp._
+    println(res[util.Try])
+  }
 
 }

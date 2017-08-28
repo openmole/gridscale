@@ -96,7 +96,6 @@ package object tools {
   implicit class TimeDecorator(d: Time) {
     def toHHmmss = {
       val millis = d.millis
-
       f"${millis / (1000 * 60 * 60)}%02d:${(millis % (1000 * 60 * 60)) / (1000 * 60)}%02d:${((millis % (1000 * 60 * 60)) % (1000 * 60)) / 1000}%02d"
     }
   }
@@ -117,14 +116,6 @@ package object tools {
       case Failure(t) ⇒ throw new RuntimeException(s"No server is working among $servers", t)
       case Success(t) ⇒ t
     }
-  }
-
-  implicit class TryDecorator[T](t: util.Try[T]) {
-    def mapFailure(f: Throwable ⇒ Throwable) =
-      t match {
-        case util.Success(s)  ⇒ util.Success(s)
-        case util.Failure(fa) ⇒ util.Failure(f(fa))
-      }
   }
 
   //  implicit class EitherDecorator[A, B](e: Either[A, B]) {
