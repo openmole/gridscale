@@ -1,14 +1,17 @@
 package gridscale.condor
 
 import cats._
+import cats.free._
 import cats.implicits._
 import freedsl.system._
 import freedsl.errorhandler._
 import gridscale._
 import gridscale.ssh
 import gridscale.authentication._
+import scala.util._
 import gridscale.condor._
 import gridscale.cluster.{ SSHClusterInterpreter }
+import freestyle.tagless._
 
 object CondorExample extends App {
 
@@ -29,7 +32,7 @@ object CondorExample extends App {
 
   SSHClusterInterpreter { intp ⇒
     import intp._
-    println(res[util.Try])
+    println(res[Free[Try, ?]].runTailRec)
   }
 
 }
