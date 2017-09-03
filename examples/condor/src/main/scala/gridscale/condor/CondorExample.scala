@@ -11,7 +11,7 @@ import gridscale.authentication._
 import scala.util._
 import gridscale.condor._
 import gridscale.cluster.{ SSHClusterInterpreter }
-import freestyle.tagless._
+import freedsl.dsl._
 
 object CondorExample extends App {
 
@@ -32,7 +32,7 @@ object CondorExample extends App {
 
   SSHClusterInterpreter { intp ⇒
     import intp._
-    println(res[Free[Try, ?]].runTailRec)
+    println(res[DSL].eval)
   }
 
 }
