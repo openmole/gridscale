@@ -8,6 +8,7 @@ name := "gridscale"
 
 scalaVersion in ThisBuild := "2.12.3"
 crossScalaVersions in ThisBuild := Seq("2.12.3")
+
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
@@ -67,7 +68,9 @@ def javaByteCodeVersion(scalaVersion: String) = {
 
 def settings = Seq (
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-  test in assembly := {}
+  test in assembly := {},
+  // macro paradise doesn't work with scaladoc
+  sources in (Compile, doc) := Nil
 )
 
 
@@ -120,6 +123,8 @@ def dslSettings = defaultSettings ++ Seq(
 
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),
   addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full),
+  scalacOptions += "-Xplugin-require:macroparadise",
+
   resolvers += Resolver.sonatypeRepo("snapshots"),
   // rename to avoid conflict with publishTo resolver
   resolvers +=
