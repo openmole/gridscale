@@ -44,8 +44,9 @@ package object local {
       Files.write(Paths.get(path), bytes): Unit
     }.mapFailure(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
 
-    def writeFile(is: InputStream, path: String) = Try {
-      Files.copy(is, Paths.get(path)): Unit
+    def writeFile(is: () ⇒ InputStream, path: String) = Try {
+      val ois = is()
+      try Files.copy(ois, Paths.get(path)): Unit finally ois.close()
     }.mapFailure(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
 
     def readFile[T](path: String, f: java.io.InputStream ⇒ T) = Try {
@@ -95,7 +96,7 @@ package object local {
   @tagless trait Local {
     def execute(cmd: String): FS[ExecutionResult]
     def writeBytes(bytes: Array[Byte], path: String): FS[Unit]
-    def writeFile(is: java.io.InputStream, path: String): FS[Unit]
+    def writeFile(is: () ⇒ java.io.InputStream, path: String): FS[Unit]
     def rmFile(path: String): FS[Unit]
     def readFile[T](path: String, f: java.io.InputStream ⇒ T): FS[T]
     def home(): FS[String]
@@ -113,7 +114,7 @@ package object local {
   def execute[M[_]](cmd: String)(implicit local: Local[M]) = local.execute(cmd)
 
   def writeBytes[M[_]](bytes: Array[Byte], path: String)(implicit local: Local[M]) = local.writeBytes(bytes, path)
-  def writeFile[M[_]](is: java.io.InputStream, path: String)(implicit local: Local[M]) = local.writeFile(is, path)
+  def writeFile[M[_]](is: () ⇒ java.io.InputStream, path: String)(implicit local: Local[M]) = local.writeFile(is, path)
   def readFile[M[_], T](path: String, f: java.io.InputStream ⇒ T)(implicit local: Local[M]) = local.readFile(path, f)
 
   def rmFile[M[_]](path: String)(implicit local: Local[M]): M[Unit] = local.rmFile(path)

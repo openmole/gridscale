@@ -95,6 +95,14 @@ package object ssh {
         res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.mapFailure(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
       } yield res
 
+    def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String) = {
+      val ois = is()
+      try {
+        val c = clientCache.get(server).get
+        SSHClient.sftp(c, _.writeFile(ois, path))
+      } finally ois.close()
+    }
+
     def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = util.Failure(ReturnCodeError(server, command, executionResult))
 
     def close() = {
@@ -116,6 +124,7 @@ package object ssh {
     def execute(server: SSHServer, s: String): FS[ExecutionResult]
     def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T]): FS[T]
     def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T): FS[T]
+    def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String): FS[Unit]
     def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult): FS[Unit]
   }
 
@@ -250,7 +259,7 @@ package object ssh {
   //  def readFile[M[_], T](path: String, f: java.io.InputStream ⇒ T)(implicit local: Local[M]) = local.readFile(path, f)
 
   def readFile[M[_], T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T)(implicit ssh: SSH[M]) = ssh.readFile(server, path, f)
-  def writeFile[M[_]](server: SSHServer, is: java.io.InputStream, path: String)(implicit ssh: SSH[M]): M[Unit] = ssh.sftp(server, _.writeFile(is, path))
+  def writeFile[M[_]](server: SSHServer, is: () ⇒ java.io.InputStream, path: String)(implicit ssh: SSH[M]): M[Unit] = ssh.writeFile(server, is, path)
 
   def home[M[_]](server: SSHServer)(implicit ssh: SSH[M]) = ssh.sftp(server, _.canonicalize("."))
   def exists[M[_]](server: SSHServer, path: String)(implicit ssh: SSH[M]) = ssh.sftp(server, _.exists(path))

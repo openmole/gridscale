@@ -12,7 +12,7 @@ object HeadNode {
 
   implicit def sshHeadNode[M[_]](implicit sshM: SSH[M]) = new HeadNode[SSHServer, M] {
     override def execute(server: SSHServer, cmd: String) = sshM.execute(server, cmd)
-    override def write(server: SSHServer, bytes: Array[Byte], path: String) = ssh.writeFile(server, new ByteArrayInputStream(bytes), path)
+    override def write(server: SSHServer, bytes: Array[Byte], path: String) = ssh.writeFile(server, () ⇒ new ByteArrayInputStream(bytes), path)
     override def read(server: SSHServer, path: String) = ssh.readFile(server, path, io.Source.fromInputStream(_).mkString)
     override def rmFile(server: SSHServer, path: String): M[Unit] = ssh.rmFile(server, path)
   }
