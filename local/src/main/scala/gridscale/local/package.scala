@@ -1,5 +1,7 @@
 package gridscale
 
+import java.io._
+
 import gridscale.tools.shell.BashShell
 
 package object local {
@@ -38,14 +40,18 @@ package object local {
 
     }.mapFailure(e ⇒ LocalExecutionError(s"Error executing $cmd on local host", e))
 
-    def writeFile(bytes: Array[Byte], path: String) = Try {
-      val discardedRes = Files.write(Paths.get(path), bytes)
+    def writeBytes(bytes: Array[Byte], path: String) = Try {
+      Files.write(Paths.get(path), bytes): Unit
     }.mapFailure(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
 
-    def readFile(path: String) = Try {
-      val source = Source.fromFile(new File(path))
-      try source.getLines mkString "\n" finally source.close()
-    }.mapFailure(e ⇒ LocalIOError(s"Could not read file from path $path on local host", e))
+    def writeFile(is: InputStream, path: String) = Try {
+      Files.copy(is, Paths.get(path)): Unit
+    }.mapFailure(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
+
+    def readFile[T](path: String, f: java.io.InputStream ⇒ T) = Try {
+      val source = new FileInputStream(new File(path))
+      try f(source) finally source.close()
+    }
 
     def rmFile(path: String) = Try(Files.delete(Paths.get(path))).mapFailure(e ⇒ LocalIOError(s"Could not delete file $path on local host", e))
 
@@ -88,9 +94,10 @@ package object local {
 
   @tagless trait Local {
     def execute(cmd: String): FS[ExecutionResult]
-    def writeFile(bytes: Array[Byte], path: String): FS[Unit]
-    def readFile(path: String): FS[String]
+    def writeBytes(bytes: Array[Byte], path: String): FS[Unit]
+    def writeFile(is: java.io.InputStream, path: String): FS[Unit]
     def rmFile(path: String): FS[Unit]
+    def readFile[T](path: String, f: java.io.InputStream ⇒ T): FS[T]
     def home(): FS[String]
     def exists(path: String): FS[Boolean]
     def list(path: String): FS[List[ListEntry]]
@@ -105,8 +112,10 @@ package object local {
 
   def execute[M[_]](cmd: String)(implicit local: Local[M]) = local.execute(cmd)
 
-  def writeFile[M[_]](bytes: Array[Byte], path: String)(implicit local: Local[M]) = local.writeFile(bytes, path)
-  def readFile[M[_]](path: String)(implicit local: Local[M]) = local.readFile(path)
+  def writeBytes[M[_]](bytes: Array[Byte], path: String)(implicit local: Local[M]) = local.writeBytes(bytes, path)
+  def writeFile[M[_]](is: java.io.InputStream, path: String)(implicit local: Local[M]) = local.writeFile(is, path)
+  def readFile[M[_], T](path: String, f: java.io.InputStream ⇒ T)(implicit local: Local[M]) = local.readFile(path, f)
+
   def rmFile[M[_]](path: String)(implicit local: Local[M]): M[Unit] = local.rmFile(path)
   def home[M[_]: Local](implicit local: Local[M]) = local.home
   def exists[M[_]](path: String)(implicit local: Local[M]) = local.exists(path)

@@ -15,6 +15,10 @@ import scala.language.{ higherKinds, postfixOps }
 
 package object webdav {
 
+  type Server = http.Server
+  lazy val WebDAVServer = http.HTTPServer
+  lazy val WebDAVSServer = http.HTTPSServer
+
   def listProperties[M[_]: http.HTTP: Monad](server: http.Server, path: String) =
     for {
       content ← http.read[M](server, path, http.PropFind())
@@ -37,10 +41,10 @@ package object webdav {
   }
 
   def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.Delete()).map(_ ⇒ ())
-  def rmDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.Delete(headers = Seq("Depth" -> "infinity"))).map(_ ⇒ ())
-  def mkDirectory[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.MkCol()).map(_ ⇒ ())
+  def rmDirectory[M[_]: http.HTTP: Monad](server: Server, path: String): M[Unit] = http.read[M](server, path, http.Delete(headers = Seq("Depth" -> "infinity"))).map(_ ⇒ ())
+  def mkDirectory[M[_]: http.HTTP: Monad](server: Server, path: String): M[Unit] = http.read[M](server, path, http.MkCol()).map(_ ⇒ ())
 
-  def writeStream[M[_]: Monad: http.HTTP](server: http.Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true): M[Unit] = {
+  def writeStream[M[_]: Monad: http.HTTP](server: Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true): M[Unit] = {
     def redirectedServer =
       if (!redirect) server.pure[M]
       else
@@ -54,6 +58,9 @@ package object webdav {
       _ ← http.read[M](s, "", http.Put(is))
     } yield {}
   }
+
+  def read[M[_]: Monad: http.HTTP](server: Server, path: String, method: http.HTTPMethod = http.Get()) = http.read[M](server, path, method)
+  def readStream[M[_]: Monad: http.HTTP, T](server: Server, path: String, f: InputStream ⇒ T, method: http.HTTPMethod = http.Get()): M[T] = http.readStream[M, T](server, path, f, method)
 
   import java.time.ZoneId
 

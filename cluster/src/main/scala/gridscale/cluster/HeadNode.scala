@@ -19,8 +19,8 @@ object HeadNode {
 
   implicit def localHeadNode[M[_]](implicit localM: Local[M]) = new HeadNode[LocalHost, M] {
     override def execute(server: LocalHost, cmd: String) = localM.execute(cmd)
-    override def write(server: LocalHost, bytes: Array[Byte], path: String) = local.writeFile(bytes, path)
-    override def read(server: LocalHost, path: String) = local.readFile(path)
+    override def write(server: LocalHost, bytes: Array[Byte], path: String) = local.writeBytes(bytes, path)
+    override def read(server: LocalHost, path: String) = local.readFile(path, io.Source.fromInputStream(_).mkString)
     override def rmFile(server: LocalHost, path: String): M[Unit] = localM.rmFile(path)
   }
 

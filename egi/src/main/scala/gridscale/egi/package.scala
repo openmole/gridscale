@@ -55,7 +55,7 @@ package object egi {
 
   }
 
-  class BDIIIntepreter() extends BDII.Handler[Try] {
+  case class BDIIIntepreter() extends BDII.Handler[Try] {
     def webDAVs(server: BDIIServer, vo: String) = Try {
       val creamCEServiceType = "org.glite.ce.CREAM"
 

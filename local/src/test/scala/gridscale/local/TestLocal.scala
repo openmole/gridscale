@@ -9,9 +9,9 @@ object TestLocal extends App {
   val filepath = "/tmp/hello.txt"
 
   def prg[M[_]: System: Local: Monad] = for {
-    _ ← writeFile[M]("Hello, world".getBytes, filepath)
+    _ ← writeBytes[M]("Hello, world".getBytes, filepath)
     out ← readFile[M](filepath)
-    _ ← writeFile[M]((out + " again !!!").getBytes, filepath + "2")
+    _ ← writeBytes[M]((out + " again !!!").getBytes, filepath + "2")
     _ ← rmFile[M](filepath)
     res ← execute[M]("hostname")
   } yield s"""Stdout: ${res.stdOut}"""

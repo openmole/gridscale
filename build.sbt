@@ -203,7 +203,7 @@ lazy val examples = (project in file("examples")).settings(settings: _*).
 
 
 lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream"), settings = defaultSettings ++ exportSettings) dependsOn egi
-lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn egi
+lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn (egi, webdav)
 lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac"), settings = defaultSettings ++ exportSettings) dependsOn egi
 lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = dslSettings ++ exportSettings) dependsOn condor
 lazy val pbsExample  = Project(id = "pbsexample", base = file("examples/pbs"), settings = dslSettings ++ exportSettings) dependsOn pbs
