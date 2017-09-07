@@ -52,4 +52,18 @@ package object gridscale {
     }
   }
 
+  object RemotePath {
+    def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
+
+    def parent(path: String): Option[String] = {
+      val cleaned = path.reverse.dropWhile(c ⇒ c == '/' || c == '\\').reverse
+      cleaned match {
+        case "" ⇒ None
+        case _  ⇒ Some(cleaned.dropRight(name(path).length))
+      }
+    }
+
+    def name(path: String) = new java.io.File(path).getName
+  }
+
 }
