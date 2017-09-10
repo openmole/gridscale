@@ -1,6 +1,8 @@
 package gridscale
 
 import java.io._
+import java.nio.file.{ FileAlreadyExistsException, FileSystemException, Path, StandardCopyOption }
+import java.util.logging.Logger
 
 import gridscale.tools.shell.BashShell
 
@@ -88,6 +90,33 @@ package object local {
     def mv(from: String, to: String) = Try {
       new File(from).renameTo(new File(to)): Unit
     }.mapFailure(e ⇒ LocalIOError(s"Could not move $from to $to on local host", e))
+
+    def link(target: String, link: String, defaultOnCopy: Boolean) = Try {
+
+      def createLink(target: Path, link: Path): Path = {
+        def getParentFileSafe(file: File): File =
+          file.getParentFile() match {
+            case null ⇒ if (file.isAbsolute) file else new File(".")
+            case f    ⇒ f
+          }
+
+        def unsupported = {
+          val fullTargetPath = if (target.isAbsolute) target else Paths.get(getParentFileSafe(link.toFile).getPath, target.toFile.getPath)
+          Files.copy(fullTargetPath, link, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING)
+          link
+        }
+
+        try Files.createSymbolicLink(link, target)
+        catch {
+          case e: UnsupportedOperationException ⇒ if (defaultOnCopy) unsupported else throw e
+          case e: FileAlreadyExistsException    ⇒ throw e
+          case e: FileSystemException           ⇒ if (defaultOnCopy) unsupported else throw e
+          case e: IOException                   ⇒ throw e
+        }
+      }
+
+      createLink(Paths.get(target), Paths.get(link))
+    }
   }
 
   case class LocalExecutionError(message: String, t: Throwable) extends Exception(message, t)
@@ -105,6 +134,7 @@ package object local {
     def makeDir(path: String): FS[Unit]
     def rmDir(path: String): FS[Unit]
     def mv(from: String, to: String): FS[Unit]
+    def link(target: String, path: String, defaultOnCopy: Boolean): FS[Unit]
   }
 
   case class LocalHost() {
@@ -124,6 +154,7 @@ package object local {
   def makeDir[M[_]](path: String)(implicit local: Local[M]) = local.makeDir(path)
   def rmDir[M[_]](path: String)(implicit local: Local[M]) = local.rmDir(path)
   def mv[M[_]](from: String, to: String)(implicit local: Local[M]) = local.mv(from, to)
+  def link[M[_]](target: String, link: String, defaultOnCopy: Boolean = false)(implicit local: Local[M]) = local.link(target, link, defaultOnCopy)
 
 }
 
