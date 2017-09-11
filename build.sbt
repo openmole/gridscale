@@ -118,7 +118,7 @@ val monocleVersion = "1.4.0"
 def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.freedsl" %% "dsl" % freedslVersion,
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.0.0",
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.3.0",
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.12",
 
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),
