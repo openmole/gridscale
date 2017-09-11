@@ -147,6 +147,12 @@ package object ssh {
     _ ← ssh.execute(server, command)
   } yield JobId(jobId, description.workDirectory)
 
+  def run[M[_]: Monad: System](server: SSHServer, description: SSHJobDescription)(implicit ssh: SSH[M]) = for {
+    j ← SSHJobDescription.toScript[M](description, background = false)
+    (command, jobId) = j
+    _ ← ssh.execute(server, command)
+  } yield JobId(jobId, description.workDirectory)
+
   def stdOut[M[_]](server: SSHServer, jobId: JobId)(implicit ssh: SSH[M]) =
     readFile(
       server,
