@@ -49,34 +49,23 @@ package object http {
   import org.apache.http.conn.socket.ConnectionSocketFactory
   import squants.information.Information
 
-  def get[T](url: String) = {
+  def buildServer(url: String): Server = {
     val scheme = new URI(url).getScheme
 
-    implicit val interpreter = HTTPInterpreter()
-
     scheme match {
-      case "https" ⇒
-        val server = HTTPSServer(url, HTTPS.SSLSocketFactory.default)
-        read[Try](server, "")
-      case "http" ⇒
-        val server = HTTPServer(url)
-        read[Try](server, "")
+      case "https" ⇒ HTTPSServer(url, HTTPS.SSLSocketFactory.default)
+      case "http"  ⇒ HTTPServer(url)
     }
   }
 
-  def getStream[T](url: String)(f: InputStream ⇒ T) = {
-    val scheme = new URI(url).getScheme
-
+  def get[T](url: String) = {
     implicit val interpreter = HTTPInterpreter()
+    read[Try](buildServer(url), "")
+  }
 
-    scheme match {
-      case "https" ⇒
-        val server = HTTPSServer(url, HTTPS.SSLSocketFactory.default)
-        readStream[Try, T](server, "", f)
-      case "http" ⇒
-        val server = HTTPServer(url)
-        readStream[Try, T](server, "", f)
-    }
+  def getStream[T](url: String)(f: InputStream ⇒ T) = {
+    implicit val interpreter = HTTPInterpreter()
+    readStream[Try, T](buildServer(url), "", f)
   }
 
   type Headers = Seq[(String, String)]
