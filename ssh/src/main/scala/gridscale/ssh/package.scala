@@ -130,10 +130,10 @@ package object ssh {
 
   object SSHServer {
     def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes)(authentication: A): SSHServer =
-      SSHServer(host, port, timeout, (sshClient: SSHClient) ⇒ implicitly[SSHAuthentication[A]].authenticate(authentication, sshClient))
+      new SSHServer(host, port, timeout)((sshClient: SSHClient) ⇒ implicitly[SSHAuthentication[A]].authenticate(authentication, sshClient))
   }
 
-  case class SSHServer(host: String, port: Int, timeout: Time, authenticate: SSHClient ⇒ Try[Unit]) {
+  case class SSHServer(host: String, port: Int, timeout: Time)(val authenticate: SSHClient ⇒ Try[Unit]) {
     override def toString = s"ssh server $host:$port"
   }
 
