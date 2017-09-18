@@ -104,8 +104,8 @@ lazy val defaultSettings =
 
 /* ---------------- Libraries --------------------*/
 
-lazy val httpComponentsVersion = "4.5.2"
-lazy val httpComponents = Seq("httpclient-osgi", "httpmime").map(
+lazy val httpComponentsVersion = "4.5.3"
+lazy val httpComponents = Seq("httpclient", "httpmime").map(
   "org.apache.httpcomponents" % _ % httpComponentsVersion)
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
