@@ -22,11 +22,13 @@ package object ssh {
   object SSHAuthentication {
 
     implicit def userPassword = new SSHAuthentication[UserPassword] {
+      override def login(t: UserPassword) = t.user
       override def authenticate(t: UserPassword, sshClient: SSHClient): Try[Unit] =
         sshClient.authPassword(t.user, t.password)
     }
 
     implicit def key = new SSHAuthentication[PrivateKey] {
+      override def login(t: PrivateKey) = t.user
       override def authenticate(t: PrivateKey, sshClient: SSHClient): Try[Unit] =
         sshClient.authPrivateKey(t)
     }
@@ -34,6 +36,7 @@ package object ssh {
   }
 
   trait SSHAuthentication[T] {
+    def login(t: T): String
     def authenticate(t: T, sshClient: SSHClient): util.Try[Unit]
   }
 
@@ -129,12 +132,15 @@ package object ssh {
   }
 
   object SSHServer {
-    def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes)(authentication: A): SSHServer =
-      new SSHServer(host, port, timeout)((sshClient: SSHClient) ⇒ implicitly[SSHAuthentication[A]].authenticate(authentication, sshClient))
+    def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes)(authentication: A): SSHServer = {
+      val sSHAuthentication = implicitly[SSHAuthentication[A]]
+      new SSHServer(sSHAuthentication.login(authentication), host, port)(timeout, (sshClient: SSHClient) ⇒ sSHAuthentication.authenticate(authentication, sshClient))
+    }
   }
 
-  case class SSHServer(host: String, port: Int, timeout: Time)(val authenticate: SSHClient ⇒ Try[Unit]) {
+  case class SSHServer(login: String, host: String, port: Int)(val timeout: Time, val authenticate: SSHClient ⇒ Try[Unit]) {
     override def toString = s"ssh server $host:$port"
+
   }
 
   case class JobId(jobId: String, workDirectory: String)
