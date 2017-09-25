@@ -162,7 +162,7 @@ package object ssh {
     _ ← ssh.launch(server, command)
   } yield JobId(jobId, description.workDirectory)
 
-  def run[M[_]: Monad: System](server: SSHServer, command: String)(implicit ssh: SSH[M]) = for {
+  def run[M[_]: Monad](server: SSHServer, command: String)(implicit ssh: SSH[M]) = for {
     _ ← ().pure[M]
     r ← ssh.execute(server, SSHJobDescription.commandLine(server, command))
   } yield r

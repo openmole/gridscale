@@ -10,7 +10,7 @@ import local._
 
 object HeadNode {
 
-  implicit def sshHeadNode[M[_]](implicit sshM: SSH[M]) = new HeadNode[SSHServer, M] {
+  implicit def sshHeadNode[M[_]: cats.Monad](implicit sshM: SSH[M]) = new HeadNode[SSHServer, M] {
     override def execute(server: SSHServer, cmd: String) = gridscale.ssh.run[M](server, cmd)
     override def write(server: SSHServer, bytes: Array[Byte], path: String) = ssh.writeFile(server, () ⇒ new ByteArrayInputStream(bytes), path)
     override def read(server: SSHServer, path: String) = ssh.readFile(server, path, io.Source.fromInputStream(_).mkString)
