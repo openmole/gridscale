@@ -30,8 +30,6 @@ import scala.language.higherKinds
 /** Generic functions to be used as building blocks to implement batch schedulers */
 object BatchScheduler {
 
-  import gridscale.tools.shell.BashShell
-
   type BatchJobID = String
   case class BatchJob(uniqId: String, jobId: BatchJobID, workDirectory: String)
 

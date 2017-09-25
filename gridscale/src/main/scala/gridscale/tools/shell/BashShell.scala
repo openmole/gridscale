@@ -39,12 +39,17 @@ object BashShell {
   def localBashCommand(from: String): (String, String) =
     (shell, buildCommand(from))
 
+  def source: String =
+    s"""
+       |source /etc/profile 2>/dev/null
+       |source ~/.bash_profile 2>/dev/null
+       |source ~/.bash_login 2>/dev/null
+       |source ~/.profile 2>/dev/null
+       |""".stripMargin
+
   def buildCommand(cmd: String): String =
     s"""
-     |source /etc/profile 2>/dev/null
-     |source ~/.bash_profile 2>/dev/null
-     |source ~/.bash_login 2>/dev/null
-     |source ~/.profile 2>/dev/null
+     |$source
      |$cmd
      |""".stripMargin
 }

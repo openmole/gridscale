@@ -70,7 +70,8 @@ def settings = Seq (
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
   test in assembly := {},
   // macro paradise doesn't work with scaladoc
-  sources in (Compile, doc) := Nil
+  sources in (Compile, doc) := Nil,
+  resolvers += Resolver.sonatypeRepo("snapshots")
 )
 
 
@@ -112,7 +113,7 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 /* -------------- gridscale dsl ------------------ */
 
-val freedslVersion = "0.17"
+val freedslVersion = "0.18-SNAPSHOT"
 val monocleVersion = "1.4.0"
 
 def dslSettings = defaultSettings ++ Seq(

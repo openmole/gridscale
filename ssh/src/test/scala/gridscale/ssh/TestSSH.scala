@@ -7,8 +7,9 @@ object TestSSH extends App {
   import freedsl.system._
   import cats._
   import cats.implicits._
+  import freedsl.dsl._
 
-  def job = SSHJobDescription(command = s"""echo -n Hello SSH World""", workDirectory = "/tmp/")
+  def job = SSHJobDescription(command = s"""echo -n greatings `whoami`""", workDirectory = "/tmp/")
 
   val localhost = SSHServer("localhost", port = 2222)(UserPassword("root", "root"))
 
@@ -18,13 +19,12 @@ object TestSSH extends App {
       _ ← waitUntilEnded(state[M](localhost, jobId))
       out ← stdOut[M](localhost, jobId)
       _ ← clean[M](localhost, jobId)
-    } yield s"""Job  stdout is "$out"."""
+    } yield out
 
   implicit val systemInterpreter = new SystemInterpreter
 
   SSHInterpreter { implicit sshInterpreter ⇒
-    println(prg[util.Try])
-    println(prg[util.Try])
+    println(prg[DSL].eval)
   }
 
 }

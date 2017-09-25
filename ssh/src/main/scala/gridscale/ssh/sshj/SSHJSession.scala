@@ -18,21 +18,22 @@
 package gridscale.ssh.sshj
 
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 
 object SSHJSession {
 
   import net.schmizz.sshj.connection.channel.direct.Session
 
-  def close()(implicit sshjSession: Session) = sshjSession.close()
+  def close(sshjSession: Session) = sshjSession.close()
 
-  def exec(command: String)(implicit sshjSession: Session): SessionCommand = {
+  def exec(sshjSession: Session, command: String): SessionCommand = {
     val sshjCommand = sshjSession.exec(command)
     new SessionCommand {
       def join() = sshjCommand.join()
       def close() = sshjCommand.close()
-      def getExitStatus: Int = sshjCommand.getExitStatus
-      def getInputStream: InputStream = sshjSession.getInputStream
-      def getErrorStream: InputStream = sshjCommand.getErrorStream
+      def getExitStatus(): Int = sshjCommand.getExitStatus().toInt
+      def getInputStream(): InputStream = sshjCommand.getInputStream()
+      def getErrorStream(): InputStream = sshjCommand.getErrorStream()
     }
   }
 }

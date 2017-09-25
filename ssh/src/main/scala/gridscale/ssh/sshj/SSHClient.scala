@@ -20,23 +20,31 @@ package gridscale.ssh.sshj
 import gridscale.authentication._
 import freedsl.tool._
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 
 import net.schmizz.sshj.common.IOUtils
 
 object SSHClient {
 
   def withSession[T](c: SSHClient)(f: SSHSession ⇒ T): util.Try[T] = util.Try {
-    val session = c.startSession
+    val session = c.startSession()
     try f(session)
-    finally session.close
+    finally session.close()
   }
 
-  def exec(client: SSHClient, cde: String) = withSession(client) { session ⇒
+  def launchInBackground(client: SSHClient, cde: String): Unit = withSession(client) { session ⇒
+    val cmd = session.exec(s"$cde")
+    cmd.close()
+  }
+
+  def run(client: SSHClient, cde: String) = withSession(client) { session ⇒
     val cmd = session.exec(cde.toString)
     try {
-      cmd.join
-      gridscale.ExecutionResult(cmd.getExitStatus, IOUtils.readFully(cmd.getInputStream).toString, IOUtils.readFully(cmd.getErrorStream).toString)
-    } finally cmd.close
+      cmd.join()
+      val output = IOUtils.readFully(cmd.getInputStream()).toString
+      val error = IOUtils.readFully(cmd.getErrorStream()).toString
+      gridscale.ExecutionResult(cmd.getExitStatus(), output, error)
+    } finally cmd.close()
   }
 
   def sftp[T](client: SSHClient, f: SFTPClient ⇒ T) = util.Try {
@@ -58,10 +66,12 @@ class SSHClient {
   private lazy val sshDefaultConfig = new DefaultConfig()
   private lazy val peer: SSHJSSHClient = new SSHJSSHClient(sshDefaultConfig)
 
-  def startSession: SSHSession = new SSHSession {
-    implicit val peerSession = peer.startSession
-    override def close() = SSHJSession.close()
-    override def exec(command: String) = SSHJSession.exec(command)
+  def startSession(): SSHSession = {
+    val session = peer.startSession
+    new SSHSession {
+      override def close() = SSHJSession.close(session)
+      override def exec(command: String) = SSHJSession.exec(session, command)
+    }
   }
 
   def close() = peer.close()

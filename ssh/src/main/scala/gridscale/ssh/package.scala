@@ -1,11 +1,13 @@
 package gridscale
 
+import java.io.ByteArrayInputStream
+
 import freestyle.tagless.tagless
 import gridscale.tools.shell.BashShell
+import net.schmizz.sshj.connection.channel.direct.Session.Command
 
 import scala.util.Try
 import scala.language.{ higherKinds, postfixOps }
-import java.lang.AutoCloseable
 
 package object ssh {
 
@@ -83,8 +85,14 @@ package object ssh {
     def execute(server: SSHServer, s: String) =
       for {
         c ← clientCache.get(server)
-        r ← SSHClient.exec(c, BashShell.remoteBashCommand(s)).mapFailure(t ⇒ ExecutionError(s"Error executing $s on $server", t))
+        r ← SSHClient.run(c, s).mapFailure(t ⇒ ExecutionError(s"Error executing $s on $server", t))
       } yield r
+
+    def launch(server: SSHServer, s: String) =
+      for {
+        c ← clientCache.get(server)
+        _ = SSHClient.launchInBackground(c, s)
+      } yield ()
 
     def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T]) =
       for {
@@ -120,10 +128,11 @@ package object ssh {
   case class ExecutionError(message: String, t: Throwable) extends Exception(message, t)
   case class SFTPError(message: String, t: Throwable) extends Exception(message, t)
   case class ReturnCodeError(server: String, command: String, executionResult: ExecutionResult) extends Exception {
-    override def toString = ExecutionResult.error(command, executionResult) + " on server $server"
+    override def toString = ExecutionResult.error(command, executionResult) + s" on server $server"
   }
 
   @tagless trait SSH {
+    def launch(server: SSHServer, s: String): FS[Unit]
     def execute(server: SSHServer, s: String): FS[ExecutionResult]
     def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T]): FS[T]
     def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T): FS[T]
@@ -148,16 +157,15 @@ package object ssh {
   /* ----------------------- Job managment --------------------- */
 
   def submit[M[_]: Monad: System](server: SSHServer, description: SSHJobDescription)(implicit ssh: SSH[M]) = for {
-    j ← SSHJobDescription.toScript[M](description)
+    j ← SSHJobDescription.jobScript[M](server, description)
     (command, jobId) = j
-    _ ← ssh.execute(server, command)
+    _ ← ssh.launch(server, command)
   } yield JobId(jobId, description.workDirectory)
 
-  def run[M[_]: Monad: System](server: SSHServer, description: SSHJobDescription)(implicit ssh: SSH[M]) = for {
-    j ← SSHJobDescription.toScript[M](description, background = false)
-    (command, jobId) = j
-    _ ← ssh.execute(server, command)
-  } yield JobId(jobId, description.workDirectory)
+  def run[M[_]: Monad: System](server: SSHServer, command: String)(implicit ssh: SSH[M]) = for {
+    _ ← ().pure[M]
+    r ← ssh.execute(server, SSHJobDescription.commandLine(server, command))
+  } yield r
 
   def stdOut[M[_]](server: SSHServer, jobId: JobId)(implicit ssh: SSH[M]) =
     readFile(
@@ -171,8 +179,8 @@ package object ssh {
       SSHJobDescription.errFile(jobId.workDirectory, jobId.jobId),
       io.Source.fromInputStream(_).mkString)
 
-  def state[M[_]: Monad](server: SSHServer, jobId: JobId)(implicit ssh: SSH[M]) =
-    SSHJobDescription.jobIsRunning[M](server, jobId).flatMap {
+  def state[M[_]: Monad](server: SSHServer, jobId: JobId)(implicit ssh: SSH[M]) = for {
+    s ← SSHJobDescription.jobIsRunning[M](server, jobId).flatMap {
       case true ⇒ (JobState.Running: JobState).pure[M]
       case false ⇒
         exists[M](server, SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)).flatMap {
@@ -183,13 +191,15 @@ package object ssh {
                 server,
                 SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId),
                 is ⇒ io.Source.fromInputStream(is).mkString)
-            } yield SSHJobDescription.translateState(content.takeWhile(_.isDigit).toInt)
+              exitCode = content.takeWhile(_.isDigit).toInt
+            } yield SSHJobDescription.translateState(exitCode)
           case false ⇒ (JobState.Failed: JobState).pure[M]
         }
     }
+  } yield s
 
   def clean[M[_]: Monad](server: SSHServer, job: JobId)(implicit ssh: SSH[M]) = {
-    val kill = s"kill -9 `cat ${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}`;"
+    val kill = s"pid=`cat ${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}` ; kill -9 $$pid `ps --ppid $$pid -o pid=`"
     val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
     for {
       k ← ssh.execute(server, kill)
@@ -206,8 +216,11 @@ package object ssh {
   object SSHJobDescription {
 
     def jobIsRunning[M[_]: Monad](server: SSHServer, job: JobId)(implicit ssh: SSH[M]) = {
-      val cde = s"ps -p `cat ${pidFile(job.workDirectory, job.jobId)}`"
-      ssh.execute(server, cde).map(_.returnCode == 0)
+      val cde = s"kill -0 `cat ${pidFile(job.workDirectory, job.jobId)}`"
+      for {
+        _ ← ().pure[M] // Force execute to be called for some reason
+        r ← ssh.execute(server, cde)
+      } yield (r.returnCode == 0)
     }
 
     def translateState(retCode: Int): JobState =
@@ -221,24 +234,48 @@ package object ssh {
     def endCodeFile(dir: String, jobId: String) = file(dir, jobId, "end")
     def outFile(dir: String, jobId: String) = file(dir, jobId, "out")
     def errFile(dir: String, jobId: String) = file(dir, jobId, "err")
+    def scriptFile(dir: String, jobId: String) = file(dir, jobId, "sh")
 
-    def toScript[M[_]: Monad](description: SSHJobDescription, background: Boolean = true)(implicit system: System[M]) = {
+    def commandLine(server: SSHServer, command: String) =
+      s"""
+             |env -i bash <<EOF
+             |${BashShell.source}
+             |${command}
+             |EOF
+             |""".stripMargin
+
+    def jobScript[M[_]: Monad: SSH](server: SSHServer, description: SSHJobDescription)(implicit system: System[M]) = {
+      def script(jobId: String) =
+        s"""
+           |mkdir -p ${description.workDirectory}
+           |cd ${description.workDirectory}
+           |${BashShell.source}
+           |
+           |{
+           |  ${description.command} >${outFile(description.workDirectory, jobId)} 2>${errFile(description.workDirectory, jobId)}
+           |  echo $$? >${endCodeFile(description.workDirectory, jobId)}
+           |} & pid=$$!
+           |
+           |echo $$pid >${pidFile(description.workDirectory, jobId)}
+           |
+           |""".stripMargin
+
+      //      def run(jobId: String) =
+      //        s"""
+      //         |env -i bash <<EOF
+      //         |source /etc/profile 2>/dev/null
+      //         |source ~/.bash_profile 2>/dev/null
+      //         |source ~/.bash_login 2>/dev/null
+      //         |source ~/.profile 2>/dev/null
+      //         |${script(jobId)}
+      //         |EOF
+      //         |""".stripMargin
+
       for {
         jobId ← system.randomUUID.map(_.toString)
-      } yield {
-
-        def executable = description.command
-
-        def command =
-          s"""
-             |mkdir -p ${description.workDirectory}
-             |cd ${description.workDirectory}
-             |($executable >${outFile(description.workDirectory, jobId)} 2>${errFile(description.workDirectory, jobId)} ; echo \\$$? >${endCodeFile(description.workDirectory, jobId)}) ${if (background) "&" else ""}
-             |echo \\$$! >${pidFile(description.workDirectory, jobId)}
-           """.stripMargin
-
-        (BashShell.remoteBashCommand(command), jobId)
-      }
+        file = scriptFile(description.workDirectory, jobId)
+        _ ← writeFile[M](server, () ⇒ new ByteArrayInputStream(script(jobId).getBytes), file)
+      } yield (s"""/bin/bash $file""", jobId)
     }
   }
 

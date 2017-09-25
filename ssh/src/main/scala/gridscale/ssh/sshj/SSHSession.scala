@@ -25,10 +25,9 @@ trait SSHSession {
 }
 
 trait SessionCommand {
-
   def join()
   def close()
-  def getExitStatus: Int
-  def getInputStream: InputStream
-  def getErrorStream: InputStream
+  def getExitStatus(): Int
+  def getInputStream(): InputStream
+  def getErrorStream(): InputStream
 }
