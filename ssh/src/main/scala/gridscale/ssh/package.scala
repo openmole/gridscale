@@ -162,9 +162,9 @@ package object ssh {
     _ ← ssh.launch(server, command)
   } yield JobId(jobId, description.workDirectory)
 
-  def run[M[_]: Monad](server: SSHServer, command: String)(implicit ssh: SSH[M]) = for {
+  def run[M[_]: Monad](server: SSHServer, command: String, verbose: Boolean = false)(implicit ssh: SSH[M]) = for {
     _ ← ().pure[M]
-    r ← ssh.execute(server, SSHJobDescription.commandLine(server, command))
+    r ← ssh.execute(server, SSHJobDescription.commandLine(server, command, verbose))
   } yield r
 
   def stdOut[M[_]](server: SSHServer, jobId: JobId)(implicit ssh: SSH[M]) =
@@ -236,9 +236,9 @@ package object ssh {
     def errFile(dir: String, jobId: String) = file(dir, jobId, "err")
     def scriptFile(dir: String, jobId: String) = file(dir, jobId, "sh")
 
-    def commandLine(server: SSHServer, command: String) =
+    def commandLine(server: SSHServer, command: String, verbose: Boolean = false) =
       s"""
-             |env -i bash <<EOF
+             |env -i bash ${if (verbose) "-x" else ""} <<EOF
              |${BashShell.source}
              |${command}
              |EOF
