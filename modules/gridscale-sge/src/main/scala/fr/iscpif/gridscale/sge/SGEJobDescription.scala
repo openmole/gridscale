@@ -31,7 +31,7 @@ case class SGEJobDescription(
     memory: Option[Int] = None,
     wallTime: Option[Duration] = None) {
 
-  val uniqId = UUID.randomUUID.toString
+  val uniqId = "job-" + UUID.randomUUID.toString
   def output: String = uniqId + ".out"
   def error: String = uniqId + ".err"
 
@@ -43,8 +43,8 @@ case class SGEJobDescription(
     buffer += "#$ -e " + error
 
     queue.foreach(q ⇒ buffer += "#$ -q " + q)
-    memory.foreach(m ⇒ buffer += "-l h_vmem=" + m + "M")
-    wallTime.foreach(t ⇒ buffer += "-l h_cpu=" + t.toSeconds)
+    memory.foreach(m ⇒ buffer += "#$ -l h_vmem=" + m + "M")
+    wallTime.foreach(t ⇒ buffer += "#$ -l h_cpu=" + t.toSeconds)
     buffer += "#$ -cwd"
 
     buffer += executable + " " + arguments

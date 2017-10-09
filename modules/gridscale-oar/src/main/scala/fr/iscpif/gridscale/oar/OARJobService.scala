@@ -100,7 +100,7 @@ trait OARJobService extends JobService with SSHHost with SSHStorage with BashShe
   }
 
   def cancel(job: J) = withConnection {
-    execReturnCode("oar " + job.id)(_)
+    execReturnCode("oardel " + job.id)(_)
   }
 
   def delete(job: J) = Try {
