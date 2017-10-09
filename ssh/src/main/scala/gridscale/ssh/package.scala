@@ -5,7 +5,7 @@ import java.io.ByteArrayInputStream
 import freestyle.tagless.tagless
 import gridscale.tools.shell.BashShell
 import net.schmizz.sshj.connection.channel.direct.Session.Command
-
+import freedsl.dsl._
 import scala.util.Try
 import scala.language.{ higherKinds, postfixOps }
 
@@ -50,11 +50,11 @@ package object ssh {
     }
   }
 
-  case class SSHInterpreter() extends SSH.Handler[util.Try] with AutoCloseable {
+  case class SSHInterpreter() extends SSH.Handler[Evaluated] with AutoCloseable {
 
-    def client(server: SSHServer): Try[SSHClient] = {
+    def client(server: SSHServer): Evaluated[SSHClient] = {
       val ssh =
-        util.Try {
+        guard {
           val ssh = new SSHClient
           // disable strict host key checking
           ssh.disableHostChecking()
@@ -63,14 +63,14 @@ package object ssh {
           ssh.setTimeout(server.timeout.millis.toInt)
           ssh.connect(server.host, server.port)
           ssh
-        }.mapFailure { t ⇒ ConnectionError(s"Error connecting to $server", t) }
+        }.leftMap { t ⇒ ConnectionError(s"Error connecting to $server", t) }
 
       def authenticate(ssh: SSHClient) = {
         server.authenticate(ssh) match {
-          case util.Success(s) ⇒ util.Success(ssh)
+          case util.Success(s) ⇒ result(ssh)
           case util.Failure(e) ⇒
-            Try(ssh.disconnect())
-            util.Failure(AuthenticationException(s"Error authenticating to $server", e))
+            guard(ssh.disconnect())
+            error(AuthenticationException(s"Error authenticating to $server", e))
         }
       }
 
@@ -85,7 +85,7 @@ package object ssh {
     def execute(server: SSHServer, s: String) =
       for {
         c ← clientCache.get(server)
-        r ← SSHClient.run(c, s).mapFailure(t ⇒ ExecutionError(s"Error executing $s on $server", t))
+        r ← SSHClient.run(c, s).toEither.leftMap(t ⇒ ExecutionError(s"Error executing $s on $server", t))
       } yield r
 
     def launch(server: SSHServer, s: String) =
@@ -97,24 +97,29 @@ package object ssh {
     def sftp[T](server: SSHServer, f: SFTPClient ⇒ util.Try[T]) =
       for {
         c ← clientCache.get(server)
-        r ← SSHClient.sftp(c, f).flatten.mapFailure(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+        r ← SSHClient.sftp(c, f).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
       } yield r
 
     def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) =
       for {
         c ← clientCache.get(server)
-        res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.mapFailure(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
+        res ← SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).flatten.toEither.leftMap(t ⇒ SFTPError(s"Error in sftp transfer on $server", t))
       } yield res
 
     def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String) = {
-      val ois = is()
-      try {
-        val c = clientCache.get(server).get
-        SSHClient.sftp(c, _.writeFile(ois, path))
-      } finally ois.close()
+      def write(client: SSHClient) = {
+        val ois = is()
+        try SSHClient.sftp(client, _.writeFile(ois, path))
+        finally ois.close()
+      }
+
+      for {
+        c ← clientCache.get(server)
+        _ ← write(c).toEither
+      } yield ()
     }
 
-    def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = util.Failure(ReturnCodeError(server, command, executionResult))
+    def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = error(ReturnCodeError(server, command, executionResult))
 
     def close() = {
       clientCache.values.flatMap(_.toOption).foreach(_.close())

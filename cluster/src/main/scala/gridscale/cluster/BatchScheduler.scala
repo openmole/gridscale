@@ -40,30 +40,29 @@ object BatchScheduler {
   // FIXME fragile => order of params
   def scriptPath(workDirectory: String, suffix: String)(uniqId: String): String = s"$workDirectory/${scriptName(suffix)(uniqId)}"
 
-  def submit[M[_]: Monad, S, D](
-    workDirectory: D ⇒ String,
-    buildScript: (D, String) ⇒ String,
-    scriptSuffix: ⇒ String,
-    submitCommand: String ⇒ String,
-    retrieveJobID: String ⇒ BatchJobID)(
-    server: S,
-    jobDescription: D)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
-
-    val workDir = workDirectory(jobDescription)
+  def submit[M[_]: Monad, S](
+    workDirectory: String,
+    buildScript: String ⇒ String,
+    scriptSuffix: String,
+    submitCommand: (String, String) ⇒ String,
+    retrieveJobID: String ⇒ BatchJobID,
+    server: S)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
 
     for {
-      _ ← hn.execute(server, s"mkdir -p $workDir")
+      _ ← hn.execute(server, s"mkdir -p $workDirectory")
       uniqId ← system.randomUUID.map(_.toString)
-      script = buildScript(jobDescription, uniqId)
+      script = buildScript(uniqId)
       sName = scriptName(scriptSuffix)(uniqId)
-      _ ← hn.write(server, script.getBytes, scriptPath(workDir, scriptSuffix)(uniqId))
-      command = s"cd $workDir && ${submitCommand(sName)}"
+      sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)
+      _ ← hn.write(server, script.getBytes, sPath)
+      _ ← hn.execute(server, s"chmod +x ${sPath}")
+      command = s"cd $workDirectory && ${submitCommand(sName, uniqId)}"
       cmdRet ← hn.execute(server, command)
       ExecutionResult(ret, out, error) = cmdRet
       _ ← if (ret != 0) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
       _ ← if (out == null) errorHandler.errorMessage(s"$submitCommand did not return a JobID") else ().pure[M]
-      jobId = retrieveJobID(out)
-    } yield BatchJob(uniqId, jobId, workDir)
+      jobId ← errorHandler.get(util.Try(retrieveJobID(out)))
+    } yield BatchJob(uniqId, jobId, workDirectory)
   }
 
   def state[M[_]: Monad, S](

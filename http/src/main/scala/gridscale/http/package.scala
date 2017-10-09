@@ -6,6 +6,7 @@ import java.security.KeyStore.{ PasswordProtection, PrivateKeyEntry }
 import java.security.PrivateKey
 import java.security.cert.{ Certificate, CertificateFactory }
 
+import freedsl.dsl._
 import freedsl.errorhandler.ErrorHandler
 import org.apache.commons.codec.binary
 import org.apache.http.{ HttpEntity, client }
@@ -15,7 +16,6 @@ import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
 
 import scala.io.Source
-
 import scala.language.{ higherKinds, postfixOps }
 
 package object http {
@@ -60,12 +60,12 @@ package object http {
 
   def get[T](url: String) = {
     implicit val interpreter = HTTPInterpreter()
-    read[Try](buildServer(url), "")
+    read[DSL](buildServer(url), "").tryEval
   }
 
   def getStream[T](url: String)(f: InputStream ⇒ T) = {
     implicit val interpreter = HTTPInterpreter()
-    readStream[Try, T](buildServer(url), "", f)
+    readStream[DSL, T](buildServer(url), "", f).tryEval
   }
 
   type Headers = Seq[(String, String)]
@@ -128,9 +128,9 @@ package object http {
     }
   }
 
-  case class HTTPInterpreter() extends HTTP.Handler[Try] {
+  case class HTTPInterpreter() extends HTTP.Handler[Evaluated] {
 
-    def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean): Try[T] = {
+    def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean) = {
       val uri =
         if (path.isEmpty) server.url else new URI(server.url.toString + path)
 
@@ -164,7 +164,7 @@ package object http {
 
       import util._
 
-      Try {
+      guard {
         try {
           val httpClient = HTTPInterpreter.client(server)
           try {
@@ -181,12 +181,12 @@ package object http {
     }
 
     def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean) =
-      withInputStream(server, path, f, method, testResponse).mapFailure(HTTPInterpreter.wrapError)
+      withInputStream(server, path, f, method, testResponse).leftMap(HTTPInterpreter.wrapError)
 
     def content(server: Server, path: String, method: HTTPMethod) = {
       def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
       def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
-      withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).mapFailure(HTTPInterpreter.wrapError)
+      withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).leftMap(HTTPInterpreter.wrapError)
     }
 
   }

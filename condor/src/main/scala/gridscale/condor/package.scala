@@ -30,7 +30,7 @@ package object condor {
     // TODO refactor duplicate
     def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
 
-    def toScript(description: CondorJobDescription, uniqId: String) = {
+    def toScript(description: CondorJobDescription)(uniqId: String) = {
 
       import description._
 
@@ -153,12 +153,13 @@ package object condor {
   val scriptSuffix = ".condor"
 
   def submit[M[_]: Monad, S](server: S, jobDescription: CondorJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S, CondorJobDescription](
-      CondorJobDescription.workDirectory.get,
-      toScript,
+    BatchScheduler.submit[M, S](
+      jobDescription.workDirectory,
+      toScript(jobDescription),
       scriptSuffix,
-      f ⇒ s"condor_submit $f",
-      impl.retrieveJobId)(server, jobDescription)
+      (f, _) ⇒ s"condor_submit $f",
+      impl.retrieveJobId,
+      server)
 
   def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = queryState(server, job)(hn, error)
 

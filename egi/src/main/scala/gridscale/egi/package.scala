@@ -6,6 +6,7 @@ import java.security.{ KeyPair, KeyPairGenerator, Security }
 import java.util.{ Calendar, GregorianCalendar, TimeZone }
 import javax.net.ssl.{ SSLContext, SSLSocket }
 
+import freedsl.dsl._
 import gridscale.authentication.AuthenticationException
 
 //import eu.emi.security.authn.x509.X509CertChainValidatorExt
@@ -55,8 +56,8 @@ package object egi {
 
   }
 
-  case class BDIIIntepreter() extends BDII.Handler[Try] {
-    def webDAVs(server: BDIIServer, vo: String) = Try {
+  case class BDIIIntepreter() extends BDII.Handler[Evaluated] {
+    def webDAVs(server: BDIIServer, vo: String) = guard {
       val creamCEServiceType = "org.glite.ce.CREAM"
 
       BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
@@ -79,7 +80,7 @@ package object egi {
       }
     }
 
-    def creamCEs(server: BDIIServer, vo: String) = Try {
+    def creamCEs(server: BDIIServer, vo: String) = guard {
       BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
         val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))")
 

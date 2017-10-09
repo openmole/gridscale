@@ -4,6 +4,7 @@ import java.io._
 import java.nio.file.{ FileAlreadyExistsException, FileSystemException, Path, StandardCopyOption }
 import java.util.logging.Logger
 
+import freedsl.dsl._
 import gridscale.tools.shell.BashShell
 
 package object local {
@@ -19,9 +20,9 @@ package object local {
 
   import scala.language.{ higherKinds, postfixOps }
 
-  case class LocalInterpreter() extends Local.Handler[Try] {
+  case class LocalInterpreter() extends Local.Handler[Evaluated] {
 
-    def execute(cmd: String) = Try {
+    def execute(cmd: String) = guard {
       import sys.process._
 
       val out = new StringBuilder
@@ -40,31 +41,31 @@ package object local {
       val proc = shell.run(io)
       ExecutionResult(proc.exitValue, out.mkString, err.mkString)
 
-    }.mapFailure(e ⇒ LocalExecutionError(s"Error executing $cmd on local host", e))
+    }.leftMap(e ⇒ LocalExecutionError(s"Error executing $cmd on local host", e))
 
-    def writeBytes(bytes: Array[Byte], path: String) = Try {
+    def writeBytes(bytes: Array[Byte], path: String) = guard {
       Files.write(Paths.get(path), bytes): Unit
-    }.mapFailure(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
+    }.leftMap(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
 
-    def writeFile(is: () ⇒ InputStream, path: String) = Try {
+    def writeFile(is: () ⇒ InputStream, path: String) = guard {
       val ois = is()
       try Files.copy(ois, Paths.get(path)): Unit finally ois.close()
-    }.mapFailure(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
+    }.leftMap(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
 
-    def readFile[T](path: String, f: java.io.InputStream ⇒ T) = Try {
+    def readFile[T](path: String, f: java.io.InputStream ⇒ T) = guard {
       val source = new FileInputStream(new File(path))
       try f(source) finally source.close()
     }
 
-    def rmFile(path: String) = Try(Files.delete(Paths.get(path))).mapFailure(e ⇒ LocalIOError(s"Could not delete file $path on local host", e))
+    def rmFile(path: String) = guard(Files.delete(Paths.get(path))).leftMap(e ⇒ LocalIOError(s"Could not delete file $path on local host", e))
 
     def home() =
-      Try(System.getProperty("user.home")).mapFailure(e ⇒ LocalIOError(s"Could not determine homme on local host", e))
+      guard(System.getProperty("user.home")).leftMap(e ⇒ LocalIOError(s"Could not determine homme on local host", e))
 
     def exists(path: String) =
-      Try(new File(path).exists).mapFailure(e ⇒ LocalIOError(s"Could not test if $path exists on local host", e))
+      guard(new File(path).exists).leftMap(e ⇒ LocalIOError(s"Could not test if $path exists on local host", e))
 
-    def list(path: String) = Try {
+    def list(path: String) = guard {
       new File(path).listFiles.map {
         f ⇒
           val ftype =
@@ -74,24 +75,24 @@ package object local {
 
           ListEntry(name = f.getName, `type` = ftype, modificationTime = Some(f.lastModified()))
       }.toList
-    }.mapFailure(e ⇒ LocalIOError(s"Could not list directory $path on local host", e))
+    }.leftMap(e ⇒ LocalIOError(s"Could not list directory $path on local host", e))
 
     def makeDir(path: String) =
-      Try { new File(path).mkdirs: Unit }.mapFailure(e ⇒ LocalIOError(s"Could not make directory $path on local host", e))
+      guard { new File(path).mkdirs: Unit }.leftMap(e ⇒ LocalIOError(s"Could not make directory $path on local host", e))
 
-    def rmDir(path: String) = Try {
+    def rmDir(path: String) = guard {
       def delete(f: File): Unit = {
         if (f.isDirectory) f.listFiles.foreach(delete)
         f.delete
       }
       delete(new File(path))
-    }.mapFailure(e ⇒ LocalIOError(s"Could not removet directory $path on local host", e))
+    }.leftMap(e ⇒ LocalIOError(s"Could not removet directory $path on local host", e))
 
-    def mv(from: String, to: String) = Try {
+    def mv(from: String, to: String) = guard {
       new File(from).renameTo(new File(to)): Unit
-    }.mapFailure(e ⇒ LocalIOError(s"Could not move $from to $to on local host", e))
+    }.leftMap(e ⇒ LocalIOError(s"Could not move $from to $to on local host", e))
 
-    def link(target: String, link: String, defaultOnCopy: Boolean) = Try {
+    def link(target: String, link: String, defaultOnCopy: Boolean) = guard {
 
       def createLink(target: Path, link: Path): Path = {
         def getParentFileSafe(file: File): File =

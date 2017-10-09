@@ -3,6 +3,7 @@ package gridscale.slurm
 import cats._
 import cats.implicits._
 import freedsl.system._
+import freedsl.dsl._
 import freedsl.errorhandler._
 import gridscale._
 import gridscale.authentication._
@@ -28,7 +29,7 @@ object SlurmExample extends App {
 
   ClusterInterpreter { intp ⇒
     import intp._
-    println(res[util.Try])
+    println(res[DSL].eval)
   }
 
 }

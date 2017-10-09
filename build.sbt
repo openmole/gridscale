@@ -113,7 +113,7 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 /* -------------- gridscale dsl ------------------ */
 
-val freedslVersion = "0.18-SNAPSHOT"
+val freedslVersion = "0.19"
 val monocleVersion = "1.4.0"
 
 def dslSettings = defaultSettings ++ Seq(
@@ -152,10 +152,9 @@ lazy val cluster = Project(id = "cluster", base = file("cluster"), settings = ds
 )
 
 lazy val pbs = Project(id = "pbs", base = file("pbs"), settings = dslSettings) dependsOn(gridscale, cluster)
-
 lazy val slurm = Project(id = "slurm", base = file("slurm"), settings = dslSettings) dependsOn(gridscale, cluster)
-
 lazy val condor = Project(id = "condor", base = file("condor"), settings = dslSettings) dependsOn(gridscale, cluster)
+lazy val oar = Project(id = "oar", base = file("oar"), settings = dslSettings) dependsOn(gridscale, cluster)
 
 lazy val http = Project(id = "http", base = file("http"), settings = dslSettings) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
@@ -211,5 +210,5 @@ lazy val pbsExample  = Project(id = "pbsexample", base = file("examples/pbs"), s
 lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = dslSettings ++ exportSettings) dependsOn slurm
 //lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn sge
 lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings ++ exportSettings) dependsOn ssh
-//lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn oar
+lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn oar
 lazy val httpExample  = Project(id = "httpexample", base = file("examples/http"), settings = defaultSettings ++ exportSettings) dependsOn http

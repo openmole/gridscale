@@ -3,7 +3,6 @@ package gridscale
 import cats._
 import freedsl.system._
 import freedsl.errorhandler._
-import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import squants._
@@ -24,7 +23,7 @@ package object pbs {
 
   object impl {
 
-    def toScript(description: PBSJobDescription, uniqId: String) = {
+    def toScript(description: PBSJobDescription)(uniqId: String) = {
       import description._
 
       val buffer = new ScriptBuffer
@@ -89,12 +88,13 @@ package object pbs {
   val scriptSuffix = ".pbs"
 
   def submit[M[_]: Monad, S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S, PBSJobDescription](
-      PBSJobDescription.workDirectory.get,
-      toScript,
+    BatchScheduler.submit[M, S](
+      jobDescription.workDirectory,
+      toScript(jobDescription),
       scriptSuffix,
-      f ⇒ s"qsub $f",
-      impl.retrieveJobID)(server, jobDescription)
+      (f, _) ⇒ s"qsub $f",
+      impl.retrieveJobID,
+      server)
 
   def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
     BatchScheduler.state[M, S](

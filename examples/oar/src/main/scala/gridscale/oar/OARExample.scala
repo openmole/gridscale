@@ -1,26 +1,24 @@
-package gridscale.pbs
+package gridscale.oar
 
 import cats._
 import cats.implicits._
 import freedsl.dsl._
-import freedsl.system._
 import freedsl.errorhandler._
+import freedsl.system._
 import gridscale._
 import gridscale.authentication._
-import gridscale.ssh._
 import gridscale.cluster.SSHClusterInterpreter
+import gridscale.ssh._
 import squants.time.TimeConversions._
 
 import scala.language.postfixOps
 
-object PBSExample extends App {
+object OARExample extends App {
 
-  val authentication = UserPassword("testuser", "testuser")
-  val localhost = SSHServer("localhost", 10022)(authentication)
+  val authentication = UserPassword("docker", "docker")
+  val localhost = SSHServer("172.17.0.3", 22)(authentication)
 
-  import gridscale.pbs._
-
-  val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/jpassera/test_gridscale", wallTime = Some(10 minutes))
+  val jobDescription = OARJobDescription("""echo "hello world from $(hostname)"""", "/data/test_gridscale", wallTime = Some(10 minutes))
 
   def res[M[_]: SSH: System: ErrorHandler: Monad] = for {
     job ← submit[M, SSHServer](localhost, jobDescription)

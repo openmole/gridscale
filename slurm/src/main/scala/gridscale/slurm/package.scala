@@ -37,7 +37,7 @@ package object slurm {
 
     def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
 
-    def toScript(description: SlurmJobDescription, uniqId: String) = {
+    def toScript(description: SlurmJobDescription)(uniqId: String) = {
       import description._
 
       val header = "#!/bin/bash\n"
@@ -129,12 +129,13 @@ package object slurm {
   val scriptSuffix = ".slurm"
 
   def submit[M[_]: Monad, S](server: S, jobDescription: SlurmJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S, SlurmJobDescription](
-      SlurmJobDescription.workDirectory.get,
-      toScript,
+    BatchScheduler.submit[M, S](
+      jobDescription.workDirectory,
+      toScript(jobDescription),
       scriptSuffix,
-      f ⇒ s"sbatch $f",
-      retrieveJobID)(server, jobDescription)
+      (f, _) ⇒ s"sbatch $f",
+      retrieveJobID,
+      server)
 
   def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
     BatchScheduler.state[M, S](
