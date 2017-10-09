@@ -108,12 +108,12 @@ package object oar {
 
   def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
     BatchScheduler.state[M, S](
-      id ⇒ s"""oarstat -j ${id} -s""",
+      s"""oarstat -j ${job.jobId} -s""",
       impl.parseState)(server, job)
 
   def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
     BatchScheduler.clean[M, S](
-      id ⇒ s"oardel $id",
+      s"oardel ${job.jobId}",
       scriptSuffix)(server, job)
 
   def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)

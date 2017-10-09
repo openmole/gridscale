@@ -65,12 +65,12 @@ package object sge {
 
   def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
     BatchScheduler.state[M, S](
-      id ⇒ s"""qstat | sed 's/^  *//g'  |  grep '^${id} ' | sed 's/  */ /g' | cut -d' ' -f5""",
+      s"""qstat | sed 's/^  *//g'  |  grep '^${job.jobId} ' | sed 's/  */ /g' | cut -d' ' -f5""",
       (res, _) ⇒ impl.parseState(res))(server, job)
 
   def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
     BatchScheduler.clean[M, S](
-      id ⇒ s"qdel $id",
+      s"qdel ${job.jobId}",
       scriptSuffix)(server, job)
 
   def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + BatchScheduler.output(job.uniqId))

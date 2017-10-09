@@ -66,21 +66,19 @@ object BatchScheduler {
   }
 
   def state[M[_]: Monad, S](
-    stateCommand: String ⇒ String,
+    stateCommand: String,
     parseState: (ExecutionResult, String) ⇒ Either[RuntimeException, JobState])(server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
 
-    val command = stateCommand(job.jobId)
-
     for {
-      cmdRet ← hn.execute(server, command)
-      s ← error.get[JobState](parseState(cmdRet, command))
+      cmdRet ← hn.execute(server, stateCommand)
+      s ← error.get[JobState](parseState(cmdRet, stateCommand))
     } yield s
   }
 
   def clean[M[_]: Monad, S](
-    cancelCommand: String ⇒ String,
-    scriptSuffix: ⇒ String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
-    _ ← hn.execute(server, s"$cancelCommand ${job.jobId}")
+    cancelCommand: String,
+    scriptSuffix: String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
+    _ ← hn.execute(server, cancelCommand)
     _ ← hn.rmFile(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
     _ ← hn.rmFile(server, job.workDirectory + "/" + output(job.uniqId))
     _ ← hn.rmFile(server, job.workDirectory + "/" + error(job.uniqId))

@@ -161,11 +161,12 @@ package object condor {
       impl.retrieveJobId,
       server)
 
-  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = queryState(server, job)(hn, error)
+  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
+    queryState(server, job)(hn, error)
 
   def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
     BatchScheduler.clean[M, S](
-      id ⇒ s"condor_rm $id",
+      s"condor_rm ${job.jobId}",
       scriptSuffix)(server, job)
 
   def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)

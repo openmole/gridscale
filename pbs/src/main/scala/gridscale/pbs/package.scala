@@ -98,12 +98,12 @@ package object pbs {
 
   def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
     BatchScheduler.state[M, S](
-      id ⇒ s"qstat -f $id",
+      s"qstat -f ${job.jobId}",
       parseState)(server, job)
 
   def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
     BatchScheduler.clean[M, S](
-      id ⇒ s"qdel $id",
+      s"qdel ${job.jobId}",
       scriptSuffix)(server, job)
 
   def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)
