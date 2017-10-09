@@ -50,7 +50,7 @@ object BatchScheduler {
 
     for {
       _ ← hn.execute(server, s"mkdir -p $workDirectory")
-      uniqId ← system.randomUUID.map(_.toString)
+      uniqId ← system.randomUUID.map(uuid ⇒ s"job-${uuid.toString}")
       script = buildScript(uniqId)
       sName = scriptName(scriptSuffix)(uniqId)
       sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)
