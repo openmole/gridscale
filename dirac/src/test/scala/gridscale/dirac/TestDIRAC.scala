@@ -1,6 +1,7 @@
 package gridscale.dirac
 
 import cats._
+import freedsl.dsl._
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import freedsl.system._
@@ -31,7 +32,7 @@ object TestDIRAC extends App {
 
   DIRACInterpreter { interpreters ⇒
     import interpreters._
-    println(prg[util.Try].get)
+    println(prg[DSL].eval)
   }
 
 }
