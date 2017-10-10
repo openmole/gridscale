@@ -54,6 +54,7 @@ package object pbs {
       status match {
         case "R" | "E" | "H" | "S" ⇒ Right(JobState.Running)
         case "Q" | "W" | "T"       ⇒ Right(JobState.Submitted)
+        case "C"                   ⇒ Right(JobState.Done)
         case _                     ⇒ Left(new RuntimeException("Unrecognized state " + status))
       }
 
