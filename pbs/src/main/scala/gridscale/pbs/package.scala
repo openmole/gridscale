@@ -12,6 +12,10 @@ import scala.language.higherKinds
 
 package object pbs {
 
+  sealed trait PBSFlavour
+  case object PBSPro extends PBSFlavour
+  case object Torque extends PBSFlavour
+
   @Lenses case class PBSJobDescription(
     command: String,
     workDirectory: String,
@@ -19,7 +23,8 @@ package object pbs {
     wallTime: Option[Time] = None,
     memory: Option[Int] = None,
     nodes: Option[Int] = None,
-    coreByNode: Option[Int] = None)
+    coreByNode: Option[Int] = None,
+    flavour: PBSFlavour = Torque)
 
   object impl {
 
@@ -40,7 +45,10 @@ package object pbs {
       val nbNodes = nodes.getOrElse(1)
       val coresPerNode = coreByNode.getOrElse(1)
 
-      buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
+      flavour match {
+        case PBSPro ⇒ buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
+        case Torque ⇒ buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode:mem=${mem}MB"
+      }
 
       buffer += "cd " + workDirectory
 

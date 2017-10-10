@@ -11,7 +11,7 @@ import gridscale.ssh._
 import gridscale.cluster.SSHClusterInterpreter
 import squants.time.TimeConversions._
 
-import scala.language.postfixOps
+import scala.language.{ higherKinds, postfixOps }
 
 object PBSExample extends App {
 
@@ -20,7 +20,8 @@ object PBSExample extends App {
 
   import gridscale.pbs._
 
-  val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/jpassera/test_gridscale", wallTime = Some(10 minutes))
+  // by default flavour = Torque, there's no need to specify it
+  val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/jpassera/test_gridscale", wallTime = Some(10 minutes), flavour = PBSPro)
 
   def res[M[_]: SSH: System: ErrorHandler: Monad] = for {
     job ← submit[M, SSHServer](localhost, jobDescription)
