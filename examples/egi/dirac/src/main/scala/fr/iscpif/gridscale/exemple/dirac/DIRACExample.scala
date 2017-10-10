@@ -40,8 +40,7 @@ object DIRACExample extends App {
       "out" -> new File("/tmp/diractout.txt"),
       "err" -> new File("/tmp/diracterr.txt")),
     stdOut = Some("out"),
-    stdErr = Some("err")
-  )
+    stdErr = Some("err"))
 
   val j = js.submit(jobDesc)
   js.untilFinished(j, sleepTime = 0 second) { println }

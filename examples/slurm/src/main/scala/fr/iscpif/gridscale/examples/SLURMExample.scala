@@ -35,8 +35,7 @@ object SLURMExample {
     val description = SLURMJobDescription(
       executable = "/bin/echo",
       arguments = "success > test_success.txt",
-      workDirectory = "/homes/jpassera/toto"
-    )
+      workDirectory = "/homes/jpassera/toto")
 
     println("job to submit:")
     println(description.toSLURM)
@@ -62,8 +61,7 @@ object SLURMExample {
     val description = SLURMJobDescription(
       executable = "/usr/bin/find",
       arguments = "/",
-      workDirectory = "/homes/jpassera/toto"
-    )
+      workDirectory = "/homes/jpassera/toto")
 
     println("then the job has been submitted")
     val j = slurmService.submit(description)
@@ -85,8 +83,7 @@ object SLURMExample {
       executable = "/opt/cuda/C/bin/linux/release/matrixMul",
       arguments = "",
       workDirectory = "/homes/jpassera/toto",
-      gres = List(new Gres("gpu", 1))
-    )
+      gres = List(new Gres("gpu", 1)))
 
     println("then the job has been submitted")
     val j = slurmService.submit(description)
@@ -110,8 +107,7 @@ object SLURMExample {
       executable = "/opt/cuda/C/bin/linux/release/matrixMul",
       arguments = "",
       workDirectory = "/homes/jpassera/toto",
-      constraints = List("tesla", "fermi")
-    )
+      constraints = List("tesla", "fermi"))
 
     println("then the job has been submitted")
     val j = slurmService.submit(description)

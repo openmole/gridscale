@@ -29,8 +29,7 @@ object SubmitEcho extends App {
   val description = SGEJobDescription(
     executable = "/bin/echo",
     arguments = "hello world",
-    workDirectory = service.home + "/testjob/"
-  )
+    workDirectory = service.home + "/testjob/")
 
   val j = service.submit(description)
   val s2 = service.untilFinished(j) { println }

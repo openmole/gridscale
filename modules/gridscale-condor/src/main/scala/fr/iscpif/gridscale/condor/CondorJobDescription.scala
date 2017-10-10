@@ -22,13 +22,13 @@ import java.util.UUID
 import fr.iscpif.gridscale.tools.ScriptBuffer
 
 case class CondorJobDescription(
-    executable: String,
-    arguments: String,
-    workDirectory: String,
-    memory: Option[Int] = None,
-    nodes: Option[Int] = None,
-    coreByNode: Option[Int] = None,
-    requirements: Option[CondorRequirement] = None) {
+  executable: String,
+  arguments: String,
+  workDirectory: String,
+  memory: Option[Int] = None,
+  nodes: Option[Int] = None,
+  coreByNode: Option[Int] = None,
+  requirements: Option[CondorRequirement] = None) {
 
   val uniqId = UUID.randomUUID.toString
   // not available yet

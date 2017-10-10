@@ -155,9 +155,7 @@ object HTTPStorage {
             ListEntry(
               new File(java.net.URLDecoder.decode(ret, "utf-8")).getPath,
               if (isDir) DirectoryType else FileType,
-              None
-            )
-          )
+              None))
         } else None
     }
   }

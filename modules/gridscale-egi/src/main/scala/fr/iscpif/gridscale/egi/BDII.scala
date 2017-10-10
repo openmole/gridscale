@@ -85,8 +85,7 @@ class BDII(host: String, port: Int, timeout: Duration = 1 minute) {
         memory = memory,
         maxCPUTime = maxCpuTime,
         maxWallTime = maxWallTime,
-        status = status
-      )
+        status = status)
     }
   }
 

@@ -41,8 +41,7 @@ object SSHJSFTPClient {
         ListEntry(
           e.getName,
           t,
-          Some(ListEntry.dateFromEpoch(e.getAttributes.getMtime))
-        )
+          Some(ListEntry.dateFromEpoch(e.getAttributes.getMtime)))
     }.toList // FIXME is it because the List<> gets converted to a buffer?
   }
 
@@ -71,8 +70,7 @@ object SSHJSFTPClient {
       case e: Throwable ⇒
         close()
         throw e
-    }
-    finally c.close()
+    } finally c.close()
   }
 
   // FIXME takes care of too much things => should not close the sftpclient for instance
@@ -105,7 +103,7 @@ object SSHJSFTPClient {
   def fileOutputStream(is: InputStream, path: String)(implicit sshjSFTPClient: SFTPClient): Unit = {
 
     withClosable(sshjSFTPClient.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC))) {
-      fileHandle => withClosable(new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)) { copyStream(is, _) }
+      fileHandle ⇒ withClosable(new fileHandle.RemoteFileOutputStream(0, unconfirmedExchanges)) { copyStream(is, _) }
     }
   }
 }

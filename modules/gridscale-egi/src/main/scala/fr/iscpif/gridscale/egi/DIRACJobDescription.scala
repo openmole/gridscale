@@ -31,14 +31,14 @@ object DIRACJobDescription {
 }
 
 case class DIRACJobDescription(
-    executable: String,
-    arguments: String,
-    stdOut: Option[String] = None,
-    stdErr: Option[String] = None,
-    inputSandbox: Seq[File] = List.empty,
-    outputSandbox: Seq[(String, File)] = List.empty,
-    platforms: Seq[String] = Seq.empty,
-    cpuTime: Option[Duration] = None) {
+  executable: String,
+  arguments: String,
+  stdOut: Option[String] = None,
+  stdErr: Option[String] = None,
+  inputSandbox: Seq[File] = List.empty,
+  outputSandbox: Seq[(String, File)] = List.empty,
+  platforms: Seq[String] = Seq.empty,
+  cpuTime: Option[Duration] = None) {
 
   def toJSON(jobGroup: Option[String] = None) = {
     def inputSandboxArray = JArray(inputSandbox.map(f ⇒ JString(f.getName)).toList)

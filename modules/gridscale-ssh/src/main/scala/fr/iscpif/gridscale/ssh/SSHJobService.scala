@@ -54,7 +54,7 @@ object SSHJobService {
   /*def exec (connection: Connection, cde: String): Unit = {
     val session = connection.openSession
     try {
-      exec(session, cde) 
+      exec(session, cde)
       if(session.getExitStatus != 0) throw new RuntimeException("Return code was no 0 but " + session.getExitStatus)
     } finally session.close
   } */

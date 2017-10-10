@@ -68,8 +68,7 @@ class CondorJobServiceTests extends FunSuite with MockitoSugar {
     val description = CondorJobDescription(
       executable = "/bin/echo",
       arguments = "success > test_success.txt",
-      workDirectory = "/homes/toto/"
-    )
+      workDirectory = "/homes/toto/")
 
     when(jobService.submit(description)).thenReturn(CondorJobService.CondorJob(description, "42"))
 
@@ -91,15 +90,12 @@ class CondorJobDescriptionTests extends FunSuite {
     coreByNode = Some(8),
     requirements = """JavaVersion == "1.7.0_03"""" &&
       ("""OpSysShortName == "Ubuntu"""" &&
-        ("OpSysMajorVer == 14" || "OpSysMajorVer == 12" || "OpSysMajorVer == 13")
-      )
-  )
+        ("OpSysMajorVer == 14" || "OpSysMajorVer == 12" || "OpSysMajorVer == 13")))
 
   val emptyDescription = CondorJobDescription(
     executable = "/bin/echo",
     arguments = "success > test_success.txt",
-    workDirectory = "/homes/toto/"
-  )
+    workDirectory = "/homes/toto/")
 
   val workDirectoryPattern = "initialdir = "
   test("WorkDirectory (compulsory)") {

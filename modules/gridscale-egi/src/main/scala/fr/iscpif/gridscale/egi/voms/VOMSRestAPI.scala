@@ -45,8 +45,7 @@ object VOMSRestAPI {
       val options =
         List(
           lifetime.map("lifetime=" + _),
-          fquan.map("fquans=" + _)
-        ).flatten.mkString("&")
+          fquan.map("fquans=" + _)).flatten.mkString("&")
       val uri = new URI(s"https://$host:$port/generate-ac${if (!options.isEmpty) "?" + options else ""}")
       val get = new HttpGet(uri)
       val r = c.execute(get)

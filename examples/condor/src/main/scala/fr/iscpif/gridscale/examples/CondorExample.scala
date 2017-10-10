@@ -35,8 +35,7 @@ object CondorExample {
     val description = CondorJobDescription(
       executable = "/bin/echo",
       arguments = "success > test_success.txt",
-      workDirectory = "/tmp/"
-    )
+      workDirectory = "/tmp/")
 
     println("job to submit:")
     println(description.toCondor)
@@ -62,8 +61,7 @@ object CondorExample {
     val description = CondorJobDescription(
       executable = "/usr/bin/find",
       arguments = "/",
-      workDirectory = "/tmp"
-    )
+      workDirectory = "/tmp")
 
     println("then the job has been submitted")
     val j = condorService.submit(description)
@@ -87,9 +85,7 @@ object CondorExample {
       workDirectory = "/homes/jpassera/toto",
       requirements = """JavaVersion == "1.7.0_03"""" &&
         ("""OpSysShortName == "Ubuntu"""" &&
-          ("OpSysMajorVer == 14" || "OpSysMajorVer == 12" || "OpSysMajorVer == 13")
-        )
-    )
+          ("OpSysMajorVer == 14" || "OpSysMajorVer == 12" || "OpSysMajorVer == 13")))
 
     println("then the job has been submitted")
     val j = condorService.submit(description)
