@@ -89,6 +89,8 @@ package object pbs {
 
     }
 
+    def pbsErrorWrapper(command: String, executionResult: ExecutionResult) =
+      ExecutionResult.error("You might want to specify a different PBS flavour in your job description? flavour = PBSPro")(command, executionResult)
   }
 
   import impl._
@@ -103,7 +105,8 @@ package object pbs {
       scriptSuffix,
       (f, _) ⇒ s"qsub $f",
       impl.retrieveJobID,
-      server)
+      server,
+      impl.pbsErrorWrapper)
 
   def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
     BatchScheduler.state[M, S](

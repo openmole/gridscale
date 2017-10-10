@@ -46,7 +46,8 @@ object BatchScheduler {
     scriptSuffix: String,
     submitCommand: (String, String) ⇒ String,
     retrieveJobID: String ⇒ BatchJobID,
-    server: S)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
+    server: S,
+    errorWrapper: ((String, ExecutionResult) ⇒ String) = ExecutionResult.error)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
 
     for {
       _ ← hn.execute(server, s"mkdir -p $workDirectory")
@@ -55,11 +56,11 @@ object BatchScheduler {
       sName = scriptName(scriptSuffix)(uniqId)
       sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)
       _ ← hn.write(server, script.getBytes, sPath)
-      _ ← hn.execute(server, s"chmod +x ${sPath}")
+      _ ← hn.execute(server, s"chmod +x $sPath")
       command = s"cd $workDirectory && ${submitCommand(sName, uniqId)}"
       cmdRet ← hn.execute(server, command)
       ExecutionResult(ret, out, error) = cmdRet
-      _ ← if (ret != 0) errorHandler.errorMessage(ExecutionResult.error(command, cmdRet)) else ().pure[M]
+      _ ← if (ret != 0) errorHandler.errorMessage(errorWrapper(command, cmdRet)) else ().pure[M]
       _ ← if (out == null) errorHandler.errorMessage(s"$submitCommand did not return a JobID") else ().pure[M]
       jobId ← errorHandler.get(util.Try(retrieveJobID(out)))
     } yield BatchJob(uniqId, jobId, workDirectory)

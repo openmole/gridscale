@@ -84,10 +84,12 @@ package object gridscale {
   case class ExecutionResult(returnCode: Int, stdOut: String, stdErr: String)
 
   object ExecutionResult {
-    def error(command: String, executionResult: ExecutionResult) = {
+    def error(suggestionMessage: String = "")(command: String, executionResult: ExecutionResult) = {
       import executionResult._
-      s"Unexpected return code $returnCode, when running $command (stdout=${executionResult.stdOut}, stderr=${executionResult.stdErr})"
+      s"Unexpected return code $returnCode, when running $command (stdout=${executionResult.stdOut}, stderr=${executionResult.stdErr}).\n$suggestionMessage"
     }
+
+    def error(command: String, executionResult: ExecutionResult): String = error("")(command, executionResult)
   }
 
   object RemotePath {
