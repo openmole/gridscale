@@ -53,8 +53,7 @@ class SLURMJobServiceTests extends FunSuite with MockitoSugar {
     val description = SLURMJobDescription(
       executable = "/bin/echo",
       arguments = "success > test_success.txt",
-      workDirectory = "/homes/toto/"
-    )
+      workDirectory = "/homes/toto/")
 
     when(jobService.submit(description)).thenReturn(SLURMJobService.SLURMJob(description, "42"))
 
@@ -77,14 +76,12 @@ class SLURMJobDescriptionTests extends FunSuite {
     coresByNode = Some(8),
     qos = Some("SuperQoS"),
     gres = List(Gres("gpu", 1)),
-    constraints = List("tesla", "fermi")
-  )
+    constraints = List("tesla", "fermi"))
 
   val emptyDescription = SLURMJobDescription(
     executable = "/bin/echo",
     arguments = "success > test_success.txt",
-    workDirectory = "/homes/toto/"
-  )
+    workDirectory = "/homes/toto/")
 
   val slurmPrefix = "#SBATCH"
 

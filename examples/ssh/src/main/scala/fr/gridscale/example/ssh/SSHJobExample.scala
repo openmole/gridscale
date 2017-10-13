@@ -28,8 +28,7 @@ object SSHJobExample extends App {
   val description = SSHJobDescription(
     workDirectory = "/tmp/",
     arguments = "30",
-    executable = "sleep"
-  )
+    executable = "sleep")
 
   val id = js.submit(description)
   js.untilFinished(id) { println }

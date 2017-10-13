@@ -294,8 +294,7 @@ trait DIRACGroupedJobService extends JobService {
             val time = System.currentTimeMillis
             (time, queryGroupStatus(group).toMap)
           }
-        }
-      )
+        })
   }
 
   def submit(d: D): J = {

@@ -98,6 +98,7 @@ trait PBSJobService extends JobService with SSHHost with SSHStorage with BashShe
     status match {
       case "R" | "E" | "H" | "S" ⇒ Running
       case "Q" | "W" | "T"       ⇒ Submitted
+      case "C"                   ⇒ Done
       case _                     ⇒ throw new RuntimeException("Unrecognized state " + status)
     }
 

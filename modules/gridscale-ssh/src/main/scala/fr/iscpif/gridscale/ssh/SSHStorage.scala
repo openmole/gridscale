@@ -121,9 +121,8 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
     c.rm(path)
   }
 
-
   // FIXME resource not released in normal case!
-  def withNotClosedResource[R <: { def release(connection: SSHClient)}, T](f: SFTPClient => T): T = withConnection { connection =>
+  def withNotClosedResource[R <: { def release(connection: SSHClient) }, T](f: SFTPClient ⇒ T): T = withConnection { connection ⇒
     val sftpClient =
       try connection.newSFTPClient
       catch {
@@ -132,7 +131,7 @@ trait SSHStorage extends Storage with SSHHost { storage ⇒
           throw e
       }
 
-      f(sftpClient)
+    f(sftpClient)
   }
 
   override def _read(path: String): InputStream = withNotClosedResource(_.readAheadFileInputStream(path))

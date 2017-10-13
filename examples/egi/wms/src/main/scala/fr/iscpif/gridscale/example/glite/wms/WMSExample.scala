@@ -41,8 +41,7 @@ object WMSExample extends App {
     arguments = "Hello world!",
     stdOutput = Some("out.txt"),
     stdError = Some("error.txt"),
-    outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt"))
-  )
+    outputSandbox = List("out.txt" -> new File("/tmp/out.txt"), "error.txt" -> new File("/tmp/error.txt")))
 
   val j = wms.submit(jobDesc)
   val s = wms.untilFinished(j) { println }

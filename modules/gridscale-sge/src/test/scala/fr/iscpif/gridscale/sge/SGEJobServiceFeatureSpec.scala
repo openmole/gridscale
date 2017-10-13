@@ -31,8 +31,7 @@ class SGEJobServiceTests extends FunSuite with MockitoSugar {
     val description = SGEJobDescription(
       executable = "/bin/echo",
       arguments = "success > test_success.txt",
-      workDirectory = "/homes/toto/"
-    )
+      workDirectory = "/homes/toto/")
 
     when(jobService.submit(description)).thenReturn(SGEJobService.SGEJob(description, "42"))
 

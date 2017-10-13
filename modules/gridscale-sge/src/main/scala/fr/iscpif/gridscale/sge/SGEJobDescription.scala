@@ -24,12 +24,12 @@ import fr.iscpif.gridscale.tools.ScriptBuffer
 import scala.concurrent.duration.Duration
 
 case class SGEJobDescription(
-    executable: String,
-    arguments: String,
-    workDirectory: String,
-    queue: Option[String] = None,
-    memory: Option[Int] = None,
-    wallTime: Option[Duration] = None) {
+  executable: String,
+  arguments: String,
+  workDirectory: String,
+  queue: Option[String] = None,
+  memory: Option[Int] = None,
+  wallTime: Option[Duration] = None) {
 
   val uniqId = "job-" + UUID.randomUUID.toString
   def output: String = uniqId + ".out"

@@ -34,8 +34,7 @@ object SubmitEcho extends App {
     workDirectory = "/data/",
     core = Some(1),
     cpu = Some(1),
-    wallTime = Some(1 hour)
-  )
+    wallTime = Some(1 hour))
 
   val j = service.submit(description)
 
