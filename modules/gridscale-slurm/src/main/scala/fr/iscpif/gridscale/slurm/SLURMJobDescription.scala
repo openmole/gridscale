@@ -28,17 +28,17 @@ case class Gres(gresName: String, gresValue: Int) {
 }
 
 case class SLURMJobDescription(
-  executable: String,
-  arguments: String,
-  workDirectory: String,
-  queue: Option[String] = None,
-  wallTime: Option[Duration] = None,
-  memory: Option[Int] = None,
-  nodes: Option[Int] = None,
-  coresByNode: Option[Int] = None,
-  qos: Option[String] = None,
-  gres: List[Gres] = List(),
-  constraints: List[String] = List()) {
+    executable: String,
+    arguments: String,
+    workDirectory: String,
+    queue: Option[String] = None,
+    wallTime: Option[Duration] = None,
+    memory: Option[Int] = None,
+    nodes: Option[Int] = None,
+    coresByNode: Option[Int] = None,
+    qos: Option[String] = None,
+    gres: List[Gres] = List(),
+    constraints: List[String] = List()) {
 
   val uniqId = UUID.randomUUID.toString
 

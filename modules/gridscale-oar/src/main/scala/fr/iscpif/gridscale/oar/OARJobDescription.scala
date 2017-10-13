@@ -25,14 +25,14 @@ import fr.iscpif.gridscale.tools._
 import scala.concurrent.duration.Duration
 
 case class OARJobDescription(
-  executable: String,
-  arguments: String,
-  workDirectory: String,
-  queue: Option[String] = None,
-  cpu: Option[Int] = None,
-  core: Option[Int] = None,
-  wallTime: Option[Duration] = None,
-  bestEffort: Boolean = false) {
+    executable: String,
+    arguments: String,
+    workDirectory: String,
+    queue: Option[String] = None,
+    cpu: Option[Int] = None,
+    core: Option[Int] = None,
+    wallTime: Option[Duration] = None,
+    bestEffort: Boolean = false) {
 
   val uniqId = UUID.randomUUID.toString
 

@@ -46,10 +46,10 @@ object GlobusAuthentication {
   }
 
   class Proxy(
-    val credential: GlobusGSSCredentialImpl,
-    val proxyBytes: Array[Byte],
-    val delegationID: String,
-    val gt2Credential: GlobusGSSCredentialImpl) {
+      val credential: GlobusGSSCredentialImpl,
+      val proxyBytes: Array[Byte],
+      val delegationID: String,
+      val gt2Credential: GlobusGSSCredentialImpl) {
     @transient lazy val proxyString = new String(proxyBytes)
   }
 
