@@ -47,8 +47,6 @@ package object dirac {
         jobGroup.map(s ⇒ "JobGroup" -> JString(s)) ++
         cores.map(c ⇒ "Tags" -> JArray(List(JString(s"""${c}Processors"""))))
 
-      println(pretty(JObject(fields: _*)))
-
       pretty(JObject(fields: _*))
     }
 
@@ -143,7 +141,7 @@ package object dirac {
 
   def jobsLocation = "/jobs"
 
-  def submit[M[_]: Monad: HTTP](server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String]): M[JobID] = {
+  def submit[M[_]: Monad: HTTP](server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String] = None): M[JobID] = {
     def files() = {
       val builder = MultipartEntityBuilder.create()
       jobDescription.inputSandbox.foreach {
@@ -166,7 +164,7 @@ package object dirac {
         .setParameter("access_token", token.token)
         .build
 
-    gridscale.http.read[M](server.server, s"$jobsLocation/$jobId?${uri.getQuery}").map { r ⇒
+    gridscale.http.read[M](server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}").map { r ⇒
       val s = (parse(r) \ "status").extract[String]
       translateState(s)
     }

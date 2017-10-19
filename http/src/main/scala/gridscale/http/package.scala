@@ -159,7 +159,7 @@ package object http {
           response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
             response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
 
-        if (!isResponseOk(response)) throw new IOException(s"Server responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
+        if (!isResponseOk(response)) throw new IOException(s"${uri} responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
       }
 
       import util._
