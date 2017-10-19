@@ -24,11 +24,11 @@ object TestDIRAC extends App {
       service ← getService[M]("vo.complex-systems.eu")
       s ← server[M](service, p12, certificateDirectory)
       t ← token(s)
-      j ← submit[M](s, description, t, Some("testgroup")).repeat(10)
-      gs ← queryGroupState[M](s, t, "testgroup")
+      j ← submit[M](s, description, t, Some("testgroup")) //.repeat(10)
+      //gs ← queryGroupState[M](s, t, "testgroup")
+      st ← waitUntilEnded[M](state[M](s, t, j))
       _ ← j.traverse(delete[M](s, t, _))
-      //st ← waitUntilEnded[M](state[M](s, t, j))
-    } yield gs
+    } yield j
 
   DIRACInterpreter { interpreters ⇒
     import interpreters._
