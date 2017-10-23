@@ -49,12 +49,12 @@ package object http {
   import org.apache.http.conn.socket.ConnectionSocketFactory
   import squants.information.Information
 
-  def buildServer(url: String): Server = {
+  def buildServer(url: String, timeout: Time = 1 minutes): Server = {
     val scheme = new URI(url).getScheme
 
     scheme match {
-      case "https" ⇒ HTTPSServer(url, HTTPS.SSLSocketFactory.default)
-      case "http"  ⇒ HTTPServer(url)
+      case "https" ⇒ HTTPSServer(url, HTTPS.SSLSocketFactory.default, timeout)
+      case "http"  ⇒ HTTPServer(url, timeout)
     }
   }
 
@@ -196,6 +196,16 @@ package object http {
     def content(server: Server, path: String, method: HTTPMethod = Get()): FS[String]
   }
 
+  object Server {
+    def apply(url: String, timeout: Time = 1 minutes) = buildServer(url, timeout)
+
+    def copy(s: Server)(url: URI = s.url) =
+      s match {
+        case s: HTTPServer  ⇒ s.copy(url = url)
+        case s: HTTPSServer ⇒ s.copy(url = url)
+      }
+  }
+
   sealed trait Server {
     def url: URI
     def timeout: Time
@@ -215,14 +225,6 @@ package object http {
   }
 
   case class HTTPSServer(url: URI, socketFactory: HTTPS.SSLSocketFactory, timeout: Time, bufferSize: Information) extends Server
-
-  object Server {
-    def copy(s: Server)(url: URI = s.url) =
-      s match {
-        case s: HTTPServer  ⇒ s.copy(url = url)
-        case s: HTTPSServer ⇒ s.copy(url = url)
-      }
-  }
 
   def parseHTMLListing(page: String) = {
     val parser = new Parser
