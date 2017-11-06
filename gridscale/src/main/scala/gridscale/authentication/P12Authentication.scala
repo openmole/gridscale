@@ -17,21 +17,32 @@
 
 package gridscale.authentication
 
-import java.io.{ IOException, FileInputStream, File }
-import java.security.KeyStore
+import java.io.{ File, FileInputStream, IOException }
+import java.security.cert.X509Certificate
 
 object P12Authentication {
+  def loadPKCS12Credentials(a: P12Authentication) = {
+    val ks = java.security.KeyStore.getInstance("pkcs12")
+    ks.load(new java.io.FileInputStream(a.certificate), a.password.toCharArray)
 
-  def loadKeyStore(a: P12Authentication) = util.Try {
-    val ks = KeyStore.getInstance("pkcs12")
+    val aliases = ks.aliases
+    import collection.JavaConverters._
 
-    val in = new FileInputStream(a.certificate)
-    try ks.load(in, a.password.toCharArray)
-    catch {
-      case e: IOException ⇒ throw new AuthenticationException(s"A wrong password has been provided for certificate ${a.certificate}", e)
-    } finally in.close
-    ks
+    // FIXME GET
+    val alias = aliases.asScala.find(e ⇒ ks.isKeyEntry(e)).get
+    //if (alias == null) throw new VOMSException("No aliases found inside pkcs12 certificate!")
+
+    val userCert = ks.getCertificate(alias).asInstanceOf[X509Certificate]
+    val userKey = ks.getKey(alias, a.password.toCharArray).asInstanceOf[java.security.PrivateKey]
+    val userChain = Array[X509Certificate](userCert)
+
+    Loaded(userCert, userKey, userChain)
   }
+
+  case class Loaded(certificate: X509Certificate, key: java.security.PrivateKey, chain: Array[X509Certificate])
+
+  def testPassword(p12Authentication: P12Authentication) =
+    util.Try(loadPKCS12Credentials(p12Authentication)).map(_ ⇒ true)
 
 }
 

@@ -6,8 +6,10 @@ import cats.implicits._
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import freedsl.tool._
+import gridscale.egi._
 import gridscale.webdav._
 import freedsl.dsl._
+import gridscale.authentication._
 
 object WedDAVExample extends App {
 

@@ -9,22 +9,6 @@ import javax.net.ssl.{ SSLContext, SSLSocket }
 import freedsl.dsl._
 import gridscale.authentication.AuthenticationException
 
-//import eu.emi.security.authn.x509.X509CertChainValidatorExt
-//import eu.emi.security.authn.x509.helpers.BinaryCertChainValidator
-//import eu.emi.security.authn.x509.impl.X500NameUtils
-//import org.bouncycastle.asn1.pkcs.CertificationRequest
-
-//import eu.emi.security.authn.x509.helpers.proxy.{ ProxyHelper, RFCProxyCertInfoExtension }
-import gridscale.http.HTTPS.KeyStoreOperations
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-
-import scala.concurrent.duration.Duration
-
-//import eu.emi.security.authn.x509.impl.CertificateUtils
-//import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding
-import org.bouncycastle.asn1.x509.AttributeCertificate
-
 import scala.language.{ higherKinds, postfixOps }
 
 package object egi {
@@ -42,6 +26,7 @@ package object egi {
   import cats.implicits._
   import freestyle.tagless._
   import scala.util._
+  import gridscale.authentication._
 
   case class BDIIServer(host: String, port: Int, timeout: Time = 1 minutes)
   case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
@@ -123,45 +108,6 @@ package object egi {
 
   def webDAVs[M[_]: BDII](server: BDIIServer, vo: String) = BDII[M].webDAVs(server, vo)
   def creamCEs[M[_]: BDII](server: BDIIServer, vo: String) = BDII[M].creamCEs(server, vo)
-
-  object P12Authentication {
-
-    //    def load[M[_]: Monad](a: P12Authentication)(implicit fileSystem: FileSystem[M], io: IO[M]) = {
-    //
-    //      def loadKS(is: java.io.InputStream) = {
-    //        val ks = KeyStore.getInstance("pkcs12")
-    //        ks.load(is, a.password.toCharArray)
-    //        ks
-    //      }
-    //
-    //      for {
-    //        loadResult ← fileSystem.readStream(a.certificate, loadKS)
-    //        loaded ← io(loadResult)
-    //      } yield loaded
-    //    }
-
-    def loadPKCS12Credentials(a: P12Authentication) = {
-      val ks = KeyStore.getInstance("pkcs12")
-      ks.load(new java.io.FileInputStream(a.certificate), a.password.toCharArray)
-
-      val aliases = ks.aliases
-      import collection.JavaConverters._
-
-      // FIXME GET
-      val alias = aliases.asScala.find(e ⇒ ks.isKeyEntry(e)).get
-      //if (alias == null) throw new VOMSException("No aliases found inside pkcs12 certificate!")
-
-      val userCert = ks.getCertificate(alias).asInstanceOf[X509Certificate]
-      val userKey = ks.getKey(alias, a.password.toCharArray).asInstanceOf[PrivateKey]
-      val userChain = Array[X509Certificate](userCert)
-
-      Loaded(userCert, userKey, userChain)
-    }
-
-    case class Loaded(certificate: X509Certificate, key: PrivateKey, chain: Array[X509Certificate])
-  }
-
-  case class P12Authentication(certificate: java.io.File, password: String)
 
   case class P12VOMSAuthentication(
     p12: P12Authentication,
