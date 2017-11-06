@@ -2,6 +2,7 @@ package gridscale.egi
 
 import freedsl.errorhandler._
 import freedsl.filesystem.FileSystemInterpreter
+import freedsl.system.SystemInterpreter
 import gridscale.http.HTTPInterpreter
 
 object EGIInterpreter {
@@ -10,6 +11,7 @@ object EGIInterpreter {
     implicit val httpInterpreter = HTTPInterpreter()
     implicit val fileSystemInterpreter = FileSystemInterpreter()
     implicit val bdiintepreter = BDIIIntepreter()
+    implicit val systemInterpreter = SystemInterpreter()
   }
 
   def apply[T](f: Interpreters ⇒ T) = {

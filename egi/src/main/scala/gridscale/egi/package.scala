@@ -22,6 +22,7 @@ package object egi {
 
   import freedsl.filesystem._
   import freedsl.io._
+  import freedsl.system._
   import cats._
   import cats.implicits._
   import freestyle.tagless._
@@ -109,15 +110,6 @@ package object egi {
   def webDAVs[M[_]: BDII](server: BDIIServer, vo: String) = BDII[M].webDAVs(server, vo)
   def creamCEs[M[_]: BDII](server: BDIIServer, vo: String) = BDII[M].creamCEs(server, vo)
 
-  case class P12VOMSAuthentication(
-    p12: P12Authentication,
-    lifeTime: Time,
-    serverURLs: Vector[String],
-    voName: String,
-    renewTime: Time = 1 hours,
-    fqan: Option[String] = None,
-    proxySize: Int = 1024)
-
   object VOMS {
 
     import freedsl.errorhandler._
@@ -153,6 +145,16 @@ package object egi {
     object ProxySize {
       case object PS1024 extends ProxySize
       case object PS2048 extends ProxySize
+    }
+
+    def renewProxy[M[_]: Monad: System](renewOperation: () ⇒ M[VOMSCredential])(credential: VOMSCredential, margin: Time = 1 hours) = {
+      def renew(now: Long): M[VOMSCredential] =
+        if (credential.ending.getTime - margin.millis > now) renewOperation() else credential.pure[M]
+
+      for {
+        now ← System[M].currentTime()
+        proxy ← renew(now)
+      } yield proxy
     }
 
     def proxy[M[_]: Monad: ErrorHandler: HTTP: FileSystem](
