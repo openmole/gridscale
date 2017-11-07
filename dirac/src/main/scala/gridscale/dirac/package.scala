@@ -63,7 +63,7 @@ package object dirac {
     cpuTime: Option[Time] = None,
     cores: Option[Int] = None)
 
-  case class Token(token: String, expires_in: Long)
+  case class Token(token: String, lifetime: Time)
   case class DIRACServer(server: HTTPSServer, service: Service)
   case class Service(service: String, group: String)
   case class JobID(id: String, description: JobDescription)
@@ -135,7 +135,7 @@ package object dirac {
 
     gridscale.http.read[M](server.server, auth2Auth + "?" + uri.getQuery).map { r ⇒
       val parsed = parse(r.trim)
-      Token((parsed \ "token").extract[String], (parsed \ "expires_in").extract[Long])
+      Token((parsed \ "token").extract[String], (parsed \ "expires_in").extract[Long] seconds)
     }
   }
 
