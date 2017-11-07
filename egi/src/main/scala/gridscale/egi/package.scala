@@ -122,6 +122,7 @@ package object egi {
       p12: P12Authentication,
       serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate],
       ending: java.util.Date,
+      lifetime: Time,
       factory: HTTPS.SSLSocketFactory)
 
     object ProxyError {
@@ -302,7 +303,7 @@ package object egi {
         proxy ← ErrorHandler[M].get(parseAC(content, p12, certificates))
         (cred, notAfter) = credential(proxy)
         factory ← socketFactory(cred, certificates, p12.password)
-        vomsCredential = VOMSCredential(cred, p12, certificates, notAfter, factory)
+        vomsCredential = VOMSCredential(cred, p12, certificates, notAfter, lifetime, factory)
       } yield vomsCredential
 
     }

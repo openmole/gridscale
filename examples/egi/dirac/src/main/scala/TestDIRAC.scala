@@ -26,7 +26,7 @@ object TestDIRAC extends App {
       j ← submit[M](s, description, t) //.repeat(10)
       //gs ← queryGroupState[M](s, t, "testgroup")
       st ← waitUntilEnded[M](state[M](s, t, j))
-      _ <- delete[M](s, t, j)
+      _ ← delete[M](s, t, j)
       //_ ← j.traverse(delete[M](s, t, _))
     } yield j
 
