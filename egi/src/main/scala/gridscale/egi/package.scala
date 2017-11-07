@@ -163,7 +163,8 @@ package object egi {
       certificateDirectory: java.io.File,
       lifetime: Time = 24 hours,
       fquan: Option[String] = None,
-      proxySize: ProxySize = ProxySize.PS2048) = {
+      proxySize: ProxySize = ProxySize.PS2048,
+      timeout: Time = 1 minutes) = {
 
       case class VOMSProxy(ac: String, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate])
 
@@ -295,7 +296,7 @@ package object egi {
         userCertificate ← HTTPS.readP12[M](p12.certificate, p12.password).flatMap(r ⇒ ErrorHandler[M].get(r))
         certificates ← HTTPS.readPEMCertificates[M](certificateDirectory)
         factory ← ErrorHandler[M].get(HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password))
-        server = HTTPSServer(s"https://$voms", factory)
+        server = HTTPSServer(s"https://$voms", factory, timeout)
         content ← HTTP[M].content(server, location)
         proxy ← ErrorHandler[M].get(parseAC(content, p12, certificates))
         (cred, notAfter) = credential(proxy)
