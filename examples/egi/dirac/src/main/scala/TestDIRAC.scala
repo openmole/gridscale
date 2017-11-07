@@ -1,15 +1,14 @@
 package gridscale.dirac
 
 import cats._
+import cats.implicits._
 import freedsl.dsl._
 import freedsl.errorhandler._
 import freedsl.filesystem._
 import freedsl.system._
+import gridscale._
 import gridscale.authentication._
 import gridscale.http._
-import gridscale._
-import freedsl.tool._
-import cats.implicits._
 
 object TestDIRAC extends App {
 

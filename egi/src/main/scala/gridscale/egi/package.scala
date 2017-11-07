@@ -223,6 +223,7 @@ package object egi {
         val serial: BigInteger = new BigInteger(String.valueOf(Math.abs(number)))
         val issuer: X500Name = new X500Name(RFC4519Style.INSTANCE, cred.certificate.getSubjectDN.getName)
 
+        // TODO use system monad
         val now = new java.util.Date()
         val notBefore: Time = {
           val notBeforeDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"))
