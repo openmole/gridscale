@@ -14,6 +14,8 @@ object EGIInterpreter {
     implicit val systemInterpreter = SystemInterpreter()
   }
 
+  def apply() = new Interpreters
+
   def apply[T](f: Interpreters ⇒ T) = {
     val intp = new Interpreters
     f(intp)
