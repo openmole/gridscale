@@ -4,6 +4,7 @@ import cats._
 import cats.implicits._
 import gridscale.webdav.WebDAV._
 import java.io.{ ByteArrayInputStream, IOException, InputStream }
+import java.time.ZoneOffset
 
 import freedsl.errorhandler._
 import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
@@ -24,7 +25,10 @@ package object webdav {
       content ← http.read[M](server, path, http.PropFind())
     } yield parsePropsResponse(content)
 
-  def list[M[_]: http.HTTP: Monad](server: http.Server, path: String) = listProperties[M](server, path).map(_.map(_.displayName))
+  def list[M[_]: http.HTTP: Monad](server: http.Server, path: String) =
+    listProperties[M](server, path).map {
+      _.map { p: Prop ⇒ ListEntry(p.displayName, if (p.isCollection) FileType.Directory else FileType.File, Some(p.modified.toEpochSecond(ZoneOffset.UTC) * 1000)) }
+    }
 
   def exists[M[_]: http.HTTP: ErrorHandler: Monad](server: http.Server, path: String): M[Boolean] = {
     def readResponse(response: HttpResponse) =
@@ -87,13 +91,13 @@ package object webdav {
 
     private def parseDate(s: String) = {
       import java.time._
-      dateFormats.view.flatMap { format ⇒ Try { LocalDate.parse(s, format) }.toOption }.headOption
+      dateFormats.view.flatMap { format ⇒ Try { LocalDateTime.parse(s, format) }.toOption }.headOption
     }
 
     case class Prop(
       displayName: String,
       isCollection: Boolean,
-      modified: java.time.LocalDate)
+      modified: java.time.LocalDateTime)
 
     def parseProp(n: Node) =
       Prop(
