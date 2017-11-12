@@ -25,7 +25,7 @@ object WedDAVExample extends App {
       lal ← BDII[DSL].webDAVs(bdii, "vo.complex-systems.eu").map(_.find(_.contains("lal")).get)
       webdav = WebDAVSServer(lal, proxy.factory)
       _ ← exists[DSL](webdav, "youpi2.txt").ifM(rmFile[DSL](webdav, "youpi2.txt"), noop[DSL])
-      _ ← writeStream[DSL](webdav, "youpi2.txt", () ⇒ new ByteArrayInputStream("youpi doky".getBytes))
+      _ ← writeStream[DSL](webdav, () ⇒ new ByteArrayInputStream("youpi doky".getBytes), "youpi2.txt")
       c ← read[DSL](webdav, "youpi2.txt")
     } yield c
 

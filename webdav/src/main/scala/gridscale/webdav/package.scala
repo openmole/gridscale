@@ -49,7 +49,7 @@ package object webdav {
   def mkDirectory[M[_]: http.HTTP: Monad](server: Server, path: String): M[Unit] = http.read[M](server, path, http.MkCol()).map(_ ⇒ ())
   def mv[M[_]: http.HTTP: Monad](server: Server, from: String, to: String): M[Unit] = http.read[M](server, from, http.Move(to)).map(_ ⇒ ())
 
-  def writeStream[M[_]: Monad: http.HTTP](server: Server, path: String, is: () ⇒ InputStream, redirect: Boolean = true): M[Unit] = {
+  def writeStream[M[_]: Monad: http.HTTP](server: Server, is: () ⇒ InputStream, path: String, redirect: Boolean = true): M[Unit] = {
     def redirectedServer =
       if (!redirect) server.pure[M]
       else
