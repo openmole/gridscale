@@ -82,6 +82,7 @@ package object http {
   case class Post(entity: () ⇒ HttpEntity, headers: Headers = Seq.empty) extends HTTPMethod
   case class MkCol(headers: Headers = Seq.empty) extends HTTPMethod
   case class Head(headers: Headers = Seq.empty) extends HTTPMethod
+  case class Move(to: String, headers: Headers = Seq.empty) extends HTTPMethod
 
   object HTTPInterpreter {
 
@@ -131,8 +132,10 @@ package object http {
   case class HTTPInterpreter() extends HTTP.Handler[Evaluated] {
 
     def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean) = {
-      val uri =
+      def fullURI(path: String) =
         if (path.isEmpty) server.url else new URI(server.url.toString + path)
+
+      val uri = fullURI(path)
 
       val (methodInstance, headers, closeable) =
         method match {
@@ -150,6 +153,7 @@ package object http {
             val postInstance = new HttpPost(uri)
             postInstance.setEntity(fentity())
             (postInstance, headers, None)
+          case Move(to, headers) ⇒ (new HttpMove(uri, fullURI(to), true), headers, None)
         }
 
       headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
