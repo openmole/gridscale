@@ -1,10 +1,6 @@
 package gridscale
 
-import cats._
-import cats.implicits._
-import freedsl.system._
-import freedsl.errorhandler._
-import gridscale.cluster.BatchScheduler.{ BatchJob, error, output }
+import effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import monocle.macros._
@@ -88,20 +84,20 @@ package object slurm {
 
     def retrieveJobID(submissionOutput: String) = submissionOutput.trim.reverse.takeWhile(_ != ' ').reverse
 
-    def translateStatus(retCode: Int, status: String, command: String): Either[RuntimeException, JobState] = {
+    def translateStatus(retCode: Int, status: String, command: String): JobState = {
       import JobState._
       status match {
-        case "COMPLETED" ⇒ Right(Done)
-        case "COMPLETED?" if 1 == retCode ⇒ Right(Done)
-        case "COMPLETED?" if 1 != retCode ⇒ Right(Failed)
-        case "RUNNING" | "COMPLETING" ⇒ Right(Running)
-        case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Right(Submitted)
-        case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Right(Failed)
-        case _ ⇒ Left(new RuntimeException(s"Unrecognized state $status returned by $command"))
+        case "COMPLETED" ⇒ Done
+        case "COMPLETED?" if 1 == retCode ⇒ Done
+        case "COMPLETED?" if 1 != retCode ⇒ Failed
+        case "RUNNING" | "COMPLETING" ⇒ Running
+        case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Submitted
+        case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Failed
+        case _ ⇒ throw new RuntimeException(s"Unrecognized state $status returned by $command")
       }
     }
 
-    def parseState(cmdRet: ExecutionResult, command: String): Either[RuntimeException, JobState] = {
+    def parseState(cmdRet: ExecutionResult, command: String): JobState = {
       val jobStateAttribute = "JobState"
       val lines = cmdRet.stdOut.split("\n").map(_.trim)
       val state = lines.filter(_.matches(".*JobState=.*")).map {
@@ -115,10 +111,10 @@ package object slurm {
     }
 
     // compiles thanks to a divine intervention
-    def processCancel[M[_]: Monad](cancelRet: ExecutionResult, job: BatchJob)(implicit errorHandler: ErrorHandler[M]) = cancelRet match {
-      case ExecutionResult(0, _, _) ⇒ ().pure[M]
-      case ExecutionResult(1, _, error) if error.matches(".*Invalid job id specified") ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService: ${job.jobId} is an invalid job id"))
-      case _ ⇒ errorHandler.exception(new RuntimeException(s"Slurm JobService could not cancel job ${job.jobId}"))
+    def processCancel(cancelRet: ExecutionResult, job: BatchJob) = cancelRet match {
+      case ExecutionResult(0, _, _) ⇒
+      case ExecutionResult(1, _, error) if error.matches(".*Invalid job id specified") ⇒ throw new RuntimeException(s"Slurm JobService: ${job.jobId} is an invalid job id")
+      case _ ⇒ throw new RuntimeException(s"Slurm JobService could not cancel job ${job.jobId}")
     }
 
   }
@@ -128,8 +124,8 @@ package object slurm {
 
   val scriptSuffix = ".slurm"
 
-  def submit[M[_]: Monad, S](server: S, jobDescription: SlurmJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S](
+  def submit[S](server: S, jobDescription: SlurmJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
+    BatchScheduler.submit[S](
       jobDescription.workDirectory,
       toScript(jobDescription),
       scriptSuffix,
@@ -137,17 +133,17 @@ package object slurm {
       retrieveJobID,
       server)
 
-  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
-    BatchScheduler.state[M, S](
+  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState =
+    BatchScheduler.state[S](
       s"scontrol show job ${job.jobId}",
       parseState)(server, job)
 
-  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-    BatchScheduler.clean[M, S](
+  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
+    BatchScheduler.clean[S](
       s"scancel ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
-  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
+  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
+  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
 
 }

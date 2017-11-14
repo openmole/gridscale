@@ -17,13 +17,9 @@
 
 package gridscale.cluster
 
-import cats._
-import cats.implicits._
-import freedsl.errorhandler.ErrorHandler
-import freedsl.system._
+import effectaside._
 import gridscale.JobState
 import gridscale.ExecutionResult
-import gridscale.cluster.BatchScheduler.BatchJob
 
 import scala.language.higherKinds
 
@@ -40,52 +36,49 @@ object BatchScheduler {
   // FIXME fragile => order of params
   def scriptPath(workDirectory: String, suffix: String)(uniqId: String): String = s"$workDirectory/${scriptName(suffix)(uniqId)}"
 
-  def submit[M[_]: Monad, S](
+  def submit[S](
     workDirectory: String,
     buildScript: String ⇒ String,
     scriptSuffix: String,
     submitCommand: (String, String) ⇒ String,
     retrieveJobID: String ⇒ BatchJobID,
     server: S,
-    errorWrapper: ((String, ExecutionResult) ⇒ String) = ExecutionResult.error)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] = {
+    errorWrapper: ((String, ExecutionResult) ⇒ String) = ExecutionResult.error)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob = {
 
-    for {
-      _ ← hn.execute(server, s"mkdir -p $workDirectory")
-      uniqId ← system.randomUUID.map(uuid ⇒ s"job-${uuid.toString}")
-      script = buildScript(uniqId)
-      sName = scriptName(scriptSuffix)(uniqId)
-      sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)
-      _ ← hn.write(server, script.getBytes, sPath)
-      _ ← hn.execute(server, s"chmod +x $sPath")
-      command = s"cd $workDirectory && ${submitCommand(sName, uniqId)}"
-      cmdRet ← hn.execute(server, command)
-      ExecutionResult(ret, out, error) = cmdRet
-      _ ← if (ret != 0) errorHandler.errorMessage(errorWrapper(command, cmdRet)) else ().pure[M]
-      _ ← if (out == null) errorHandler.errorMessage(s"$submitCommand did not return a JobID") else ().pure[M]
-      jobId ← errorHandler.get(util.Try(retrieveJobID(out)))
-    } yield BatchJob(uniqId, jobId, workDirectory)
+    hn.execute(server, s"mkdir -p $workDirectory")
+    val uniqId = s"job-${system().randomUUID.toString}"
+    val script = buildScript(uniqId)
+    val sName = scriptName(scriptSuffix)(uniqId)
+    val sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)
+    hn.write(server, script.getBytes, sPath)
+    hn.execute(server, s"chmod +x $sPath")
+    val command = s"cd $workDirectory && ${submitCommand(sName, uniqId)}"
+    val cmdRet = hn.execute(server, command)
+    val ExecutionResult(ret, out, error) = cmdRet
+    if (ret != 0) throw new RuntimeException(errorWrapper(command, cmdRet))
+    if (out == null) throw new RuntimeException(s"$submitCommand did not return a JobID")
+    val jobId = retrieveJobID(out)
+    BatchJob(uniqId, jobId, workDirectory)
   }
 
-  def state[M[_]: Monad, S](
+  def state[S](
     stateCommand: String,
-    parseState: (ExecutionResult, String) ⇒ Either[RuntimeException, JobState])(server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
+    parseState: (ExecutionResult, String) ⇒ JobState)(server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState = {
 
-    for {
-      cmdRet ← hn.execute(server, stateCommand)
-      s ← error.get[JobState](parseState(cmdRet, stateCommand))
-    } yield s
+    val cmdRet = hn.execute(server, stateCommand)
+    parseState(cmdRet, stateCommand)
   }
 
-  def clean[M[_]: Monad, S](
+  def clean[S](
     cancelCommand: String,
-    scriptSuffix: String)(server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] = for {
-    _ ← hn.execute(server, cancelCommand)
-    _ ← hn.rmFile(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
-    _ ← hn.rmFile(server, job.workDirectory + "/" + output(job.uniqId))
-    _ ← hn.rmFile(server, job.workDirectory + "/" + error(job.uniqId))
-  } yield ()
+    scriptSuffix: String)(server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit = {
+    hn.execute(server, cancelCommand)
+    hn.rmFile(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
+    hn.rmFile(server, job.workDirectory + "/" + output(job.uniqId))
+    hn.rmFile(server, job.workDirectory + "/" + error(job.uniqId))
+  }
 
-  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
-  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
+  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
+  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
 
 }

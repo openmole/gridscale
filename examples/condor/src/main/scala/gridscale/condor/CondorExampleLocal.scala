@@ -17,13 +17,9 @@
 
 package gridscale.condor
 
-import cats._
-import cats.implicits._
-import freedsl.dsl._
-import freedsl.errorhandler._
-import freedsl.system._
+import effectaside._
 import gridscale._
-import gridscale.cluster.LocalClusterInterpreter
+import gridscale.cluster._
 import gridscale.local._
 
 object CondorExampleLocal extends App {
@@ -35,16 +31,17 @@ object CondorExampleLocal extends App {
 
   val jobDescription = CondorJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale")
 
-  def res[M[_]: Local: System: ErrorHandler: Monad] = for {
-    job ← submit[M, LocalHost](headNode, jobDescription)
-    s ← waitUntilEnded[M](state[M, LocalHost](headNode, job))
-    out ← stdOut[M, LocalHost](headNode, job)
-    _ ← clean[M, LocalHost](headNode, job)
-  } yield (s, out)
+  def res(implicit system: Effect[System], ssh: Effect[Local]) = {
+    val job = submit(headNode, jobDescription)
+    val s = waitUntilEnded(() ⇒ state(headNode, job))
+    val out = stdOut(headNode, job)
+    clean[LocalHost](headNode, job)
+    (s, out)
+  }
 
-  LocalClusterInterpreter { intp ⇒
+  LocalCluster { intp ⇒
     import intp._
-    println(res[DSL].eval)
+    println(res)
   }
 
 }

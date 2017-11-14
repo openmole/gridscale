@@ -1,8 +1,6 @@
 package gridscale
 
-import cats.Monad
-import freedsl.errorhandler.ErrorHandler
-import freedsl.system.System
+import effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.cluster.BatchScheduler.BatchJob
 import squants._
@@ -44,18 +42,18 @@ package object sge {
 
     def translateStatus(status: String) =
       status match {
-        case "qw" | "hqw" | "hRwq" | "Rs" | "Rts" | "RS" | "RtS" | "RT" | "RtT" ⇒ Right(JobState.Submitted)
-        case "r" | "t" | "Rr" | "Rt" | "T" | "tT" | "s" | "ts" | "S" | "tS" ⇒ Right(JobState.Running)
-        case "" | "dr" | "dt" | "dRr" | "dRt" | "ds" | "dS" | "dT" | "dRs" | "dRS" | "dRT" ⇒ Right(JobState.Done)
-        case "Eqw" | "Ehqw" | "EhRqw" ⇒ Right(JobState.Failed)
-        case _ ⇒ Left(throw new RuntimeException("Unrecognized state " + status))
+        case "qw" | "hqw" | "hRwq" | "Rs" | "Rts" | "RS" | "RtS" | "RT" | "RtT" ⇒ JobState.Submitted
+        case "r" | "t" | "Rr" | "Rt" | "T" | "tT" | "s" | "ts" | "S" | "tS" ⇒ JobState.Running
+        case "" | "dr" | "dt" | "dRr" | "dRt" | "ds" | "dS" | "dT" | "dRs" | "dRS" | "dRT" ⇒ JobState.Done
+        case "Eqw" | "Ehqw" | "EhRqw" ⇒ JobState.Failed
+        case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
       }
   }
 
   val scriptSuffix = ".sge"
 
-  def submit[M[_]: Monad, S](server: S, jobDescription: SGEJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S](
+  def submit[S](server: S, jobDescription: SGEJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
+    BatchScheduler.submit[S](
       jobDescription.workDirectory,
       impl.toSGE(jobDescription),
       scriptSuffix,
@@ -63,17 +61,17 @@ package object sge {
       impl.retreiveJobId,
       server)
 
-  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
-    BatchScheduler.state[M, S](
+  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState =
+    BatchScheduler.state[S](
       s"""qstat | sed 's/^  *//g'  |  grep '^${job.jobId} ' | sed 's/  */ /g' | cut -d' ' -f5""",
       (res, _) ⇒ impl.parseState(res))(server, job)
 
-  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-    BatchScheduler.clean[M, S](
+  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
+    BatchScheduler.clean[S](
       s"qdel ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + BatchScheduler.output(job.uniqId))
-  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = hn.read(server, job.workDirectory + "/" + BatchScheduler.error(job.uniqId))
+  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + BatchScheduler.output(job.uniqId))
+  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + BatchScheduler.error(job.uniqId))
 
 }

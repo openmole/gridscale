@@ -1,10 +1,6 @@
 package gridscale.slurm
 
-import cats._
-import cats.implicits._
-import freedsl.system._
-import freedsl.dsl._
-import freedsl.errorhandler._
+import effectaside._
 import gridscale._
 import gridscale.authentication._
 import gridscale.cluster.ClusterInterpreter
@@ -20,16 +16,17 @@ object SlurmExample extends App {
 
   val jobDescription = SlurmJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale", queue = Some("short"))
 
-  def res[M[_]: SSH: System: ErrorHandler: Monad] = for {
-    job ← submit[M, SSHServer](headNode, jobDescription)
-    s ← waitUntilEnded[M](state[M, SSHServer](headNode, job))
-    out ← stdOut[M, SSHServer](headNode, job)
-    _ ← clean[M, SSHServer](headNode, job)
-  } yield (s, out)
+  def res(implicit system: Effect[System], ssh: Effect[SSH]) = {
+    val job = submit(headNode, jobDescription)
+    val s = waitUntilEnded(() ⇒ state(headNode, job))
+    val out = stdOut(headNode, job)
+    clean(headNode, job)
+    (s, out)
+  }
 
   ClusterInterpreter { intp ⇒
     import intp._
-    println(res[DSL].eval)
+    println(res)
   }
 
 }

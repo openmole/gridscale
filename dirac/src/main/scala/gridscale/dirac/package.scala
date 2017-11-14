@@ -1,13 +1,9 @@
 package gridscale
 
-import freedsl.errorhandler._
-import freedsl.filesystem._
+import effectaside._
 import gridscale.authentication.P12Authentication
 import gridscale.http._
 import org.apache.http.client.utils.URIBuilder
-import cats._
-import cats.implicits._
-import freedsl.system.SystemInterpreter
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -32,7 +28,7 @@ package object dirac {
       import jobDescription._
 
       def inputSandboxArray = JArray(inputSandbox.map(f ⇒ JString(f.getName)).toList)
-      def outputSandboxArray = JArray(outputSandbox.map(f ⇒ JString(f._1)).toList)
+      def outputSandboxArray = JArray(outputSandbox.map(f ⇒ JString(f)).toList)
       def platformsArray = JArray(platforms.map(f ⇒ JString(f)).toList)
 
       val fields = List(
@@ -58,7 +54,7 @@ package object dirac {
     stdOut: Option[String] = None,
     stdErr: Option[String] = None,
     inputSandbox: Seq[java.io.File] = List.empty,
-    outputSandbox: Seq[(String, java.io.File)] = List.empty,
+    outputSandbox: Seq[String] = List.empty,
     platforms: Seq[String] = Seq.empty,
     cpuTime: Option[Time] = None,
     cores: Option[Int] = None)
@@ -89,15 +85,14 @@ package object dirac {
     case object Failed extends DIRACState
   }
 
-  def getService[M[_]: HTTP: Monad: ErrorHandler](vo: String, timeout: Time = 1 minutes) = for {
-    services ← getServices(timeout)
-    service ← ErrorHandler[M].get(util.Try { services.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory")) })
-  } yield service
+  def getService(vo: String, timeout: Time = 1 minutes)(implicit http: Effect[HTTP]) = {
+    val services = getServices(timeout)
+    services.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory"))
+  }
 
-  def getServices[M[_]: HTTP: Monad](
+  def getServices(
     timeout: Time = 1 minutes,
-    directoryURL: String = "http://dirac.france-grilles.fr/defaults/DiracServices.json") = {
-    val indexServer = http.HTTPServer(directoryURL)
+    directoryURL: String = "http://dirac.france-grilles.fr/defaults/DiracServices.json")(implicit http: Effect[HTTP]) = {
 
     def getService(json: String) = {
       parse(json).children.map {
@@ -110,21 +105,21 @@ package object dirac {
       }.toMap
     }
 
-    http.read[M](indexServer, "").map(getService)
+    val indexServer = HTTPServer(directoryURL)
+    getService(read(indexServer, ""))
   }
 
-  def supportedVOs[M[_]: HTTP: Monad](timeout: Time = 1 minutes) =
-    getServices[M](timeout).map(_.keys)
+  def supportedVOs(timeout: Time = 1 minutes)(implicit http: Effect[HTTP]) = getServices(timeout).keys
 
-  def server[M[_]: Monad: HTTP: FileSystem: ErrorHandler](service: Service, p12: P12Authentication, certificateDirectory: java.io.File) =
-    for {
-      userCertificate ← HTTPS.readP12[M](p12.certificate, p12.password).flatMap(r ⇒ ErrorHandler[M].get(r))
-      certificates ← HTTPS.readPEMCertificates[M](certificateDirectory)
-      factory ← ErrorHandler[M].get(HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password))
-      server = HTTPSServer(service.service, factory)
-    } yield DIRACServer(server, service)
+  def server(service: Service, p12: P12Authentication, certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) = {
+    val userCertificate = HTTPS.readP12(p12.certificate, p12.password)
+    val certificates = HTTPS.readPEMCertificates(certificateDirectory)
+    val factory = HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password)
+    val server = HTTPSServer(service.service, factory)
+    DIRACServer(server, service)
+  }
 
-  def token[M[_]: HTTP: Monad](server: DIRACServer, setup: String = "Dirac-Production") = {
+  def token(server: DIRACServer, setup: String = "Dirac-Production")(implicit http: Effect[HTTP]) = {
     def auth2Auth = "/oauth2/token"
 
     val uri = new URIBuilder()
@@ -133,15 +128,14 @@ package object dirac {
       .setParameter("setup", setup)
       .build()
 
-    gridscale.http.read[M](server.server, auth2Auth + "?" + uri.getQuery).map { r ⇒
-      val parsed = parse(r.trim)
-      Token((parsed \ "token").extract[String], (parsed \ "expires_in").extract[Long] seconds)
-    }
+    val r = gridscale.http.read(server.server, auth2Auth + "?" + uri.getQuery)
+    val parsed = parse(r.trim)
+    Token((parsed \ "token").extract[String], (parsed \ "expires_in").extract[Long] seconds)
   }
 
   def jobsLocation = "/jobs"
 
-  def submit[M[_]: Monad: HTTP](server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String] = None): M[JobID] = {
+  def submit(server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String] = None)(implicit http: Effect[HTTP]): JobID = {
     def files() = {
       val builder = MultipartEntityBuilder.create()
       jobDescription.inputSandbox.foreach {
@@ -152,22 +146,20 @@ package object dirac {
       builder.build
     }
 
-    gridscale.http.read[M](server.server, jobsLocation, Post(files)).map { r ⇒
-      val id = (parse(r) \ "jids")(0).extract[String]
-      JobID(id, jobDescription)
-    }
+    val r = gridscale.http.read(server.server, jobsLocation, Post(files))
+    val id = (parse(r) \ "jids")(0).extract[String]
+    JobID(id, jobDescription)
   }
 
-  def state[M[_]: Monad: HTTP](server: DIRACServer, token: Token, jobId: JobID): M[JobState] = {
+  def state(server: DIRACServer, token: Token, jobId: JobID)(implicit http: Effect[HTTP]): JobState = {
     val uri =
       new URIBuilder()
         .setParameter("access_token", token.token)
         .build
 
-    gridscale.http.read[M](server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}").map { r ⇒
-      val s = (parse(r) \ "status").extract[String]
-      translateState(s)
-    }
+    val r = gridscale.http.read(server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}")
+    val s = (parse(r) \ "status").extract[String]
+    translateState(s)
   }
 
   def translateState(s: String): JobState =
@@ -186,11 +178,11 @@ package object dirac {
       case DIRACState.Failed    ⇒ JobState.Failed
     }
 
-  def queryGroupState[M[_]: Monad: HTTP](
+  def queryGroupState(
     server: DIRACServer,
     token: Token,
     groupId: GroupId,
-    states: Seq[DIRACState] = DIRACState.values.filter(s ⇒ s != DIRACState.Killed && s != DIRACState.Deleted)): M[Vector[(String, JobState)]] = {
+    states: Seq[DIRACState] = DIRACState.values.filter(s ⇒ s != DIRACState.Killed && s != DIRACState.Deleted))(implicit hTTP: Effect[HTTP]): Vector[(String, JobState)] = {
 
     val uri =
       new URIBuilder(server.server.url)
@@ -202,24 +194,52 @@ package object dirac {
 
     def statusesQuery = states.map(s ⇒ s"status=${s.entryName}").mkString("&")
 
-    gridscale.http.readStream[M, JValue](server.server, s"$jobsLocation?${uri.getQuery}&$statusesQuery", is ⇒ parse(is)).map { json ⇒
-      (json \ "jobs").children.map { j ⇒
-        val status = (j \ "status").extract[String]
-        (j \ "jid").extract[String] -> translateState(status)
-      }.toVector
-    }
+    val json = gridscale.http.readStream[JValue](server.server, s"$jobsLocation?${uri.getQuery}&$statusesQuery", is ⇒ parse(is))
+    (json \ "jobs").children.map { j ⇒
+      val status = (j \ "status").extract[String]
+      (j \ "jid").extract[String] -> translateState(status)
+    }.toVector
   }
 
-  def delete[M[_]: Monad: HTTP](server: DIRACServer, token: Token, jobId: JobID) = {
+  def delete(server: DIRACServer, token: Token, jobId: JobID)(implicit http: Effect[HTTP]) = {
     val uri =
       new URIBuilder()
         .setParameter("access_token", token.token)
         .build
 
-    gridscale.http.read[M](server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}", Delete()).map { _ ⇒ () }
+    gridscale.http.read(server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}", Delete()).map { _ ⇒ () }
   }
 
-  def delegate[M[_]: Monad: HTTP](server: DIRACServer, p12: P12Authentication, token: Token): M[Unit] = {
+  //  def downloadOutputSandbox[M[_]: Monad: HTTP](server: DIRACServer, token: Token, jobId: JobID) = {
+  //    val outputSandboxMap = jobId.description.outputSandbox.toMap
+  //
+  //    val uri =
+  //      new URIBuilder(server.server.url)
+  //        .setParameter("access_token", token.token)
+  //        .build
+  //
+  //    def extract(str: InputStream) = {
+  //      val is = new TarArchiveInputStream(str)
+  //
+  //      Iterator.continually(is.getNextEntry).takeWhile(_ != null).
+  //        filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {
+  //        e ⇒
+  //          val os = new BufferedOutputStream(new FileOutputStream(outputSandboxMap(e.getName)))
+  //          try BasicIO.transferFully(is, os)
+  //          finally os.close
+  //      }
+  //    }
+  //
+  //
+  //    gridscale.http.readStream[M, JValue](server.server, s"$jobsLocation/$jobId/outputsandbox", is ⇒ parse(is)).map { json ⇒
+  //      requestContent(get) { str ⇒
+  //
+  //      }
+  //    }
+  //
+  //  }
+
+  def delegate(server: DIRACServer, p12: P12Authentication, token: Token)(implicit http: Effect[HTTP]): Unit = {
     def entity() = {
       val entity = MultipartEntityBuilder.create()
       entity.addBinaryBody("p12", p12.certificate)
@@ -230,16 +250,15 @@ package object dirac {
 
     def delegation = s"/proxy/unknown/${server.service.group}"
 
-    gridscale.http.read[M](server.server, delegation, Post(entity)).map(_ ⇒ ())
+    gridscale.http.read(server.server, delegation, Post(entity))
   }
 
-  object DIRACInterpreter {
+  object DIRAC {
 
     class Interpreters {
-      implicit val fileSystemInterpreter = FileSystemInterpreter()
-      implicit val errorHandlerInterpreter = ErrorHandlerInterpreter()
-      implicit val systemInterpreter = SystemInterpreter()
-      implicit val httpInterpreter = HTTPInterpreter()
+      implicit val fileSystemInterpreter = FileSystem()
+      implicit val systemInterpreter = System()
+      implicit val httpInterpreter = HTTP()
     }
 
     def apply[T](f: Interpreters ⇒ T) = {

@@ -1,8 +1,6 @@
 package gridscale
 
-import cats._
-import freedsl.system._
-import freedsl.errorhandler._
+import effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import squants._
@@ -38,16 +36,18 @@ package object pbs {
       buffer += "#PBS -e " + BatchScheduler.error(uniqId)
 
       queue foreach { q ⇒ buffer += "#PBS -q " + q }
-      // FIXME better way than setting default value?
-      val mem = memory.getOrElse(2048)
+
       wallTime foreach { t ⇒ buffer += "#PBS -lwalltime=" + t.toHHmmss }
 
       val nbNodes = nodes.getOrElse(1)
       val coresPerNode = coreByNode.getOrElse(1)
 
+      // FIXME better way than setting default value?
+      val mem = memory.getOrElse(2048)
+
       flavour match {
-        case PBSPro ⇒ buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
         case Torque ⇒ buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode:mem=${mem}MB"
+        case PBSPro ⇒ buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
       }
 
       buffer += "cd " + workDirectory
@@ -60,18 +60,18 @@ package object pbs {
 
     def translateStatus(retCode: Int, status: String) =
       status match {
-        case "R" | "E" | "H" | "S" ⇒ Right(JobState.Running)
-        case "Q" | "W" | "T"       ⇒ Right(JobState.Submitted)
-        case "C"                   ⇒ Right(JobState.Done)
-        case _                     ⇒ Left(new RuntimeException("Unrecognized state " + status))
+        case "R" | "E" | "H" | "S" ⇒ JobState.Running
+        case "Q" | "W" | "T"       ⇒ JobState.Submitted
+        case "C"                   ⇒ JobState.Done
+        case _                     ⇒ throw new RuntimeException("Unrecognized state " + status)
       }
 
-    def parseState(cmdRet: ExecutionResult, command: String): Either[RuntimeException, JobState] = {
+    def parseState(cmdRet: ExecutionResult, command: String): JobState = {
 
       val jobStateAttribute = "JOB_STATE"
 
       cmdRet.returnCode match {
-        case 153 ⇒ Right(JobState.Done)
+        case 153 ⇒ JobState.Done
         case 0 ⇒
           val lines = cmdRet.stdOut.split("\n").map(_.trim)
           val state = lines.filter(_.matches(".*=.*")).map {
@@ -82,9 +82,9 @@ package object pbs {
 
           state match {
             case Some(s) ⇒ translateStatus(cmdRet.returnCode, s)
-            case None    ⇒ Left(new RuntimeException("State not found in $command output: " + cmdRet.stdOut))
+            case None    ⇒ throw new RuntimeException("State not found in $command output: " + cmdRet.stdOut)
           }
-        case _ ⇒ Left(new RuntimeException(ExecutionResult.error(command, cmdRet)))
+        case _ ⇒ throw new RuntimeException(ExecutionResult.error(command, cmdRet))
       }
 
     }
@@ -98,8 +98,8 @@ package object pbs {
 
   val scriptSuffix = ".pbs"
 
-  def submit[M[_]: Monad, S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S](
+  def submit[S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
+    BatchScheduler.submit[S](
       jobDescription.workDirectory,
       toScript(jobDescription),
       scriptSuffix,
@@ -108,17 +108,17 @@ package object pbs {
       server,
       impl.pbsErrorWrapper)
 
-  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
-    BatchScheduler.state[M, S](
+  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState =
+    BatchScheduler.state[S](
       s"qstat -f ${job.jobId}",
       parseState)(server, job)
 
-  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-    BatchScheduler.clean[M, S](
+  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
+    BatchScheduler.clean[S](
       s"qdel ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)
-  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdErr[M, S](server, job)
+  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdOut[S](server, job)
+  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdErr[S](server, job)
 
 }

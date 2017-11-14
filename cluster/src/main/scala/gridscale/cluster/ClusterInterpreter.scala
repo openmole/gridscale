@@ -1,30 +1,26 @@
 package gridscale.cluster
 
-import freedsl.errorhandler.{ ErrorHandler, ErrorHandlerInterpreter }
-import freedsl.system.{ System, SystemInterpreter }
 import gridscale.ssh._
 import gridscale.local._
-import freestyle.module
+import effectaside._
 
-object SSHClusterInterpreter {
+object SSHCluster {
   class Interpreters {
-    implicit val systemInterpreter = SystemInterpreter()
-    implicit val errorHandlerInterpreter = ErrorHandlerInterpreter()
-    implicit val sshInterpreter = SSHInterpreter()
+    implicit val system = System()
+    implicit val ssh = SSH()
   }
 
   def apply[T](f: Interpreters ⇒ T) = {
     val intp = new Interpreters
     try f(intp)
-    finally intp.sshInterpreter.close()
+    finally intp.ssh().close()
   }
 }
 
-object LocalClusterInterpreter {
+object LocalCluster {
   class Interpreters {
-    implicit val systemInterpreter = SystemInterpreter()
-    implicit val errorHandlerInterpreter = ErrorHandlerInterpreter()
-    implicit val localIntepreter = LocalInterpreter()
+    implicit val system = System()
+    implicit val local = Local()
   }
 
   def apply[T](f: Interpreters ⇒ T) = {
@@ -35,15 +31,14 @@ object LocalClusterInterpreter {
 
 object ClusterInterpreter {
   class Interpreters {
-    implicit val systemInterpreter = SystemInterpreter()
-    implicit val sshInterpreter = SSHInterpreter()
-    implicit val errorHandlerInterpreter = ErrorHandlerInterpreter()
-    implicit val localIntepreter = LocalInterpreter()
+    implicit val system = System()
+    implicit val ssh = SSH()
+    implicit val local = Local()
   }
 
   def apply[T](f: Interpreters ⇒ T) = {
     val intp = new Interpreters
     try f(intp)
-    finally intp.sshInterpreter.close()
+    finally intp.ssh().close()
   }
 }

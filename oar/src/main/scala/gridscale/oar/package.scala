@@ -17,9 +17,7 @@
 
 package gridscale
 
-import cats.Monad
-import freedsl.errorhandler.ErrorHandler
-import freedsl.system.System
+import effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import squants._
 import gridscale.tools._
@@ -83,12 +81,12 @@ package object oar {
         case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
       }
 
-    def parseState(executionResult: ExecutionResult, command: String): Either[RuntimeException, JobState] = {
+    def parseState(executionResult: ExecutionResult, command: String): JobState = {
       executionResult.returnCode match {
         case 0 ⇒
           val status = executionResult.stdOut.split("\n").head.split(" ")(1)
-          Right(translateStatus(status))
-        case r ⇒ Left(new RuntimeException(ExecutionResult.error(command, executionResult)))
+          translateStatus(status)
+        case r ⇒ throw new RuntimeException(ExecutionResult.error(command, executionResult))
       }
     }
   }
@@ -97,8 +95,8 @@ package object oar {
 
   val scriptSuffix = ".oar"
 
-  def submit[M[_]: Monad, S](server: S, jobDescription: OARJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S](
+  def submit[S](server: S, jobDescription: OARJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
+    BatchScheduler.submit[S](
       jobDescription.workDirectory,
       _ ⇒ impl.toOAR(jobDescription),
       scriptSuffix,
@@ -106,17 +104,17 @@ package object oar {
       impl.retrieveJobId,
       server)
 
-  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
-    BatchScheduler.state[M, S](
+  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState =
+    BatchScheduler.state[S](
       s"""oarstat -j ${job.jobId} -s""",
       impl.parseState)(server, job)
 
-  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-    BatchScheduler.clean[M, S](
+  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
+    BatchScheduler.clean[S](
       s"oardel ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)
-  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdErr[M, S](server, job)
+  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdOut[S](server, job)
+  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdErr[S](server, job)
 
 }

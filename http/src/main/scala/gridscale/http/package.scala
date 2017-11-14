@@ -6,8 +6,7 @@ import java.security.KeyStore.{ PasswordProtection, PrivateKeyEntry }
 import java.security.PrivateKey
 import java.security.cert.{ Certificate, CertificateFactory }
 
-import freedsl.dsl._
-import freedsl.errorhandler.ErrorHandler
+import effectaside._
 import org.apache.commons.codec.binary
 import org.apache.http.{ HttpEntity, client }
 import org.apache.http.client.methods
@@ -23,19 +22,11 @@ package object http {
   import gridscale.http.methods._
   import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
   import org.apache.http.client.config.RequestConfig
-  import org.apache.http.client.methods.HttpUriRequest
-  import org.apache.http.config.SocketConfig
   import org.apache.http.impl.client.{ HttpClients, LaxRedirectStrategy }
   import org.apache.http.impl.conn.BasicHttpClientConnectionManager
-  import org.apache.http.protocol.HttpContext
-  import freedsl.tool._
-  import freestyle.tagless._
-  import freedsl.filesystem._
   import org.htmlparser.Parser
   import org.htmlparser.filters.NodeClassFilter
   import org.htmlparser.tags.LinkTag
-  import cats._
-  import cats.implicits._
   import squants._
   import squants.time.TimeConversions._
   import squants.information.InformationConversions._
@@ -59,13 +50,13 @@ package object http {
   }
 
   def get[T](url: String) = {
-    implicit val interpreter = HTTPInterpreter()
-    read[DSL](buildServer(url), "").tryEval
+    implicit val interpreter = HTTP()
+    read(buildServer(url), "")
   }
 
   def getStream[T](url: String)(f: InputStream ⇒ T) = {
-    implicit val interpreter = HTTPInterpreter()
-    readStream[DSL, T](buildServer(url), "", f).tryEval
+    implicit val interpreter = HTTP()
+    readStream[T](buildServer(url), "", f)
   }
 
   type Headers = Seq[(String, String)]
@@ -84,7 +75,9 @@ package object http {
   case class Head(headers: Headers = Seq.empty) extends HTTPMethod
   case class Move(to: String, headers: Headers = Seq.empty) extends HTTPMethod
 
-  object HTTPInterpreter {
+  object HTTP {
+
+    def apply() = Effect(new HTTP())
 
     def client(server: Server) =
       server match {
@@ -116,20 +109,22 @@ package object http {
       newClient(timeout)
     }
 
-    def wrapError(t: Throwable) =
-      t match {
-        case t: ConnectionError ⇒ t
-        case t: HTTPError       ⇒ t
-        case _                  ⇒ HTTPError(t)
+    def wrapError[T](f: ⇒ T) =
+      try f
+      catch {
+        case t: ConnectionError ⇒ throw t
+        case t: HTTPError       ⇒ throw t
+        case t: Throwable       ⇒ throw HTTPError(t)
       }
 
     case class ConnectionError(t: Throwable) extends Exception(t)
     case class HTTPError(t: Throwable) extends Exception(t) {
       override def toString = "HTTP error: " + t.toString
     }
+
   }
 
-  case class HTTPInterpreter() extends HTTP.Handler[Evaluated] {
+  class HTTP {
 
     def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean) = {
       def fullURI(path: String) =
@@ -168,37 +163,36 @@ package object http {
 
       import util._
 
-      guard {
+      try {
+        val httpClient = HTTP.client(server)
         try {
-          val httpClient = HTTPInterpreter.client(server)
+          val response = httpClient.execute(methodInstance)
           try {
-            val response = httpClient.execute(methodInstance)
-            try {
-              if (test) testResponse(response)
-              f(methodInstance, response)
-            } finally response.close()
-          } catch {
-            case e: org.apache.http.conn.ConnectTimeoutException ⇒ throw new HTTPInterpreter.ConnectionError(e)
-          } finally httpClient.close()
-        } finally closeable.foreach(_.close())
-      }
+            if (test) testResponse(response)
+            f(methodInstance, response)
+          } finally response.close()
+        } catch {
+          case e: org.apache.http.conn.ConnectTimeoutException ⇒ throw new HTTP.ConnectionError(e)
+        } finally httpClient.close()
+      } finally closeable.foreach(_.close())
     }
 
-    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean) =
-      withInputStream(server, path, f, method, testResponse).leftMap(HTTPInterpreter.wrapError)
+    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean = true) = HTTP.wrapError {
+      withInputStream(server, path, f, method, testResponse)
+    }
 
-    def content(server: Server, path: String, method: HTTPMethod) = {
+    def content(server: Server, path: String, method: HTTPMethod = Get()): String = HTTP.wrapError {
       def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
       def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
-      withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true).leftMap(HTTPInterpreter.wrapError)
+      withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true)
     }
 
   }
 
-  @tagless trait HTTP {
-    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean = true): FS[T]
-    def content(server: Server, path: String, method: HTTPMethod = Get()): FS[String]
-  }
+  //  @tagless trait HTTP {
+  //    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean = true): FS[T]
+  //    def content(server: Server, path: String, method: HTTPMethod = Get()): FS[String]
+  //  }
 
   object Server {
     def apply(url: String, timeout: Time = 1 minutes) = buildServer(url, timeout)
@@ -251,10 +245,10 @@ package object http {
     }.toVector
   }
 
-  def list[M[_]: Monad](server: Server, path: String)(implicit http: HTTP[M]) = http.content(server, path).map(parseHTMLListing)
-  def read[M[_]: Monad](server: Server, path: String, method: HTTPMethod = Get())(implicit http: HTTP[M]) = http.content(server, path, method)
-  def readStream[M[_]: Monad, T](server: Server, path: String, f: InputStream ⇒ T, method: HTTPMethod = Get())(implicit http: HTTP[M]): M[T] =
-    http.request(server, path, (_, r) ⇒ f(r.getEntity.getContent), method)
+  def list(server: Server, path: String)(implicit http: Effect[HTTP]) = parseHTMLListing(http().content(server, path))
+  def read(server: Server, path: String, method: HTTPMethod = Get())(implicit http: Effect[HTTP]) = http().content(server, path, method)
+  def readStream[T](server: Server, path: String, f: InputStream ⇒ T, method: HTTPMethod = Get())(implicit http: Effect[HTTP]): T =
+    http().request(server, path, (_, r) ⇒ f(r.getEntity.getContent), method)
 
   object HTTPS {
 
@@ -279,7 +273,7 @@ package object http {
     type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
 
     def socketFactory(s: Vector[KeyStoreOperations.Storable], password: String) =
-      Try { KeyStoreOperations.socketFactory(() ⇒ KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password)) }
+      KeyStoreOperations.socketFactory(() ⇒ KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password))
 
     object KeyStoreOperations {
 
@@ -383,27 +377,25 @@ package object http {
     def newClient(factory: SSLSocketFactory, timeout: Time) =
       HttpClients.custom().
         setConnectionManager(connectionManager(factory(timeout), timeout)).
-        setDefaultRequestConfig(HTTPInterpreter.requestConfig(timeout)).build()
+        setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
 
-    def readPem[M[_]: Monad](pem: java.io.File)(implicit fileSystem: FileSystem[M]) =
-      for {
-        content ← fileSystem.readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
-      } yield util.Try {
-        val stripped = content.replaceAll(X509Factory.BEGIN_CERT, "").replaceAll(X509Factory.END_CERT, "")
-        val decoded = new binary.Base64().decode(stripped)
-        val certificate = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decoded))
-        KeyStoreOperations.Certificate(certificate)
-      }
+    def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) = {
+      val content = fileSystem().readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
+      val stripped = content.replaceAll(X509Factory.BEGIN_CERT, "").replaceAll(X509Factory.END_CERT, "")
+      val decoded = new binary.Base64().decode(stripped)
+      val certificate = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decoded))
+      KeyStoreOperations.Certificate(certificate)
+    }
 
-    def readP12[M[_]: Monad](file: java.io.File, password: String)(implicit fileSystem: FileSystem[M]) = {
+    def readP12(file: java.io.File, password: String)(implicit fileSystem: Effect[FileSystem]) = {
       def keyStore =
-        fileSystem.readStream(file) { is ⇒
+        fileSystem().readStream(file) { is ⇒
           val ks = KeyStore.getInstance("pkcs12")
           ks.load(is, password.toCharArray)
           ks
         }
 
-      def extractCertificate(ks: KeyStore) = util.Try {
+      def extractCertificate(ks: KeyStore) = {
         val aliases = ks.aliases
 
         import java.security.cert._
@@ -422,16 +414,12 @@ package object http {
         // Loaded(userCert, userKey, userChain)
       }
 
-      for { ks ← keyStore } yield extractCertificate(ks)
+      extractCertificate(keyStore)
     }
 
-    def readPEMCertificates[M[_]: HTTP: FileSystem: ErrorHandler: Monad](certificateDirectory: java.io.File) = {
-      import cats.implicits._
-
-      for {
-        certificateFiles ← FileSystem[M].list(certificateDirectory)
-        certificates ← certificateFiles.traverse(f ⇒ HTTPS.readPem[M](f)).map(_.flatMap(_.toOption))
-      } yield certificates
+    def readPEMCertificates(certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) = {
+      val certificateFiles = fileSystem().list(certificateDirectory)
+      certificateFiles.map(f ⇒ util.Try(HTTPS.readPem(f))).flatMap(_.toOption)
     }
 
     // case class Loaded(certficate: X509Certificate, key: PrivateKey, chain: Array[X509Certificate])

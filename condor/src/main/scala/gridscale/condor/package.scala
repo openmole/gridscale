@@ -1,11 +1,8 @@
 package gridscale
 
-import cats._
-import cats.implicits._
-import freedsl.system._
-import freedsl.errorhandler._
 import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.cluster.{ BatchScheduler, HeadNode }
+import effectaside._
 import squants._
 import gridscale.tools._
 import monocle.macros._
@@ -89,14 +86,14 @@ package object condor {
 
     def retrieveJobId(out: String) = out.trim.reverse.tail.takeWhile(_ != ' ').reverse
 
-    def translateStatus(status: String, command: String): Either[RuntimeException, JobState] =
+    def translateStatus(status: String, command: String): JobState =
       status match {
-        case "3" | "4"       ⇒ Right(JobState.Done)
-        case "2"             ⇒ Right(JobState.Running)
+        case "3" | "4"       ⇒ JobState.Done
+        case "2"             ⇒ JobState.Running
         // choice was made to characterize held jobs (status=5) as submitted instead of Running
-        case "0" | "1" | "5" ⇒ Right(JobState.Submitted)
-        case "6"             ⇒ Right(JobState.Failed)
-        case _               ⇒ Left(new RuntimeException(s"Unrecognized state $status retrieved from $command"))
+        case "0" | "1" | "5" ⇒ JobState.Submitted
+        case "6"             ⇒ JobState.Failed
+        case _               ⇒ throw new RuntimeException(s"Unrecognized state $status retrieved from $command")
       }
 
     def formatError(command: String, cmdRet: ExecutionResult): RuntimeException = {
@@ -122,26 +119,26 @@ package object condor {
       output.split("\n").filter(_ matches "^JobStatus = .*").head.split('=').map(_ trim).last
 
     // FIXME fails to compile if second param list is implicit..
-    def queryState[M[_]: Monad, S](server: S, job: BatchJob)(hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] = {
+    def queryState[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState = {
 
       // if the job is still running, his state is returned by condor_q...
       val queryInQueueCommand = s"condor_q ${job.jobId} -long -attributes JobStatus"
       // ...but if the job is already completed, his state is returned by condor_history...
       val queryFinishedCommand = s"condor_history ${job.jobId} -long"
 
-      for {
-        cmdRet ← hn.execute(server, queryInQueueCommand)
-        ExecutionResult(ret, stdOut, _) = cmdRet
-        _ ← if (ret != 0) error.exception(formatError(queryInQueueCommand, cmdRet)) else ().pure[M]
-        state ← if (stdOut.nonEmpty) {
-          val state = parseStateInQueue(stdOut)
-          error.get[JobState](translateStatus(state, queryInQueueCommand))
-        } else for {
-          cmdRet ← hn.execute(server, queryFinishedCommand)
-          state = parseStateFinished(cmdRet.stdOut)
-          s ← error.get[JobState](translateStatus(state, queryFinishedCommand))
-        } yield s
-      } yield state
+      val cmdRet = hn.execute(server, queryInQueueCommand)
+      val ExecutionResult(ret, stdOut, _) = cmdRet
+      if (ret != 0) throw formatError(queryInQueueCommand, cmdRet)
+
+      val state: JobState = if (stdOut.nonEmpty) {
+        val state = parseStateInQueue(stdOut)
+        translateStatus(state, queryInQueueCommand)
+      } else {
+        val cmdRet = hn.execute(server, queryFinishedCommand)
+        val state = parseStateFinished(cmdRet.stdOut)
+        translateStatus(state, queryFinishedCommand)
+      }
+      state
     }
 
   }
@@ -152,8 +149,8 @@ package object condor {
 
   val scriptSuffix = ".condor"
 
-  def submit[M[_]: Monad, S](server: S, jobDescription: CondorJobDescription)(implicit hn: HeadNode[S, M], system: System[M], errorHandler: ErrorHandler[M]): M[BatchJob] =
-    BatchScheduler.submit[M, S](
+  def submit[S](server: S, jobDescription: CondorJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
+    BatchScheduler.submit[S](
       jobDescription.workDirectory,
       toScript(jobDescription),
       scriptSuffix,
@@ -161,14 +158,13 @@ package object condor {
       impl.retrieveJobId,
       server)
 
-  def state[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M], error: ErrorHandler[M]): M[JobState] =
-    queryState(server, job)(hn, error)
+  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState = queryState(server, job)
 
-  def clean[M[_]: Monad, S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[Unit] =
-    BatchScheduler.clean[M, S](
+  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
+    BatchScheduler.clean[S](
       s"condor_rm ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdOut[M, S](server, job)
-  def stdErr[M[_], S](server: S, job: BatchJob)(implicit hn: HeadNode[S, M]): M[String] = BatchScheduler.stdErr[M, S](server, job)
+  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdOut[S](server, job)
+  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdErr[S](server, job)
 }

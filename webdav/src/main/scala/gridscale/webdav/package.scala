@@ -1,12 +1,10 @@
 package gridscale
 
-import cats._
-import cats.implicits._
 import gridscale.webdav.WebDAV._
 import java.io.{ ByteArrayInputStream, IOException, InputStream }
 import java.time.ZoneOffset
 
-import freedsl.errorhandler._
+import effectaside._
 import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
@@ -20,52 +18,48 @@ package object webdav {
   lazy val WebDAVServer = http.HTTPServer
   lazy val WebDAVSServer = http.HTTPSServer
 
-  def listProperties[M[_]: http.HTTP: Monad](server: http.Server, path: String) =
-    for {
-      content ← http.read[M](server, path, http.PropFind())
-    } yield parsePropsResponse(content)
+  def listProperties(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]) = {
+    val content = http.read(server, path, http.PropFind())
+    parsePropsResponse(content)
+  }
 
-  def list[M[_]: http.HTTP: Monad](server: http.Server, path: String) =
-    listProperties[M](server, path).map {
-      _.map { p: Prop ⇒ ListEntry(p.displayName, if (p.isCollection) FileType.Directory else FileType.File, Some(p.modified.toEpochSecond(ZoneOffset.UTC) * 1000)) }
-    }
+  def list(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]) = {
+    val properties = listProperties(server, path)
+    properties.map { p: Prop ⇒ ListEntry(p.displayName, if (p.isCollection) FileType.Directory else FileType.File, Some(p.modified.toEpochSecond(ZoneOffset.UTC) * 1000)) }
+  }
 
-  def exists[M[_]: http.HTTP: ErrorHandler: Monad](server: http.Server, path: String): M[Boolean] = {
+  def exists(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]): Boolean = {
     def readResponse(response: HttpResponse) =
       response.getStatusLine.getStatusCode match {
-        case x if x < HttpStatus.SC_MULTIPLE_CHOICES ⇒ util.Success(true)
-        case HttpStatus.SC_NOT_FOUND                 ⇒ util.Success(false)
-        case _                                       ⇒ util.Failure(new IOException(s"Server responded with an unexpected response: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}"))
+        case x if x < HttpStatus.SC_MULTIPLE_CHOICES ⇒ true
+        case HttpStatus.SC_NOT_FOUND                 ⇒ false
+        case _                                       ⇒ throw new IOException(s"Server responded with an unexpected response: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
       }
 
-    for {
-      response ← http.HTTP[M].request(server, path, (_, resp) ⇒ resp, http.Head(), testResponse = false)
-      result ← ErrorHandler[M].get(readResponse(response))
-    } yield result
+    val response = httpEffect().request(server, path, (_, resp) ⇒ resp, http.Head(), testResponse = false)
+    readResponse(response)
   }
 
-  def rmFile[M[_]: http.HTTP: Monad](server: http.Server, path: String): M[Unit] = http.read[M](server, path, http.Delete()).map(_ ⇒ ())
-  def rmDirectory[M[_]: http.HTTP: Monad](server: Server, path: String): M[Unit] = http.read[M](server, path, http.Delete(headers = Seq("Depth" -> "infinity"))).map(_ ⇒ ())
-  def mkDirectory[M[_]: http.HTTP: Monad](server: Server, path: String): M[Unit] = http.read[M](server, path, http.MkCol()).map(_ ⇒ ())
-  def mv[M[_]: http.HTTP: Monad](server: Server, from: String, to: String): M[Unit] = http.read[M](server, from, http.Move(to)).map(_ ⇒ ())
+  def rmFile(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]): Unit = http.read(server, path, http.Delete())
+  def rmDirectory(server: Server, path: String)(implicit httpEffect: Effect[http.HTTP]): Unit = http.read(server, path, http.Delete(headers = Seq("Depth" -> "infinity")))
+  def mkDirectory(server: Server, path: String)(implicit httpEffect: Effect[http.HTTP]): Unit = http.read(server, path, http.MkCol())
+  def mv(server: Server, from: String, to: String)(implicit httpEffect: Effect[http.HTTP]): Unit = http.read(server, from, http.Move(to))
 
-  def writeStream[M[_]: Monad: http.HTTP](server: Server, is: () ⇒ InputStream, path: String, redirect: Boolean = true): M[Unit] = {
+  def writeStream(server: Server, is: () ⇒ InputStream, path: String, redirect: Boolean = true)(implicit httpEffect: Effect[http.HTTP]): Unit = {
     def redirectedServer =
-      if (!redirect) server.pure[M]
-      else
-        for {
-          diskURI ← http.HTTP[M].request(server, path, WebDAV.getRedirectURI, http.Put(() ⇒ WebDAV.emptyStream(), headers = Seq(http.Headers.expectContinue)))
-          destination = http.Server.copy(server)(url = diskURI)
-        } yield destination
+      if (!redirect) server
+      else {
+        val diskURI = httpEffect().request(server, path, WebDAV.getRedirectURI, http.Put(() ⇒ WebDAV.emptyStream(), headers = Seq(http.Headers.expectContinue)))
+        http.Server.copy(server)(url = diskURI)
+      }
 
-    for {
-      s ← redirectedServer
-      _ ← http.read[M](s, "", http.Put(is))
-    } yield {}
+    val s = redirectedServer
+    http.read(s, "", http.Put(is))
   }
 
-  def read[M[_]: Monad: http.HTTP](server: Server, path: String, method: http.HTTPMethod = http.Get()) = http.read[M](server, path, method)
-  def readStream[M[_]: Monad: http.HTTP, T](server: Server, path: String, f: InputStream ⇒ T, method: http.HTTPMethod = http.Get()): M[T] = http.readStream[M, T](server, path, f, method)
+  def read(server: Server, path: String, method: http.HTTPMethod = http.Get())(implicit httpEffect: Effect[http.HTTP]) = http.read(server, path, method)
+  def readStream[T](server: Server, path: String, f: InputStream ⇒ T, method: http.HTTPMethod = http.Get())(implicit httpEffect: Effect[http.HTTP]): T =
+    http.readStream[T](server, path, f, method)
 
   import java.time.ZoneId
 

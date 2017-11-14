@@ -113,12 +113,14 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 /* -------------- gridscale dsl ------------------ */
 
-val freedslVersion = "0.21-SNAPSHOT"
+val effectasideVersion = "0.1-SNAPSHOT"
 val monocleVersion = "1.4.0"
 
 def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
-  libraryDependencies += "fr.iscpif.freedsl" %% "dsl" % freedslVersion,
+  libraryDependencies += "fr.iscpif.effectaside" %% "effect" % effectasideVersion,
+
+
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.3.0",
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.12",
 
@@ -133,10 +135,8 @@ def dslSettings = defaultSettings ++ Seq(
 )
 
 lazy val gridscale = Project(id = "gridscale", base = file("gridscale"), settings = dslSettings) settings(
-  libraryDependencies += scalaTest,
-  libraryDependencies ++= Seq("system", "tool").map(
-    "fr.iscpif.freedsl" %% _ % freedslVersion),
-  libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8"
+  libraryDependencies += scalaTest
+  //libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8"
 )
 
 lazy val local = Project(id = "local", base = file("local"), settings = dslSettings) dependsOn (gridscale)
@@ -147,7 +147,6 @@ lazy val ssh = Project(id = "ssh", base = file("ssh"), settings = dslSettings) d
 )
 
 lazy val cluster = Project(id = "cluster", base = file("cluster"), settings = dslSettings) dependsOn (ssh, local) settings (
-  libraryDependencies ++= Seq("errorhandler", "system").map("fr.iscpif.freedsl" %% _ % freedslVersion),
   libraryDependencies ++= Seq("monocle-core", "monocle-generic", "monocle-macro").map("com.github.julien-truffaut" %% _ % monocleVersion)
 )
 
@@ -161,24 +160,17 @@ lazy val sge = Project(id = "sge", base = file("sge"), settings = dslSettings) d
 lazy val http = Project(id = "http", base = file("http"), settings = dslSettings) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "3.8.0",
-  libraryDependencies ++= httpComponents,
-  libraryDependencies ++= Seq("errorhandler", "filesystem").map(
-    "fr.iscpif.freedsl" %% _ % freedslVersion)
+  libraryDependencies ++= httpComponents
 )
 
-lazy val webdav = Project(id = "webdav", base = file("webdav"), settings = dslSettings) dependsOn(gridscale, http) settings (
-  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion
-)
+lazy val webdav = Project(id = "webdav", base = file("webdav"), settings = dslSettings) dependsOn(gridscale, http)
 
 lazy val dirac =  Project(id = "dirac", base = file("dirac"), settings = dslSettings) dependsOn(gridscale, http) settings (
-  libraryDependencies += "fr.iscpif.freedsl" %% "errorhandler" % freedslVersion,
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
-  libraryDependencies += "com.google.guava" % "guava" % "21.0"
+  libraryDependencies += "org.apache.commons" % "commons-compress" % "1.15"
 )
 
 lazy val egi = Project(id = "egi", base = file("egi"), settings = dslSettings) dependsOn(gridscale, http, webdav) settings (
-  libraryDependencies ++= Seq("io", "filesystem", "errorhandler").map(
-    "fr.iscpif.freedsl" %% _ % freedslVersion),
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.57"
 )
@@ -194,9 +186,9 @@ lazy val examples = (project in file("examples")).settings(settings: _*).
     sshExample,
     condorExample,
     pbsExample,
-    slurmExample
-//    sgeExample,
-//    oarExample
+    slurmExample,
+    sgeExample,
+    oarExample
   ) settings(
   name := "gridscale-examples",
   publishArtifact := false,

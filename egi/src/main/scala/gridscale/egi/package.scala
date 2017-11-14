@@ -1,38 +1,25 @@
 package gridscale
 
-import java.io.ByteArrayInputStream
 import java.math.BigInteger
 import java.security.{ KeyPair, KeyPairGenerator, Security }
 import java.util.{ Calendar, GregorianCalendar, TimeZone }
-import javax.net.ssl.{ SSLContext, SSLSocket }
 
-import freedsl.dsl._
-import gridscale.authentication.AuthenticationException
-
+import effectaside._
 import scala.language.{ higherKinds, postfixOps }
 
 package object egi {
 
-  import java.security.{ KeyStore, PrivateKey }
-  import java.security.cert.X509Certificate
   import gridscale.http._
   import squants._
   import time.TimeConversions._
   import information.InformationConversions._
 
-  import freedsl.filesystem._
-  import freedsl.io._
-  import freedsl.system._
-  import cats._
-  import cats.implicits._
-  import freestyle.tagless._
-  import scala.util._
   import gridscale.authentication._
 
   case class BDIIServer(host: String, port: Int, timeout: Time = 1 minutes)
   case class CREAMCELocation(hostingCluster: String, port: Int, uniqueId: String, contact: String, memory: Int, maxWallTime: Int, maxCPUTime: Int, status: String)
 
-  object BDIIIntepreter {
+  object BDII {
 
     def trimSlashes(path: String) =
       path.reverse.dropWhile(_ == '/').reverse.dropWhile(_ == '/')
@@ -40,10 +27,11 @@ package object egi {
     def location(host: String, port: Int, basePath: String) =
       "https://" + trimSlashes(host) + ":" + port + "/" + trimSlashes(basePath) + "/"
 
+    def apply(): Effect[BDII] = Effect(new BDII())
   }
 
-  case class BDIIIntepreter() extends BDII.Handler[Evaluated] {
-    def webDAVs(server: BDIIServer, vo: String) = guard {
+  class BDII() {
+    def webDAVs(server: BDIIServer, vo: String) = {
       val creamCEServiceType = "org.glite.ce.CREAM"
 
       BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
@@ -62,11 +50,11 @@ package object egi {
           host = urlObject.getHost
           pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
           path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
-        } yield BDIIIntepreter.location(urlObject.getHost, urlObject.getPort, path)
+        } yield BDII.location(urlObject.getHost, urlObject.getPort, path)
       }
     }
 
-    def creamCEs(server: BDIIServer, vo: String) = guard {
+    def creamCEs(server: BDIIServer, vo: String) = {
       BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
         val res = q.query(s"(&(GlueCEAccessControlBaseRule=VO:$vo)(GlueCEImplementationName=CREAM))")
 
@@ -102,20 +90,10 @@ package object egi {
 
   }
 
-  @tagless trait BDII {
-    def webDAVs(server: BDIIServer, vo: String): FS[Vector[String]]
-    def creamCEs(server: BDIIServer, vo: String): FS[Vector[CREAMCELocation]]
-  }
-
-  def webDAVs[M[_]: BDII](server: BDIIServer, vo: String) = BDII[M].webDAVs(server, vo)
-  def creamCEs[M[_]: BDII](server: BDIIServer, vo: String) = BDII[M].creamCEs(server, vo)
+  def webDAVs(server: BDIIServer, vo: String)(implicit bdii: Effect[BDII]) = bdii().webDAVs(server, vo)
+  def creamCEs(server: BDIIServer, vo: String)(implicit bdii: Effect[BDII]) = bdii().creamCEs(server, vo)
 
   object VOMS {
-
-    import freedsl.errorhandler._
-    import cats._
-    import cats.instances.all._
-    import cats.syntax.all._
 
     case class VOMSCredential(
       certificate: HTTPS.KeyStoreOperations.Credential,
@@ -148,24 +126,22 @@ package object egi {
       case object PS2048 extends ProxySize
     }
 
-    def renewProxy[M[_]: Monad: System](renewOperation: () ⇒ M[VOMSCredential])(credential: VOMSCredential, margin: Time = 1 hours) = {
-      def renew(now: Long): M[VOMSCredential] =
-        if (credential.ending.getTime - margin.millis > now) renewOperation() else credential.pure[M]
+    def renewProxy(renewOperation: () ⇒ VOMSCredential)(credential: VOMSCredential, margin: Time = 1 hours)(implicit system: Effect[System]) = {
+      def renew(now: Long): VOMSCredential =
+        if (credential.ending.getTime - margin.millis > now) renewOperation() else credential
 
-      for {
-        now ← System[M].currentTime()
-        proxy ← renew(now)
-      } yield proxy
+      val now = system().currentTime()
+      renew(now)
     }
 
-    def proxy[M[_]: Monad: ErrorHandler: HTTP: FileSystem](
+    def proxy(
       voms: String,
       p12: P12Authentication,
       certificateDirectory: java.io.File,
       lifetime: Time = 24 hours,
       fquan: Option[String] = None,
       proxySize: ProxySize = ProxySize.PS2048,
-      timeout: Time = 1 minutes) = {
+      timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
 
       case class VOMSProxy(ac: String, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate])
 
@@ -175,16 +151,16 @@ package object egi {
         def error = (xml \\ "voms" \\ "error")
 
         content match {
-          case Some(c) ⇒ util.Success(VOMSProxy(c, p12, serverCertificates))
+          case Some(c) ⇒ VOMSProxy(c, p12, serverCertificates)
           case None ⇒
             def message = (error \\ "message").headOption.map(_.text)
 
             (error \\ "code").headOption.map(_.text) match {
-              case Some("NoSuchUser")    ⇒ util.Failure(ProxyError(Reason.NoSuchUser, message))
-              case Some("BadRequest")    ⇒ util.Failure(ProxyError(Reason.BadRequest, message))
-              case Some("SuspendedUser") ⇒ util.Failure(ProxyError(Reason.SuspendedUser, message))
-              case Some(r)               ⇒ util.Failure(ProxyError(Reason.InternalError, message))
-              case _                     ⇒ util.Failure(ProxyError(Reason.Unknown, message))
+              case Some("NoSuchUser")    ⇒ throw ProxyError(Reason.NoSuchUser, message)
+              case Some("BadRequest")    ⇒ throw ProxyError(Reason.BadRequest, message)
+              case Some("SuspendedUser") ⇒ throw ProxyError(Reason.SuspendedUser, message)
+              case Some(r)               ⇒ throw ProxyError(Reason.InternalError, message)
+              case _                     ⇒ throw ProxyError(Reason.Unknown, message)
             }
         }
       }
@@ -284,8 +260,8 @@ package object egi {
         (HTTPS.KeyStoreOperations.Credential(pair.getPrivate, Vector(generatedCertificate) ++ cred.chain.toVector, proxy.p12.password), notAfterDate)
       }
 
-      def socketFactory[M[_]: HTTP: ErrorHandler](certificate: HTTPS.KeyStoreOperations.Credential, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate], password: String) =
-        ErrorHandler[M].get(HTTPS.socketFactory(Vector(certificate) ++ serverCertificates, password))
+      def socketFactory(certificate: HTTPS.KeyStoreOperations.Credential, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate], password: String)(implicit http: Effect[HTTP]) =
+        HTTPS.socketFactory(Vector(certificate) ++ serverCertificates, password)
 
       val options =
         List(
@@ -294,18 +270,15 @@ package object egi {
 
       val location = s"/generate-ac${if (!options.isEmpty) "?" + options else ""}"
 
-      for {
-        userCertificate ← HTTPS.readP12[M](p12.certificate, p12.password).flatMap(r ⇒ ErrorHandler[M].get(r))
-        certificates ← HTTPS.readPEMCertificates[M](certificateDirectory)
-        factory ← ErrorHandler[M].get(HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password))
-        server = HTTPSServer(s"https://$voms", factory, timeout)
-        content ← HTTP[M].content(server, location)
-        proxy ← ErrorHandler[M].get(parseAC(content, p12, certificates))
-        (cred, notAfter) = credential(proxy)
-        factory ← socketFactory(cred, certificates, p12.password)
-        vomsCredential = VOMSCredential(cred, p12, certificates, notAfter, lifetime, factory)
-      } yield vomsCredential
-
+      val userCertificate = HTTPS.readP12(p12.certificate, p12.password)
+      val certificates = HTTPS.readPEMCertificates(certificateDirectory)
+      val vomsFactory = HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password)
+      val server = HTTPSServer(s"https://$voms", vomsFactory, timeout)
+      val content = http().content(server, location)
+      val proxy = parseAC(content, p12, certificates)
+      val (cred, notAfter) = credential(proxy)
+      val factory = socketFactory(cred, certificates, p12.password)
+      VOMSCredential(cred, p12, certificates, notAfter, lifetime, factory)
     }
 
     import squants.time.TimeConversions._

@@ -1,28 +1,28 @@
 package gridscale
 
 import java.io._
-import java.nio.file.{ FileAlreadyExistsException, FileSystemException, Path, StandardCopyOption }
+import java.nio.file.{ FileAlreadyExistsException, FileSystemException, Path ⇒ JPath, StandardCopyOption }
 import java.util.logging.Logger
-
-import freedsl.dsl._
 import gridscale.tools.shell.BashShell
 
 package object local {
 
-  import cats.implicits._
+  import effectaside._
   import gridscale.tools._
-  import freedsl.tool._
-  import freestyle.tagless._
   import scala.io.Source
   import scala.util.Try
   import java.io.File
-  import java.nio.file.{ Files, Paths }
+  import java.nio.file.{ Files, Paths ⇒ JPaths }
 
   import scala.language.{ higherKinds, postfixOps }
 
-  case class LocalInterpreter() extends Local.Handler[Evaluated] {
+  object Local {
+    def apply() = Effect(new Local)
+  }
 
-    def execute(cmd: String) = guard {
+  class Local {
+
+    def execute(cmd: String) = try {
       import sys.process._
 
       val out = new StringBuilder
@@ -41,31 +41,47 @@ package object local {
       val proc = shell.run(io)
       ExecutionResult(proc.exitValue, out.mkString, err.mkString)
 
-    }.leftMap(e ⇒ LocalExecutionError(s"Error executing $cmd on local host", e))
+    } catch {
+      case e: Throwable ⇒ throw LocalExecutionError(s"Error executing $cmd on local host", e)
+    }
 
-    def writeBytes(bytes: Array[Byte], path: String) = guard {
-      Files.write(Paths.get(path), bytes): Unit
-    }.leftMap(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
+    def writeBytes(bytes: Array[Byte], path: String) = try {
+      Files.write(JPaths.get(path), bytes): Unit
+    } catch {
+      case e: Throwable ⇒ throw LocalIOError(s"Could not write file to path $path on local host", e)
+    }
 
-    def writeFile(is: () ⇒ InputStream, path: String) = guard {
+    def writeFile(is: () ⇒ InputStream, path: String) = try {
       val ois = is()
-      try Files.copy(ois, Paths.get(path)): Unit finally ois.close()
-    }.leftMap(e ⇒ LocalIOError(s"Could not write file to path $path on local host", e))
+      try Files.copy(ois, JPaths.get(path)): Unit finally ois.close()
+    } catch {
+      case e: Throwable ⇒ throw LocalIOError(s"Could not write file to path $path on local host", e)
+    }
 
-    def readFile[T](path: String, f: java.io.InputStream ⇒ T) = guard {
+    def readFile[T](path: String, f: java.io.InputStream ⇒ T) = {
       val source = new FileInputStream(new File(path))
       try f(source) finally source.close()
     }
 
-    def rmFile(path: String) = guard(Files.delete(Paths.get(path))).leftMap(e ⇒ LocalIOError(s"Could not delete file $path on local host", e))
+    def rmFile(path: String) = try {
+      Files.delete(JPaths.get(path))
+    } catch {
+      case e: Throwable ⇒ throw LocalIOError(s"Could not delete file $path on local host", e)
+    }
 
     def home() =
-      guard(System.getProperty("user.home")).leftMap(e ⇒ LocalIOError(s"Could not determine homme on local host", e))
+      try java.lang.System.getProperty("user.home")
+      catch {
+        case e: Throwable ⇒ throw LocalIOError(s"Could not determine homme on local host", e)
+      }
 
     def exists(path: String) =
-      guard(new File(path).exists).leftMap(e ⇒ LocalIOError(s"Could not test if $path exists on local host", e))
+      try new File(path).exists
+      catch {
+        case e: Throwable ⇒ throw LocalIOError(s"Could not test if $path exists on local host", e)
+      }
 
-    def list(path: String) = guard {
+    def list(path: String) = try {
       new File(path).listFiles.map {
         f ⇒
           val ftype =
@@ -75,26 +91,35 @@ package object local {
 
           ListEntry(name = f.getName, `type` = ftype, modificationTime = Some(f.lastModified()))
       }.toList
-    }.leftMap(e ⇒ LocalIOError(s"Could not list directory $path on local host", e))
+    } catch {
+      case e: Throwable ⇒ throw LocalIOError(s"Could not list directory $path on local host", e)
+    }
 
     def makeDir(path: String) =
-      guard { new File(path).mkdirs: Unit }.leftMap(e ⇒ LocalIOError(s"Could not make directory $path on local host", e))
+      try { new File(path).mkdirs: Unit }
+      catch {
+        case e: Throwable ⇒ throw LocalIOError(s"Could not make directory $path on local host", e)
+      }
 
-    def rmDir(path: String) = guard {
+    def rmDir(path: String) = try {
       def delete(f: File): Unit = {
         if (f.isDirectory) f.listFiles.foreach(delete)
         f.delete
       }
       delete(new File(path))
-    }.leftMap(e ⇒ LocalIOError(s"Could not removet directory $path on local host", e))
+    } catch {
+      case e: Throwable ⇒ throw LocalIOError(s"Could not removet directory $path on local host", e)
+    }
 
-    def mv(from: String, to: String) = guard {
+    def mv(from: String, to: String) = try {
       new File(from).renameTo(new File(to)): Unit
-    }.leftMap(e ⇒ LocalIOError(s"Could not move $from to $to on local host", e))
+    } catch {
+      case e: Throwable ⇒ throw LocalIOError(s"Could not move $from to $to on local host", e)
+    }
 
-    def link(target: String, link: String, defaultOnCopy: Boolean) = guard {
+    def link(target: String, link: String, defaultOnCopy: Boolean) = {
 
-      def createLink(target: Path, link: Path): Path = {
+      def createLink(target: JPath, link: JPath): JPath = {
         def getParentFileSafe(file: File): File =
           file.getParentFile() match {
             case null ⇒ if (file.isAbsolute) file else new File(".")
@@ -102,7 +127,7 @@ package object local {
           }
 
         def unsupported = {
-          val fullTargetPath = if (target.isAbsolute) target else Paths.get(getParentFileSafe(link.toFile).getPath, target.toFile.getPath)
+          val fullTargetPath = if (target.isAbsolute) target else JPaths.get(getParentFileSafe(link.toFile).getPath, target.toFile.getPath)
           Files.copy(fullTargetPath, link, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING)
           link
         }
@@ -116,46 +141,46 @@ package object local {
         }
       }
 
-      createLink(Paths.get(target), Paths.get(link))
+      createLink(JPaths.get(target), JPaths.get(link))
     }
   }
 
   case class LocalExecutionError(message: String, t: Throwable) extends Exception(message, t)
   case class LocalIOError(message: String, t: Throwable) extends Exception(message, t)
 
-  @tagless trait Local {
-    def execute(cmd: String): FS[ExecutionResult]
-    def writeBytes(bytes: Array[Byte], path: String): FS[Unit]
-    def writeFile(is: () ⇒ java.io.InputStream, path: String): FS[Unit]
-    def rmFile(path: String): FS[Unit]
-    def readFile[T](path: String, f: java.io.InputStream ⇒ T): FS[T]
-    def home(): FS[String]
-    def exists(path: String): FS[Boolean]
-    def list(path: String): FS[List[ListEntry]]
-    def makeDir(path: String): FS[Unit]
-    def rmDir(path: String): FS[Unit]
-    def mv(from: String, to: String): FS[Unit]
-    def link(target: String, path: String, defaultOnCopy: Boolean): FS[Unit]
-  }
+  //  @tagless trait Local {
+  //    def execute(cmd: String): FS[ExecutionResult]
+  //    def writeBytes(bytes: Array[Byte], path: String): FS[Unit]
+  //    def writeFile(is: () ⇒ java.io.InputStream, path: String): FS[Unit]
+  //    def rmFile(path: String): FS[Unit]
+  //    def readFile[T](path: String, f: java.io.InputStream ⇒ T): FS[T]
+  //    def home(): FS[String]
+  //    def exists(path: String): FS[Boolean]
+  //    def list(path: String): FS[List[ListEntry]]
+  //    def makeDir(path: String): FS[Unit]
+  //    def rmDir(path: String): FS[Unit]
+  //    def mv(from: String, to: String): FS[Unit]
+  //    def link(target: String, path: String, defaultOnCopy: Boolean): FS[Unit]
+  //  }
 
   case class LocalHost() {
     override def toString = s"localhost"
   }
 
-  def execute[M[_]](cmd: String)(implicit local: Local[M]) = local.execute(cmd)
+  def execute(cmd: String)(implicit local: Effect[Local]) = local().execute(cmd)
 
-  def writeBytes[M[_]](bytes: Array[Byte], path: String)(implicit local: Local[M]) = local.writeBytes(bytes, path)
-  def writeFile[M[_]](is: () ⇒ java.io.InputStream, path: String)(implicit local: Local[M]) = local.writeFile(is, path)
-  def readFile[M[_], T](path: String, f: java.io.InputStream ⇒ T)(implicit local: Local[M]) = local.readFile(path, f)
+  def writeBytes(bytes: Array[Byte], path: String)(implicit local: Effect[Local]) = local().writeBytes(bytes, path)
+  def writeFile(is: () ⇒ java.io.InputStream, path: String)(implicit local: Effect[Local]) = local().writeFile(is, path)
+  def readFile[T](path: String, f: java.io.InputStream ⇒ T)(implicit local: Effect[Local]) = local().readFile(path, f)
 
-  def rmFile[M[_]](path: String)(implicit local: Local[M]): M[Unit] = local.rmFile(path)
-  def home[M[_]: Local](implicit local: Local[M]) = local.home
-  def exists[M[_]](path: String)(implicit local: Local[M]) = local.exists(path)
-  def list[M[_]](path: String)(implicit local: Local[M]) = local.list(path)
-  def makeDir[M[_]](path: String)(implicit local: Local[M]) = local.makeDir(path)
-  def rmDir[M[_]](path: String)(implicit local: Local[M]) = local.rmDir(path)
-  def mv[M[_]](from: String, to: String)(implicit local: Local[M]) = local.mv(from, to)
-  def link[M[_]](target: String, link: String, defaultOnCopy: Boolean = false)(implicit local: Local[M]) = local.link(target, link, defaultOnCopy)
+  def rmFile(path: String)(implicit local: Effect[Local]): Unit = local().rmFile(path)
+  def home(implicit local: Effect[Local]) = local().home
+  def exists(path: String)(implicit local: Effect[Local]) = local().exists(path)
+  def list(path: String)(implicit local: Effect[Local]) = local().list(path)
+  def makeDir(path: String)(implicit local: Effect[Local]) = local().makeDir(path)
+  def rmDir(path: String)(implicit local: Effect[Local]) = local().rmDir(path)
+  def mv(from: String, to: String)(implicit local: Effect[Local]) = local().mv(from, to)
+  def link(target: String, link: String, defaultOnCopy: Boolean = false)(implicit local: Effect[Local]) = local().link(target, link, defaultOnCopy)
 
 }
 

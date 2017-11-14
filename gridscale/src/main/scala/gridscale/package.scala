@@ -1,6 +1,4 @@
-import cats.data.Kleisli
 
-import scala.language.{ higherKinds, postfixOps }
 
 package object gridscale {
 
@@ -26,10 +24,7 @@ package object gridscale {
     def isFinal(s: JobState) = s == Done || s == Failed
   }
 
-  import cats._
-  import cats.implicits._
-  import freedsl.system._
-  import freedsl.tool._
+  import effectaside._
   import squants._
   import squants.time.TimeConversions._
 
@@ -71,14 +66,17 @@ package object gridscale {
   //
   //  }
 
-  def waitUntilEnded[M[_]: Monad](f: M[JobState], wait: Time = 10 seconds)(implicit system: System[M]) = {
-    def pull = for {
-      s ← f
-      end = JobState.isFinal(s)
-      _ ← if (!end) system.sleep(wait) else ().pure[M]
-    } yield (end, s)
+  def waitUntilEnded(f: () ⇒ JobState, wait: Time = 10 seconds)(implicit system: Effect[System]) = {
+    def pull: JobState = {
+      val s = f()
+      val end = JobState.isFinal(s)
+      if (!end) {
+        system().sleep(wait)
+        pull
+      } else s
+    }
 
-    pull.until(_._1).map(_._2)
+    pull
   }
 
   case class ExecutionResult(returnCode: Int, stdOut: String, stdErr: String)

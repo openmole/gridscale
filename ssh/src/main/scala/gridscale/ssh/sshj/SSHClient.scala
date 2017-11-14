@@ -18,7 +18,6 @@
 package gridscale.ssh.sshj
 
 import gridscale.authentication._
-import freedsl.tool._
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
@@ -47,7 +46,7 @@ object SSHClient {
     } finally cmd.close()
   }
 
-  def sftp[T](client: SSHClient, f: SFTPClient ⇒ T) = util.Try {
+  def sftp[T](client: SSHClient, f: SFTPClient ⇒ T) = {
     val sftp = client.newSFTPClient
     try f(sftp)
     finally sftp.close
@@ -83,17 +82,18 @@ class SSHClient {
   def disableHostChecking() = peer.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
   def useCompression() = peer.useCompression()
 
-  def authPassword(username: String, password: String): util.Try[Unit] =
-    util.Try(peer.authPassword(username, password)) mapFailure {
-      e ⇒ AuthenticationException("Error during ssh login/password authentication", e)
+  def authPassword(username: String, password: String): Unit =
+    try peer.authPassword(username, password)
+    catch {
+      case e: Throwable ⇒ throw AuthenticationException("Error during ssh login/password authentication", e)
     }
 
-  def authPrivateKey(privateKey: PrivateKey): util.Try[Unit] =
-    util.Try {
+  def authPrivateKey(privateKey: PrivateKey): Unit =
+    try {
       val kp = peer.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)
       peer.authPublickey(privateKey.user, kp)
-    } mapFailure {
-      e ⇒ AuthenticationException("Error during ssh key authentication", e)
+    } catch {
+      case e: Throwable ⇒ AuthenticationException("Error during ssh key authentication", e)
     }
 
   def isAuthenticated: Boolean = peer.isAuthenticated

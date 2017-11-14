@@ -1,17 +1,11 @@
 package gridscale.sge
 
-import cats._
-import cats.implicits._
-import freedsl.dsl._
-import freedsl.errorhandler._
-import freedsl.system._
+import effectaside._
 import gridscale._
 import gridscale.authentication._
-import gridscale.cluster.SSHClusterInterpreter
+import gridscale.cluster._
 import gridscale.ssh._
 import squants.time.TimeConversions._
-
-import scala.language.postfixOps
 
 object SGEExample extends App {
 
@@ -20,16 +14,17 @@ object SGEExample extends App {
 
   val jobDescription = SGEJobDescription("""echo "hello world from $(hostname)"""", "/tmp/test_gridscale", wallTime = Some(10 minutes))
 
-  def res[M[_]: SSH: System: ErrorHandler: Monad] = for {
-    job ← submit[M, SSHServer](localhost, jobDescription)
-    s ← waitUntilEnded[M](state[M, SSHServer](localhost, job))
-    out ← stdOut[M, SSHServer](localhost, job)
-    _ ← clean[M, SSHServer](localhost, job)
-  } yield (s, out)
+  def res(implicit system: Effect[System], ssh: Effect[SSH]) = {
+    val job = submit(localhost, jobDescription)
+    val s = waitUntilEnded(() ⇒ state(localhost, job))
+    val out = stdOut(localhost, job)
+    clean[SSHServer](localhost, job)
+    (s, out)
+  }
 
-  SSHClusterInterpreter { intp ⇒
+  SSHCluster { intp ⇒
     import intp._
-    println(res[DSL].eval)
+    println(res)
   }
 
 }
