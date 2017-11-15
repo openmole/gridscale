@@ -6,8 +6,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.3"
-crossScalaVersions in ThisBuild := Seq("2.12.3")
+scalaVersion in ThisBuild := "2.12.4"
+crossScalaVersions in ThisBuild := Seq("2.12.4")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
@@ -113,13 +113,12 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 /* -------------- gridscale dsl ------------------ */
 
-val effectasideVersion = "0.1-SNAPSHOT"
+val effectasideVersion = "0.1"
 val monocleVersion = "1.4.0"
 
 def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.effectaside" %% "effect" % effectasideVersion,
-
 
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.3.0",
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.12",
