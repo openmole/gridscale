@@ -20,7 +20,7 @@ object TestDIRAC extends App {
     val j = submit(s, description, t) //.repeat(10)
     //gs ← queryGroupState[M](s, t, "testgroup")
     val st = waitUntilEnded(() ⇒ state(s, t, j))
-    val out = st
+    downloadOutputSandbox(s, t, j, "/tmp/output")
     delete(s, t, j)
     j
   }

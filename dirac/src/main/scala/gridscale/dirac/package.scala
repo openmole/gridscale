@@ -1,8 +1,13 @@
 package gridscale
 
+import java.io.{ BufferedOutputStream, FileOutputStream }
+
 import effectaside._
 import gridscale.authentication.P12Authentication
 import gridscale.http._
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
+import org.apache.commons.compress.utils.IOUtils
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.json4s._
@@ -210,34 +215,28 @@ package object dirac {
     gridscale.http.read(server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}", Delete()).map { _ ⇒ () }
   }
 
-  //  def downloadOutputSandbox[M[_]: Monad: HTTP](server: DIRACServer, token: Token, jobId: JobID) = {
-  //    val outputSandboxMap = jobId.description.outputSandbox.toMap
-  //
-  //    val uri =
-  //      new URIBuilder(server.server.url)
-  //        .setParameter("access_token", token.token)
-  //        .build
-  //
-  //    def extract(str: InputStream) = {
-  //      val is = new TarArchiveInputStream(str)
-  //
-  //      Iterator.continually(is.getNextEntry).takeWhile(_ != null).
-  //        filter { e ⇒ outputSandboxMap.contains(e.getName) }.foreach {
-  //        e ⇒
-  //          val os = new BufferedOutputStream(new FileOutputStream(outputSandboxMap(e.getName)))
-  //          try BasicIO.transferFully(is, os)
-  //          finally os.close
-  //      }
-  //    }
-  //
-  //
-  //    gridscale.http.readStream[M, JValue](server.server, s"$jobsLocation/$jobId/outputsandbox", is ⇒ parse(is)).map { json ⇒
-  //      requestContent(get) { str ⇒
-  //
-  //      }
-  //    }
-  //
-  //  }
+  def downloadOutputSandbox(server: DIRACServer, token: Token, jobId: JobID, outputDirectory: Path)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+    val uri =
+      new URIBuilder()
+        .setParameter("access_token", token.token)
+        .build
+
+    def extract(str: java.io.InputStream) = {
+      outputDirectory.path.mkdirs()
+
+      val is = new TarArchiveInputStream(new BZip2CompressorInputStream(str))
+
+      try Iterator.continually(is.getNextEntry).takeWhile(_ != null).foreach {
+        e ⇒
+          fileSystem().writeStream(new java.io.File(outputDirectory.path, e.getName)) { os ⇒
+            IOUtils.copy(is, os)
+          }
+      }
+      finally is.close
+    }
+
+    gridscale.http.readStream(server.server, s"$jobsLocation/${jobId.id}/outputsandbox?${uri.getQuery}", is ⇒ extract(is))
+  }
 
   def delegate(server: DIRACServer, p12: P12Authentication, token: Token)(implicit http: Effect[HTTP]): Unit = {
     def entity() = {
