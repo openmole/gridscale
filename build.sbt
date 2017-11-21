@@ -113,7 +113,7 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 /* -------------- gridscale dsl ------------------ */
 
-val effectasideVersion = "0.2-SNAPSHOT"
+val effectasideVersion = "0.2"
 val monocleVersion = "1.4.0"
 
 def dslSettings = defaultSettings ++ Seq(
