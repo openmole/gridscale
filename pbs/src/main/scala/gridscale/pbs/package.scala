@@ -5,6 +5,7 @@ import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import squants._
 import monocle.macros._
+import squants.information.Information
 
 import scala.language.higherKinds
 
@@ -19,7 +20,7 @@ package object pbs {
     workDirectory: String,
     queue: Option[String] = None,
     wallTime: Option[Time] = None,
-    memory: Option[Int] = None,
+    memory: Option[Information] = None,
     nodes: Option[Int] = None,
     coreByNode: Option[Int] = None,
     flavour: PBSFlavour = Torque)
@@ -42,12 +43,11 @@ package object pbs {
       val nbNodes = nodes.getOrElse(1)
       val coresPerNode = coreByNode.getOrElse(1)
 
-      // FIXME better way than setting default value?
-      val mem = memory.getOrElse(2048)
+      val memoryString = memory map { m ⇒ s":mem=${m.toMegabytes}MB" } getOrElse ""
 
       flavour match {
-        case Torque ⇒ buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode:mem=${mem}MB"
-        case PBSPro ⇒ buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode:mem=${mem}MB"
+        case Torque ⇒ buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode$memoryString"
+        case PBSPro ⇒ buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode$memoryString"
       }
 
       buffer += "cd " + workDirectory
