@@ -6,6 +6,7 @@ import effectaside._
 import squants._
 import gridscale.tools._
 import monocle.macros._
+import squants.information._
 
 import scala.language.{ higherKinds, postfixOps }
 
@@ -15,7 +16,7 @@ package object condor {
     executable: String,
     arguments: String,
     workDirectory: String,
-    memory: Option[Int] = None,
+    memory: Option[Information] = None,
     nodes: Option[Int] = None,
     coreByNode: Option[Int] = None,
     requirements: Option[CondorRequirement] = None)
@@ -36,7 +37,7 @@ package object condor {
       val core = Seq(
         "output = " -> Some(output(uniqId)),
         "error = " -> Some(error(uniqId)),
-        "request_memory = " -> memory.map(_.toString + " MB"),
+        "request_memory = " -> memory.map(_.toMegabytes.toString + " MB"),
 
         "initialdir = " -> Some(workDirectory),
         "executable = " -> Some(executable),

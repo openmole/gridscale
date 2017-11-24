@@ -5,6 +5,7 @@ import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import monocle.macros._
 import squants._
+import squants.information._
 
 import scala.language.higherKinds
 
@@ -20,7 +21,7 @@ package object slurm {
     workDirectory: String,
     queue: Option[String] = None,
     wallTime: Option[Time] = None,
-    memory: Option[Int] = None,
+    memory: Option[Information] = None,
     nodes: Option[Int] = None,
     coresByNode: Option[Int] = Some(1),
     qos: Option[String] = None,
@@ -42,7 +43,7 @@ package object slurm {
         "-o " -> Some(output(uniqId)),
         "-e " -> Some(error(uniqId)),
         "-p " -> queue,
-        "--mem=" -> memory.map(_.toString),
+        "--mem=" -> memory.map(_.toMegabytes.toString),
         "--nodes=" -> nodes.map(_.toString),
         "--cpus-per-task=" -> coresByNode.map(_.toString),
         "--time=" -> wallTime.map(_.toHHmmss),

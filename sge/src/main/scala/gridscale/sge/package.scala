@@ -4,6 +4,7 @@ import effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.cluster.BatchScheduler.BatchJob
 import squants._
+import squants.information._
 
 package object sge {
 
@@ -11,7 +12,7 @@ package object sge {
     command: String,
     workDirectory: String,
     queue: Option[String] = None,
-    memory: Option[Int] = None,
+    memory: Option[Information] = None,
     wallTime: Option[Time] = None)
 
   object impl {
@@ -24,7 +25,7 @@ package object sge {
         |#$$ -e ${BatchScheduler.error(uniqId)}
         |
         |${jobDescription.queue.map(q ⇒ s"#$$ -q $q").getOrElse("")}
-        |${jobDescription.memory.map(m ⇒ s"#$$ -l h_vmem=${m}M").getOrElse("")}
+        |${jobDescription.memory.map(m ⇒ s"#$$ -l h_vmem=${m.toMegabytes}M").getOrElse("")}
         |${jobDescription.wallTime.map(t ⇒ s"#$$ -l h_cpu=${t.toSeconds.toLong}").getOrElse("")}
         |
         |#$$ -cwd
