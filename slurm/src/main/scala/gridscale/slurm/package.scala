@@ -15,9 +15,8 @@ package object slurm {
     override def toString = gresName + ":" + gresValue.toString
   }
 
-  @Lenses case class SlurmJobDescription(
-    executable: String,
-    arguments: String,
+  @Lenses case class SLURMJobDescription(
+    command: String,
     workDirectory: String,
     queue: Option[String] = None,
     wallTime: Option[Time] = None,
@@ -34,7 +33,7 @@ package object slurm {
 
     def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
 
-    def toScript(description: SlurmJobDescription)(uniqId: String) = {
+    def toScript(description: SLURMJobDescription)(uniqId: String) = {
       import description._
 
       val header = "#!/bin/bash\n"
@@ -67,7 +66,7 @@ package object slurm {
          |$gresList
          |$constraintsList
          |
-         |$executable $arguments
+         |$command
          |""".stripMargin
       // TODO: handle several srun and split gres accordingly
       //    buffer += "srun "
@@ -125,7 +124,7 @@ package object slurm {
 
   val scriptSuffix = ".slurm"
 
-  def submit[S](server: S, jobDescription: SlurmJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
+  def submit[S](server: S, jobDescription: SLURMJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
     BatchScheduler.submit[S](
       jobDescription.workDirectory,
       toScript(jobDescription),

@@ -9,7 +9,7 @@ object SlurmExampleLocal extends App {
 
   val headNode = LocalHost()
 
-  val jobDescription = SlurmJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale", queue = Some("short"))
+  val jobDescription = SLURMJobDescription(command = "/bin/echo hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale", queue = Some("short"))
 
   def res(implicit system: Effect[System], ssh: Effect[Local]) = {
     val job = submit(headNode, jobDescription)
