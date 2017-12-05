@@ -50,10 +50,10 @@ releaseProcess := Seq[ReleaseStep](
   runTest,
   setReleaseVersion,
   tagRelease,
-  ReleaseStep(action = Command.process("publishSigned", _)),
+  releaseStepCommand("publishSigned"),
   setNextVersion,
   commitNextVersion,
-  ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
+  releaseStepCommand("sonatypeReleaseAll"),
   pushChanges
 )
 
@@ -62,13 +62,12 @@ def javaByteCodeVersion(scalaVersion: String) = {
   majorVersion match {
     case "2.10" | "2.11" => "1.7"
     case "2.12" => "1.8"
-    case _ => sbt.fail("unknown scala version " + majorVersion)
+    case _ => sys.error("unknown scala version " + majorVersion)
   }
 }
 
 def settings = Seq (
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-  test in assembly := {},
   // macro paradise doesn't work with scaladoc
   sources in (Compile, doc) := Nil,
   resolvers += Resolver.sonatypeRepo("snapshots")
@@ -133,43 +132,43 @@ def dslSettings = defaultSettings ++ Seq(
     "Sonatype OSS Stagings" at "https://oss.sonatype.org/content/repositories/staging"
 )
 
-lazy val gridscale = Project(id = "gridscale", base = file("gridscale"), settings = dslSettings) settings(
+lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) settings(dslSettings: _*) settings(
   libraryDependencies += scalaTest
   //libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8"
 )
 
-lazy val local = Project(id = "local", base = file("local"), settings = dslSettings) dependsOn (gridscale)
+lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
 
-lazy val ssh = Project(id = "ssh", base = file("ssh"), settings = dslSettings) dependsOn (gridscale) settings (
+lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings: _*) dependsOn (gridscale) settings (
   libraryDependencies += "com.hierynomus" % "sshj" % "0.21.1",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
-lazy val cluster = Project(id = "cluster", base = file("cluster"), settings = dslSettings) dependsOn (ssh, local) settings (
+lazy val cluster = Project(id = "cluster", base = file("cluster")) settings(dslSettings: _*) dependsOn (ssh, local) settings (
   libraryDependencies ++= Seq("monocle-core", "monocle-generic", "monocle-macro").map("com.github.julien-truffaut" %% _ % monocleVersion)
 )
 
-lazy val pbs = Project(id = "pbs", base = file("pbs"), settings = dslSettings) dependsOn(gridscale, cluster)
-lazy val slurm = Project(id = "slurm", base = file("slurm"), settings = dslSettings) dependsOn(gridscale, cluster)
-lazy val condor = Project(id = "condor", base = file("condor"), settings = dslSettings) dependsOn(gridscale, cluster)
-lazy val oar = Project(id = "oar", base = file("oar"), settings = dslSettings) dependsOn(gridscale, cluster)
-lazy val sge = Project(id = "sge", base = file("sge"), settings = dslSettings) dependsOn(gridscale, cluster)
+lazy val pbs = Project(id = "pbs", base = file("pbs")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
+lazy val slurm = Project(id = "slurm", base = file("slurm")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
+lazy val condor = Project(id = "condor", base = file("condor")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
+lazy val oar = Project(id = "oar", base = file("oar")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
+lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
 
 
-lazy val http = Project(id = "http", base = file("http"), settings = dslSettings) dependsOn(gridscale) settings (
+lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "3.8.0",
   libraryDependencies ++= httpComponents
 )
 
-lazy val webdav = Project(id = "webdav", base = file("webdav"), settings = dslSettings) dependsOn(gridscale, http)
+lazy val webdav = Project(id = "webdav", base = file("webdav")) settings(dslSettings: _*) dependsOn(gridscale, http)
 
-lazy val dirac =  Project(id = "dirac", base = file("dirac"), settings = dslSettings) dependsOn(gridscale, http) settings (
+lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.apache.commons" % "commons-compress" % "1.15"
 )
 
-lazy val egi = Project(id = "egi", base = file("egi"), settings = dslSettings) dependsOn(gridscale, http, webdav) settings (
+lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.57"
 )
@@ -190,18 +189,18 @@ lazy val examples = (project in file("examples")).settings(settings: _*).
     oarExample
   ) settings(
   name := "gridscale-examples",
-  publishArtifact := false,
-  aggregate in assembly := true // one separate jar per aggregated project
+  publishArtifact := false
 )
 
+def exampleSettings = defaultSettings ++ exportSettings
 
-lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream"), settings = defaultSettings ++ exportSettings) dependsOn egi
-lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav"), settings = defaultSettings ++ exportSettings) dependsOn (egi, webdav)
-lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac"), settings = defaultSettings ++ exportSettings) dependsOn (egi, dirac)
-lazy val condorExample = Project(id = "condorexample", base = file("examples/condor"), settings = dslSettings ++ exportSettings) dependsOn condor
-lazy val pbsExample  = Project(id = "pbsexample", base = file("examples/pbs"), settings = dslSettings ++ exportSettings) dependsOn pbs
-lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm"), settings = dslSettings ++ exportSettings) dependsOn slurm
-lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge"), settings = defaultSettings ++ exportSettings) dependsOn sge
-lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh"), settings = defaultSettings ++ exportSettings) dependsOn ssh
-lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar"), settings = defaultSettings ++ exportSettings) dependsOn oar
-lazy val httpExample  = Project(id = "httpexample", base = file("examples/http"), settings = defaultSettings ++ exportSettings) dependsOn http
+lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream")) settings(exampleSettings: _*) dependsOn egi
+lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav")) settings(exampleSettings: _*) dependsOn (egi, webdav)
+lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac")) settings(exampleSettings: _*) dependsOn (egi, dirac)
+lazy val condorExample = Project(id = "condorexample", base = file("examples/condor")) settings(exampleSettings: _*) dependsOn condor
+lazy val pbsExample  = Project(id = "pbsexample", base = file("examples/pbs")) settings(exampleSettings: _*) dependsOn pbs
+lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm")) settings(exampleSettings: _*) dependsOn slurm
+lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge")) settings(exampleSettings: _*) dependsOn sge
+lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh")) settings(exampleSettings: _*) dependsOn ssh
+lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar")) settings(exampleSettings: _*) dependsOn oar
+lazy val httpExample  = Project(id = "httpexample", base = file("examples/http")) settings(exampleSettings: _*) dependsOn http
