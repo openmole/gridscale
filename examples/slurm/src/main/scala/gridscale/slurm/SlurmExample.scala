@@ -5,6 +5,8 @@ import gridscale._
 import gridscale.authentication._
 import gridscale.cluster.ClusterInterpreter
 import gridscale.ssh._
+import squants.information.InformationConversions._
+import scala.language.postfixOps
 
 object SlurmExample extends App {
 
@@ -14,7 +16,7 @@ object SlurmExample extends App {
   import scala.language.reflectiveCalls
   import gridscale.slurm._
 
-  val jobDescription = SLURMJobDescription(command = """/bin/echo hello from $(hostname)""", workDirectory = "/homes/jpassera/test_gridscale", queue = Some("short"))
+  val jobDescription = SLURMJobDescription(command = """/bin/echo hello from $(hostname)""", workDirectory = "/home/foobar/test_gridscale", queue = Some("short"), memory = Some(2000 megabytes))
 
   def res(implicit system: Effect[System], ssh: Effect[SSH]) = {
     val job = submit(headNode, jobDescription)
