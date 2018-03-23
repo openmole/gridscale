@@ -21,6 +21,8 @@ import java.io._
 import java.util.concurrent._
 
 import squants._
+
+import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
 
 package object tools {
@@ -101,6 +103,7 @@ package object tools {
   }
 
   def findWorking[S, T](servers: Seq[S], f: S ⇒ T): T = {
+    @tailrec
     def findWorking0(servers: List[S]): Try[T] =
       servers match {
         case Nil      ⇒ Failure(new RuntimeException("Server list is empty"))
