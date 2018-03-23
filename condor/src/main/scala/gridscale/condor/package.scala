@@ -37,7 +37,7 @@ package object condor {
       val core = Seq(
         "output = " -> Some(output(uniqId)),
         "error = " -> Some(error(uniqId)),
-        "request_memory = " -> memory.map(_.toMegabytes.toString + " MB"),
+        "request_memory = " -> memory.map(m ⇒ s"${m.toMBString} MB"),
 
         "initialdir = " -> Some(workDirectory),
         "executable = " -> Some(executable),

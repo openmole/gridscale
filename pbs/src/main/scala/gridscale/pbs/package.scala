@@ -43,7 +43,7 @@ package object pbs {
       val nbNodes = nodes.getOrElse(1)
       val coresPerNode = coreByNode.getOrElse(1)
 
-      val memoryString = memory map { m ⇒ s":mem=${m.toMegabytes}MB" } getOrElse ""
+      val memoryString = memory map { m ⇒ s":mem=${m.toMBString}mb" } getOrElse ""
 
       flavour match {
         case Torque ⇒ buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode$memoryString"
