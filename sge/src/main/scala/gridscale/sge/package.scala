@@ -3,6 +3,7 @@ package gridscale
 import effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.cluster.BatchScheduler.BatchJob
+import gridscale.tools.InformationDecorator
 import squants._
 import squants.information._
 
@@ -25,7 +26,7 @@ package object sge {
         |#$$ -e ${BatchScheduler.error(uniqId)}
         |
         |${jobDescription.queue.map(q ⇒ s"#$$ -q $q").getOrElse("")}
-        |${jobDescription.memory.map(m ⇒ s"#$$ -l h_vmem=${m.toMegabytes}M").getOrElse("")}
+        |${jobDescription.memory.map(m ⇒ s"#$$ -l h_vmem=${m.toMBString}M").getOrElse("")}
         |${jobDescription.wallTime.map(t ⇒ s"#$$ -l h_cpu=${t.toSeconds.toLong}").getOrElse("")}
         |
         |#$$ -cwd

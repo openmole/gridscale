@@ -42,7 +42,7 @@ package object slurm {
         "-o " -> Some(output(uniqId)),
         "-e " -> Some(error(uniqId)),
         "-p " -> queue,
-        "--mem=" -> memory.map(_.toMegabytes.toString),
+        "--mem=" -> memory.map(m ⇒ s"${m.toMBString}M"),
         "--nodes=" -> nodes.map(_.toString),
         "--cpus-per-task=" -> coresByNode.map(_.toString),
         "--time=" -> wallTime.map(_.toHHmmss),
