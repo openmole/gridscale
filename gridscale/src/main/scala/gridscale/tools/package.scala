@@ -102,6 +102,20 @@ package object tools {
     }
   }
 
+  /**
+   * Extra operations for squants Information
+   * @param info Memory value as squants Information
+   */
+  implicit class InformationDecorator(info: squants.information.Information) {
+    /**
+     * Make sure memory requirements come up as long integer strings
+     * Round up values if needed.
+     * Force negatives to 0.
+     * @return String containing the memory Information as MegaBytes
+     */
+    def toMBString: String = info.toMegabytes.max(0).round.toString
+  }
+
   def findWorking[S, T](servers: Seq[S], f: S ⇒ T): T = {
     @tailrec
     def findWorking0(servers: List[S]): Try[T] =
