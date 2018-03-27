@@ -6,8 +6,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.4"
-crossScalaVersions in ThisBuild := Seq("2.12.4")
+scalaVersion in ThisBuild := "2.12.5"
+crossScalaVersions in ThisBuild := Seq("2.12.5")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
