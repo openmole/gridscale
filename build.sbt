@@ -123,7 +123,7 @@ def dslSettings = defaultSettings ++ Seq(
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.12",
 
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),
-  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full),
+  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full),
   scalacOptions += "-Xplugin-require:macroparadise",
 
   resolvers += Resolver.sonatypeRepo("snapshots"),
