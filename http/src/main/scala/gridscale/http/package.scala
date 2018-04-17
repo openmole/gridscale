@@ -1,6 +1,7 @@
 package gridscale
 
 import java.io.ByteArrayInputStream
+import java.net.SocketTimeoutException
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore.{ PasswordProtection, PrivateKeyEntry }
 import java.security.PrivateKey
@@ -117,7 +118,7 @@ package object http {
         case t: Throwable       ⇒ throw HTTPError(t)
       }
 
-    case class ConnectionError(t: Throwable) extends Exception(t)
+    case class ConnectionError(msg: String, t: Throwable) extends Exception(msg, t)
     case class HTTPError(t: Throwable) extends Exception(t) {
       override def toString = "HTTP error: " + t.toString
     }
@@ -163,6 +164,8 @@ package object http {
 
       import util._
 
+      def error(e: Throwable) = new HTTP.ConnectionError(s"Error while connecting to ${uri}, method ${method}", e)
+
       try {
         val httpClient = HTTP.client(server)
         try {
@@ -172,7 +175,10 @@ package object http {
             f(methodInstance, response)
           } finally response.close()
         } catch {
-          case e: org.apache.http.conn.ConnectTimeoutException ⇒ throw new HTTP.ConnectionError(e)
+          case e: org.apache.http.conn.ConnectTimeoutException  ⇒ throw error(e)
+          case e: SocketTimeoutException                        ⇒ throw error(e)
+          case e: java.net.ConnectException                     ⇒ throw error(e)
+          case e: org.apache.http.conn.HttpHostConnectException ⇒ throw error(e)
         } finally httpClient.close()
       } finally closeable.foreach(_.close())
     }

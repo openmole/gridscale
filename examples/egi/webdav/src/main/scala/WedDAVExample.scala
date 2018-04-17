@@ -16,7 +16,10 @@ object WedDAVExample extends App {
   EGI { impl ⇒
     import impl._
 
-    val proxy = VOMS.proxy("voms.hellasgrid.gr:15160", p12, certificateDirectory)
+    val proxy = VOMS.proxy("voms2.hellasgrid.gr:15160", p12, certificateDirectory)
+
+    println(bdii().webDAVs(bdiiServer, "vo.complex-systems.eu"))
+
     val lal = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("lal")).get
     val webdav = WebDAVSServer(lal, proxy.factory)
 
