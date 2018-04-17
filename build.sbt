@@ -43,6 +43,9 @@ releaseTagComment    := s"Releasing ${(version in ThisBuild).value}"
 
 releaseCommitMessage := s"Bump version to ${(version in ThisBuild).value}"
 
+sonatypeProfileName := "fr.iscpif"
+
+
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
