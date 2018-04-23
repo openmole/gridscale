@@ -139,7 +139,7 @@ package object egi {
       p12: P12Authentication,
       certificateDirectory: java.io.File,
       lifetime: Time = 24 hours,
-      fquan: Option[String] = None,
+      fqan: Option[String] = None,
       proxySize: ProxySize = ProxySize.PS2048,
       timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
 
@@ -266,7 +266,7 @@ package object egi {
       val options =
         List(
           Some("lifetime=" + lifetime.toSeconds.toLong),
-          fquan.map("fqans=" + _)).flatten.mkString("&")
+          fqan.map("fqans=" + _)).flatten.mkString("&")
 
       val location = s"/generate-ac${if (!options.isEmpty) "?" + options else ""}"
 
