@@ -266,7 +266,7 @@ package object egi {
       val options =
         List(
           Some("lifetime=" + lifetime.toSeconds.toLong),
-          fquan.map("fquans=" + _)).flatten.mkString("&")
+          fquan.map("fqans=" + _)).flatten.mkString("&")
 
       val location = s"/generate-ac${if (!options.isEmpty) "?" + options else ""}"
 
