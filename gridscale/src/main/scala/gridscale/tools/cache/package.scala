@@ -27,7 +27,7 @@ package object cache {
 
   case class KeyValueCache[K, V](f: K ⇒ V) {
     val locks = new LockRepository[K]()
-    val cached = collection.mutable.HashMap[K, V]()
+    val cached = new collection.mutable.HashMap[K, V]()
 
     def get(k: K) = locks.withLock(k) {
       value(k) match {
