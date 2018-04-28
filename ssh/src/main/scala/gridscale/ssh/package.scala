@@ -3,8 +3,6 @@ package gridscale
 import java.io.ByteArrayInputStream
 
 import gridscale.tools.shell.BashShell
-import net.schmizz.sshj.connection.channel.direct.Session.Command
-import scala.util.Try
 import scala.language.{ higherKinds, postfixOps }
 
 package object ssh {
@@ -129,10 +127,9 @@ package object ssh {
 
     def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = throw ReturnCodeError(server, command, executionResult)
 
-    def close() = {
+    def close(): Unit = {
       clientCache.values.foreach(_.close())
       clientCache.clear()
-      ()
     }
 
   }
@@ -167,7 +164,7 @@ package object ssh {
 
   case class JobId(jobId: String, workDirectory: String)
 
-  /* ----------------------- Job managment --------------------- */
+  /* ----------------------- Job management --------------------- */
 
   def submit(server: SSHServer, description: SSHJobDescription)(implicit ssh: Effect[SSH], system: Effect[System]) = {
     val (command, jobId) = SSHJobDescription.jobScript(server, description)
@@ -193,7 +190,7 @@ package object ssh {
 
   def state(server: SSHServer, jobId: JobId)(implicit ssh: Effect[SSH]) =
     SSHJobDescription.jobIsRunning(server, jobId) match {
-      case true ⇒ (JobState.Running: JobState)
+      case true ⇒ JobState.Running: JobState
       case false ⇒
         exists(server, SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)) match {
           case true ⇒
@@ -204,7 +201,7 @@ package object ssh {
               is ⇒ io.Source.fromInputStream(is).mkString)
             val exitCode = content.takeWhile(_.isDigit).toInt
             SSHJobDescription.translateState(exitCode)
-          case false ⇒ (JobState.Failed: JobState)
+          case false ⇒ JobState.Failed: JobState
         }
     }
 
