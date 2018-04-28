@@ -19,10 +19,10 @@ package object iexec {
 
   object impl {
 
-    def toIexec(description: IEXECJobDescription) =
+    def toIexec(description: IEXECJobDescription) = // put path to iexec sdk in PATH variable
       s"""
          |#!/bin/bash
-         |PATH="/Users/Karow/.nvm/versions/node/v8.9.4/bin:/Library/Frameworks/Python.framework/Versions/3.5/bin:/Library/Frameworks/Python.framework/Versions/3.5/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/TeX/texbin:/usr/local/git/bin"
+         |PATH=""
          |cd ${description.workDirectory}
          |iexec account allow ${description.dappCost}
          |iexec account login
@@ -50,7 +50,7 @@ package object iexec {
       }
   }
 
-  val scriptSuffix = ".sh" // what should it be?
+  val scriptSuffix = ".sh"
 
   def submit[S](server: S, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
     BatchScheduler.submit[S](
