@@ -76,6 +76,13 @@ package object ssh {
 
       authenticate(ssh)
     }
+  }
+
+  type ConnectionCache = KeyValueCache[SSHServer, SSHClient]
+
+  object SSHCache {
+    def apply() = KeyValueCache(SSH.client)
+  }
 
     val clientCache = KeyValueCache(client)
 
