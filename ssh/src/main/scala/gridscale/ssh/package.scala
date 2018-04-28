@@ -38,10 +38,11 @@ package object ssh {
   }
 
   object SSH {
-    def apply() = Effect(new SSH)
 
-    def apply[T](f: Effect[SSH] ⇒ T) = {
-      val intp = Effect(new SSH())
+    def apply(connectionCache: ConnectionCache) = Effect(new SSH(connectionCache))
+
+    def apply[T](f: Effect[SSH] ⇒ T)(connectionCache: Option[ConnectionCache] = None) = {
+      val intp = Effect(new SSH(connectionCache.getOrElse(SSHCache())))
       try f(intp)
       finally intp().close()
     }
@@ -84,7 +85,7 @@ package object ssh {
     def apply() = KeyValueCache(SSH.client)
   }
 
-    val clientCache = KeyValueCache(client)
+  class SSH(val clientCache: ConnectionCache) extends AutoCloseable {
 
     def execute(server: SSHServer, s: String) = {
       val c = clientCache.get(server)
