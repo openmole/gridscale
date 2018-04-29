@@ -37,13 +37,7 @@ package object ssh {
 
   object SSH {
 
-    def apply(connectionCache: ConnectionCache) = Effect(new SSH(connectionCache))
-
-    def apply[T](f: Effect[SSH] ⇒ T)(connectionCache: Option[ConnectionCache] = None) = {
-      val intp = Effect(new SSH(connectionCache.getOrElse(SSHCache())))
-      try f(intp)
-      finally intp().close()
-    }
+    def apply(connectionCache: ConnectionCache = SSHCache()) = Effect(new SSH(connectionCache))
 
     def client(server: SSHServer): SSHClient = {
       def ssh =

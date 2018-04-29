@@ -22,7 +22,7 @@ object TestSSH extends App {
   }
 
   implicit val system = System()
-  implicit val ssh = SSH(SSHCache())
+  implicit val ssh = SSH()
 
   try println(prg)
   finally ssh().close()
