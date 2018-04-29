@@ -156,6 +156,7 @@ lazy val slurm = Project(id = "slurm", base = file("slurm")) settings(dslSetting
 lazy val condor = Project(id = "condor", base = file("condor")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
 lazy val oar = Project(id = "oar", base = file("oar")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
 lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
+lazy val iexec = Project(id = "iexec", base = file("iexec")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
 
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
@@ -189,7 +190,8 @@ lazy val examples = (project in file("examples")).settings(settings: _*).
     pbsExample,
     slurmExample,
     sgeExample,
-    oarExample
+    oarExample,
+    iexecExample
   ) settings(
   name := "gridscale-examples",
   publishArtifact := false
@@ -206,4 +208,5 @@ lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slur
 lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge")) settings(exampleSettings: _*) dependsOn sge
 lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh")) settings(exampleSettings: _*) dependsOn ssh
 lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar")) settings(exampleSettings: _*) dependsOn oar
+lazy val iexecExample  = Project(id = "iexecexample", base = file("examples/iexec")) settings(exampleSettings: _*) dependsOn iexec
 lazy val httpExample  = Project(id = "httpexample", base = file("examples/http")) settings(exampleSettings: _*) dependsOn http
