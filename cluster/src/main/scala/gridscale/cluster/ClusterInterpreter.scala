@@ -7,7 +7,7 @@ import effectaside._
 object SSHCluster {
   class Interpreters {
     implicit val system = System()
-    implicit val ssh = SSH()
+    implicit val ssh = SSH(SSHCache())
   }
 
   def apply[T](f: Interpreters ⇒ T) = {
@@ -32,7 +32,7 @@ object LocalCluster {
 object ClusterInterpreter {
   class Interpreters {
     implicit val system = System()
-    implicit val ssh = SSH()
+    implicit val ssh = SSH(SSHCache())
     implicit val local = Local()
   }
 

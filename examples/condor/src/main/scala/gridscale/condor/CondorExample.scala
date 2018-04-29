@@ -4,9 +4,7 @@ import effectaside._
 import gridscale._
 import gridscale.ssh._
 import gridscale.authentication._
-
-import gridscale.condor._
-import gridscale.cluster._
+import gridscale.cluster.SSHCluster
 
 import squants.information.InformationConversions._
 import scala.language.postfixOps

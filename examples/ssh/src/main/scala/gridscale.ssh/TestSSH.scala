@@ -1,5 +1,8 @@
 package gridscale.ssh
 
+import squants.time.TimeConversions._
+import scala.language.postfixOps
+
 object TestSSH extends App {
 
   import gridscale._
@@ -19,7 +22,7 @@ object TestSSH extends App {
   }
 
   implicit val system = System()
-  implicit val ssh = SSH()
+  implicit val ssh = SSH(SSHCache())
 
   try println(prg)
   finally ssh().close()
