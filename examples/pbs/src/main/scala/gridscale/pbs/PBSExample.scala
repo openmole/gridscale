@@ -15,8 +15,6 @@ object PBSExample extends App {
   val authentication = UserPassword("testuser", "testuser")
   val localhost = SSHServer("localhost", 10022)(authentication)
 
-  import gridscale.pbs._
-
   // by default flavour = Torque, there's no need to specify it
   val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/foobar/test_gridscale", wallTime = Some(10 minutes), memory = Some(2 gigabytes), flavour = PBSPro)
 
