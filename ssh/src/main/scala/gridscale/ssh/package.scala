@@ -44,9 +44,6 @@ package object ssh {
       try f(intp)
       finally intp().close()
     }
-  }
-
-  class SSH extends AutoCloseable {
 
     def client(server: SSHServer): SSHClient = {
       def ssh =
