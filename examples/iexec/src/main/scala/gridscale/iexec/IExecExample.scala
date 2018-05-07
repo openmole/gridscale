@@ -24,7 +24,7 @@ object IexecExample extends App {
     (s, out)
   }
 
-  ClusterInterpreter { intp ⇒
+  LocalCluster { intp ⇒
     import intp._
     println(res)
   }
