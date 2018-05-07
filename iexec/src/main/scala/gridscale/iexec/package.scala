@@ -2,7 +2,7 @@ package gridscale
 
 import effectaside._
 import gridscale.cluster.BatchScheduler.BatchJob
-import gridscale.cluster.{BatchScheduler, HeadNode}
+import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.tools._
 import monocle.macros._
 import squants._
@@ -11,11 +11,11 @@ import squants.information._
 package object iexec {
 
   case class IEXECJobDescription(
-                                  workDirectory: String,
-                                  walletPath: String,
-                                  dappAddress: String,
-                                  arguments: String,
-                                  dappCost: Int)
+    workDirectory: String,
+    walletPath: String,
+    dappAddress: String,
+    arguments: String,
+    dappCost: Int)
 
   object impl {
 
@@ -33,20 +33,20 @@ package object iexec {
       println("string passed is :" + out + "\n")
       val linePrefix = "txHash"
       val hashPrefix = "0x"
-      var txHash = out.split("\n").find(_.contains(linePrefix)).getOrElse(throw new RuntimeException("iexec output did not return a txHash in \n" + out))
+      val txHash = out.split("\n").find(_.contains(linePrefix)).getOrElse(throw new RuntimeException("iexec output did not return a txHash in \n" + out))
         .split(" ").find(_.contains(hashPrefix)).getOrElse(throw new RuntimeException("iexec output did not return a valid txHash in \n" + out))
       txHash
     }
 
-    def parseState(executionResult: ExecutionResult, command: String) = translateStatus(executionResult.stdOut.split(" ")(1).replace(".", "").replace(":",""), command)
+    def parseState(executionResult: ExecutionResult, command: String) = translateStatus(executionResult.stdOut.split(" ")(1).replace(".", "").replace(":", ""), command)
 
     def translateStatus(status: String, command: String) =
       status match {
         case "PENDING" ⇒ JobState.Submitted
         case "RUNNING" ⇒ JobState.Running
-        case "Result" ⇒ JobState.Done
+        case "Result"  ⇒ JobState.Done
         //case "......" ⇒ JobState.Failed -- TODO
-        case _ ⇒ throw new RuntimeException("Unrecognized state " + status + "from command " + command)
+        case _         ⇒ throw new RuntimeException("Unrecognized state " + status + "from command " + command)
       }
   }
 
@@ -57,8 +57,8 @@ package object iexec {
       jobDescription.workDirectory,
       _ ⇒ impl.toIexec(jobDescription),
       scriptSuffix,
-      (f,_) ⇒ s"./${f}",
-      impl.retreiveJobID,
+      (f, _) ⇒ s"./$f",
+      impl.retrieveJobID,
       server)
 
   def state[S](server: S, job: BatchJob, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S]): JobState =
