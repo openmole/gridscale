@@ -29,8 +29,7 @@ package object iexec {
          |iexec submit ${description.arguments} --dapp ${description.dappAddress}
        """.stripMargin
 
-    def retreiveJobID(out: String) = {
-      println("string passed is :" + out + "\n")
+    def retrieveJobID(out: String) = {
       val linePrefix = "txHash"
       val hashPrefix = "0x"
       val txHash = out.split("\n").find(_.contains(linePrefix)).getOrElse(throw new RuntimeException("iexec output did not return a txHash in \n" + out))
