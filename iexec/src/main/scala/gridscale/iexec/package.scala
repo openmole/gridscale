@@ -24,16 +24,26 @@ package object iexec {
          |#!/bin/bash
          |PATH=""
          |cd ${description.workDirectory}
-         |iexec account allow ${description.dappCost}
          |iexec account login
-         |iexec submit ${description.arguments} --dapp ${description.dappAddress}
+         |iexec account allow ${description.dappCost}
+         |DEBUG='iexec:submit' iexec submit ${description.arguments} --dapp ${description.dappAddress}
        """.stripMargin
 
     def retrieveJobID(out: String) = {
-      val linePrefix = "txHash"
+      val tokenised_out = out.split("\n")
+
+      val linePrefix = "            \"transactionHash\""
+      var hashLineIndex = 0
+      while (hashLineIndex < tokenised_out.length && !tokenised_out(hashLineIndex).startsWith(linePrefix)) {
+        hashLineIndex += 1
+      }
+
+      assert(hashLineIndex < tokenised_out.length, "Error: could not find txHash in " + out)
+
       val hashPrefix = "0x"
-      val txHash = out.split("\n").find(_.contains(linePrefix)).getOrElse(throw new RuntimeException("iexec output did not return a txHash in \n" + out))
-        .split(" ").find(_.contains(hashPrefix)).getOrElse(throw new RuntimeException("iexec output did not return a valid txHash in \n" + out))
+      val hashLine = tokenised_out(hashLineIndex)
+      val hashIndex = hashLine indexOf hashPrefix
+      val txHash = hashLine.substring(hashIndex, hashIndex + 66)
       txHash
     }
 

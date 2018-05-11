@@ -57,7 +57,7 @@ object BatchScheduler {
     val ExecutionResult(ret, out, error) = cmdRet
     if (ret != 0) throw new RuntimeException(errorWrapper(command, cmdRet))
     if (out == null) throw new RuntimeException(s"$submitCommand did not return a JobID")
-    val jobId = retrieveJobID(out)
+    val jobId = if (out == "") retrieveJobID(error) else retrieveJobID(out)
     BatchJob(uniqId, jobId, workDirectory)
   }
 
