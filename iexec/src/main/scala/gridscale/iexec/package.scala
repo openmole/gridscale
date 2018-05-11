@@ -22,7 +22,7 @@ package object iexec {
     def toIexec(description: IEXECJobDescription) = // put path to iexec sdk in PATH variable
       s"""
          |#!/bin/bash
-         |PATH=""
+         |PATH="PATH_TO_IEXEC_FILES"
          |cd ${description.workDirectory}
          |iexec account login
          |iexec account allow ${description.dappCost}
@@ -47,19 +47,17 @@ package object iexec {
       txHash
     }
 
-    def parseState(executionResult: ExecutionResult, command: String) = translateStatus(executionResult.stdOut.split(" ")(1).replace(".", "").replace(":", ""), command)
-
-    def translateStatus(status: String, command: String) =
-      status match {
-        case "PENDING" ⇒ JobState.Submitted
-        case "RUNNING" ⇒ JobState.Running
-        case "Result"  ⇒ JobState.Done
-        //case "......" ⇒ JobState.Failed -- TODO
-        case _         ⇒ throw new RuntimeException("Unrecognized state " + status + "from command " + command)
+    def parseState(executionResult: ExecutionResult, command: String) = {
+      if (executionResult.stdOut == "") {
+        JobState.Running
+      } else {
+        JobState.Done
       }
+    }
   }
 
   val scriptSuffix = ".sh"
+  val outSuffix = ".text"
 
   def submit[S](server: S, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
     BatchScheduler.submit[S](
@@ -70,16 +68,16 @@ package object iexec {
       impl.retrieveJobID,
       server)
 
-  def state[S](server: S, job: BatchJob, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S]): JobState =
+  def state[S](server: S, job: BatchJob, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S]): JobState = // need to set path to include iexec files again, needs fix
     BatchScheduler.state[S](
-      s"""iexec result ${job.jobId} --dapp ${jobDescription.dappAddress}""",
+      s"""export PATH=$$PATH:PATH_TO_IEXEC_FILES && cd ${jobDescription.workDirectory} && iexec result ${job.jobId} --dapp ${jobDescription.dappAddress} --save""",
       impl.parseState)(server, job)
 
-  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
-    BatchScheduler.clean[S](
-      "", // no cancel necessary for iexec
-      scriptSuffix)(server, job)
+  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit = {
+    hn.rmFile(server, job.workDirectory + "/" + job.uniqId + scriptSuffix)
+    hn.rmFile(server, job.workDirectory + "/" + job.jobId + outSuffix)
+  }
 
-  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdOut[S](server, job)
-  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdErr[S](server, job)
+  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + job.jobId + outSuffix)
+  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = "" // no stdError file
 }
