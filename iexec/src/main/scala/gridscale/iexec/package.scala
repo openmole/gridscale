@@ -79,5 +79,5 @@ package object iexec {
   }
 
   def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + job.jobId + outSuffix)
-  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = "" // no stdError file
+  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = "" // no stdError file to get
 }
