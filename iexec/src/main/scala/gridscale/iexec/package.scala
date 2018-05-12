@@ -13,16 +13,17 @@ package object iexec {
   case class IEXECJobDescription(
     workDirectory: String,
     walletPath: String,
+    IexecFilesPath: String,
     dappAddress: String,
     arguments: String,
     dappCost: Int)
 
   object impl {
 
-    def toIexec(description: IEXECJobDescription) = // put path to iexec sdk in PATH variable
+    def toIexec(description: IEXECJobDescription) =
       s"""
          |#!/bin/bash
-         |PATH="PATH_TO_IEXEC_FILES"
+         |export PATH="${description.IexecFilesPath}"
          |cd ${description.workDirectory}
          |iexec account login
          |iexec account allow ${description.dappCost}
@@ -70,7 +71,7 @@ package object iexec {
 
   def state[S](server: S, job: BatchJob, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S]): JobState = // need to set path to include iexec files again, needs fix
     BatchScheduler.state[S](
-      s"""export PATH=$$PATH:PATH_TO_IEXEC_FILES && cd ${jobDescription.workDirectory} && iexec result ${job.jobId} --dapp ${jobDescription.dappAddress} --save""",
+      s"""export PATH="${jobDescription.IexecFilesPath}" && cd ${jobDescription.workDirectory} && iexec result ${job.jobId} --dapp ${jobDescription.dappAddress} --save""",
       impl.parseState)(server, job)
 
   def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit = {
