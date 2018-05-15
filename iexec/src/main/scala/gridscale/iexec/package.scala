@@ -12,7 +12,6 @@ package object iexec {
 
   case class IEXECJobDescription(
     workDirectory: String,
-    walletPath: String,
     IexecFilesPath: String,
     dappAddress: String,
     arguments: String,

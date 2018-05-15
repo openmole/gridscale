@@ -11,7 +11,6 @@ object IexecExample extends App {
   val headNode = LocalHost()
 
   val jobDescription = IEXECJobDescription(workDirectory = "/tmp/iexec-init",
-    walletPath= "/tmp/wallet.json",
     IexecFilesPath="", //Path to iexec binary files
     dappAddress = "0xd2b9d3ecc76b6d43277fd986afdb8b79685d4d1a",
     arguments = "5",
