@@ -178,23 +178,6 @@ lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*)
 
 /* -------------- examples ------------------ */
 
-lazy val examples = (project in file("examples")).settings(settings: _*).
-  aggregate(
-    egiCreamExample,
-    egiWebDAVExample,
-    egiDiracExample,
-    httpExample,
-    sshExample,
-    condorExample,
-    pbsExample,
-    slurmExample,
-    sgeExample,
-    oarExample
-  ) settings(
-  name := "gridscale-examples",
-  publishArtifact := false
-)
-
 def exampleSettings = defaultSettings ++ exportSettings
 
 lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream")) settings(exampleSettings: _*) dependsOn egi
