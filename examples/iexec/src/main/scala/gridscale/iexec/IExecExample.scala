@@ -17,10 +17,13 @@ object IexecExample extends App {
     dappCost = 1)
 
   def res(implicit system: Effect[System], ssh: Effect[Local]) = {
+    impl.populateIexecAccount(headNode, jobDescription, 1)
+
     val job = submit(headNode, jobDescription)
     val s = waitUntilEnded(() ⇒ state(headNode, job, jobDescription))
     val out = stdOut(headNode, job)
     clean(headNode, job)
+
     (s, out)
   }
 

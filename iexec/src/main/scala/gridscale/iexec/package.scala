@@ -19,15 +19,39 @@ package object iexec {
 
   object impl {
 
-    def toIexec(description: IEXECJobDescription) =
+    def toIexec[S](server: S, description: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]) = {
+
+      loginIexecAccount(server, description)
+      verifyIexecAccountBalance(server, description)
+
       s"""
          |#!/bin/bash
          |export PATH="${description.IexecFilesPath}:$${PATH}"
          |cd ${description.workDirectory}
-         |iexec account login
-         |iexec account allow ${description.dappCost}
          |DEBUG='iexec:submit' iexec submit ${description.arguments} --dapp ${description.dappAddress}
        """.stripMargin
+    }
+
+    def loginIexecAccount[S](server: S, description: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]) = {
+      if (!new java.io.File(s"""/${description.workDirectory}/account.json""").exists) {
+        hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.IexecFilesPath}:$${PATH}" && iexec account login""")
+      }
+    }
+
+    def populateIexecAccount[S](server: S, description: IEXECJobDescription, amount: Int)(implicit hn: HeadNode[S], system: Effect[System]) = {
+      val cmdRet = hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.IexecFilesPath}:$${PATH}" && iexec account allow ${amount}""")
+    }
+
+    def verifyIexecAccountBalance[S](server: S, description: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]) = {
+      val ExecutionResult(ret, out, error) = hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.IexecFilesPath}:$${PATH}" && iexec account show""")
+
+      var ropstenNetworkIndex = 2
+
+      val ropstenBalanceLine = out.split("\n")(ropstenNetworkIndex)
+      val rlcBalance = ropstenBalanceLine.substring(ropstenBalanceLine.indexOf(":")+1, ropstenBalanceLine.indexOf(" nRLC")).trim.toInt
+
+      assert(rlcBalance >= description.dappCost, s"iExec account does not have enough tokens to execute this DApp, account needs at least ${description.dappCost} but has ${rlcBalance}")
+    }
 
     def retrieveJobID(out: String) = {
       val tokenised_out = out.split("\n")
@@ -62,7 +86,7 @@ package object iexec {
   def submit[S](server: S, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
     BatchScheduler.submit[S](
       jobDescription.workDirectory,
-      _ ⇒ impl.toIexec(jobDescription),
+      _ ⇒ impl.toIexec(server, jobDescription),
       scriptSuffix,
       (f, _) ⇒ s"./$f",
       impl.retrieveJobID,
