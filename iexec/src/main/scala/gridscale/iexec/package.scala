@@ -72,7 +72,7 @@ package object iexec {
     }
 
     def parseState(executionResult: ExecutionResult, command: String) = {
-      if (executionResult.stdOut == "") {
+      if (executionResult.stdOut.isEmpty) {
         JobState.Running
       } else {
         JobState.Done
