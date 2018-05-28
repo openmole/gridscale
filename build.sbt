@@ -6,8 +6,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.4"
-crossScalaVersions in ThisBuild := Seq("2.12.4")
+scalaVersion in ThisBuild := "2.12.6"
+crossScalaVersions in ThisBuild := Seq("2.12.6")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
@@ -101,7 +101,7 @@ lazy val defaultSettings =
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
 
     scalacOptions ++= Seq("-target:jvm-1.8"),
-    javacOptions ++= Seq("-target", "1.8")
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
 
   //publishMavenStyle := false,
   //publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
