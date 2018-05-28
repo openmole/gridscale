@@ -98,7 +98,10 @@ lazy val defaultSettings =
     dir.mkdirs()
     dir
   },
-  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+
+    scalacOptions ++= Seq("-target:jvm-1.8"),
+    javacOptions ++= Seq("-target", "1.8")
 
   //publishMavenStyle := false,
   //publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
