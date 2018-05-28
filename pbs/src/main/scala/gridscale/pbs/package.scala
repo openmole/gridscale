@@ -27,6 +27,11 @@ package object pbs {
 
   object impl {
 
+    def requirements(separator: String)(memory: Option[Information]): String =
+      memory map {
+        m ⇒ s"${separator}mem=${m.toMBString}mb"
+      } getOrElse ""
+
     def toScript(description: PBSJobDescription)(uniqId: String) = {
       import description._
 
@@ -43,11 +48,13 @@ package object pbs {
       val nbNodes = nodes.getOrElse(1)
       val coresPerNode = coreByNode.getOrElse(1)
 
-      val memoryString = memory map { m ⇒ s":mem=${m.toMBString}mb" } getOrElse ""
-
       flavour match {
-        case Torque ⇒ buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode$memoryString"
-        case PBSPro ⇒ buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode$memoryString"
+        case Torque ⇒
+          val memoryString = requirements(",")(memory)
+          buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode$memoryString"
+        case PBSPro ⇒
+          val memoryString = requirements(":")(memory)
+          buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode$memoryString"
       }
 
       buffer += "cd " + workDirectory
