@@ -1,7 +1,7 @@
 package gridscale
 
 import effectaside._
-import gridscale.cluster.{ BatchScheduler, HeadNode }
+import gridscale.cluster.{ BatchScheduler, HeadNode, Requirement }
 import gridscale.tools._
 import monocle.macros._
 import squants._
@@ -29,9 +29,9 @@ package object slurm {
 
   object impl {
 
-    import BatchScheduler.{ BatchJob, output, error }
+    import Requirement._
 
-    def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
+    import BatchScheduler.{ BatchJob, output, error }
 
     def toScript(description: SLURMJobDescription)(uniqId: String) = {
       import description._
@@ -47,9 +47,7 @@ package object slurm {
         "--cpus-per-task=" -> coresByNode.map(_.toString),
         "--time=" -> wallTime.map(_.toHHmmss),
         "--qos=" -> qos,
-        "-D " -> Some(workDirectory)).filter { case (k, v) ⇒ v.isDefined }.
-        map(pair2String).
-        mkString("#SBATCH ", "\n#SBATCH ", "\n")
+        "-D " -> Some(workDirectory))
 
       // must handle empty list separately since it is not done in mkString
       val gresList = gres match {
@@ -62,7 +60,7 @@ package object slurm {
       }
 
       s"""$header
-         |$core
+         |${requirementsString(core, "#SBATCH")}
          |$gresList
          |$constraintsList
          |
