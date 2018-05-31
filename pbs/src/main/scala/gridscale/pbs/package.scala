@@ -1,7 +1,7 @@
 package gridscale
 
 import effectaside._
-import gridscale.cluster.{BatchScheduler, HeadNode}
+import gridscale.cluster.{BatchScheduler, HeadNode, Requirement}
 import gridscale.tools._
 import squants._
 import monocle.macros._
@@ -27,12 +27,12 @@ package object pbs {
 
   object impl {
 
+    import Requirement._
+
     def memoryRequirements(separator: String)(memory: Option[Information]): String =
       memory map {
         m ⇒ s"${separator}mem=${m.toMBString}mb"
       } getOrElse ""
-
-    def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
 
     def toScript(description: PBSJobDescription)(uniqId: String) = {
       import description._
@@ -47,9 +47,7 @@ package object pbs {
         "-e " -> Some(BatchScheduler.error(uniqId)),
         "-q " -> queue,
         "-lwalltime=" -> wallTime.map(_.toHHmmss),
-      ).filter { case (k, v) ⇒ v.isDefined }.
-        map(pair2String).
-        mkString("#PBS ", "\n#PBS ", "")
+      )
 
       val nodeSelection = flavour match {
         case Torque ⇒
@@ -61,7 +59,7 @@ package object pbs {
       }
 
       s"""$header
-         |$core
+         |${requirementsString(core, "#PBS")}
          |$nodeSelection
          |
          |cd $workDirectory
