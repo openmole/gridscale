@@ -12,7 +12,7 @@ package object iexec {
 
   case class IEXECJobDescription(
     workDirectory: String,
-    IexecFilesPath: String,
+    iexecFilesPath: String,
     dappAddress: String,
     arguments: String,
     dappCost: Int)
@@ -26,7 +26,7 @@ package object iexec {
 
       s"""
          |#!/bin/bash
-         |export PATH="${description.IexecFilesPath}:$${PATH}"
+         |export PATH="${description.iexecFilesPath}:$${PATH}"
          |cd ${description.workDirectory}
          |DEBUG='iexec:submit' iexec submit ${description.arguments} --dapp ${description.dappAddress}
        """.stripMargin
@@ -34,16 +34,16 @@ package object iexec {
 
     def loginIexecAccount[S](server: S, description: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]) = {
       if (!new java.io.File(s"""/${description.workDirectory}/account.json""").exists) {
-        hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.IexecFilesPath}:$${PATH}" && iexec account login""")
+        hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.iexecFilesPath}:$${PATH}" && iexec account login""")
       }
     }
 
     def populateIexecAccount[S](server: S, description: IEXECJobDescription, amount: Int)(implicit hn: HeadNode[S], system: Effect[System]) = {
-      val cmdRet = hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.IexecFilesPath}:$${PATH}" && iexec account allow ${amount}""")
+      val cmdRet = hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.iexecFilesPath}:$${PATH}" && iexec account allow ${amount}""")
     }
 
     def verifyIexecAccountBalance[S](server: S, description: IEXECJobDescription)(implicit hn: HeadNode[S], system: Effect[System]) = {
-      val ExecutionResult(ret, out, error) = hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.IexecFilesPath}:$${PATH}" && iexec account show""")
+      val ExecutionResult(ret, out, error) = hn.execute(server, s"""cd ${description.workDirectory} && export PATH="${description.iexecFilesPath}:$${PATH}" && iexec account show""")
 
       var ropstenNetworkIndex = 2
 
@@ -94,7 +94,7 @@ package object iexec {
 
   def state[S](server: S, job: BatchJob, jobDescription: IEXECJobDescription)(implicit hn: HeadNode[S]): JobState = // need to set path to include iexec files again, needs fix
     BatchScheduler.state[S](
-      s"""export PATH="${jobDescription.IexecFilesPath}:$${PATH}" && cd ${jobDescription.workDirectory} && iexec result ${job.jobId} --dapp ${jobDescription.dappAddress} --save""",
+      s"""export PATH="${jobDescription.iexecFilesPath}:$${PATH}" && cd ${jobDescription.workDirectory} && iexec result ${job.jobId} --dapp ${jobDescription.dappAddress} --save""",
       impl.parseState)(server, job)
 
   def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit = {
