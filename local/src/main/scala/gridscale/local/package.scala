@@ -1,7 +1,7 @@
 package gridscale
 
 import java.io._
-import java.nio.file.{ FileAlreadyExistsException, FileSystemException, Path ⇒ JPath, StandardCopyOption }
+import java.nio.file.{ FileAlreadyExistsException, FileSystemException, Path ⇒ JPath, StandardCopyOption, Files ⇒ JFiles }
 import java.util.logging.Logger
 import gridscale.tools.shell.BashShell
 
@@ -112,7 +112,7 @@ package object local {
     }
 
     def mv(from: String, to: String) = try {
-      new File(from).renameTo(new File(to)): Unit
+      Files.move(JPaths.get(from), JPaths.get(to), StandardCopyOption.REPLACE_EXISTING)
     } catch {
       case e: Throwable ⇒ throw LocalIOError(s"Could not move $from to $to on local host", e)
     }

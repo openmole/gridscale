@@ -1,7 +1,7 @@
 package gridscale
 
 import gridscale.cluster.BatchScheduler.BatchJob
-import gridscale.cluster.{ BatchScheduler, HeadNode }
+import gridscale.cluster.{ BatchScheduler, HeadNode, Requirement }
 import effectaside._
 import squants._
 import gridscale.tools._
@@ -23,10 +23,8 @@ package object condor {
 
   object impl {
 
+    import Requirement._
     import BatchScheduler.{ BatchJob, output, error }
-
-    // TODO refactor duplicate
-    def pair2String(p: (String, Option[String])): String = p._1 + p._2.getOrElse("")
 
     def toScript(description: CondorJobDescription)(uniqId: String) = {
 
@@ -41,9 +39,7 @@ package object condor {
 
         "initialdir = " -> Some(workDirectory),
         "executable = " -> Some(executable),
-        "arguments = " -> Some(s""""$arguments"""")).filter { case (k, v) ⇒ v.isDefined }.
-        map(pair2String).
-        mkString("\n")
+        "arguments = " -> Some(s""""$arguments""""))
 
       // TODO: are these features available in Condor?
       //    queue match {
@@ -75,7 +71,7 @@ package object condor {
       // 'queue 1' actually submits N jobs (default to 1 in our case)
       s"""$header
            |$universe
-           |$core
+           |${requirementsString(core)}
            |
            |${if (reqList.nonEmpty) "requirements = " + CondorRequirement(reqList.mkString).toCondor else ""}
            |

@@ -1,5 +1,8 @@
 package gridscale.ssh
 
+import squants.time.TimeConversions._
+import scala.language.postfixOps
+
 object TestSSH extends App {
 
   import gridscale._

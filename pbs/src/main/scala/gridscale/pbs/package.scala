@@ -1,7 +1,7 @@
 package gridscale
 
 import effectaside._
-import gridscale.cluster.{ BatchScheduler, HeadNode }
+import gridscale.cluster.{BatchScheduler, HeadNode, Requirement}
 import gridscale.tools._
 import squants._
 import monocle.macros._
@@ -27,33 +27,44 @@ package object pbs {
 
   object impl {
 
+    import Requirement._
+
+    def memoryRequirements(separator: String)(memory: Option[Information]): String =
+      memory map {
+        m ⇒ s"${separator}mem=${m.toMBString}mb"
+      } getOrElse ""
+
     def toScript(description: PBSJobDescription)(uniqId: String) = {
       import description._
 
-      val buffer = new ScriptBuffer
-      buffer += "#!/bin/bash"
-
-      buffer += "#PBS -o " + BatchScheduler.output(uniqId)
-      buffer += "#PBS -e " + BatchScheduler.error(uniqId)
-
-      queue foreach { q ⇒ buffer += "#PBS -q " + q }
-
-      wallTime foreach { t ⇒ buffer += "#PBS -lwalltime=" + t.toHHmmss }
+      val header = "#!/bin/bash\n"
 
       val nbNodes = nodes.getOrElse(1)
       val coresPerNode = coreByNode.getOrElse(1)
 
-      val memoryString = memory map { m ⇒ s":mem=${m.toMBString}mb" } getOrElse ""
+      val core = Seq(
+        "-o " -> Some(BatchScheduler.output(uniqId)),
+        "-e " -> Some(BatchScheduler.error(uniqId)),
+        "-q " -> queue,
+        "-lwalltime=" -> wallTime.map(_.toHHmmss),
+      )
 
-      flavour match {
-        case Torque ⇒ buffer += s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode$memoryString"
-        case PBSPro ⇒ buffer += s"#PBS -l select=$nbNodes:ncpus=$coresPerNode$memoryString"
+      val nodeSelection = flavour match {
+        case Torque ⇒
+          val memoryString = memoryRequirements(",")(memory)
+          s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode$memoryString"
+        case PBSPro ⇒
+          val memoryString = memoryRequirements(":")(memory)
+          s"#PBS -l select=$nbNodes:ncpus=$coresPerNode$memoryString"
       }
 
-      buffer += "cd " + workDirectory
-
-      buffer += command
-      buffer.toString
+      s"""$header
+         |${requirementsString(core, "#PBS")}
+         |$nodeSelection
+         |
+         |cd $workDirectory
+         |$command
+         |""".stripMargin
     }
 
     def retrieveJobID(out: String) = out.split("\n").head
