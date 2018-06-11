@@ -22,7 +22,7 @@ object PBSExample extends App {
     val job = submit(localhost, jobDescription)
     val s = waitUntilEnded(() ⇒ state(localhost, job))
     val out = stdOut(localhost, job)
-    clean[SSHServer](localhost, job)
+    clean(localhost, job)
     (s, out)
   }
 
