@@ -194,3 +194,16 @@ lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh")) s
 lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar")) settings(exampleSettings: _*) dependsOn oar
 lazy val httpExample  = Project(id = "httpexample", base = file("examples/http")) settings(exampleSettings: _*) dependsOn http
 lazy val localExample  = Project(id = "localexample", base = file("examples/local")) settings(exampleSettings: _*) dependsOn (local, cluster)
+
+/* -------------- benchmark ------------------ */
+
+lazy val benchmarkSettings = defaultSettings ++ exportSettings
+//++ Seq(
+//  mainClass in SbtOneJar.oneJar := Some("fr.iscpif.gridscale.benchmark.Main")
+//)
+
+lazy val utilBenchmark = Project(id = "utilbenchmark", base = file("benchmark/util")) settings  (benchmarkSettings: _*) dependsOn cluster
+lazy val condorBenchmark = Project(id = "condorbenchmark", base = file("benchmark/condor")) settings (benchmarkSettings: _*) dependsOn (condor, utilBenchmark)
+lazy val pbsBenchmark = Project(id = "pbsbenchmark", base = file("benchmark/pbs")) settings (benchmarkSettings: _*) dependsOn (pbs, utilBenchmark)
+lazy val slurmBenchmark = Project(id = "slurmbenchmark", base = file("benchmark/slurm")) settings (benchmarkSettings: _*) dependsOn (slurm, utilBenchmark)
+//lazy val diracBenchmark   = Project(id = "diracbenchmark", base = file("benchmark/egi/dirac")) settings (benchmarkSettings: _*) dependsOn (egi, utilBenchmark)
