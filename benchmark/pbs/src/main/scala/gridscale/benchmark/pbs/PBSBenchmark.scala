@@ -39,10 +39,10 @@ object PBSBenchmark {
     // by default flavour = Torque, there's no need to specify it
     val jobDescription = PBSJobDescription("/bin/sleep 1000", "/work/jpassera/test_gridscale", wallTime = Some(10 minutes), memory = Some(2 gigabytes), flavour = PBSPro)
 
-    implicit val benchmark = new Benchmark[S, PBSJobDescription] {
-      override def submit(server: S, jobDescription: PBSJobDescription): BatchJob = pbs.submit[S](server, jobDescription)
-      override def state(server: S, job: BatchJob): gridscale.JobState = pbs.state[S](server, job)
-      override def clean(server: S, job: BatchJob): Unit = pbs.clean[S](server, job)
+    implicit val benchmark = new Benchmark[PBSJobDescription] {
+      override def submit(jobDescription: PBSJobDescription): BatchJob = pbs.submit[S](server, jobDescription)
+      override def state(job: BatchJob): gridscale.JobState = pbs.state[S](server, job)
+      override def clean(job: BatchJob): Unit = pbs.clean[S](server, job)
     }
 
     Benchmark.avgBenchmark(server)(jobDescription, nbJobs, runs)

@@ -23,15 +23,15 @@ import gridscale.benchmark.util.Time.{ TimedResult, withTimer }
 import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.cluster.HeadNode
 
-trait Benchmark[S, D] {
-  def submit(server: S, jobDescription: D): BatchJob
-  def state(server: S, job: BatchJob): gridscale.JobState
-  def clean(server: S, job: BatchJob): Unit
+trait Benchmark[D] {
+  def submit(jobDescription: D): BatchJob
+  def state(job: BatchJob): gridscale.JobState
+  def clean(job: BatchJob): Unit
 }
 
 object Benchmark {
 
-  def benchmark[S, D](server: S)(jobDescription: D, nbJobs: Int, missingValue: Double = -1.0)(implicit hn: HeadNode[S], bench: Benchmark[S, D]) = {
+  def benchmark[S, D](server: S)(jobDescription: D, nbJobs: Int, missingValue: Double = -1.0)(implicit hn: HeadNode[S], bench: Benchmark[D]) = {
 
     import bench._
 
@@ -75,7 +75,7 @@ object Benchmark {
 
   case class BenchmarkResults(avgSubmit: Double, avgState: Double, avgCancel: Double)
 
-  def avgBenchmark[S, D](server: S)(jobDescription: D, nbJobs: Int, runs: Int, missingValue: Double = -1.0)(implicit hn: HeadNode[S], bench: Benchmark[S, D]) = {
+  def avgBenchmark[S, D](server: S)(jobDescription: D, nbJobs: Int, runs: Int, missingValue: Double = -1.0)(implicit hn: HeadNode[S], bench: Benchmark[D]) = {
 
     val res = for (_ ← 1 to runs) yield benchmark(server)(jobDescription, nbJobs)
 

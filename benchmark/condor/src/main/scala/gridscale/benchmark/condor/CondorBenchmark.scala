@@ -38,10 +38,10 @@ object CondorBenchmark {
     // by default flavour = Torque, there's no need to specify it
     val jobDescription = CondorJobDescription(executable = "/bin/sleep", arguments = "1000", workDirectory = "/homes/jpassera/test_gridscale", memory = Some(2 gigabytes))
 
-    implicit val benchmark = new Benchmark[S, CondorJobDescription] {
-      override def submit(server: S, jobDescription: CondorJobDescription): BatchJob = condor.submit[S](server, jobDescription)
-      override def state(server: S, job: BatchJob): gridscale.JobState = condor.state[S](server, job)
-      override def clean(server: S, job: BatchJob): Unit = condor.clean[S](server, job)
+    implicit val benchmark = new Benchmark[CondorJobDescription] {
+      override def submit(jobDescription: CondorJobDescription): BatchJob = condor.submit[S](server, jobDescription)
+      override def state(job: BatchJob): gridscale.JobState = condor.state[S](server, job)
+      override def clean(job: BatchJob): Unit = condor.clean[S](server, job)
     }
 
     Benchmark.avgBenchmark(server)(jobDescription, nbJobs, runs)

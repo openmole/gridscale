@@ -39,10 +39,10 @@ object SlurmBenchmark {
     // by default flavour = Torque, there's no need to specify it
     val jobDescription = SLURMJobDescription("/bin/sleep 1000", "/homes/jpassera/test_gridscale", wallTime = Some(10 minutes), memory = Some(2 gigabytes))
 
-    implicit val benchmark = new Benchmark[S, SLURMJobDescription] {
-      override def submit(server: S, jobDescription: SLURMJobDescription): BatchJob = slurm.submit[S](server, jobDescription)
-      override def state(server: S, job: BatchJob): gridscale.JobState = slurm.state[S](server, job)
-      override def clean(server: S, job: BatchJob): Unit = slurm.clean[S](server, job)
+    implicit val benchmark = new Benchmark[SLURMJobDescription] {
+      override def submit(jobDescription: SLURMJobDescription): BatchJob = slurm.submit[S](server, jobDescription)
+      override def state(job: BatchJob): gridscale.JobState = slurm.state[S](server, job)
+      override def clean(job: BatchJob): Unit = slurm.clean[S](server, job)
     }
 
     Benchmark.avgBenchmark(server)(jobDescription, nbJobs, runs)
