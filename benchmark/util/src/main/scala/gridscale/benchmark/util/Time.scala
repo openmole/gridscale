@@ -21,16 +21,16 @@ object Time {
 
   import java.lang.{ System ⇒ JSystem }
 
-  def withTimer[T](f: ⇒ T): Option[(T, Double)] = try {
+  def nano2Millis(nanoSeconds: Long) = nanoSeconds / 1000000d
+
+  case class TimedResult[T](optResult: Option[T], runtimeMillis: Double)
+
+  def withTimer[T](f: ⇒ T) = {
     val before = JSystem.nanoTime()
-    val res = f
+    val res = scala.util.Try(f).toOption
     val after = JSystem.nanoTime()
     val elapsed = after - before
-    Some((res, elapsed / 1000000d))
-  } catch {
-    case t: Throwable ⇒
-      t.printStackTrace()
-      None
+    TimedResult(res, nano2Millis(elapsed))
   }
 
 }

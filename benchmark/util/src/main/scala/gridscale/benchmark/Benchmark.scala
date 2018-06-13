@@ -17,7 +17,9 @@
 
 package gridscale.benchmark
 
-import gridscale.benchmark.util.Time.withTimer
+import java.io.File
+
+import gridscale.benchmark.util.Time.{ TimedResult, withTimer }
 import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.cluster.HeadNode
 
@@ -35,24 +37,34 @@ object Benchmark {
 
     println("Submitting jobs...")
     val (jobs, submitTime) = withTimer {
-      for (_ ← 1 to nbJobs) yield submit(server, jobDescription)
-    }.getOrElse(Seq.empty, missingValue)
+      for (_ ← 1 to nbJobs) yield submit(jobDescription)
+    } match {
+      case TimedResult(Some(x), t) ⇒ (x, t)
+      case TimedResult(None, _)    ⇒ (Seq.empty, missingValue)
+    }
 
     println(s"Submitted $nbJobs jobs in $submitTime")
 
     println("Querying state for jobs...")
 
     val (states, queryTime) = withTimer {
-      for (job ← jobs) yield state(server, job)
-    }.getOrElse(Seq.empty, missingValue)
+      for (job ← jobs) yield state(job)
+    } match {
+      case TimedResult(Some(x), t) ⇒ (x, t)
+      case TimedResult(None, _)    ⇒ (Seq.empty, missingValue)
+    }
 
     println(s"Queried state for ${states.length} jobs in $queryTime")
 
     println("Cancelling jobs...")
 
     val (_, cancelTime) = withTimer {
-      for (job ← jobs) yield clean(server, job)
-    }.getOrElse(Seq.empty, missingValue)
+      for (job ← jobs) yield clean(job)
+    } match {
+      case TimedResult(Some(x), t) ⇒ (x, t)
+      // cancel can excpetion due to missing files => disregard and still account elapsed time
+      case TimedResult(None, t)    ⇒ (Seq.empty, t)
+    }
 
     println(s"Cancelled $nbJobs jobs in $cancelTime")
 
