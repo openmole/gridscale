@@ -202,9 +202,10 @@ package object dirac {
       uri.build
     }
 
-    def statusesQuery = states.map(s ⇒ s"status=${s.entryName}").mkString("&")
+    def statusesQuery =
+      if (states.isEmpty) "" else "&" + states.map(s ⇒ s"status=${s.entryName}").mkString("&")
 
-    val json = gridscale.http.readStream[JValue](server.server, s"$jobsLocation?${uri.getQuery}&$statusesQuery", is ⇒ parse(is))
+    val json = gridscale.http.readStream[JValue](server.server, s"$jobsLocation?${uri.getQuery}${statusesQuery}", is ⇒ parse(is))
     (json \ "jobs").children.map { j ⇒
       val status = (j \ "status").extract[String]
       (j \ "jid").extract[String] -> translateState(status)
