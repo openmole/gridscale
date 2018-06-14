@@ -69,6 +69,7 @@ package object dirac {
   case class Service(service: String, group: String)
   case class JobID(id: String, description: JobDescription)
   type GroupId = String
+  type UserId = String
 
   import enumeratum._
   sealed trait DIRACState extends EnumEntry
@@ -183,19 +184,23 @@ package object dirac {
       case DIRACState.Failed    ⇒ JobState.Failed
     }
 
-  def queryGroupState(
+  def queryState(
     server: DIRACServer,
     token: Token,
-    groupId: GroupId,
+    groupId: Option[GroupId] = None,
+    userId: Option[UserId] = None,
     states: Seq[DIRACState] = DIRACState.values.filter(s ⇒ s != DIRACState.Killed && s != DIRACState.Deleted))(implicit hTTP: Effect[HTTP]): Vector[(String, JobState)] = {
 
-    val uri =
-      new URIBuilder(server.server.url)
+    val uri = {
+      val uri = new URIBuilder(server.server.url)
         .setParameter("access_token", token.token)
-        .setParameter("jobGroup", groupId)
         .setParameter("startJob", 0.toString)
         .setParameter("maxJobs", Int.MaxValue.toString)
-        .build
+
+      groupId.foreach(groupId ⇒ uri.setParameter("jobGroup", groupId))
+      userId.foreach(userId ⇒ uri.setParameter("owner", userId))
+      uri.build
+    }
 
     def statusesQuery = states.map(s ⇒ s"status=${s.entryName}").mkString("&")
 
