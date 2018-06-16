@@ -27,6 +27,7 @@ trait Benchmark[D] {
   def submit(jobDescription: D): BatchJob
   def state(job: BatchJob): gridscale.JobState
   def clean(job: BatchJob): Unit
+  def upload(file: File, destination: String): Unit
 }
 
 object Benchmark {
@@ -62,7 +63,7 @@ object Benchmark {
       for (job ← jobs) yield clean(job)
     } match {
       case TimedResult(Some(x), t) ⇒ (x, t)
-      // cancel can excpetion due to missing files => disregard and still account elapsed time
+      // cancel can exception due to missing files => disregard and still account elapsed time
       case TimedResult(None, t)    ⇒ (Seq.empty, t)
     }
 
@@ -71,6 +72,20 @@ object Benchmark {
     println("Benchmark completed")
 
     List(submitTime, queryTime, cancelTime)
+  }
+
+  def benchmarkData[S, D](server: S)(testFile: File, remoteDestination: String, downloadPath: String, missingValue: Double = -1.0)(implicit hn: HeadNode[S], bench: Benchmark[D]) = {
+    import bench._
+
+    println("Uploading file...")
+    val (_, uploadTime) = withTimer {
+      upload(testFile, remoteDestination)
+    } match {
+      case TimedResult(Some(x), t) ⇒ (x, t)
+      case TimedResult(None, _)    ⇒ (Seq.empty, missingValue)
+    }
+
+    println(s"Uploaded $testFile in $uploadTime")
   }
 
   case class BenchmarkResults(avgSubmit: Double, avgState: Double, avgCancel: Double)
