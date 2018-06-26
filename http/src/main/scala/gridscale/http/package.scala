@@ -79,6 +79,11 @@ package object http {
 
   case class HTTPProxy(hostname: String, port: Int)
 
+  def addProxy(httpClientBuilder: HttpClientBuilder, proxy: Option[HTTPProxy]) = proxy match {
+    case Some(p) ⇒ httpClientBuilder.setProxy(new HttpHost(p.hostname, p.port))
+    case None    ⇒ httpClientBuilder
+  }
+
   object HTTP {
 
     def apply() = Effect(new HTTP())
@@ -104,17 +109,12 @@ package object http {
         client
       }
 
-      def addProxy(httpClientBuilder: HttpClientBuilder) = proxy match {
-        case Some(p) ⇒ httpClientBuilder.setProxy(new HttpHost(p.hostname, p.port))
-        case None    ⇒ httpClientBuilder
-      }
-
       def newClient(timeout: Time) =
         addProxy(
           HttpClients.custom().
             //setRedirectStrategy(redirectStrategy).
             setConnectionManager(connectionManager(timeout)).
-            setDefaultRequestConfig(requestConfig(timeout))).build()
+            setDefaultRequestConfig(requestConfig(timeout)), proxy).build()
 
       newClient(timeout)
     }
@@ -390,13 +390,9 @@ package object http {
     }
 
     def newClient(factory: SSLSocketFactory, timeout: Time, proxy: Option[HTTPProxy]) = {
-      def addProxy(httpClientBuilder: HttpClientBuilder) = proxy match {
-        case Some(p) ⇒ httpClientBuilder.setProxy(new HttpHost(p.hostname, p.port))
-        case None    ⇒ httpClientBuilder
-      }
       addProxy(HttpClients.custom().
         setConnectionManager(connectionManager(factory(timeout), timeout)).
-        setDefaultRequestConfig(HTTP.requestConfig(timeout))).build()
+        setDefaultRequestConfig(HTTP.requestConfig(timeout)), proxy).build()
     }
     def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) = {
       val content = fileSystem().readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
