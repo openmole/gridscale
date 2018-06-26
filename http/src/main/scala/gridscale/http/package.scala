@@ -229,7 +229,7 @@ package object http {
     def apply(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) =
       new HTTPServer(new URI(url), timeout, bufferSize)
   }
-  
+
   case class HTTPServer(url: URI, timeout: Time, bufferSize: Information) extends Server
 
   object HTTPSServer {
