@@ -51,13 +51,13 @@ package object http {
     }
   }
 
-  def get[T](url: String) = {
-    implicit val interpreter = HTTP()
+  def get[T](url: String, proxy: Option[HTTPProxy] = None) = {
+    implicit val interpreter = HTTP(proxy)
     read(buildServer(url), "")
   }
 
-  def getStream[T](url: String)(f: InputStream ⇒ T) = {
-    implicit val interpreter = HTTP()
+  def getStream[T](url: String, proxy: Option[HTTPProxy] = None)(f: InputStream ⇒ T) = {
+    implicit val interpreter = HTTP(proxy)
     readStream[T](buildServer(url), "", f)
   }
 
@@ -86,9 +86,9 @@ package object http {
 
   object HTTP {
 
-    def apply() = Effect(new HTTP())
+    def apply(proxy: Option[HTTPProxy] = None) = Effect(new HTTP(proxy))
 
-    def client(server: Server, proxy: Option[HTTPProxy] = None) =
+    def client(server: Server, proxy: Option[HTTPProxy]) =
       server match {
         case s: HTTPServer  ⇒ httpClient(s.timeout, proxy)
         case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout, proxy)
@@ -134,7 +134,7 @@ package object http {
 
   }
 
-  class HTTP {
+  class HTTP(proxy: Option[HTTPProxy] = None) {
 
     def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean) = {
       def fullURI(path: String) =
@@ -176,7 +176,7 @@ package object http {
       def error(e: Throwable) = new HTTP.ConnectionError(s"Error while connecting to ${uri}, method ${method}", e)
 
       try {
-        val httpClient = HTTP.client(server)
+        val httpClient = HTTP.client(server, proxy)
         try {
           val response = httpClient.execute(methodInstance)
           try {

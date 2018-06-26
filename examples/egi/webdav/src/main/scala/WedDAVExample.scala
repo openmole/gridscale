@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream
 import gridscale.egi._
 import gridscale.webdav._
 import gridscale.authentication._
+import gridscale.http.HTTPProxy
 
 object WedDAVExample extends App {
 
@@ -12,7 +13,7 @@ object WedDAVExample extends App {
   val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/persistent/CACertificates/")
   val bdiiServer = BDIIServer("topbdii.grif.fr", 2170)
-
+  val proxy: Option[HTTPProxy] = None
   EGI { impl ⇒
     import impl._
 
@@ -29,5 +30,5 @@ object WedDAVExample extends App {
     val c = read(webdav, "youpi2.txt")
 
     println(c)
-  }
+  }(proxy)
 }
