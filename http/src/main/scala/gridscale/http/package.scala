@@ -9,9 +9,10 @@ import java.security.cert.{ Certificate, CertificateFactory }
 
 import effectaside._
 import org.apache.commons.codec.binary
-import org.apache.http.{ HttpEntity, client }
+import org.apache.http.{ HttpEntity, HttpHost, client }
 import org.apache.http.client.methods
 import org.apache.http.entity.InputStreamEntity
+import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
 
@@ -76,14 +77,16 @@ package object http {
   case class Head(headers: Headers = Seq.empty) extends HTTPMethod
   case class Move(to: String, headers: Headers = Seq.empty) extends HTTPMethod
 
+  case class HTTPProxy(hostname: String, port: Int)
+
   object HTTP {
 
     def apply() = Effect(new HTTP())
 
-    def client(server: Server) =
+    def client(server: Server, proxy: Option[HTTPProxy] = None) =
       server match {
-        case s: HTTPServer  ⇒ httpClient(s.timeout)
-        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout)
+        case s: HTTPServer  ⇒ httpClient(s.timeout, proxy)
+        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout, proxy)
       }
 
     def requestConfig(timeout: Time) =
@@ -93,7 +96,7 @@ package object http {
         .setConnectionRequestTimeout(timeout.toMillis.toInt)
         .build()
 
-    def httpClient(timeout: Time) = {
+    def httpClient(timeout: Time, proxy: Option[HTTPProxy]) = {
       def connectionManager(timeout: Time) = {
         val client = new BasicHttpClientConnectionManager()
         val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
@@ -101,11 +104,17 @@ package object http {
         client
       }
 
+      def addProxy(httpClientBuilder: HttpClientBuilder) = proxy match {
+        case Some(p) ⇒ httpClientBuilder.setProxy(new HttpHost(p.hostname, p.port))
+        case None    ⇒ httpClientBuilder
+      }
+
       def newClient(timeout: Time) =
-        HttpClients.custom().
-          //setRedirectStrategy(redirectStrategy).
-          setConnectionManager(connectionManager(timeout)).
-          setDefaultRequestConfig(requestConfig(timeout)).build()
+        addProxy(
+          HttpClients.custom().
+            //setRedirectStrategy(redirectStrategy).
+            setConnectionManager(connectionManager(timeout)).
+            setDefaultRequestConfig(requestConfig(timeout))).build()
 
       newClient(timeout)
     }
@@ -220,7 +229,7 @@ package object http {
     def apply(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) =
       new HTTPServer(new URI(url), timeout, bufferSize)
   }
-
+  
   case class HTTPServer(url: URI, timeout: Time, bufferSize: Information) extends Server
 
   object HTTPSServer {
@@ -380,11 +389,15 @@ package object http {
       client
     }
 
-    def newClient(factory: SSLSocketFactory, timeout: Time) =
-      HttpClients.custom().
+    def newClient(factory: SSLSocketFactory, timeout: Time, proxy: Option[HTTPProxy]) = {
+      def addProxy(httpClientBuilder: HttpClientBuilder) = proxy match {
+        case Some(p) ⇒ httpClientBuilder.setProxy(new HttpHost(p.hostname, p.port))
+        case None    ⇒ httpClientBuilder
+      }
+      addProxy(HttpClients.custom().
         setConnectionManager(connectionManager(factory(timeout), timeout)).
-        setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
-
+        setDefaultRequestConfig(HTTP.requestConfig(timeout))).build()
+    }
     def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) = {
       val content = fileSystem().readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
       val stripped = content.replaceAll(X509Factory.BEGIN_CERT, "").replaceAll(X509Factory.END_CERT, "")
