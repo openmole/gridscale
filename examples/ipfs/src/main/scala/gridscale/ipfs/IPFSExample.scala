@@ -16,5 +16,6 @@ object IPFSExample extends App {
   get(hash, testGet.toJava)
 
   println(scala.io.Source.fromFile(testGet.toJava).mkString)
+  pub("toto", "test")
 
 }
