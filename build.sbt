@@ -135,7 +135,10 @@ def dslSettings = defaultSettings ++ Seq(
   resolvers += Resolver.sonatypeRepo("snapshots"),
   // rename to avoid conflict with publishTo resolver
   resolvers +=
-    "Sonatype OSS Stagings" at "https://oss.sonatype.org/content/repositories/staging"
+    "Sonatype OSS Stagings" at "https://oss.sonatype.org/content/repositories/staging",
+
+  resolvers += "jitpack" at "https://jitpack.io"
+
 )
 
 lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) settings(dslSettings: _*) settings(
@@ -178,6 +181,10 @@ lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*)
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.57"
 )
+
+lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale) settings (
+  libraryDependencies += "com.github.ipfs" % "java-ipfs-api" % "v1.2.0")
+
 
 /* -------------- examples ------------------ */
 
