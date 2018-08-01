@@ -11,7 +11,7 @@ import information.InformationConversions._
 package object ipfs {
 
   object IPFS {
-    def apply(address: String, timeout: Time = 5 minutes) = new IPFS(address, timeout)
+    def apply(address: String, timeout: Time = 5 minutes) = Effect(new IPFS(address, timeout))
   }
 
   // FIXME IPFS lib has not timeout managment... reimplement it from apache http

@@ -116,6 +116,8 @@ lazy val httpComponents = Seq("httpclient", "httpmime").map(
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
+lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.6.0"
+
 /* -------------- gridscale dsl ------------------ */
 
 val effectasideVersion = "0.2"
@@ -201,3 +203,7 @@ lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh")) s
 lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar")) settings(exampleSettings: _*) dependsOn oar
 lazy val httpExample  = Project(id = "httpexample", base = file("examples/http")) settings(exampleSettings: _*) dependsOn http
 lazy val localExample  = Project(id = "localexample", base = file("examples/local")) settings(exampleSettings: _*) dependsOn (local, cluster)
+
+lazy val ipfsExample  = Project(id = "ipfsexample", base = file("examples/ipfs")) settings(exampleSettings: _*) dependsOn ipfs settings(
+  libraryDependencies += betterFile
+)
