@@ -37,6 +37,14 @@ package object ipfs {
       finally fileContents.close()
     }
 
+    def pin(address: String): Unit = {
+      ipfs.pin.add(Multihash.fromBase58(address))
+    }
+
+    def unpin(address: String, recursive: Boolean = false) = {
+      ipfs.pin.rm(Multihash.fromBase58(address), recursive)
+    }
+
     def sub(topic: String) = {
       import collection.JavaConverters._
 
@@ -59,6 +67,8 @@ package object ipfs {
 
   def add(file: File)(implicit ipfs: Effect[IPFS]) = ipfs().add(file)
   def get(address: String, file: File)(implicit ipfs: Effect[IPFS]) = ipfs().get(address, file)
+  def pin(address: String)(implicit ipfs: Effect[IPFS]) = ipfs().pin(address)
+  def unpin(address: String, recursive: Boolean)(implicit ipfs: Effect[IPFS]) = ipfs().unpin(address, recursive)
   def sub(topic: String)(implicit ipfs: Effect[IPFS]) = ipfs().sub(topic)
   def pub(topic: String, message: String)(implicit ipfs: Effect[IPFS]) = ipfs().pub(topic, message)
 
