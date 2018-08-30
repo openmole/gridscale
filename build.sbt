@@ -118,6 +118,14 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.6.0"
 
+val circeVersion = "0.9.3"
+
+lazy val circe = Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeVersion)
+
 /* -------------- gridscale dsl ------------------ */
 
 val effectasideVersion = "0.2"
@@ -184,8 +192,8 @@ lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*)
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.57"
 )
 
-lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale) settings (
-  libraryDependencies += "com.github.ipfs" % "java-ipfs-api" % "v1.2.0")
+lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
+  libraryDependencies ++= circe)
 
 
 /* -------------- examples ------------------ */

@@ -1,75 +1,112 @@
 package gridscale
 
-import io.ipfs.api._
-import io.ipfs.multihash._
-import effectaside._
 import java.io._
-import java.nio.ByteBuffer
-import java.util.Base64
+import java.net.URLEncoder
 
+import effectaside._
+import gridscale.http._
+import io.circe.generic.auto._
+import io.circe.parser._
+import org.apache.http.entity.ContentType
+import org.apache.http.entity.mime.MultipartEntityBuilder
+import org.apache.http.entity.mime.content.FileBody
 import squants._
-import time.TimeConversions._
-import information.InformationConversions._
+import squants.time.TimeConversions._
 
 package object ipfs {
 
   case class SubMessage(data: String, seqno: Long, from: Array[Byte])
 
   object IPFS {
-    def apply(address: String, timeout: Time = 5 minutes) = Effect(new IPFS(address, timeout))
+    def apply() = HTTP()
   }
 
-  // FIXME IPFS lib has not timeout managment... reimplement it from apache http
-  class IPFS(val address: String, timeout: Time) {
-    val bufferSize = 1 megabytes
-    private val ipfs = new io.ipfs.api.IPFS(address)
-
-    def add(file: File) = {
-      val content = new NamedStreamable.FileWrapper(file)
-      val addResult = gridscale.tools.timeout(ipfs.add(content).get(0))(timeout)
-      addResult.hash.toString
-    }
-
-    def get(address: String, file: File) = {
-      val filePointer = Multihash.fromBase58(address)
-      val fileContents = ipfs.catStream(filePointer)
-      try gridscale.tools.copy(fileContents, file, bufferSize.toBytes.toInt, timeout)
-      finally fileContents.close()
-    }
-
-    def pin(address: String): Unit = {
-      ipfs.pin.add(Multihash.fromBase58(address))
-    }
-
-    def unpin(address: String, recursive: Boolean = false) = {
-      ipfs.pin.rm(Multihash.fromBase58(address), recursive)
-    }
-
-    def sub(topic: String) = {
-      import collection.JavaConverters._
-
-      val received = gridscale.tools.timeout {
-        val testsub = ipfs.pubsub.sub(topic)
-        val received = testsub.get().asInstanceOf[java.util.HashMap[String, String]].asScala
-        received
-      }(timeout)
-
-      val data = new String(Base64.getDecoder.decode(received("data")))
-      val seqno = ByteBuffer.wrap(Base64.getDecoder.decode(received("seqno"))).asLongBuffer().get()
-      val from = Base64.getDecoder.decode(received("from"))
-      SubMessage(data = data, seqno = seqno, from = from)
-    }
-
-    def pub(topic: String, message: String) =
-      gridscale.tools.timeout { ipfs.pubsub.pub(topic, message) }(timeout)
-
+  object IPFSAPI {
+    def toHTTPServer(ipfsAPI: IPFSAPI) = http.Server(ipfsAPI.url, ipfsAPI.timeout)
+    def toPath(ipfsAPI: IPFSAPI, function: String) = s"${ipfsAPI.version}/$function"
   }
 
-  def add(file: File)(implicit ipfs: Effect[IPFS]) = ipfs().add(file)
-  def get(address: String, file: File)(implicit ipfs: Effect[IPFS]) = ipfs().get(address, file)
-  def pin(address: String)(implicit ipfs: Effect[IPFS]) = ipfs().pin(address)
-  def unpin(address: String, recursive: Boolean)(implicit ipfs: Effect[IPFS]) = ipfs().unpin(address, recursive)
-  def sub(topic: String)(implicit ipfs: Effect[IPFS]) = ipfs().sub(topic)
-  def pub(topic: String, message: String)(implicit ipfs: Effect[IPFS]) = ipfs().pub(topic, message)
+  case class IPFSAPI(url: String, version: String = "/api/v0", timeout: Time = 1 minutes)
+
+  object LS {
+    case class Link(Name: String, Hash: String, Size: Int, Type: Int)
+    case class Entries(Hash: String, Links: Vector[Link])
+    case class Results(Objects: Vector[Entries]) //objs: Vector[Obj])
+  }
+
+  object Add {
+    case class Result(Name: String, Hash: String, Size: Int)
+  }
+
+  def get(ipfsAPI: IPFSAPI, hash: String, f: File)(implicit effect: Effect[HTTP]) = {
+    val os = new BufferedOutputStream(new FileOutputStream(f))
+    try catStream(ipfsAPI, hash, is ⇒ tools.copyStream(is, os))
+    finally os.close()
+  }
+
+  def cat(ipfsAPI: IPFSAPI, hash: String)(implicit effect: Effect[HTTP]) = {
+    http.read(IPFSAPI.toHTTPServer(ipfsAPI), s"${IPFSAPI.toPath(ipfsAPI, "cat")}?arg=$hash")
+  }
+
+  def catStream[T](ipfsAPI: IPFSAPI, hash: String, f: InputStream ⇒ T)(implicit effect: Effect[HTTP]) = {
+    http.readStream(IPFSAPI.toHTTPServer(ipfsAPI), s"${IPFSAPI.toPath(ipfsAPI, "cat")}?arg=$hash", f)
+  }
+
+  def ls(ipfsAPI: IPFSAPI, hash: String)(implicit effect: Effect[HTTP]) = {
+    def body = http.read(IPFSAPI.toHTTPServer(ipfsAPI), s"${IPFSAPI.toPath(ipfsAPI, "ls")}?arg=$hash")
+    val entries = decode[LS.Results](body).right.get
+
+    def linkToEntry(l: LS.Link) = {
+      l.Type match {
+        case 2 ⇒ ListEntry(l.Name, FileType.File)
+        case 1 ⇒ ListEntry(l.Name, FileType.Directory)
+        case _ ⇒ ListEntry(l.Name, FileType.Unknown)
+      }
+    }
+
+    entries.Objects.flatMap { _.Links.map { linkToEntry } }
+  }
+
+  def add(ipfsAPI: IPFSAPI, f: File)(implicit effect: Effect[HTTP]) = {
+    import java.nio.file._
+
+    def entity() = {
+      val entity = MultipartEntityBuilder.create()
+      def encode(e: String) = URLEncoder.encode(e, "UTF-8")
+
+      val rootPath = f.toPath
+      val allFiles = Files.walk(rootPath)
+      try allFiles.forEach { f ⇒
+        val name = rootPath.getParent.relativize(f)
+        if (!f.toFile.isDirectory) {
+          val b = new FileBody(f.toFile, ContentType.APPLICATION_OCTET_STREAM, encode(name.toString))
+          entity.addPart(name.toString, b)
+        } else entity.addBinaryBody(name.toString, Array.emptyByteArray, ContentType.create("application/x-directory"), f.getFileName.toString)
+      } finally allFiles.close()
+      entity.build()
+    }
+
+    val r = gridscale.http.read(IPFSAPI.toHTTPServer(ipfsAPI), IPFSAPI.toPath(ipfsAPI, "add") + "?r=true", Post(entity))
+    decode[Add.Result](r.split("\n").last).right.get.Hash
+  }
+
+  def add(ipfsAPI: IPFSAPI, is: InputStream)(implicit effect: Effect[HTTP]) = try {
+    def entity() = {
+      val entity = MultipartEntityBuilder.create()
+      entity.addBinaryBody("file", is)
+      entity.build()
+    }
+
+    val r = gridscale.http.read(IPFSAPI.toHTTPServer(ipfsAPI), IPFSAPI.toPath(ipfsAPI, "add"), Post(entity))
+    decode[Add.Result](r).right.get.Hash
+  } finally is.close()
+
+  def pin(ipfsAPI: IPFSAPI, hash: String)(implicit effect: Effect[HTTP]) = {
+    gridscale.http.read(IPFSAPI.toHTTPServer(ipfsAPI), IPFSAPI.toPath(ipfsAPI, "pin/add") + s"?arg=$hash")
+  }
+
+  def unpin(ipfsAPI: IPFSAPI, hash: String)(implicit effect: Effect[HTTP]) = {
+    gridscale.http.read(IPFSAPI.toHTTPServer(ipfsAPI), IPFSAPI.toPath(ipfsAPI, "pin/rm") + s"?arg=$hash")
+  }
 
 }

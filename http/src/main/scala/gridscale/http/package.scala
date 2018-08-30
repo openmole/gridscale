@@ -135,7 +135,9 @@ package object http {
 
       val (methodInstance, headers, closeable) =
         method match {
-          case Get(headers)      ⇒ (new HttpGet(uri), headers, None)
+          case Get(headers) ⇒
+            val getInstance = new HttpGet(uri)
+            (getInstance, headers, None)
           case PropFind(headers) ⇒ (new HttpPropFind(uri), headers, None)
           case Delete(headers)   ⇒ (new HttpDelete(uri), headers, None)
           case MkCol(headers)    ⇒ (new HttpMkCol(uri), headers, None)
@@ -190,6 +192,7 @@ package object http {
     def content(server: Server, path: String, method: HTTPMethod = Get()): String = HTTP.wrapError {
       def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
       def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
+
       withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true)
     }
 
