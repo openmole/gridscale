@@ -126,6 +126,9 @@ lazy val circe = Seq(
   "io.circe" %% "circe-parser"
 ).map(_ % circeVersion)
 
+
+lazy val compress = "org.apache.commons" % "commons-compress" % "1.15"
+
 /* -------------- gridscale dsl ------------------ */
 
 val effectasideVersion = "0.2"
@@ -153,7 +156,6 @@ def dslSettings = defaultSettings ++ Seq(
 
 lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) settings(dslSettings: _*) settings(
   libraryDependencies += scalaTest
-  //libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.8"
 )
 
 lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
@@ -184,7 +186,7 @@ lazy val webdav = Project(id = "webdav", base = file("webdav")) settings(dslSett
 
 lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
-  libraryDependencies += "org.apache.commons" % "commons-compress" % "1.15"
+  libraryDependencies += compress
 )
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
@@ -193,7 +195,8 @@ lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*)
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
-  libraryDependencies ++= circe)
+  libraryDependencies ++= circe,
+  libraryDependencies += compress)
 
 
 /* -------------- examples ------------------ */

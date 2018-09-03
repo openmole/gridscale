@@ -4,7 +4,9 @@ import better.files._
 
 object IPFSExample extends App {
 
-  implicit val ipfs = IPFS()
+  val ipfs = IPFS()
+  import ipfs._
+
   val api = IPFSAPI(s"http://localhost:5001")
 
   val testFile = File.newTemporaryFile()

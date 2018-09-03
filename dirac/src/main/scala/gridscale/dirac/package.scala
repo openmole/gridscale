@@ -227,21 +227,21 @@ package object dirac {
         .setParameter("access_token", token.token)
         .build
 
-    def extract(str: java.io.InputStream) = {
-      outputDirectory.path.mkdirs()
+    def extract(str: java.io.InputStream, outputDirectory: java.io.File) = {
+      outputDirectory.mkdirs()
 
       val is = new TarArchiveInputStream(new BZip2CompressorInputStream(str))
 
       try Iterator.continually(is.getNextEntry).takeWhile(_ != null).foreach {
         e ⇒
-          fileSystem().writeStream(new java.io.File(outputDirectory.path, e.getName)) { os ⇒
+          fileSystem().writeStream(new java.io.File(outputDirectory, e.getName)) { os ⇒
             IOUtils.copy(is, os)
           }
       }
       finally is.close
     }
 
-    gridscale.http.readStream(server.server, s"$jobsLocation/${jobId.id}/outputsandbox?${uri.getQuery}", is ⇒ extract(is))
+    gridscale.http.readStream(server.server, s"$jobsLocation/${jobId.id}/outputsandbox?${uri.getQuery}", is ⇒ extract(is, outputDirectory.path))
   }
 
   def delegate(server: DIRACServer, p12: P12Authentication, token: Token)(implicit http: Effect[HTTP]): Unit = {

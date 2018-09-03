@@ -2,11 +2,14 @@ package gridscale
 
 import java.io._
 import java.net.URLEncoder
+import java.util.zip.GZIPInputStream
 
 import effectaside._
 import gridscale.http._
 import io.circe.generic.auto._
 import io.circe.parser._
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.utils.IOUtils
 import org.apache.http.entity.ContentType
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.entity.mime.content.FileBody
@@ -17,8 +20,13 @@ package object ipfs {
 
   case class SubMessage(data: String, seqno: Long, from: Array[Byte])
 
+  class Interpreters {
+    implicit val http: Effect[HTTP] = HTTP()
+    implicit val fileSystem: Effect[FileSystem] = FileSystem()
+  }
+
   object IPFS {
-    def apply() = HTTP()
+    def apply() = new Interpreters()
   }
 
   object IPFSAPI {
@@ -38,10 +46,13 @@ package object ipfs {
     case class Result(Name: String, Hash: String, Size: Int)
   }
 
-  def get(ipfsAPI: IPFSAPI, hash: String, f: File)(implicit effect: Effect[HTTP]) = {
-    val os = new BufferedOutputStream(new FileOutputStream(f))
-    try catStream(ipfsAPI, hash, is ⇒ tools.copyStream(is, os))
-    finally os.close()
+  def get(ipfsAPI: IPFSAPI, hash: String, f: File)(implicit effect: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+    def read(is: InputStream) = fileSystem().writeStream(f) { os ⇒ tools.copyStream(new GZIPInputStream(is), os) }
+    getStream(ipfsAPI, hash, read)
+  }
+
+  def getStream[T](ipfsAPI: IPFSAPI, hash: String, read: InputStream ⇒ T, archive: Boolean = false)(implicit effect: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+    http.readStream(IPFSAPI.toHTTPServer(ipfsAPI), s"${IPFSAPI.toPath(ipfsAPI, "get")}?arg=$hash&archive=$archive&compress=true", read)
   }
 
   def cat(ipfsAPI: IPFSAPI, hash: String)(implicit effect: Effect[HTTP]) = {
