@@ -91,7 +91,10 @@ package object gridscale {
   }
 
   object RemotePath {
-    def child(parent: String, child: String) = if (parent.endsWith("/")) parent + child else parent + '/' + child
+    def child(parent: String, child: String) =
+      if (parent.isEmpty) child
+      else if (parent.endsWith("/")) parent + child
+      else parent + '/' + child
 
     def parent(path: String): Option[String] = {
       val cleaned = path.reverse.dropWhile(c ⇒ c == '/' || c == '\\').reverse
