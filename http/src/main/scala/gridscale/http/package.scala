@@ -190,7 +190,7 @@ package object http {
     }
 
     def content(server: Server, path: String, method: HTTPMethod = Get()): String = HTTP.wrapError {
-      def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt))
+      def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt, server.timeout))
       def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
 
       withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true)

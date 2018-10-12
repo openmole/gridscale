@@ -69,19 +69,7 @@ package object tools {
     } finally outputStream.close
   }
 
-  def getBytes(from: InputStream, buffSize: Int): Array[Byte] = {
-    val os = new ByteArrayOutputStream
-    Iterator.continually {
-      val b = Array.ofDim[Byte](buffSize)
-      val r = from.read(b, 0, buffSize)
-      (b, r)
-    }.takeWhile { case (_, r) ⇒ r != -1 }.foreach {
-      case (b, r) ⇒ os.write(b, 0, r)
-    }
-    os.toByteArray
-  }
-
-  def getBytes(from: InputStream, buffSize: Int, timeout: Time): Array[Byte] = {
+  def getBytes(from: InputStream, buffSize: Int, timeout: Time) = {
     val os = new ByteArrayOutputStream
     Iterator.continually {
       val b = Array.ofDim[Byte](buffSize)
