@@ -2,7 +2,7 @@ package gridscale
 
 import gridscale.webdav.WebDAV._
 import java.io.{ ByteArrayInputStream, IOException, InputStream }
-import java.time.ZoneOffset
+import java.time.{ LocalDate, LocalDateTime, ZoneOffset }
 
 import effectaside._
 import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
@@ -10,6 +10,7 @@ import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.DefaultRedirectStrategy
 
+import scala.collection.mutable.ListBuffer
 import scala.language.{ higherKinds, postfixOps }
 
 package object webdav {
@@ -19,8 +20,7 @@ package object webdav {
   lazy val WebDAVSServer = http.HTTPSServer
 
   def listProperties(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]) = {
-    val content = http.read(server, path, http.PropFind())
-    parsePropsResponse(content)
+    http.readStream(server, path, parsePropsResponse, http.PropFind())
   }
 
   def list(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]) = {
@@ -100,8 +100,42 @@ package object webdav {
         isCollection = (n \\ "iscollection" text) == "1",
         modified = parseDate(n \\ "getlastmodified" text).get)
 
-    def parsePropsResponse(r: String) =
-      (XML.loadString(r) \\ "multistatus" \\ "response" \\ "propstat" \\ "prop").map(parseProp)
+    def parsePropsResponse(r: InputStream) = {
+      import scala.xml.pull._
+      import scala.io._
+      val er = new XMLEventReader(Source.fromInputStream(r))
+      var props = ListBuffer[Prop]()
+
+      while (er.hasNext) {
+        er.next() match {
+          case EvElemStart(_, "prop", _, _) ⇒
+            def end(x: XMLEvent) = x match {
+              case EvElemEnd(_, "prop") ⇒ true
+              case _                    ⇒ false
+            }
+
+            var x = er.next()
+            var displayName: Option[String] = None
+            var isCollection: Option[Boolean] = None
+            var lastModified: Option[LocalDateTime] = None
+
+            while (!end(x)) {
+              x match {
+                case EvElemStart(_, "displayname", _, _)     ⇒ displayName = Some(er.next().asInstanceOf[EvText].text)
+                case EvElemStart(_, "iscollection", _, _)    ⇒ isCollection = Some(er.next().asInstanceOf[EvText].text == "1")
+                case EvElemStart(_, "getlastmodified", _, _) ⇒ lastModified = parseDate(er.next().asInstanceOf[EvText].text)
+                case _                                       ⇒
+              }
+              x = er.next()
+            }
+
+            props += Prop(displayName.get, isCollection.get, lastModified.get)
+          case _ ⇒
+        }
+      }
+
+      props.toVector
+    }
 
     def emptyStream() = new java.io.ByteArrayInputStream(Array())
     def getRedirectURI(put: HttpRequest, redirect: HttpResponse) =
