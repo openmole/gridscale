@@ -94,12 +94,6 @@ package object webdav {
       isCollection: Boolean,
       modified: java.time.LocalDateTime)
 
-    def parseProp(n: Node) =
-      Prop(
-        displayName = n \\ "displayname" text,
-        isCollection = (n \\ "iscollection" text) == "1",
-        modified = parseDate(n \\ "getlastmodified" text).get)
-
     def parsePropsResponse(r: InputStream) = {
       import scala.xml.pull._
       import scala.io._
