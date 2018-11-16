@@ -110,7 +110,7 @@ lazy val defaultSettings =
 
 /* ---------------- Libraries --------------------*/
 
-lazy val httpComponentsVersion = "4.5.3"
+lazy val httpComponentsVersion = "4.5.6"
 lazy val httpComponents = Seq("httpclient", "httpmime").map(
   "org.apache.httpcomponents" % _ % httpComponentsVersion)
 
