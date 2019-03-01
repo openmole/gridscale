@@ -11,6 +11,7 @@ import effectaside._
 import org.apache.commons.codec.binary
 import org.apache.http.{ HttpEntity, client }
 import org.apache.http.client.methods
+import org.apache.http.conn.socket.PlainConnectionSocketFactory
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
@@ -376,7 +377,11 @@ package object http {
     //    }
 
     def connectionManager(factory: org.apache.http.conn.ssl.SSLConnectionSocketFactory, timeout: Time) = {
-      val registry = RegistryBuilder.create[ConnectionSocketFactory]().register("https", factory).build()
+      val registry =
+        RegistryBuilder.create[ConnectionSocketFactory]().
+          register("https", factory).
+          register("http", PlainConnectionSocketFactory.getSocketFactory).build()
+
       val client = new BasicHttpClientConnectionManager(registry)
       val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
       client.setSocketConfig(socketConfig)
