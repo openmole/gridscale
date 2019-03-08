@@ -161,7 +161,7 @@ lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) setting
 lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
 
 lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings: _*) dependsOn (gridscale) settings (
-  libraryDependencies += "com.hierynomus" % "sshj" % "0.26.0",
+  libraryDependencies += "com.hierynomus" % "sshj" % "0.27.0",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
