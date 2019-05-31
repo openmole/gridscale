@@ -48,6 +48,7 @@ package object http {
     scheme match {
       case "https" ⇒ HTTPSServer(url, HTTPS.SSLSocketFactory.default, timeout)
       case "http"  ⇒ HTTPServer(url, timeout)
+      case _       ⇒ throw new HTTP.ConnectionError(s"Uknwown protocol $scheme, in url $url. Only http and https are supported.", null)
     }
   }
 
