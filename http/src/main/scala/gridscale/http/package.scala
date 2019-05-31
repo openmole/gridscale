@@ -61,7 +61,13 @@ package object http {
     readStream[T](buildServer(url), "", f)
   }
 
+  def getResponse[T](url: String)(f: Response ⇒ T) = {
+    implicit val interpreter = HTTP()
+    readResponse[T](buildServer(url), "", f)
+  }
+
   type Headers = Seq[(String, String)]
+  case class Response(inputStream: InputStream, headers: Headers)
 
   object Headers {
     def expectContinue = (org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
@@ -257,8 +263,16 @@ package object http {
 
   def list(server: Server, path: String)(implicit http: Effect[HTTP]) = parseHTMLListing(http().content(server, path))
   def read(server: Server, path: String, method: HTTPMethod = Get())(implicit http: Effect[HTTP]) = http().content(server, path, method)
+
   def readStream[T](server: Server, path: String, f: InputStream ⇒ T, method: HTTPMethod = Get())(implicit http: Effect[HTTP]): T =
     http().request(server, path, (_, r) ⇒ f(r.getEntity.getContent), method)
+
+  def readResponse[T](server: Server, path: String, f: Response ⇒ T, method: HTTPMethod = Get())(implicit http: Effect[HTTP]): T = {
+    def toResponse(response: HttpResponse) =
+      Response(response.getEntity.getContent, response.getAllHeaders.toSeq.map(h ⇒ h.getName -> h.getValue))
+
+    http().request(server, path, (_, r) ⇒ f(toResponse(r)), method)
+  }
 
   object HTTPS {
 
