@@ -51,7 +51,7 @@ package object slurm {
         "--time=" -> wallTime.map(_.toHHmmss),
         "--qos=" -> qos,
         "-D " -> Some(workDirectory),
-        "--reservation" -> reservation)
+        "--reservation=" -> reservation)
 
       // must handle empty list separately since it is not done in mkString
       val gresList = gres match {
