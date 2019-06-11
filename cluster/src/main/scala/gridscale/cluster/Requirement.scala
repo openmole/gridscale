@@ -19,9 +19,7 @@ package gridscale.cluster
 
 import scala.language.implicitConversions
 
-case class Requirement(flag: String, value: Option[String]) {
-  override def toString: String = flag + value.getOrElse("")
-}
+case class Requirement(flag: String, value: Option[String])
 
 object Requirement {
 
@@ -29,7 +27,5 @@ object Requirement {
   implicit def pairs2Requirements(ps: Seq[(String, Option[String])]): Seq[Requirement] = ps.map(pair2Requirement)
 
   def requirementsString(requirements: Seq[Requirement], prefix: String = ""): String =
-    requirements.filter { case Requirement(k, v) ⇒ v.isDefined }.
-      map(_.toString).
-      mkString(s"$prefix ", s"\n$prefix ", "")
+    requirements.collect { case Requirement(k, Some(v)) ⇒ k + v }.mkString(s"$prefix ", s"\n$prefix ", "")
 }

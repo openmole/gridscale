@@ -26,7 +26,8 @@ package object slurm {
     coresByNode: Option[Int] = Some(1),
     qos: Option[String] = None,
     gres: List[Gres] = List(),
-    constraints: List[String] = List())
+    constraints: List[String] = List(),
+    reservation: Option[String] = None)
 
   object impl {
 
@@ -49,7 +50,8 @@ package object slurm {
         "--cpus-per-task=" -> coresByNode.map(_.toString),
         "--time=" -> wallTime.map(_.toHHmmss),
         "--qos=" -> qos,
-        "-D " -> Some(workDirectory))
+        "-D " -> Some(workDirectory),
+        "--reservation" -> reservation)
 
       // must handle empty list separately since it is not done in mkString
       val gresList = gres match {
@@ -68,6 +70,7 @@ package object slurm {
          |
          |$command
          |""".stripMargin
+
       // TODO: handle several srun and split gres accordingly
       //    buffer += "srun "
       //    // must handle empty list separately since it is not done in mkString
