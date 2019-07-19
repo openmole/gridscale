@@ -6,8 +6,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.7"
-crossScalaVersions in ThisBuild := Seq("2.12.7")
+scalaVersion in ThisBuild := "2.12.8"
+crossScalaVersions in ThisBuild := Seq("2.12.8")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
@@ -110,15 +110,15 @@ lazy val defaultSettings =
 
 /* ---------------- Libraries --------------------*/
 
-lazy val httpComponentsVersion = "4.5.6"
+lazy val httpComponentsVersion = "4.5.9"
 lazy val httpComponents = Seq("httpclient", "httpmime").map(
   "org.apache.httpcomponents" % _ % httpComponentsVersion)
 
-lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
-lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.6.0"
+lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.8.0"
 
-val circeVersion = "0.9.3"
+val circeVersion = "0.11.1"
 
 lazy val circe = Seq(
   "io.circe" %% "circe-core",
@@ -127,21 +127,21 @@ lazy val circe = Seq(
 ).map(_ % circeVersion)
 
 
-lazy val compress = "org.apache.commons" % "commons-compress" % "1.15"
+lazy val compress = "org.apache.commons" % "commons-compress" % "1.18"
 
 /* -------------- gridscale dsl ------------------ */
 
 val effectasideVersion = "0.2"
-val monocleVersion = "1.5.0"
+val monocleVersion = "1.6.0"
 
 def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.effectaside" %% "effect" % effectasideVersion,
 
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.3.0",
-  libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.12",
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.4.0",
+  libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.13",
 
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
   addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full),
   scalacOptions += "-Xplugin-require:macroparadise",
 
@@ -178,20 +178,20 @@ lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings: _*)
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "3.8.0",
+  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.0.1",
   libraryDependencies ++= httpComponents
 )
 
 lazy val webdav = Project(id = "webdav", base = file("webdav")) settings(dslSettings: _*) dependsOn(gridscale, http)
 
 lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
   libraryDependencies += compress
 )
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0",
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.60"
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.62"
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
