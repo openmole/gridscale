@@ -70,7 +70,7 @@ def javaByteCodeVersion(scalaVersion: String) = {
 }
 
 def settings = Seq (
-  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
   // macro paradise doesn't work with scaladoc
   sources in (Compile, doc) := Nil,
   resolvers += Resolver.sonatypeRepo("snapshots")
