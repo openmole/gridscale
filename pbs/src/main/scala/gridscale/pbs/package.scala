@@ -67,7 +67,8 @@ package object pbs {
          |""".stripMargin
     }
 
-    def retrieveJobID(out: String) = out.split("\n").head
+    def retrieveJobID(out: String) =
+      out.split("\n").reverse.map(_.trim).dropWhile(_.isEmpty).head
 
     def translateStatus(retCode: Int, status: String) =
       status match {
@@ -78,18 +79,18 @@ package object pbs {
       }
 
     def parseState(cmdRet: ExecutionResult, command: String): JobState = {
-
       val jobStateAttribute = "JOB_STATE"
 
       cmdRet.returnCode match {
-        case 153 ⇒ JobState.Done
-        case 0 ⇒
+        case 153 | 35 ⇒ JobState.Done
+        case 0 =>
           val lines = cmdRet.stdOut.split("\n").map(_.trim)
-          val state = lines.filter(_.matches(".*=.*")).map {
-            prop ⇒
-              val splited = prop.split('=')
-              splited(0).trim.toUpperCase -> splited(1).trim
-          }.toMap.get(jobStateAttribute)
+          val state =
+            lines.filter(_.matches(".*=.*")).map {
+              prop ⇒
+                val splited = prop.split('=')
+                splited(0).trim.toUpperCase -> splited(1).trim
+            }.toMap.get(jobStateAttribute)
 
           state match {
             case Some(s) ⇒ translateStatus(cmdRet.returnCode, s)
@@ -119,10 +120,11 @@ package object pbs {
       server,
       impl.pbsErrorWrapper)
 
-  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState =
+  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState = {
     BatchScheduler.state[S](
       s"qstat -f ${job.jobId}",
       parseState)(server, job)
+  }
 
   def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
     BatchScheduler.clean[S](
