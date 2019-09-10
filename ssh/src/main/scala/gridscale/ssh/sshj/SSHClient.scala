@@ -21,7 +21,9 @@ import gridscale.authentication._
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
+import net.schmizz.keepalive.KeepAliveProvider
 import net.schmizz.sshj.common.IOUtils
+import squants.time.Time
 
 object SSHClient {
 
@@ -55,14 +57,18 @@ object SSHClient {
   case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
 }
 
-class SSHClient {
+class SSHClient(val keepAlive: Option[Time] = None) {
 
   import net.schmizz.sshj.transport.verification.PromiscuousVerifier
   import net.schmizz.sshj.{ DefaultConfig, SSHClient ⇒ SSHJSSHClient }
 
   // instantiated only once and not for each sshj SSHClient
   // see https://groups.google.com/d/msg/sshj-users/p-cjao1MiHg/nFZ99-WEf6IJ
-  private lazy val sshDefaultConfig = new DefaultConfig()
+  private lazy val sshDefaultConfig = {
+    val config = new DefaultConfig()
+    if (keepAlive.isDefined) config.setKeepAliveProvider(KeepAliveProvider.KEEP_ALIVE)
+    config
+  }
   private lazy val peer: SSHJSSHClient = new SSHJSSHClient(sshDefaultConfig)
 
   def startSession(): SSHSession = {
@@ -74,7 +80,10 @@ class SSHClient {
   }
 
   def close() = peer.close()
-  def connect(host: String, port: Int) = peer.connect(host, port)
+  def connect(host: String, port: Int) = {
+    peer.connect(host, port)
+    keepAlive.foreach(k ⇒ peer.getConnection.getKeepAlive().setKeepAliveInterval(k.toSeconds.toInt))
+  }
   def disconnect() = peer.disconnect()
 
   def setConnectTimeout(timeout: Int) = peer.setConnectTimeout(timeout)
@@ -93,7 +102,7 @@ class SSHClient {
       val kp = peer.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)
       peer.authPublickey(privateKey.user, kp)
     } catch {
-      case e: Throwable ⇒ AuthenticationException("Error during ssh key authentication", e)
+      case e: Throwable ⇒ throw AuthenticationException("Error during ssh key authentication", e)
     }
 
   def isAuthenticated: Boolean = peer.isAuthenticated

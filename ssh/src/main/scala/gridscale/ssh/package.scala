@@ -42,7 +42,13 @@ package object ssh {
     def client(server: SSHServer): SSHClient = {
       def ssh =
         try {
-          val ssh = new SSHClient
+          import net.schmizz.keepalive.KeepAliveProvider
+          import net.schmizz.sshj.DefaultConfig
+
+          val defaultConfig = new DefaultConfig
+          defaultConfig.setKeepAliveProvider(KeepAliveProvider.KEEP_ALIVE)
+
+          val ssh = new SSHClient(keepAlive = server.keepAlive)
           // disable strict host key checking
           ssh.disableHostChecking()
           ssh.useCompression()
@@ -71,7 +77,7 @@ package object ssh {
   type ConnectionCache = KeyValueCache[SSHServer, SSHClient]
 
   object SSHCache {
-    def apply() = KeyValueCache(SSH.client)
+    def apply() = KeyValueCache(s ⇒ SSH.client(s))
   }
 
   class SSH(val clientCache: ConnectionCache) extends AutoCloseable {
@@ -142,13 +148,13 @@ package object ssh {
   //  }
 
   object SSHServer {
-    def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes)(authentication: A): SSHServer = {
+    def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes, keepAlive: Option[Time] = Some(10 seconds))(authentication: A): SSHServer = {
       val sSHAuthentication = implicitly[SSHAuthentication[A]]
-      new SSHServer(sSHAuthentication.login(authentication), host, port)(timeout, (sshClient: SSHClient) ⇒ sSHAuthentication.authenticate(authentication, sshClient))
+      new SSHServer(sSHAuthentication.login(authentication), host, port)(timeout, (sshClient: SSHClient) ⇒ sSHAuthentication.authenticate(authentication, sshClient), keepAlive)
     }
   }
 
-  case class SSHServer(login: String, host: String, port: Int)(val timeout: Time, val authenticate: SSHClient ⇒ Unit) {
+  case class SSHServer(login: String, host: String, port: Int)(val timeout: Time, val authenticate: SSHClient ⇒ Unit, val keepAlive: Option[Time]) {
     override def toString = s"ssh server $host:$port"
 
   }
