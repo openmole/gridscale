@@ -7,9 +7,9 @@ import gridscale.http._
 
 object TestDIRAC extends App {
 
-  val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
-  val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
-  val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/persistent/CACertificates/")
+  val password = scala.io.Source.fromFile("/home/julien/.globus/password").getLines().next().trim
+  val p12 = P12Authentication(new java.io.File("/home/julien/.globus/certificate.p12"), password)
+  val certificateDirectory = new java.io.File("/home/julien/.openmole/DEL1701P003-Ubuntu/persistent/CACertificates/")
 
   val description = JobDescription("/bin/uname", "-a", stdOut = Some("output"), outputSandbox = Seq("output"))
 

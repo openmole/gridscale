@@ -9,10 +9,11 @@ import java.security.cert.{ Certificate, CertificateFactory }
 
 import effectaside._
 import org.apache.commons.codec.binary
-import org.apache.http.{ HttpEntity, client }
+import org.apache.http.{ HttpEntity, HttpHost, client }
 import org.apache.http.client.methods
 import org.apache.http.conn.socket.PlainConnectionSocketFactory
 import org.apache.http.entity.InputStreamEntity
+import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
 
@@ -52,13 +53,13 @@ package object http {
     }
   }
 
-  def get[T](url: String) = {
-    implicit val interpreter = HTTP()
+  def get[T](url: String, proxy: Option[HTTPProxy] = None) = {
+    implicit val interpreter = HTTP(proxy)
     read(buildServer(url), "")
   }
 
-  def getStream[T](url: String)(f: InputStream ⇒ T) = {
-    implicit val interpreter = HTTP()
+  def getStream[T](url: String, proxy: Option[HTTPProxy] = None)(f: InputStream ⇒ T) = {
+    implicit val interpreter = HTTP(proxy)
     readStream[T](buildServer(url), "", f)
   }
 
@@ -84,14 +85,21 @@ package object http {
   case class Head(headers: Headers = Seq.empty) extends HTTPMethod
   case class Move(to: String, headers: Headers = Seq.empty) extends HTTPMethod
 
+  case class HTTPProxy(hostname: String, port: Int)
+
+  def addProxy(httpClientBuilder: HttpClientBuilder, proxy: Option[HTTPProxy]) = proxy match {
+    case Some(p) ⇒ httpClientBuilder.setProxy(new HttpHost(p.hostname, p.port))
+    case None    ⇒ httpClientBuilder
+  }
+
   object HTTP {
 
-    def apply() = Effect(new HTTP())
+    def apply(proxy: Option[HTTPProxy] = None) = Effect(new HTTP(proxy))
 
-    def client(server: Server) =
+    def client(server: Server, proxy: Option[HTTPProxy]) =
       server match {
-        case s: HTTPServer  ⇒ httpClient(s.timeout)
-        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout)
+        case s: HTTPServer  ⇒ httpClient(s.timeout, proxy)
+        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout, proxy)
       }
 
     def requestConfig(timeout: Time) =
@@ -101,7 +109,7 @@ package object http {
         .setConnectionRequestTimeout(timeout.toMillis.toInt)
         .build()
 
-    def httpClient(timeout: Time) = {
+    def httpClient(timeout: Time, proxy: Option[HTTPProxy]) = {
       def connectionManager(timeout: Time) = {
         val client = new BasicHttpClientConnectionManager()
         val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
@@ -110,10 +118,11 @@ package object http {
       }
 
       def newClient(timeout: Time) =
-        HttpClients.custom().
-          //setRedirectStrategy(redirectStrategy).
-          setConnectionManager(connectionManager(timeout)).
-          setDefaultRequestConfig(requestConfig(timeout)).build()
+        addProxy(
+          HttpClients.custom().
+            //setRedirectStrategy(redirectStrategy).
+            setConnectionManager(connectionManager(timeout)).
+            setDefaultRequestConfig(requestConfig(timeout)), proxy).build()
 
       newClient(timeout)
     }
@@ -133,7 +142,7 @@ package object http {
 
   }
 
-  class HTTP {
+  class HTTP(proxy: Option[HTTPProxy] = None) {
 
     def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean) = {
       def fullURI(path: String) =
@@ -177,7 +186,7 @@ package object http {
       def error(e: Throwable) = new HTTP.ConnectionError(s"Error while connecting to ${uri}, method ${method}", e)
 
       try {
-        val httpClient = HTTP.client(server)
+        val httpClient = HTTP.client(server, proxy)
         try {
           val response = httpClient.execute(methodInstance)
           try {
@@ -403,11 +412,11 @@ package object http {
       client
     }
 
-    def newClient(factory: SSLSocketFactory, timeout: Time) =
-      HttpClients.custom().
+    def newClient(factory: SSLSocketFactory, timeout: Time, proxy: Option[HTTPProxy]) = {
+      addProxy(HttpClients.custom().
         setConnectionManager(connectionManager(factory(timeout), timeout)).
-        setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
-
+        setDefaultRequestConfig(HTTP.requestConfig(timeout)), proxy).build()
+    }
     def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) = {
       val content = fileSystem().readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
       val stripped = content.replaceAll(X509Factory.BEGIN_CERT, "").replaceAll(X509Factory.END_CERT, "")

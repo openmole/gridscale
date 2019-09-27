@@ -260,14 +260,14 @@ package object dirac {
 
   object DIRAC {
 
-    class Interpreters {
+    class Interpreters(proxy: Option[HTTPProxy] = None) {
       implicit val fileSystemInterpreter = FileSystem()
       implicit val systemInterpreter = System()
-      implicit val httpInterpreter = HTTP()
+      implicit val httpInterpreter = HTTP(proxy)
     }
 
-    def apply[T](f: Interpreters ⇒ T) = {
-      val interpreters = new Interpreters()
+    def apply[T](f: Interpreters ⇒ T, proxy: Option[HTTPProxy] = None) = {
+      val interpreters = new Interpreters(proxy)
       f(interpreters)
     }
 
