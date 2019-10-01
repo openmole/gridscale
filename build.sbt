@@ -142,6 +142,7 @@ def dslSettings = defaultSettings ++ Seq(
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.13",
 
   //addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
+  addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full),
   //addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full),
   //scalacOptions += "-Xplugin-require:macroparadise",
 
