@@ -56,10 +56,10 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   tagRelease,
   releaseStepCommand("publishSigned"),
+  releaseStepCommand("sonatypeBundleRelease"),
   setNextVersion,
   commitNextVersion,
   //releaseStepCommand("sonatypeReleaseAll"),
-  releaseStepCommand("sonatypeBundleRelease"),
   pushChanges
 )
 
