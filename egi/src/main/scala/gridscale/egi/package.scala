@@ -51,7 +51,7 @@ package object egi {
           pathQuery ← q.query(s"(&(GlueChunkKey=GlueSEUniqueID=$host)(GlueVOInfoAccessControlBaseRule=VO:$vo))")
           path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
         } yield BDII.location(urlObject.getHost, urlObject.getPort, path)
-      }
+      }.distinct
     }
 
     def creamCEs(server: BDIIServer, vo: String) = {
