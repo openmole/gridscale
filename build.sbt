@@ -6,8 +6,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "fr.iscpif"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.8"
-crossScalaVersions in ThisBuild := Seq("2.12.8")
+scalaVersion in ThisBuild := "2.12.10"
+crossScalaVersions in ThisBuild := Seq("2.12.10")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
@@ -141,9 +141,9 @@ def dslSettings = defaultSettings ++ Seq(
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.4.0",
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.13",
 
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
-  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full),
-  scalacOptions += "-Xplugin-require:macroparadise",
+  //addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
+  //addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full),
+  //scalacOptions += "-Xplugin-require:macroparadise",
 
   resolvers += Resolver.sonatypeRepo("snapshots"),
   // rename to avoid conflict with publishTo resolver
