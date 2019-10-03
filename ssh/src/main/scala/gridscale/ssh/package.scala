@@ -95,7 +95,7 @@ package object ssh {
       SSHClient.launchInBackground(c, s)
     }
 
-    def sftp[T](server: SSHServer, f: SFTPClient ⇒ T): T = {
+    def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T = {
       val c = clientCache.get(server)
       try SSHClient.sftp(c, f)
       catch {
@@ -310,14 +310,14 @@ package object ssh {
   def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T)(implicit ssh: Effect[SSH]) = ssh().readFile(server, path, f)
   def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String)(implicit ssh: Effect[SSH]): Unit = ssh().writeFile(server, is, path)
 
-  def home(server: SSHServer)(implicit ssh: Effect[SSH]) = ssh().sftp(server, _.canonicalize(".").get)
-  def exists(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().sftp(server, _.exists(path).get)
+  def home(server: SSHServer)(implicit ssh: Effect[SSH]) = ssh().withSFTP(server, _.canonicalize(".").get)
+  def exists(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().withSFTP(server, _.exists(path).get)
   def chmod(server: SSHServer, path: String, perms: FilePermission.FilePermission*)(implicit ssh: Effect[SSH]) =
-    ssh().sftp(server, _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission.FilePermission])))
+    ssh().withSFTP(server, _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission.FilePermission])))
 
-  def list(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().sftp(server, _.ls(path)(e ⇒ e != "." || e != "..")).get
+  def list(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().withSFTP(server, _.ls(path)(e ⇒ e != "." || e != "..")).get
 
-  def makeDir(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().sftp(server, _.mkdir(path))
+  def makeDir(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().withSFTP(server, _.mkdir(path))
 
   def rmDir(server: SSHServer, path: String)(implicit ssh: Effect[SSH]): Unit = {
     def remove(entry: ListEntry): Unit = {
@@ -332,11 +332,11 @@ package object ssh {
     }
 
     list(server, path).foreach(remove)
-    ssh().sftp(server, _.rmdir(path))
+    ssh().withSFTP(server, _.rmdir(path))
   }
 
-  def rmFile(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().sftp(server, _.rm(path)).get
-  def mv(server: SSHServer, from: String, to: String)(implicit ssh: Effect[SSH]) = ssh().sftp(server, _.rename(from, to)).get
+  def rmFile(server: SSHServer, path: String)(implicit ssh: Effect[SSH]) = ssh().withSFTP(server, _.rm(path)).get
+  def mv(server: SSHServer, from: String, to: String)(implicit ssh: Effect[SSH]) = ssh().withSFTP(server, _.rename(from, to)).get
 
 }
 

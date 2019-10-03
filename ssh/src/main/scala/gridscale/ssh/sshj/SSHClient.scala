@@ -81,6 +81,7 @@ class SSHClient(val keepAlive: Option[Time] = None) {
 
   def close() = peer.close()
   def connect(host: String, port: Int) = {
+    peer.useCompression()
     peer.connect(host, port)
     keepAlive.foreach(k ⇒ peer.getConnection.getKeepAlive().setKeepAliveInterval(k.toSeconds.toInt))
   }
