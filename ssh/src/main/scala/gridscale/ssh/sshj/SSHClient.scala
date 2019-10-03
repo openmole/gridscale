@@ -22,15 +22,33 @@ import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 import net.schmizz.keepalive.KeepAliveProvider
+import net.schmizz.sshj.DefaultConfig
 import net.schmizz.sshj.common.IOUtils
 import squants.time.Time
 
 object SSHClient {
 
+  def connect(ssh: SSHClient) = {
+    ssh.disableHostChecking()
+    ssh.useCompression()
+    ssh.setConnectTimeout(ssh.timeout.millis.toInt)
+    ssh.setTimeout(ssh.timeout.millis.toInt)
+    ssh.connect(ssh.host, ssh.port)
+    ssh
+  }
+
   def withSession[T](c: SSHClient)(f: SSHSession ⇒ T): util.Try[T] = util.Try {
+    if (!c.isConnected) connect(c)
     val session = c.startSession()
     try f(session)
     finally session.close()
+  }
+
+  def withSFTP[T](c: SSHClient, f: SFTPClient ⇒ T) = {
+    if (!c.isConnected) connect(c)
+    val sftp = c.newSFTPClient
+    try f(sftp)
+    finally sftp.close
   }
 
   def launchInBackground(client: SSHClient, cde: String): Unit = withSession(client) { session ⇒
@@ -48,16 +66,10 @@ object SSHClient {
     } finally cmd.close()
   }
 
-  def sftp[T](client: SSHClient, f: SFTPClient ⇒ T) = {
-    val sftp = client.newSFTPClient
-    try f(sftp)
-    finally sftp.close
-  }
-
   case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
 }
 
-class SSHClient(val keepAlive: Option[Time] = None) {
+class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None) {
 
   import net.schmizz.sshj.transport.verification.PromiscuousVerifier
   import net.schmizz.sshj.{ DefaultConfig, SSHClient ⇒ SSHJSSHClient }
@@ -69,6 +81,7 @@ class SSHClient(val keepAlive: Option[Time] = None) {
     if (keepAlive.isDefined) config.setKeepAliveProvider(KeepAliveProvider.KEEP_ALIVE)
     config
   }
+
   private lazy val peer: SSHJSSHClient = new SSHJSSHClient(sshDefaultConfig)
 
   def startSession(): SSHSession = {
@@ -80,11 +93,12 @@ class SSHClient(val keepAlive: Option[Time] = None) {
   }
 
   def close() = peer.close()
+
   def connect(host: String, port: Int) = {
-    peer.useCompression()
     peer.connect(host, port)
     keepAlive.foreach(k ⇒ peer.getConnection.getKeepAlive().setKeepAliveInterval(k.toSeconds.toInt))
   }
+
   def disconnect() = peer.disconnect()
 
   def setConnectTimeout(timeout: Int) = peer.setConnectTimeout(timeout)

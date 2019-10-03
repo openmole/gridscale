@@ -42,20 +42,8 @@ package object ssh {
     def client(server: SSHServer): SSHClient = {
       def ssh =
         try {
-          import net.schmizz.keepalive.KeepAliveProvider
-          import net.schmizz.sshj.DefaultConfig
-
-          val defaultConfig = new DefaultConfig
-          defaultConfig.setKeepAliveProvider(KeepAliveProvider.KEEP_ALIVE)
-
-          val ssh = new SSHClient(keepAlive = server.keepAlive)
-          // disable strict host key checking
-          ssh.disableHostChecking()
-          ssh.useCompression()
-          ssh.setConnectTimeout(server.timeout.millis.toInt)
-          ssh.setTimeout(server.timeout.millis.toInt)
-          ssh.connect(server.host, server.port)
-          ssh
+          val ssh = new SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive)
+          SSHClient.connect(ssh)
         } catch {
           case t: Throwable ⇒ throw ConnectionError(s"Error connecting to $server", t)
         }
@@ -97,7 +85,7 @@ package object ssh {
 
     def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T = {
       val c = clientCache.get(server)
-      try SSHClient.sftp(c, f)
+      try SSHClient.withSFTP(c, f)
       catch {
         case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
       }
@@ -105,7 +93,7 @@ package object ssh {
 
     def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) = {
       val c = clientCache.get(server)
-      try SSHClient.sftp(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
+      try SSHClient.withSFTP(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
       catch {
         case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
       }
@@ -114,7 +102,7 @@ package object ssh {
     def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String) = {
       def write(client: SSHClient) = {
         val ois = is()
-        try SSHClient.sftp(client, _.writeFile(ois, path)).get
+        try SSHClient.withSFTP(client, _.writeFile(ois, path)).get
         finally ois.close()
       }
 
