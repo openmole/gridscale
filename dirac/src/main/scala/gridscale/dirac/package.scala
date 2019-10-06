@@ -91,14 +91,15 @@ package object dirac {
     case object Failed extends DIRACState
   }
 
-  def getService(vo: String, timeout: Time = 1 minutes)(implicit http: Effect[HTTP]) = {
-    val services = getServices(timeout)
+  def getService(vo: String, certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+    val services = getServices(certificatesDirectory, timeout)
     services.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory"))
   }
 
   def getServices(
+    certificatesDirectory: java.io.File,
     timeout: Time = 1 minutes,
-    directoryURL: String = "http://dirac.france-grilles.fr/defaults/DiracServices.json")(implicit http: Effect[HTTP]) = {
+    directoryURL: String = "https://dirac.france-grilles.fr/defaults/DiracServices.json")(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
 
     def getService(json: String) = {
       parse(json).children.map {
@@ -111,11 +112,14 @@ package object dirac {
       }.toMap
     }
 
-    val indexServer = HTTPServer(directoryURL)
+    val certificates = HTTPS.readPEMCertificates(certificatesDirectory)
+    val factory = HTTPS.socketFactory(certificates, "", verifyHostName = false)
+    val indexServer = HTTPSServer(directoryURL, factory)
     getService(read(indexServer, ""))
   }
 
-  def supportedVOs(timeout: Time = 1 minutes)(implicit http: Effect[HTTP]) = getServices(timeout).keys
+  def supportedVOs(certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) =
+    getServices(certificatesDirectory, timeout).keys
 
   def server(service: Service, p12: P12Authentication, certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) = {
     val userCertificate = HTTPS.readP12(p12.certificate, p12.password)

@@ -297,8 +297,8 @@ package object http {
 
     type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
 
-    def socketFactory(s: Vector[KeyStoreOperations.Storable], password: String) =
-      KeyStoreOperations.socketFactory(() ⇒ KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password))
+    def socketFactory(s: Vector[KeyStoreOperations.Storable], password: String, verifyHostName: Boolean = true) =
+      KeyStoreOperations.socketFactory(() ⇒ KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password), verifyHostName)
 
     object KeyStoreOperations {
 
@@ -366,14 +366,21 @@ package object http {
         sslContext
       }
 
-      def socketFactory(sslContext: () ⇒ SSLContext): SSLSocketFactory =
+      def socketFactory(sslContext: () ⇒ SSLContext, verifyHostName: Boolean): SSLSocketFactory = {
+        val hostnameVerifier =
+          if (verifyHostName) org.apache.http.conn.ssl.SSLConnectionSocketFactory.getDefaultHostnameVerifier
+          else new HostnameVerifier {
+            override def verify(s: String, sslSession: SSLSession): Boolean = true
+          }
+
         (timeout: Time) ⇒
-          new org.apache.http.conn.ssl.SSLConnectionSocketFactory(sslContext()) {
+          new org.apache.http.conn.ssl.SSLConnectionSocketFactory(sslContext(), hostnameVerifier) {
             override protected def prepareSocket(socket: SSLSocket) = {
               super.prepareSocket(socket)
               socket.setSoTimeout(timeout.millis.toInt)
             }
           }
+      }
 
     }
 
@@ -403,10 +410,14 @@ package object http {
       client
     }
 
-    def newClient(factory: SSLSocketFactory, timeout: Time) =
-      HttpClients.custom().
-        setConnectionManager(connectionManager(factory(timeout), timeout)).
-        setDefaultRequestConfig(HTTP.requestConfig(timeout)).build()
+    def newClient(factory: SSLSocketFactory, timeout: Time) = {
+      val client =
+        HttpClients.custom().
+          setConnectionManager(connectionManager(factory(timeout), timeout)).
+          setDefaultRequestConfig(HTTP.requestConfig(timeout))
+
+      client.build()
+    }
 
     def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) = {
       val content = fileSystem().readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)

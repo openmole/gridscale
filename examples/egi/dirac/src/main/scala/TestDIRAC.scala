@@ -14,7 +14,7 @@ object TestDIRAC extends App {
   val description = JobDescription("/bin/uname", "-a", stdOut = Some("output"), outputSandbox = Seq("output"))
 
   def prg(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem], system: Effect[System]) = {
-    val service = getService("vo.complex-systems.eu")
+    val service = getService("vo.complex-systems.eu", certificateDirectory)
     val s = server(service, p12, certificateDirectory)
     val t = token(s)
     val j = submit(s, description, t) //.repeat(10)
