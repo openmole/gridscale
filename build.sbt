@@ -135,13 +135,13 @@ lazy val compress = "org.apache.commons" % "commons-compress" % "1.18"
 /* -------------- gridscale dsl ------------------ */
 
 val effectasideVersion = "0.2"
-val monocleVersion = "1.6.0"
+val monocleVersion = "2.0.0"
 
 def dslSettings = defaultSettings ++ Seq(
   scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.effectaside" %% "effect" % effectasideVersion,
 
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.4.0",
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.5.0",
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.13",
 
   //addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
