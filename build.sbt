@@ -121,7 +121,7 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
 lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.8.0"
 
-val circeVersion = "0.11.1"
+val circeVersion = "0.12.2"
 
 lazy val circe = Seq(
   "io.circe" %% "circe-core",
