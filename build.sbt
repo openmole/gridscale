@@ -3,7 +3,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
-organization in ThisBuild := "fr.iscpif"
+organization in ThisBuild := "org.openmole"
 name := "gridscale"
 
 scalaVersion in ThisBuild := "2.12.10"
@@ -45,7 +45,7 @@ releaseTagComment    := s"Releasing ${(version in ThisBuild).value}"
 
 releaseCommitMessage := s"Bump version to ${(version in ThisBuild).value}"
 
-sonatypeProfileName := "fr.iscpif"
+sonatypeProfileName := "org.openmole"
 
 
 releaseProcess := Seq[ReleaseStep](
