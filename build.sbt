@@ -3,7 +3,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
-organization in ThisBuild := "org.openmole"
+organization in ThisBuild := "org.openmole.gridscale"
 name := "gridscale"
 
 scalaVersion in ThisBuild := "2.12.10"
