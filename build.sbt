@@ -75,7 +75,7 @@ def javaByteCodeVersion(scalaVersion: String) = {
 def settings = Seq (
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
   // macro paradise doesn't work with scaladoc
-  sources in (Compile, doc) := Nil,
+  //sources in (Compile, doc) := Nil,
   resolvers += Resolver.sonatypeRepo("snapshots")
 )
 
@@ -93,21 +93,10 @@ lazy val defaultSettings =
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(RewriteArrowSymbols, true),
 
-  organization := "fr.iscpif.gridscale",
-
-  publishDir := {
-    import java.io.File
-    val dir = new File("/export/ivy/")
-    dir.mkdirs()
-    dir
-  },
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
 
-    scalacOptions ++= Seq("-target:jvm-1.8"),
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-
-  //publishMavenStyle := false,
-  //publishTo := Some(Resolver.file("ipfs", publishDir.value)(Resolver.ivyStylePatterns)),
+  scalacOptions ++= Seq("-target:jvm-1.8"),
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
 )
 
 
@@ -138,21 +127,19 @@ val effectasideVersion = "0.2"
 val monocleVersion = "2.0.0"
 
 def dslSettings = defaultSettings ++ Seq(
-  scalacOptions += "-Ypartial-unification",
+  //scalacOptions += "-Ypartial-unification",
   libraryDependencies += "fr.iscpif.effectaside" %% "effect" % effectasideVersion,
 
   libraryDependencies += "org.typelevel"  %% "squants"  % "1.5.0",
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.13",
 
-  //addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
   addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full),
-  //addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full),
   //scalacOptions += "-Xplugin-require:macroparadise",
 
-  resolvers += Resolver.sonatypeRepo("snapshots"),
+  //resolvers += Resolver.sonatypeRepo("snapshots"),
   // rename to avoid conflict with publishTo resolver
-  resolvers +=
-    "Sonatype OSS Stagings" at "https://oss.sonatype.org/content/repositories/staging",
+  //resolvers +=
+  //  "Sonatype OSS Stagings" at "https://oss.sonatype.org/content/repositories/staging",
 
   resolvers += "jitpack" at "https://jitpack.io"
 
