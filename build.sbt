@@ -12,12 +12,12 @@ crossScalaVersions in ThisBuild := Seq("2.12.10")
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
-publishTo in ThisBuild := sonatypePublishToBundle.value
+//publishTo in ThisBuild := sonatypePublishToBundle.value
 
-/*publishTo in ThisBuild := {
+publishTo in ThisBuild := {
   val nexus = "https://oss.sonatype.org/"
   if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")}*/
+  else Some("releases" at nexus + "service/local/staging/deploy/maven2")}
 
 pomIncludeRepository in ThisBuild := { _ => false}
 scmInfo in ThisBuild := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
@@ -56,7 +56,8 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   tagRelease,
   releaseStepCommand("publishSigned"),
-  releaseStepCommand("sonatypeBundleRelease"),
+  releaseStepCommand("sonatypeReleaseAll"),
+  //releaseStepCommand("sonatypeBundleRelease"),
   setNextVersion,
   commitNextVersion,
   //releaseStepCommand("sonatypeReleaseAll"),
