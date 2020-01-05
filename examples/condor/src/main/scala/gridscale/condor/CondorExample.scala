@@ -2,7 +2,7 @@ package gridscale.condor
 
 import effectaside._
 import gridscale._
-import gridscale.ssh._
+import gridscale.ssh
 import gridscale.authentication._
 import gridscale.cluster.SSHCluster
 
@@ -16,7 +16,7 @@ object CondorExample extends App {
 
   val jobDescription = CondorJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/home/foobar/test_gridscale", Some(2000 megabytes))
 
-  def res(implicit system: Effect[System], ssh: Effect[SSH]) = {
+  def res(implicit system: Effect[System], sshEffect: Effect[ssh.SSH]) = {
     val job = submit(headNode, jobDescription)
     val s = waitUntilEnded(() ⇒ state(headNode, job))
     val out = stdOut(headNode, job)

@@ -6,14 +6,14 @@ import effectaside._
 
 object SSHCluster {
   class Interpreters {
-    implicit val system = System()
-    implicit val ssh = SSH(SSHCache())
+    implicit val systemEffect = System()
+    implicit val sshEffect = SSH(SSHCache())
   }
 
   def apply[T](f: Interpreters ⇒ T) = {
     val intp = new Interpreters
     try f(intp)
-    finally intp.ssh().close()
+    finally intp.sshEffect().close()
   }
 }
 

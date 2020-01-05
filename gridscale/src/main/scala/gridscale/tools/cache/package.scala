@@ -22,7 +22,7 @@ package object cache {
 
     def map[A](f: T ⇒ A) = synchronized(cached.map(f))
     def foreach[A](f: T ⇒ A) = synchronized(cached.foreach[A](f))
-    def dispose = synchronized(cached = None)
+    def dispose = synchronized { cached = None }
   }
 
   case class KeyValueCache[K, V](f: K ⇒ V) {

@@ -63,15 +63,6 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
-def javaByteCodeVersion(scalaVersion: String) = {
-  val majorVersion = scalaVersion.split('.').take(2).mkString(".")
-  majorVersion match {
-    case "2.10" | "2.11" => "1.7"
-    case "2.12" => "1.8"
-    case _ => sys.error("unknown scala version " + majorVersion)
-  }
-}
-
 def settings = Seq (
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
   // macro paradise doesn't work with scaladoc
@@ -85,7 +76,7 @@ def exportSettings = Seq(exportJars := true)
 lazy val publishDir = settingKey[File]("Publishing directory")
 lazy val publishIpfs = taskKey[Unit]("Publish to IPFS")
 
-lazy val defaultSettings =
+def defaultSettings =
   settings ++
     scalariformSettings(autoformat = true) ++ Seq(
   ScalariformKeys.preferences :=
@@ -95,22 +86,31 @@ lazy val defaultSettings =
 
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
 
-  scalacOptions ++= Seq("-target:jvm-1.8"),
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-)
+) ++ paradise
+
+def paradise = 
+    Seq(
+      addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full),
+      scalacOptions ++= Seq("-target:jvm-1.8")
+    ) 
+    /* 2.13
+    Seq(
+      scalacOptions ++= Seq("-target:jvm-1.8", "-language:postfixOps", "-Ymacro-annotations")
+    ) */
 
 
 /* ---------------- Libraries --------------------*/
 
-lazy val httpComponentsVersion = "4.5.9"
+lazy val httpComponentsVersion = "4.5.10"
 lazy val httpComponents = Seq("httpclient", "httpmime").map(
   "org.apache.httpcomponents" % _ % httpComponentsVersion)
 
-lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.8" % "test"
+lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.1.0" % "test"
 
 lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.8.0"
 
-val circeVersion = "0.12.2"
+val circeVersion = "0.12.3"
 
 lazy val circe = Seq(
   "io.circe" %% "circe-core",
@@ -119,21 +119,18 @@ lazy val circe = Seq(
 ).map(_ % circeVersion)
 
 
-lazy val compress = "org.apache.commons" % "commons-compress" % "1.18"
+lazy val compress = "org.apache.commons" % "commons-compress" % "1.19"
 
 /* -------------- gridscale dsl ------------------ */
 
-val effectasideVersion = "0.2"
 val monocleVersion = "2.0.0"
 
 def dslSettings = defaultSettings ++ Seq(
   //scalacOptions += "-Ypartial-unification",
-  libraryDependencies += "fr.iscpif.effectaside" %% "effect" % effectasideVersion,
 
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.5.0",
-  libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.13",
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.6.0",
+  libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.15",
 
-  addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full),
   //scalacOptions += "-Xplugin-require:macroparadise",
 
   //resolvers += Resolver.sonatypeRepo("snapshots"),
@@ -145,9 +142,11 @@ def dslSettings = defaultSettings ++ Seq(
 
 )
 
+lazy val effect = Project(id = "effect", base = file("effect")) settings(dslSettings: _*)
+
 lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) settings(dslSettings: _*) settings(
   libraryDependencies += scalaTest
-)
+) dependsOn(effect)
 
 lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
 
@@ -169,7 +168,7 @@ lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings: _*)
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.0.1",
+  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.3.0",
   libraryDependencies ++= httpComponents
 )
 
@@ -182,7 +181,7 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.62"
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.64"
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
