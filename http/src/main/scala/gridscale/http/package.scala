@@ -13,6 +13,7 @@ import org.apache.http.{ HttpEntity, client }
 import org.apache.http.client.methods
 import org.apache.http.conn.socket.PlainConnectionSocketFactory
 import org.apache.http.entity.InputStreamEntity
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler
 import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
 
@@ -90,8 +91,8 @@ package object http {
 
     def client(server: Server) =
       server match {
-        case s: HTTPServer  ⇒ httpClient(s.timeout)
-        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout)
+        case s: HTTPServer  ⇒ httpClient(s.timeout, s.retry)
+        case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout, s.retry)
       }
 
     def requestConfig(timeout: Time) =
@@ -101,7 +102,7 @@ package object http {
         .setConnectionRequestTimeout(timeout.toMillis.toInt)
         .build()
 
-    def httpClient(timeout: Time) = {
+    def httpClient(timeout: Time, retry: Int) = {
       def connectionManager(timeout: Time) = {
         val client = new BasicHttpClientConnectionManager()
         val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
@@ -109,13 +110,15 @@ package object http {
         client
       }
 
-      def newClient(timeout: Time) =
+      def newClient(timeout: Time, retry: Int) =
         HttpClients.custom().
           //setRedirectStrategy(redirectStrategy).
           setConnectionManager(connectionManager(timeout)).
-          setDefaultRequestConfig(requestConfig(timeout)).build()
+          setDefaultRequestConfig(requestConfig(timeout)).
+          setRetryHandler(new DefaultHttpRequestRetryHandler(retry, false)).
+          build()
 
-      newClient(timeout)
+      newClient(timeout, retry)
     }
 
     def wrapError[T](f: ⇒ T) =
@@ -228,18 +231,18 @@ package object http {
   }
 
   object HTTPServer {
-    def apply(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) =
-      new HTTPServer(new URI(url), timeout, bufferSize)
+    def apply(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes, retry: Int = 0) =
+      new HTTPServer(new URI(url), timeout, bufferSize, retry)
   }
 
-  case class HTTPServer(url: URI, timeout: Time, bufferSize: Information) extends Server
+  case class HTTPServer(url: URI, timeout: Time, bufferSize: Information, retry: Int) extends Server
 
   object HTTPSServer {
-    def apply(url: String, socketFactory: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes) =
-      new HTTPSServer(new URI(url), socketFactory, timeout, bufferSize)
+    def apply(url: String, socketFactory: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes, retry: Int = 0) =
+      new HTTPSServer(new URI(url), socketFactory, timeout, bufferSize, retry)
   }
 
-  case class HTTPSServer(url: URI, socketFactory: HTTPS.SSLSocketFactory, timeout: Time, bufferSize: Information) extends Server
+  case class HTTPSServer(url: URI, socketFactory: HTTPS.SSLSocketFactory, timeout: Time, bufferSize: Information, retry: Int) extends Server
 
   def parseHTMLListing(page: String) = {
     val parser = new Parser
@@ -410,11 +413,12 @@ package object http {
       client
     }
 
-    def newClient(factory: SSLSocketFactory, timeout: Time) = {
+    def newClient(factory: SSLSocketFactory, timeout: Time, retry: Int) = {
       val client =
         HttpClients.custom().
           setConnectionManager(connectionManager(factory(timeout), timeout)).
-          setDefaultRequestConfig(HTTP.requestConfig(timeout))
+          setDefaultRequestConfig(HTTP.requestConfig(timeout)).
+          setRetryHandler(new DefaultHttpRequestRetryHandler(retry, false))
 
       client.build()
     }
