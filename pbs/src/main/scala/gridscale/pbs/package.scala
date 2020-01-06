@@ -1,6 +1,6 @@
 package gridscale
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale.cluster.{BatchScheduler, HeadNode, Requirement}
 import gridscale.tools._
 import squants._

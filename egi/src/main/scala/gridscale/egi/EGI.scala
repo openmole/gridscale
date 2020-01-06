@@ -1,6 +1,6 @@
 package gridscale.egi
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale.http._
 
 object EGI {

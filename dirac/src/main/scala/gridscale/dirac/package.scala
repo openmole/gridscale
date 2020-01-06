@@ -2,7 +2,7 @@ package gridscale
 
 import java.io.{ BufferedOutputStream, FileOutputStream }
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale.authentication.P12Authentication
 import gridscale.http._
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream

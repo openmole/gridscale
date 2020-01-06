@@ -24,7 +24,7 @@ package object gridscale {
     def isFinal(s: JobState) = s == Done || s == Failed
   }
 
-  import effectaside._
+  import gridscale.effectaside._
   import squants._
   import squants.time.TimeConversions._
 

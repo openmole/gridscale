@@ -1,4 +1,6 @@
 
+package gridscale
+
 package object effectaside {
 
   object Effect {

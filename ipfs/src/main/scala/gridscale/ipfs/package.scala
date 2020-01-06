@@ -4,7 +4,7 @@ import java.io._
 import java.net.URLEncoder
 import java.util.zip.GZIPInputStream
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale.http._
 import io.circe.generic.auto._
 import io.circe.parser._

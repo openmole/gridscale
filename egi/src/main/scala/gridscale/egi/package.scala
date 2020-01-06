@@ -4,7 +4,7 @@ import java.math.BigInteger
 import java.security.{ KeyPair, KeyPairGenerator, Security }
 import java.util.{ Calendar, GregorianCalendar, TimeZone }
 
-import effectaside._
+import gridscale.effectaside._
 import scala.language.{ higherKinds, postfixOps }
 
 package object egi {

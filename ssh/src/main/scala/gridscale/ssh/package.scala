@@ -7,7 +7,7 @@ import scala.language.{ higherKinds, postfixOps }
 
 package object ssh {
 
-  import effectaside._
+  import gridscale.effectaside._
   import gridscale.ssh.sshj.{ SFTPClient, SSHClient }
   import gridscale.authentication._
   import squants._

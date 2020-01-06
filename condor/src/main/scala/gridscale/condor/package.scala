@@ -2,7 +2,7 @@ package gridscale
 
 import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.cluster.{ BatchScheduler, HeadNode, Requirement }
-import effectaside._
+import gridscale.effectaside._
 import squants._
 import gridscale.tools._
 import monocle.macros._

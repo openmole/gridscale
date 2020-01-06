@@ -1,6 +1,6 @@
 package gridscale.local
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale.cluster.LocalCluster
 
 object LocalExecExample extends App {

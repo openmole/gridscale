@@ -17,7 +17,7 @@
 
 package gridscale.cluster
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale.JobState
 import gridscale.ExecutionResult
 

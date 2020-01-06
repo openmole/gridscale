@@ -4,7 +4,7 @@ import gridscale.webdav.WebDAV._
 import java.io.{ ByteArrayInputStream, IOException, InputStream }
 import java.time.{ LocalDate, LocalDateTime, ZoneOffset }
 
-import effectaside._
+import gridscale.effectaside._
 import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity

@@ -1,6 +1,6 @@
 package gridscale
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.tools.InformationDecorator

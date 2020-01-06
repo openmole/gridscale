@@ -1,6 +1,6 @@
 package gridscale.condor
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale._
 import gridscale.ssh
 import gridscale.authentication._

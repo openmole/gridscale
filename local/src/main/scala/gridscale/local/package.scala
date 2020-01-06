@@ -7,7 +7,7 @@ import gridscale.tools.shell.BashShell
 
 package object local {
 
-  import effectaside._
+  import gridscale.effectaside._
   import gridscale.tools._
   import scala.io.Source
   import scala.util.Try

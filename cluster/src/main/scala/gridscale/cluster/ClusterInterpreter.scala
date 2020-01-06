@@ -2,7 +2,7 @@ package gridscale.cluster
 
 import gridscale.ssh._
 import gridscale.local._
-import effectaside._
+import gridscale.effectaside._
 
 object SSHCluster {
   class Interpreters {

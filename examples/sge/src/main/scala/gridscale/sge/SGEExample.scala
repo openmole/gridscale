@@ -1,6 +1,6 @@
 package gridscale.sge
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale._
 import gridscale.authentication._
 import gridscale.cluster._

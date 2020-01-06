@@ -7,7 +7,7 @@ import java.security.KeyStore.{ PasswordProtection, PrivateKeyEntry }
 import java.security.PrivateKey
 import java.security.cert.{ Certificate, CertificateFactory }
 
-import effectaside._
+import gridscale.effectaside._
 import org.apache.commons.codec.binary
 import org.apache.http.{ HttpEntity, client }
 import org.apache.http.client.methods

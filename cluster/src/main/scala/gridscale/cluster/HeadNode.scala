@@ -3,7 +3,7 @@ package gridscale.cluster
 import java.io.ByteArrayInputStream
 
 import scala.language.higherKinds
-import effectaside._
+import gridscale.effectaside._
 import gridscale._
 import ssh._
 import local._

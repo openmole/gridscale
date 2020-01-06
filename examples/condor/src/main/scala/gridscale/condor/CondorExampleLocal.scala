@@ -17,7 +17,7 @@
 
 package gridscale.condor
 
-import effectaside._
+import gridscale.effectaside._
 import gridscale._
 import gridscale.cluster._
 import gridscale.local._

@@ -7,7 +7,7 @@ object TestSSH extends App {
 
   import gridscale._
   import gridscale.authentication._
-  import effectaside._
+  import gridscale.effectaside._
 
   def job = SSHJobDescription(command = s"""echo -n greatings `whoami`""", workDirectory = "/tmp/")
 
