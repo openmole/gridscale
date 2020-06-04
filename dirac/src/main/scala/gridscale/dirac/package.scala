@@ -46,7 +46,7 @@ package object dirac {
         cpuTime.map(s ⇒ "CPUTime" -> JString(s.toSeconds.toString)) ++
         (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None) ++
         jobGroup.map(s ⇒ "JobGroup" -> JString(s)) ++
-        cores.map(c ⇒ "Tags" -> JArray(List(JString(s"""${c}Processors"""))))
+        cores.map(c ⇒ "NumberOfProcessors" -> JString(c.toString))
 
       pretty(JObject(fields: _*))
     }
