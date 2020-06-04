@@ -6,13 +6,14 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "org.openmole.gridscale"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.12.10"
-crossScalaVersions in ThisBuild := Seq("2.12.10")
+scalaVersion in ThisBuild := "2.12.11"
+crossScalaVersions in ThisBuild := Seq("2.12.11", "2.13.2")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
 publishTo in ThisBuild := sonatypePublishToBundle.value
+
 
 /*publishTo in ThisBuild := {
   val nexus = "https://oss.sonatype.org/"
@@ -63,11 +64,27 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
+def priorTo2_13(scalaVersion: String): Boolean =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _                              => false
+  }
+
 def settings = Seq (
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
   // macro paradise doesn't work with scaladoc
   //sources in (Compile, doc) := Nil,
-  resolvers += Resolver.sonatypeRepo("snapshots")
+  resolvers += Resolver.sonatypeRepo("snapshots"),
+  scalacOptions ++= (
+    if (priorTo2_13(scalaVersion.value)) Nil else Seq("-Ymacro-annotations", "-language:postfixOps")
+    ),
+  libraryDependencies ++=
+    (if (priorTo2_13(scalaVersion.value))
+      Seq(
+        compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch))
+      )
+    else Nil),
+  libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
 )
 
 
@@ -87,17 +104,8 @@ def defaultSettings =
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
 
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-) ++ paradise
+)
 
-def paradise = 
-    Seq(
-      addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full),
-      scalacOptions ++= Seq("-target:jvm-1.8")
-    ) 
-    /* 2.13
-    Seq(
-      scalacOptions ++= Seq("-target:jvm-1.8", "-language:postfixOps", "-Ymacro-annotations")
-    ) */
 
 
 /* ---------------- Libraries --------------------*/
