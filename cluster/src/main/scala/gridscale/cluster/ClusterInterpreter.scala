@@ -7,7 +7,7 @@ import gridscale.effectaside._
 object SSHCluster {
   class Interpreters {
     implicit val systemEffect = System()
-    implicit val sshEffect = SSH(SSHCache())
+    implicit val sshEffect = SSH()
   }
 
   def apply[T](f: Interpreters ⇒ T) = {
@@ -32,7 +32,7 @@ object LocalCluster {
 object ClusterInterpreter {
   class Interpreters {
     implicit val system = System()
-    implicit val ssh = SSH(SSHCache())
+    implicit val ssh = SSH()
     implicit val local = Local()
   }
 
