@@ -3,8 +3,6 @@ package gridscale
 import java.io.ByteArrayInputStream
 
 import gridscale.tools.shell.BashShell
-
-import scala.collection.mutable.ListBuffer
 import scala.language.{ higherKinds, postfixOps }
 
 package object ssh {
@@ -38,8 +36,7 @@ package object ssh {
   }
 
   object SSH {
-    def apply(pool: Boolean = false, cache: Boolean = true) =
-      Effect(new SSH(SSHConnectionCache(pool = pool, cache = cache)))
+    def apply(connectionCache: Boolean = true) = Effect(new SSH(SSHConnectionCache(cache = connectionCache)))
 
     def client(server: SSHServer): SSHClient = {
       def ssh =
@@ -65,13 +62,11 @@ package object ssh {
   }
 
   object SSHConnectionCache {
-    def apply(pool: Boolean = false, cache: Boolean = true): SSHConnectionCache =
-      if (pool && cache) ConnectionPool(KeyValueCache(s ⇒ ListBuffer()))
-      else if (cache) KeyValueConnectionCache(KeyValueCache(s ⇒ SSH.client(s)))
+    def apply(cache: Boolean = true): SSHConnectionCache =
+      if (cache) KeyValueConnectionCache(KeyValueCache(s ⇒ SSH.client(s)))
       else NoCache
 
     case class KeyValueConnectionCache(store: KeyValueCache[SSHServer, SSHClient]) extends SSHConnectionCache
-    case class ConnectionPool(pool: KeyValueCache[SSHServer, ListBuffer[SSHClient]]) extends SSHConnectionCache
     case object NoCache extends SSHConnectionCache
   }
 
@@ -84,18 +79,6 @@ package object ssh {
         case SSHConnectionCache.KeyValueConnectionCache(store) ⇒
           val c = store.get(server)
           f(c)
-        case SSHConnectionCache.ConnectionPool(pool) ⇒
-          val cs = pool.get(server)
-          val client = cs.synchronized {
-            cs.headOption match {
-              case None ⇒ SSH.client(server)
-              case Some(s) ⇒
-                cs.remove(0)
-                s
-            }
-          }
-          try f(client)
-          finally cs.synchronized(cs += client)
         case SSHConnectionCache.NoCache ⇒
           val c = SSH.client(server)
           try f(c)
@@ -107,9 +90,6 @@ package object ssh {
         case SSHConnectionCache.KeyValueConnectionCache(store) ⇒
           store.values.foreach(_.close())
           store.clear()
-        case SSHConnectionCache.ConnectionPool(pool) ⇒
-          pool.values.flatten.foreach(_.close())
-          pool.clear()
         case SSHConnectionCache.NoCache ⇒
       }
   }
