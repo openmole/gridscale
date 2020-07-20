@@ -36,7 +36,8 @@ package object ssh {
   }
 
   object SSH {
-    def apply(connectionCache: Boolean = true) = Effect(new SSH(SSHConnectionCache(cache = connectionCache)))
+
+    def apply(connectionCache: ConnectionCache = SSHCache()) = Effect(new SSH(connectionCache))
 
     def client(server: SSHServer): SSHClient = {
       def ssh =
@@ -61,81 +62,60 @@ package object ssh {
     }
   }
 
-  object SSHConnectionCache {
-    def apply(cache: Boolean = true): SSHConnectionCache =
-      if (cache) KeyValueConnectionCache(KeyValueCache(s ⇒ SSH.client(s)))
-      else NoCache
-
-    case class KeyValueConnectionCache(store: KeyValueCache[SSHServer, SSHClient]) extends SSHConnectionCache
-    case object NoCache extends SSHConnectionCache
-  }
-
-  sealed trait SSHConnectionCache
+  type ConnectionCache = KeyValueCache[SSHServer, SSHClient]
 
   object SSHCache {
-
-    def withClient[T](cache: SSHConnectionCache, server: SSHServer)(f: SSHClient ⇒ T): T =
-      cache match {
-        case SSHConnectionCache.KeyValueConnectionCache(store) ⇒
-          val c = store.get(server)
-          f(c)
-        case SSHConnectionCache.NoCache ⇒
-          val c = SSH.client(server)
-          try f(c)
-          finally c.close()
-      }
-
-    def close(cache: SSHConnectionCache) =
-      cache match {
-        case SSHConnectionCache.KeyValueConnectionCache(store) ⇒
-          store.values.foreach(_.close())
-          store.clear()
-        case SSHConnectionCache.NoCache ⇒
-      }
+    def apply() = KeyValueCache(s ⇒ SSH.client(s))
   }
 
-  class SSH(val clientCache: SSHConnectionCache) extends AutoCloseable {
+  class SSH(val clientCache: ConnectionCache) extends AutoCloseable {
 
-    def execute(server: SSHServer, s: String) =
-      SSHCache.withClient(clientCache, server) { c ⇒
-        try SSHClient.run(c, s).get
-        catch {
-          case t: Throwable ⇒ throw ExecutionError(s"Error executing $s on $server", t)
-        }
+    def execute(server: SSHServer, s: String) = {
+      val c = clientCache.get(server)
+      try SSHClient.run(c, s).get
+      catch {
+        case t: Throwable ⇒ throw ExecutionError(s"Error executing $s on $server", t)
+      }
+    }
+
+    def launch(server: SSHServer, s: String) = {
+      val c = clientCache.get(server)
+      SSHClient.launchInBackground(c, s)
+    }
+
+    def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T = {
+      val c = clientCache.get(server)
+      try SSHClient.withSFTP(c, f)
+      catch {
+        case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
+      }
+    }
+
+    def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) = {
+      val c = clientCache.get(server)
+      try SSHClient.withSFTP(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
+      catch {
+        case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
+      }
+    }
+
+    def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String) = {
+      def write(client: SSHClient) = {
+        val ois = is()
+        try SSHClient.withSFTP(client, _.writeFile(ois, path)).get
+        finally ois.close()
       }
 
-    def launch(server: SSHServer, s: String) =
-      SSHCache.withClient(clientCache, server) { c ⇒ SSHClient.launchInBackground(c, s) }
-
-    def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T =
-      SSHCache.withClient(clientCache, server) { c ⇒
-        try SSHClient.withSFTP(c, f)
-        catch {
-          case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
-        }
-      }
-
-    def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) =
-      SSHCache.withClient(clientCache, server) { c ⇒
-        try SSHClient.withSFTP(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
-        catch {
-          case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
-        }
-      }
-
-    def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String) =
-      SSHCache.withClient(clientCache, server) { c ⇒
-        def write(client: SSHClient) = {
-          val ois = is()
-          try SSHClient.withSFTP(client, _.writeFile(ois, path)).get
-          finally ois.close()
-        }
-        write(c)
-      }
+      val c = clientCache.get(server)
+      write(c)
+    }
 
     def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = throw ReturnCodeError(server, command, executionResult)
 
-    def close(): Unit = SSHCache.close(clientCache)
+    def close(): Unit = {
+      clientCache.values.foreach(_.close())
+      clientCache.clear()
+    }
 
   }
 

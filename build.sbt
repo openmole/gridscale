@@ -6,8 +6,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "org.openmole.gridscale"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.13.3"
-crossScalaVersions in ThisBuild := Seq("2.12.11", "2.13.3")
+scalaVersion in ThisBuild := "2.12.11"
+crossScalaVersions in ThisBuild := Seq("2.12.11", "2.13.2")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
@@ -189,7 +189,7 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.65"
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.64"
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (

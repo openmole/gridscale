@@ -190,8 +190,8 @@ package object http {
         } catch {
           case e: org.apache.http.conn.ConnectTimeoutException  ⇒ throw error(e)
           case e: SocketTimeoutException                        ⇒ throw error(e)
-          case e: org.apache.http.conn.HttpHostConnectException ⇒ throw error(e)
           case e: java.net.ConnectException                     ⇒ throw error(e)
+          case e: org.apache.http.conn.HttpHostConnectException ⇒ throw error(e)
         } finally httpClient.close()
       } finally closeable.foreach(_.close())
     }
