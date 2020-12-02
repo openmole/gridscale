@@ -27,7 +27,8 @@ package object slurm {
     qos: Option[String] = None,
     gres: List[Gres] = List(),
     constraints: List[String] = List(),
-    reservation: Option[String] = None)
+    reservation: Option[String] = None,
+    wckey: Option[String] = None)
 
   object impl {
 
@@ -51,7 +52,8 @@ package object slurm {
         "--time=" -> wallTime.map(_.toHHmmss),
         "--qos=" -> qos,
         "-D " -> Some(workDirectory),
-        "--reservation=" -> reservation)
+        "--reservation=" -> reservation,
+        "--wckey" -> wckey)
 
       // must handle empty list separately since it is not done in mkString
       val gresList = gres match {
