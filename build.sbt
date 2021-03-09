@@ -189,7 +189,7 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.65"
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.68"
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
