@@ -1,7 +1,7 @@
 
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.8")
 
-addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.10")
+addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.15")
 
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.0")
 
