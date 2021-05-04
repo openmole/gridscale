@@ -36,11 +36,25 @@ package object cache {
       }
     }
 
+    def getValidOrInvalidate(k: K, valid: V ⇒ Boolean, clean: V ⇒ Unit = _ ⇒ ()) = locks.withLock(k) {
+      value(k) match {
+        case Some(v) ⇒
+          if (valid(v)) v
+          else {
+            clean(v)
+            remove(k)
+            insert(k, f(k))
+          }
+        case None ⇒ insert(k, f(k))
+      }
+    }
+
     def values = cached.synchronized(cached.values.toVector)
 
     private def insert(k: K, v: V) = cached.synchronized { cached.put(k, v); v }
     private def value(k: K) = cached.synchronized(cached.get(k))
     private def contains(k: K) = cached.synchronized(cached.contains(k))
+    private def remove(k: K) = cached.synchronized { cached.remove(k) }
 
     def clear() = {
       locks.clear()

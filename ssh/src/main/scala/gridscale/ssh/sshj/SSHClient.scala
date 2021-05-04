@@ -38,14 +38,12 @@ object SSHClient {
   }
 
   def withSession[T](c: SSHClient)(f: SSHSession ⇒ T): util.Try[T] = util.Try {
-    if (!c.isConnected) connect(c)
     val session = c.startSession()
     try f(session)
     finally session.close()
   }
 
   def withSFTP[T](c: SSHClient, f: SFTPClient ⇒ T) = {
-    if (!c.isConnected) connect(c)
     val sftp = c.newSFTPClient
     try f(sftp)
     finally sftp.close

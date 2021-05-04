@@ -66,33 +66,34 @@ package object ssh {
 
   object SSHCache {
     def apply() = KeyValueCache(s ⇒ SSH.client(s))
+
+    def withCache[T](cache: ConnectionCache, server: SSHServer)(f: SSHClient ⇒ T) = {
+      val client = cache.getValidOrInvalidate(server, _.isConnected, c ⇒ util.Try(c.close()))
+      f(client)
+    }
   }
 
   class SSH(val clientCache: ConnectionCache) extends AutoCloseable {
 
-    def execute(server: SSHServer, s: String) = {
-      val c = clientCache.get(server)
+    def execute(server: SSHServer, s: String) = SSHCache.withCache(clientCache, server) { c ⇒
       try SSHClient.run(c, s).get
       catch {
         case t: Throwable ⇒ throw ExecutionError(s"Error executing $s on $server", t)
       }
     }
 
-    def launch(server: SSHServer, s: String) = {
-      val c = clientCache.get(server)
+    def launch(server: SSHServer, s: String) = SSHCache.withCache(clientCache, server) { c ⇒
       SSHClient.launchInBackground(c, s)
     }
 
-    def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T = {
-      val c = clientCache.get(server)
+    def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T = SSHCache.withCache(clientCache, server) { c ⇒
       try SSHClient.withSFTP(c, f)
       catch {
         case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
       }
     }
 
-    def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) = {
-      val c = clientCache.get(server)
+    def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) = SSHCache.withCache(clientCache, server) { c ⇒
       try SSHClient.withSFTP(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
       catch {
         case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
@@ -106,14 +107,13 @@ package object ssh {
         finally ois.close()
       }
 
-      val c = clientCache.get(server)
-      write(c)
+      SSHCache.withCache(clientCache, server) { c ⇒ write(c) }
     }
 
     def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = throw ReturnCodeError(server, command, executionResult)
 
     def close(): Unit = {
-      clientCache.values.foreach(_.close())
+      clientCache.values.foreach(c ⇒ util.Try(c.close()))
       clientCache.clear()
     }
 
