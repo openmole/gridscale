@@ -93,7 +93,7 @@ package object dirac {
 
   def getService(vo: String, certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
     val services = getServices(certificatesDirectory, timeout)
-    services.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory"))
+    services.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory"))
   }
 
   def getServices(

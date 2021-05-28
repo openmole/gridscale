@@ -16,7 +16,7 @@ object SlurmExample extends App {
   val authentication = PrivateKey(new java.io.File("/home/reuillon/.ssh/id_rsa"), password, "rreuil01")
   val headNode = ssh.SSHServer("myria.criann.fr", 22)(authentication)
 
-  val jobDescription = SLURMJobDescription(command = """/bin/echo hello from $(hostname)""", workDirectory = "/home/2019902/rreuil01", queue = Some("debug"), memory = Some(2000 megabytes))
+  val jobDescription = SLURMJobDescription(command = """/bin/echo hello from $(hostname)""", workDirectory = "/home/2019902/rreuil01", partition = Some("debug"), memory = Some(2000 megabytes))
 
   def res(implicit system: Effect[System], sshEffect: Effect[ssh.SSH]) = {
     val job = submit(headNode, jobDescription)
