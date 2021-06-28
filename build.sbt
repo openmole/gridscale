@@ -6,8 +6,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 organization in ThisBuild := "org.openmole.gridscale"
 name := "gridscale"
 
-scalaVersion in ThisBuild := "2.13.5"
-crossScalaVersions in ThisBuild := Seq("2.12.11", "2.13.5")
+scalaVersion in ThisBuild := "2.13.6"
+crossScalaVersions in ThisBuild := Seq("2.13.6")
 
 licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
@@ -75,16 +75,7 @@ def settings = Seq (
   // macro paradise doesn't work with scaladoc
   //sources in (Compile, doc) := Nil,
   resolvers += Resolver.sonatypeRepo("snapshots"),
-  scalacOptions ++= (
-    if (priorTo2_13(scalaVersion.value)) Nil else Seq("-Ymacro-annotations", "-language:postfixOps")
-    ),
-  libraryDependencies ++=
-    (if (priorTo2_13(scalaVersion.value))
-      Seq(
-        compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch))
-      )
-    else Nil),
-  libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
+  scalacOptions ++= Seq("-Ymacro-annotations", "-language:postfixOps")
 )
 
 
