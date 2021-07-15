@@ -71,11 +71,30 @@ package object dirac {
   type GroupId = String
   type UserId = String
 
-  import enumeratum._
-  sealed trait DIRACState extends EnumEntry
+  sealed trait DIRACState
 
-  object DIRACState extends Enum[DIRACState] {
-    val values = findValues
+  object DIRACState {
+    val values = Seq(Received, Checking, Staging, Waiting, Matched, Running, Completed, Stalled, Killed, Deleted, Done, Failed)
+
+    lazy val stateIndex = values.map(v ⇒ name(v).toLowerCase -> v).toMap
+
+    def withName(s: String) = stateIndex.getOrElse(s.toLowerCase, throw new RuntimeException(s"Unmatched state $s"))
+
+    def name(s: DIRACState) =
+      s match {
+        case Received  ⇒ "Received"
+        case Checking  ⇒ "Checking"
+        case Staging   ⇒ "Staging"
+        case Waiting   ⇒ "Waiting"
+        case Matched   ⇒ "Matched"
+        case Running   ⇒ "Running"
+        case Completed ⇒ "Completed"
+        case Stalled   ⇒ "Stalled"
+        case Killed    ⇒ "Killed"
+        case Deleted   ⇒ "Deleted"
+        case Done      ⇒ "Done"
+        case Failed    ⇒ "Failed"
+      }
 
     case object Received extends DIRACState
     case object Checking extends DIRACState
@@ -207,7 +226,7 @@ package object dirac {
     }
 
     def statusesQuery =
-      if (states.isEmpty) "" else "&" + states.map(s ⇒ s"status=${s.entryName}").mkString("&")
+      if (states.isEmpty) "" else "&" + states.map(s ⇒ s"status=${DIRACState.name(s)}").mkString("&")
 
     val json = gridscale.http.readStream[JValue](server.server, s"$jobsLocation?${uri.getQuery}${statusesQuery}", is ⇒ parse(is))
     (json \ "jobs").children.map { j ⇒

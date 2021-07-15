@@ -71,7 +71,7 @@ def priorTo2_13(scalaVersion: String): Boolean =
   }
 
 def settings = Seq (
-  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
   // macro paradise doesn't work with scaladoc
   //sources in (Compile, doc) := Nil,
   resolvers += Resolver.sonatypeRepo("snapshots"),
@@ -127,8 +127,8 @@ val monocleVersion = "2.0.0"
 def dslSettings = defaultSettings ++ Seq(
   //scalacOptions += "-Ypartial-unification",
 
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.6.0",
-  libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.15",
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.8.0",
+  //libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.15",
 
   //scalacOptions += "-Xplugin-require:macroparadise",
 

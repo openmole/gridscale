@@ -38,7 +38,7 @@ package object effectaside {
   }
 
   class FileSystem {
-    def read(path: Path): String = readStream(path)(is ⇒ io.Source.fromInputStream(is).mkString)
+    def read(path: Path): String = readStream(path)(is ⇒ scala.io.Source.fromInputStream(is).mkString)
 
     def list(p: Path) = p.path.listFiles.toVector
 

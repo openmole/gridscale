@@ -165,13 +165,13 @@ package object ssh {
     readFile(
       server,
       SSHJobDescription.outFile(jobId.workDirectory, jobId.jobId),
-      io.Source.fromInputStream(_).mkString)
+      scala.io.Source.fromInputStream(_).mkString)
 
   def stdErr(server: SSHServer, jobId: JobId)(implicit ssh: Effect[SSH]) =
     readFile(
       server,
       SSHJobDescription.errFile(jobId.workDirectory, jobId.jobId),
-      io.Source.fromInputStream(_).mkString)
+      scala.io.Source.fromInputStream(_).mkString)
 
   def state(server: SSHServer, jobId: JobId)(implicit ssh: Effect[SSH]) =
     SSHJobDescription.jobIsRunning(server, jobId) match {
@@ -183,7 +183,7 @@ package object ssh {
             val content = ssh().readFile(
               server,
               SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId),
-              is ⇒ io.Source.fromInputStream(is).mkString)
+              is ⇒ scala.io.Source.fromInputStream(is).mkString)
             val exitCode = content.takeWhile(_.isDigit).toInt
             SSHJobDescription.translateState(exitCode)
           case false ⇒ JobState.Failed: JobState
