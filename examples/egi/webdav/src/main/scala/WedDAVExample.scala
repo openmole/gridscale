@@ -20,8 +20,10 @@ object WedDAVExample extends App {
 
     println(bdii().webDAVs(bdiiServer, "vo.complex-systems.eu"))
 
-    val lal = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("lal")).get
-    val webdav = WebDAVSServer(lal, proxy.factory)
+    val webdavInfo = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("sbg")).get
+    val webdav = WebDAVSServer(webdavInfo, proxy.factory)
+
+    println(list(webdav, "/"))
 
     if (exists(webdav, "youpi2.txt")) rmFile(webdav, "youpi2.txt")
 
