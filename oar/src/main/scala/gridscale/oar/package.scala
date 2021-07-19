@@ -21,11 +21,10 @@ import gridscale.effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import squants._
 import gridscale.tools._
-import monocle.macros.Lenses
 
 package object oar {
 
-  @Lenses case class OARJobDescription(
+  case class OARJobDescription(
     command: String,
     workDirectory: String,
     queue: Option[String] = None,

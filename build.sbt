@@ -3,21 +3,21 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
-organization in ThisBuild := "org.openmole.gridscale"
-name := "gridscale"
+ThisBuild / organization := "org.openmole.gridscale"
+ThisBuild / name := "gridscale"
 
-scalaVersion in ThisBuild := "2.13.6"
-crossScalaVersions in ThisBuild := Seq("2.13.6")
+ThisBuild / scalaVersion := "2.13.6"
+ThisBuild / crossScalaVersions := Seq("2.13.6")
 
-licenses in ThisBuild := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
-homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
+ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
+ThisBuild / homepage := Some(url("https://github.com/openmole/gridscale"))
 
-publishTo in ThisBuild := sonatypePublishToBundle.value
+ThisBuild / publishTo := sonatypePublishToBundle.value
 
-pomIncludeRepository in ThisBuild := { _ => false}
-scmInfo in ThisBuild := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
+ThisBuild / pomIncludeRepository := { _ => false}
+ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
 
-pomExtra in ThisBuild := {
+ThisBuild / pomExtra := {
   <!-- Developer contact information -->
     <developers>
       <developer>
@@ -36,9 +36,9 @@ pomExtra in ThisBuild := {
 
 releaseVersionBump := sbtrelease.Version.Bump.Minor
 
-releaseTagComment    := s"Releasing ${(version in ThisBuild).value}"
+releaseTagComment    := s"Releasing ${(ThisBuild / version).value}"
 
-releaseCommitMessage := s"Bump version to ${(version in ThisBuild).value}"
+releaseCommitMessage := s"Bump version to ${(ThisBuild / version).value}"
 
 sonatypeProfileName := "org.openmole"
 
@@ -96,11 +96,11 @@ lazy val httpComponentsVersion = "4.5.10"
 lazy val httpComponents = Seq("httpclient", "httpmime").map(
   "org.apache.httpcomponents" % _ % httpComponentsVersion)
 
-lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.1.0" % "test"
+lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.9" % "test"
 
 lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.8.0"
 
-val circeVersion = "0.12.3"
+val circeVersion = "0.14.1"
 
 lazy val circe = Seq(
   "io.circe" %% "circe-core",
@@ -113,23 +113,9 @@ lazy val compress = "org.apache.commons" % "commons-compress" % "1.19"
 
 /* -------------- gridscale dsl ------------------ */
 
-val monocleVersion = "2.0.0"
-
 def dslSettings = defaultSettings ++ Seq(
-  //scalacOptions += "-Ypartial-unification",
-
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.8.0",
-  //libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.15",
-
-  //scalacOptions += "-Xplugin-require:macroparadise",
-
-  //resolvers += Resolver.sonatypeRepo("snapshots"),
-  // rename to avoid conflict with publishTo resolver
-  //resolvers +=
-  //  "Sonatype OSS Stagings" at "https://oss.sonatype.org/content/repositories/staging",
-
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.8.0" cross(CrossVersion.for3Use2_13),
   resolvers += "jitpack" at "https://jitpack.io"
-
 )
 
 lazy val effect = Project(id = "effect", base = file("effect")) settings(dslSettings: _*)
@@ -145,9 +131,7 @@ lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings: _*)
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
-lazy val cluster = Project(id = "cluster", base = file("cluster")) settings(dslSettings: _*) dependsOn (ssh, local) settings (
-  libraryDependencies ++= Seq("monocle-core", "monocle-generic", "monocle-macro").map("com.github.julien-truffaut" %% _ % monocleVersion)
-)
+lazy val cluster = Project(id = "cluster", base = file("cluster")) settings(dslSettings: _*) dependsOn (ssh, local)
 
 lazy val pbs = Project(id = "pbs", base = file("pbs")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
 lazy val slurm = Project(id = "slurm", base = file("slurm")) settings(dslSettings: _*) dependsOn(gridscale, cluster)

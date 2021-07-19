@@ -4,7 +4,6 @@ import gridscale.effectaside._
 import gridscale.cluster.{BatchScheduler, HeadNode, Requirement}
 import gridscale.tools._
 import squants._
-import monocle.macros._
 import squants.information.Information
 
 import scala.language.higherKinds
@@ -14,8 +13,7 @@ package object pbs {
   sealed trait PBSFlavour
   case object PBSPro extends PBSFlavour
   case object Torque extends PBSFlavour
-
-  @Lenses case class PBSJobDescription(
+  case class PBSJobDescription(
     command: String,
     workDirectory: String,
     queue: Option[String] = None,

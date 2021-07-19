@@ -5,14 +5,13 @@ import gridscale.cluster.{ BatchScheduler, HeadNode, Requirement }
 import gridscale.effectaside._
 import squants._
 import gridscale.tools._
-import monocle.macros._
 import squants.information._
 
 import scala.language.{ higherKinds, postfixOps }
 
 package object condor {
 
-  @Lenses case class CondorJobDescription(
+  case class CondorJobDescription(
     executable: String,
     arguments: String,
     workDirectory: String,

@@ -3,7 +3,6 @@ package gridscale
 import gridscale.effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode, Requirement }
 import gridscale.tools._
-import monocle.macros._
 import squants._
 import squants.information._
 
@@ -15,7 +14,7 @@ package object slurm {
     override def toString = gresName + ":" + gresValue.toString
   }
 
-  @Lenses case class SLURMJobDescription(
+  case class SLURMJobDescription(
     command: String,
     workDirectory: String,
     partition: Option[String] = None,
