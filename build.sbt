@@ -14,12 +14,6 @@ homepage in ThisBuild := Some(url("https://github.com/openmole/gridscale"))
 
 publishTo in ThisBuild := sonatypePublishToBundle.value
 
-
-/*publishTo in ThisBuild := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")}*/
-
 pomIncludeRepository in ThisBuild := { _ => false}
 scmInfo in ThisBuild := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
 
@@ -71,9 +65,6 @@ def priorTo2_13(scalaVersion: String): Boolean =
   }
 
 def settings = Seq (
-  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
-  // macro paradise doesn't work with scaladoc
-  //sources in (Compile, doc) := Nil,
   resolvers += Resolver.sonatypeRepo("snapshots"),
   scalacOptions ++= Seq("-Ymacro-annotations", "-language:postfixOps")
 )
@@ -180,7 +171,8 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.68"
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.68",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.0"
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (

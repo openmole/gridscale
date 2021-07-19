@@ -64,7 +64,6 @@ package object webdav {
   import java.time.ZoneId
 
   import scala.util.Try
-  import scala.xml.{ Node, XML }
 
   object WebDAV {
 
@@ -95,32 +94,37 @@ package object webdav {
       modified: java.time.LocalDateTime)
 
     def parsePropsResponse(r: InputStream) = {
-      import scala.xml.pull._
+      //import scala.xml.pull._
+      import javax.xml.stream._
+      import javax.xml.stream.events._
       import scala.io._
-      val er = new XMLEventReader(Source.fromInputStream(r))
+      val er = XMLInputFactory.newDefaultFactory().createXMLEventReader(r)
       var props = ListBuffer[Prop]()
 
+      def isStartWithName(e: XMLEvent, name: String) = e.isStartElement && e.asStartElement().getName.getLocalPart == name
+
       while (er.hasNext) {
-        er.next() match {
-          case EvElemStart(_, "prop", _, _) ⇒
+        er.nextEvent() match {
+
+          case e if isStartWithName(e, "prop") ⇒
             def end(x: XMLEvent) = x match {
-              case EvElemEnd(_, "prop") ⇒ true
-              case _                    ⇒ false
+              case x if x.isEndElement && x.asEndElement().getName.getLocalPart == "prop" ⇒ true
+              case _ ⇒ false
             }
 
-            var x = er.next()
+            var x = er.nextEvent()
             var displayName: Option[String] = None
             var isCollection: Option[Boolean] = None
             var lastModified: Option[LocalDateTime] = None
 
             while (!end(x)) {
               x match {
-                case EvElemStart(_, "displayname", _, _)     ⇒ displayName = Some(er.next().asInstanceOf[EvText].text)
-                case EvElemStart(_, "iscollection", _, _)    ⇒ isCollection = Some(er.next().asInstanceOf[EvText].text == "1")
-                case EvElemStart(_, "getlastmodified", _, _) ⇒ lastModified = parseDate(er.next().asInstanceOf[EvText].text)
-                case _                                       ⇒
+                case e if isStartWithName(e, "displayname") ⇒ displayName = Some(er.nextEvent().asCharacters().getData)
+                case e if isStartWithName(e, "iscollection") ⇒ isCollection = Some(er.nextEvent().asCharacters().getData == "1")
+                case e if isStartWithName(e, "getlastmodified") ⇒ lastModified = parseDate(er.nextEvent().asCharacters().getData)
+                case _ ⇒
               }
-              x = er.next()
+              x = er.nextEvent()
             }
 
             props += Prop(displayName.get, isCollection.get, lastModified.get)
