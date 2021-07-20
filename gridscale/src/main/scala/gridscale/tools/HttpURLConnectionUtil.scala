@@ -24,7 +24,7 @@ import scala.io.Source
 object HttpURLConnectionUtil {
 
   implicit class HTTPURLConnectionDecorator(c: HttpURLConnection) {
-    def getReply = {
+    def getReply: String = {
       c.connect
       if (c.getResponseCode != HttpURLConnection.HTTP_OK) throw new RuntimeException("Response code is " + c.getResponseCode + ": " + c.getResponseMessage)
       val s = Source.fromInputStream(c.getInputStream)

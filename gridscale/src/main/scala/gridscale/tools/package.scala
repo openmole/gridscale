@@ -19,15 +19,15 @@ package gridscale
 
 import java.io._
 import java.util.concurrent._
-
 import squants._
 
 import scala.annotation.tailrec
-import scala.util.{ Failure, Success, Try }
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 package object tools {
 
-  val daemonThreadFactory = new ThreadFactory {
+  val daemonThreadFactory: ThreadFactory = new ThreadFactory {
     override def newThread(r: Runnable): Thread = {
       val t = new Thread(r)
       t.setDaemon(true)
@@ -35,7 +35,7 @@ package object tools {
     }
   }
 
-  val defaultExecutor = Executors.newCachedThreadPool(daemonThreadFactory)
+  val defaultExecutor: ExecutorService = Executors.newCachedThreadPool(daemonThreadFactory)
 
   def timeout[F](f: ⇒ F)(timeout: Time)(implicit executor: ExecutorService = defaultExecutor): F = {
     val r = executor.submit(new Callable[F] { def call = f })
@@ -45,7 +45,7 @@ package object tools {
     }
   }
 
-  def copy(from: File, to: OutputStream, buffSize: Int, timeout: Time) = {
+  def copy(from: File, to: OutputStream, buffSize: Int, timeout: Time): Unit = {
     val inputStream = new BufferedInputStream(new FileInputStream(from))
 
     try Iterator.continually {
@@ -57,7 +57,7 @@ package object tools {
     } finally inputStream.close
   }
 
-  def copy(from: InputStream, to: File, buffSize: Int, timeout: Time) = {
+  def copy(from: InputStream, to: File, buffSize: Int, timeout: Time): Unit = {
     val outputStream = new BufferedOutputStream(new FileOutputStream(to))
 
     try Iterator.continually {
@@ -100,7 +100,7 @@ package object tools {
     def read(b: Array[T]): Int
   }
 
-  def copyStream(is: InputStream, os: OutputStream) = {
+  def copyStream(is: InputStream, os: OutputStream): Unit = {
     val buffer = new Array[Byte](COPY_BUFFER_SIZE)
     Iterator continually (is read buffer) takeWhile (_ != -1) filter (_ > 0) foreach { read ⇒
       os.write(buffer, 0, read)
@@ -108,7 +108,7 @@ package object tools {
   }
 
   implicit class TimeDecorator(d: Time) {
-    def toHHmmss = {
+    def toHHmmss: String = {
       val millis = d.millis
       f"${millis / (1000 * 60 * 60)}%02d:${(millis % (1000 * 60 * 60)) / (1000 * 60)}%02d:${((millis % (1000 * 60 * 60)) % (1000 * 60)) / 1000}%02d"
     }
@@ -144,6 +144,13 @@ package object tools {
     findWorking0(servers.toList) match {
       case Failure(t) ⇒ throw new RuntimeException(s"No server is working among $servers", t)
       case Success(t) ⇒ t
+    }
+  }
+
+
+  object ManifestCompat {
+    implicit def classTagToManifest[T](implicit classTag: ClassTag[T]): Manifest[T] = new Manifest[T] {
+      override def runtimeClass: Class[_] = classTag.runtimeClass
     }
   }
 

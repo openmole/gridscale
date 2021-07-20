@@ -21,8 +21,8 @@ object TestSSH extends App {
     out
   }
 
-  implicit val system = System()
-  implicit val ssh = SSH()
+  implicit val system: Effect[System] = System()
+  implicit val ssh: Effect[SSH] = SSH()
 
   try println(prg)
   finally ssh().close()

@@ -20,13 +20,13 @@ package gridscale.ssh.sshj
 import java.io.InputStream
 
 trait SSHSession {
-  def close()
+  def close(): Unit
   def exec(command: String): SessionCommand
 }
 
 trait SessionCommand {
-  def join()
-  def close()
+  def join(): Unit
+  def close(): Unit
   def getExitStatus(): Int
   def getInputStream(): InputStream
   def getErrorStream(): InputStream

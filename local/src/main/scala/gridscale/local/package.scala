@@ -174,7 +174,7 @@ package object local {
   def readFile[T](path: String, f: java.io.InputStream ⇒ T)(implicit local: Effect[Local]) = local().readFile(path, f)
 
   def rmFile(path: String)(implicit local: Effect[Local]): Unit = local().rmFile(path)
-  def home(implicit local: Effect[Local]) = local().home
+  def home(implicit local: Effect[Local]) = local().home()
   def exists(path: String)(implicit local: Effect[Local]) = local().exists(path)
   def list(path: String)(implicit local: Effect[Local]) = local().list(path)
   def makeDir(path: String)(implicit local: Effect[Local]) = local().makeDir(path)

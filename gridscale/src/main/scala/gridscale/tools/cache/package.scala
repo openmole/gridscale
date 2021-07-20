@@ -10,7 +10,7 @@ package object cache {
   case class DisposableCache[T](f: () ⇒ T) {
     private var cached: Option[T] = None
 
-    def get = synchronized {
+    def get: T = synchronized {
       cached match {
         case None ⇒
           val res = f()
@@ -20,23 +20,23 @@ package object cache {
       }
     }
 
-    def map[A](f: T ⇒ A) = synchronized(cached.map(f))
-    def foreach[A](f: T ⇒ A) = synchronized(cached.foreach[A](f))
-    def dispose = synchronized { cached = None }
+    def map[A](f: T ⇒ A): Option[A] = synchronized(cached.map(f))
+    def foreach[A](f: T ⇒ A): Unit = synchronized(cached.foreach[A](f))
+    def dispose: Unit = synchronized { cached = None }
   }
 
   case class KeyValueCache[K, V](f: K ⇒ V) {
     val locks = new LockRepository[K]()
     val cached = new collection.mutable.HashMap[K, V]()
 
-    def get(k: K) = locks.withLock(k) {
+    def get(k: K): V = locks.withLock(k) {
       value(k) match {
         case Some(v) ⇒ v
         case None    ⇒ insert(k, f(k))
       }
     }
 
-    def getValidOrInvalidate(k: K, valid: V ⇒ Boolean, clean: V ⇒ Unit = _ ⇒ ()) = locks.withLock(k) {
+    def getValidOrInvalidate(k: K, valid: V ⇒ Boolean, clean: V ⇒ Unit = _ ⇒ ()): V = locks.withLock(k) {
       value(k) match {
         case Some(v) ⇒
           if (valid(v)) v
@@ -49,14 +49,14 @@ package object cache {
       }
     }
 
-    def values = cached.synchronized(cached.values.toVector)
+    def values: Vector[V] = cached.synchronized(cached.values.toVector)
 
     private def insert(k: K, v: V) = cached.synchronized { cached.put(k, v); v }
     private def value(k: K) = cached.synchronized(cached.get(k))
     private def contains(k: K) = cached.synchronized(cached.contains(k))
     private def remove(k: K) = cached.synchronized { cached.remove(k) }
 
-    def clear() = {
+    def clear(): Unit = {
       locks.clear()
       cached.clear()
     }
@@ -67,7 +67,7 @@ package object cache {
 
     def clear() = locks.clear
 
-    def nbLocked(k: T) = synchronized(locks.get(k).map {
+    def nbLocked(k: T): Int = synchronized(locks.get(k).map {
       _._2.get
     }.getOrElse(0))
 
@@ -85,7 +85,7 @@ package object cache {
       }
     }
 
-    def withLock[A](obj: T)(op: ⇒ A) = {
+    def withLock[A](obj: T)(op: ⇒ A): A = {
       lock(obj)
       try op
       finally unlock(obj)

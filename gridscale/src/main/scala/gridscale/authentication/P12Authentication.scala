@@ -19,9 +19,10 @@ package gridscale.authentication
 
 import java.io.{ File, FileInputStream, IOException }
 import java.security.cert.X509Certificate
+import scala.util.Try
 
 object P12Authentication {
-  def loadPKCS12Credentials(a: P12Authentication) = {
+  def loadPKCS12Credentials(a: P12Authentication): Loaded = {
     val ks = java.security.KeyStore.getInstance("pkcs12")
     ks.load(new java.io.FileInputStream(a.certificate), a.password.toCharArray)
 
@@ -41,7 +42,7 @@ object P12Authentication {
 
   case class Loaded(certificate: X509Certificate, key: java.security.PrivateKey, chain: Array[X509Certificate])
 
-  def testPassword(p12Authentication: P12Authentication) =
+  def testPassword(p12Authentication: P12Authentication): Try[Boolean] =
     util.Try(loadPKCS12Credentials(p12Authentication)).map(_ ⇒ true)
 
 }

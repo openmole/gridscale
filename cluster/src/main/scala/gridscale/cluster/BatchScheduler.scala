@@ -46,7 +46,7 @@ object BatchScheduler {
     errorWrapper: ((String, ExecutionResult) ⇒ String) = ExecutionResult.error)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob = {
 
     hn.execute(server, s"mkdir -p $workDirectory")
-    val uniqId = s"job-${system().randomUUID.toString}"
+    val uniqId = s"job-${system().randomUUID().toString}"
     val script = buildScript(uniqId)
     val sName = scriptName(scriptSuffix)(uniqId)
     val sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)

@@ -21,7 +21,7 @@ package object gridscale {
     case object Done extends JobState
     case object Failed extends JobState
 
-    def isFinal(s: JobState) = s == Done || s == Failed
+    def isFinal(s: JobState): Boolean = s == Done || s == Failed
   }
 
   import gridscale.effectaside._
@@ -66,11 +66,11 @@ package object gridscale {
   //
   //  }
 
-  def waitUntilEnded(f: () ⇒ JobState, wait: Time = 10 seconds)(implicit system: Effect[System]) = {
+  def waitUntilEnded(f: () ⇒ JobState, wait: Time = 10 seconds)(implicit system: Effect[System]): JobState = {
     def pull: JobState = {
       val s = f()
-      val end = JobState.isFinal(s)
-      if (!end) {
+      val continue = !JobState.isFinal(s)
+      if (continue) {
         system().sleep(wait)
         pull
       } else s
@@ -82,7 +82,7 @@ package object gridscale {
   case class ExecutionResult(returnCode: Int, stdOut: String, stdErr: String)
 
   object ExecutionResult {
-    def error(suggestionMessage: String = "")(command: String, executionResult: ExecutionResult) = {
+    def error(suggestionMessage: String = "")(command: String, executionResult: ExecutionResult): String = {
       import executionResult._
       s"Unexpected return code $returnCode, when running $command (stdout=${executionResult.stdOut}, stderr=${executionResult.stdErr}).\n$suggestionMessage"
     }
@@ -91,7 +91,7 @@ package object gridscale {
   }
 
   object RemotePath {
-    def child(parent: String, child: String) =
+    def child(parent: String, child: String): String =
       if (parent.isEmpty) child
       else if (parent.endsWith("/")) parent + child
       else parent + '/' + child
@@ -104,7 +104,7 @@ package object gridscale {
       }
     }
 
-    def name(path: String) = new java.io.File(path).getName
+    def name(path: String): String = new java.io.File(path).getName
   }
 
 }

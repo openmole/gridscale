@@ -1,7 +1,6 @@
 package gridscale
 
-import java.io.{ BufferedOutputStream, FileOutputStream }
-
+import java.io.{BufferedOutputStream, FileOutputStream}
 import gridscale.effectaside._
 import gridscale.authentication.P12Authentication
 import gridscale.http._
@@ -15,11 +14,14 @@ import org.json4s.jackson.JsonMethods._
 import squants._
 import squants.time.TimeConversions._
 
-import scala.language.{ higherKinds, postfixOps }
+import scala.language.{higherKinds, postfixOps}
+import scala.reflect.ClassTag
 
 package object dirac {
 
-  implicit def format = DefaultFormats
+  import tools.ManifestCompat._
+
+  implicit def format: DefaultFormats = DefaultFormats
 
   object JobDescription {
     val Linux_x86_64_glibc_2_11 = "Linux_x86_64_glibc-2.11"
@@ -284,9 +286,9 @@ package object dirac {
   object DIRAC {
 
     class Interpreters {
-      implicit val fileSystemInterpreter = FileSystem()
-      implicit val systemInterpreter = System()
-      implicit val httpInterpreter = HTTP()
+      implicit val fileSystemInterpreter: Effect[FileSystem] = FileSystem()
+      implicit val systemInterpreter: Effect[System] = System()
+      implicit val httpInterpreter: Effect[HTTP] = HTTP()
     }
 
     def apply[T](f: Interpreters ⇒ T) = {

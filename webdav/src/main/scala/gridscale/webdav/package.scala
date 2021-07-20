@@ -25,7 +25,7 @@ package object webdav {
 
   def list(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]) = {
     val properties = listProperties(server, path)
-    properties.drop(1).map { p: Prop ⇒ ListEntry(p.displayName, if (p.isCollection) FileType.Directory else FileType.File, Some(p.modified.toEpochSecond(ZoneOffset.UTC) * 1000)) }
+    properties.drop(1).map { p ⇒ ListEntry(p.displayName, if (p.isCollection) FileType.Directory else FileType.File, Some(p.modified.toEpochSecond(ZoneOffset.UTC) * 1000)) }
   }
 
   def exists(server: http.Server, path: String)(implicit httpEffect: Effect[http.HTTP]): Boolean = {
@@ -117,7 +117,7 @@ package object webdav {
             var isCollection: Option[Boolean] = None
             var lastModified: Option[LocalDateTime] = None
 
-            while (!end(x)) {
+            while (end(x).unary_!) {
               x match {
                 case e if isStartWithName(e, "displayname") ⇒ displayName = Some(er.nextEvent().asCharacters().getData)
                 case e if isStartWithName(e, "iscollection") ⇒ isCollection = Some(er.nextEvent().asCharacters().getData == "1")

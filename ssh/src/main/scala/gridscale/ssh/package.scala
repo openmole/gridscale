@@ -16,13 +16,13 @@ package object ssh {
 
   object SSHAuthentication {
 
-    implicit def userPassword = new SSHAuthentication[UserPassword] {
+    implicit def userPassword: SSHAuthentication[UserPassword] = new SSHAuthentication[UserPassword] {
       override def login(t: UserPassword) = t.user
       override def authenticate(t: UserPassword, sshClient: SSHClient): Unit =
         sshClient.authPassword(t.user, t.password)
     }
 
-    implicit def key = new SSHAuthentication[PrivateKey] {
+    implicit def key: SSHAuthentication[PrivateKey]  = new SSHAuthentication[PrivateKey] {
       override def login(t: PrivateKey) = t.user
       override def authenticate(t: PrivateKey, sshClient: SSHClient): Unit =
         sshClient.authPrivateKey(t)
@@ -260,7 +260,7 @@ package object ssh {
       //         |EOF
       //         |""".stripMargin
 
-      val jobId = system().randomUUID.toString
+      val jobId = system().randomUUID().toString()
       val file = scriptFile(description.workDirectory, jobId)
       writeFile(server, () ⇒ new ByteArrayInputStream(script(jobId).getBytes), file)
       (s"""/bin/bash $file""", jobId)

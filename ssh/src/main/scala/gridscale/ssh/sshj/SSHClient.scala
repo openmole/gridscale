@@ -46,7 +46,7 @@ object SSHClient {
   def withSFTP[T](c: SSHClient, f: SFTPClient ⇒ T) = {
     val sftp = c.newSFTPClient
     try f(sftp)
-    finally sftp.close
+    finally sftp.close()
   }
 
   def launchInBackground(client: SSHClient, cde: String): Unit = withSession(client) { session ⇒

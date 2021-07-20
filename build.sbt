@@ -1,13 +1,13 @@
 
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
-import scalariform.formatter.preferences._
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+//import scalariform.formatter.preferences._
+//import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 ThisBuild / organization := "org.openmole.gridscale"
-ThisBuild / name := "gridscale"
+name := "gridscale"
 
 ThisBuild / scalaVersion := "2.13.6"
-ThisBuild / crossScalaVersions := Seq("2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.13.6", "3.0.1")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 ThisBuild / homepage := Some(url("https://github.com/openmole/gridscale"))
@@ -66,7 +66,7 @@ def priorTo2_13(scalaVersion: String): Boolean =
 
 def settings = Seq (
   resolvers += Resolver.sonatypeRepo("snapshots"),
-  scalacOptions ++= Seq("-Ymacro-annotations", "-language:postfixOps")
+  scalacOptions ++= Seq("-language:postfixOps", "-Ytasty-reader", "-language:implicitConversions")
 )
 
 
@@ -77,16 +77,15 @@ lazy val publishIpfs = taskKey[Unit]("Publish to IPFS")
 
 def defaultSettings =
   settings ++
-    scalariformSettings(autoformat = true) ++ Seq(
+    /*scalariformSettings(autoformat = true) ++ Seq(
   ScalariformKeys.preferences :=
     ScalariformKeys.preferences.value
       .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(RewriteArrowSymbols, true),
-
-  shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
-
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-)
+      .setPreference(RewriteArrowSymbols, true),*/
+  Seq(
+    shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  )
 
 
 
@@ -98,7 +97,7 @@ lazy val httpComponents = Seq("httpclient", "httpmime").map(
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.9" % "test"
 
-lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.8.0"
+lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.8.0" cross(CrossVersion.for3Use2_13)
 
 val circeVersion = "0.14.1"
 
@@ -110,6 +109,8 @@ lazy val circe = Seq(
 
 
 lazy val compress = "org.apache.commons" % "commons-compress" % "1.19"
+
+val json4sVersion = "4.0.1"
 
 /* -------------- gridscale dsl ------------------ */
 
@@ -149,12 +150,12 @@ lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: 
 lazy val webdav = Project(id = "webdav", base = file("webdav")) settings(dslSettings: _*) dependsOn(gridscale, http)
 
 lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion cross(CrossVersion.for3Use2_13),
   libraryDependencies += compress
 )
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.7",
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion cross(CrossVersion.for3Use2_13),
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.68",
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.0"
 )
