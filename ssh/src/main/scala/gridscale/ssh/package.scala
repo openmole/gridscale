@@ -202,7 +202,7 @@ package object ssh {
     }
   }
 
-  case class SSHJobDescription(command: String, workDirectory: String)
+  case class SSHJobDescription(command: String, workDirectory: String, timeout: Option[Time] = None)
 
   object SSHJobDescription {
 
@@ -234,20 +234,27 @@ package object ssh {
              |""".stripMargin
 
     def jobScript(server: SSHServer, description: SSHJobDescription)(implicit system: Effect[System], ssh: Effect[SSH]) = {
-      def script(jobId: String) =
+      def script(jobId: String) = {
+        def jobCommand =
+          description.timeout match {
+            case None => description.command
+            case Some(t) => s"""timeout --signal=KILL ${t.toSeconds.toInt}s ${description.command}"""
+          }
+
         s"""
            |mkdir -p ${description.workDirectory}
            |cd ${description.workDirectory}
            |${BashShell.source}
            |
            |{
-           |  ${description.command} >${outFile(description.workDirectory, jobId)} 2>${errFile(description.workDirectory, jobId)}
+           |  ${jobCommand} >${outFile(description.workDirectory, jobId)} 2>${errFile(description.workDirectory, jobId)}
            |  echo $$? >${endCodeFile(description.workDirectory, jobId)}
            |} & pid=$$!
            |
            |echo $$pid >${pidFile(description.workDirectory, jobId)}
            |
            |""".stripMargin
+      }
 
       //      def run(jobId: String) =
       //        s"""
