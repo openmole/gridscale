@@ -67,7 +67,7 @@ def is2_13(scalaVersion: String): Boolean =
 def settings = Seq (
   resolvers += Resolver.sonatypeRepo("snapshots"),
   scalacOptions ++= 
-    (if(is2_13(scalaVersion.value)) Seq("-language:postfixOps", "-Ytasty-reader", "-language:implicitConversions") else Seq("-Xtarget:11"))
+    (if(is2_13(scalaVersion.value)) Seq("-Ytasty-reader", "-language:implicitConversions", "-language:postfixOps") else Seq("-Xtarget:11", "-language:postfixOps"))
 )
 
 
