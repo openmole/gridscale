@@ -6,8 +6,8 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-ThisBuild / scalaVersion := "2.13.6"
-ThisBuild / crossScalaVersions := Seq("2.13.6", "3.0.1")
+ThisBuild / scalaVersion := "3.1.0"
+ThisBuild / crossScalaVersions := Seq("2.13.7", "3.1.0")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 ThisBuild / homepage := Some(url("https://github.com/openmole/gridscale"))
@@ -58,15 +58,16 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
-def priorTo2_13(scalaVersion: String): Boolean =
+def is2_13(scalaVersion: String): Boolean =
   CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, minor)) if minor < 13 => true
-    case _                              => false
+    case Some((2, minor)) => true
+    case _                => false
   }
 
 def settings = Seq (
   resolvers += Resolver.sonatypeRepo("snapshots"),
-  scalacOptions ++= Seq("-language:postfixOps", "-Ytasty-reader", "-language:implicitConversions")
+  scalacOptions ++= 
+    (if(is2_13(scalaVersion.value)) Seq("-language:postfixOps", "-Ytasty-reader", "-language:implicitConversions") else Seq("-Xtarget:11"))
 )
 
 
@@ -115,7 +116,7 @@ val json4sVersion = "4.0.1"
 /* -------------- gridscale dsl ------------------ */
 
 def dslSettings = defaultSettings ++ Seq(
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.8.0" cross(CrossVersion.for3Use2_13),
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.8.3",
   resolvers += "jitpack" at "https://jitpack.io"
 )
 
