@@ -111,7 +111,7 @@ lazy val circe = Seq(
 
 lazy val compress = "org.apache.commons" % "commons-compress" % "1.19"
 
-val json4sVersion = "4.0.1"
+val json4sVersion = "4.0.3"
 
 /* -------------- gridscale dsl ------------------ */
 
@@ -151,12 +151,12 @@ lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: 
 lazy val webdav = Project(id = "webdav", base = file("webdav")) settings(dslSettings: _*) dependsOn(gridscale, http)
 
 lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion cross(CrossVersion.for3Use2_13),
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
   libraryDependencies += compress
 )
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
-  libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion cross(CrossVersion.for3Use2_13),
+  libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.68",
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.0"
 )
