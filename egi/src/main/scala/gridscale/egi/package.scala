@@ -144,15 +144,21 @@ package object egi {
           )
         )
 
-      val vomses = (idCard \ "Vo" \ "Registries" \ "VoVomsServer")
+      if(idCard \ "Vo" isEmpty) None
+      else {
+        val vomses = (idCard \ "Vo" \ "Registries" \ "VoVomsServer")
 
-      for {
-        voms <- vomses
-      } yield {
+        val hosts =
+          for {
+            voms <- vomses
+          } yield {
 
-        val host = (voms \ "hostname").text
-        val port = voms.attribute("vomses_port").get.text
-        s"$host:$port"
+            val host = (voms \ "hostname").text
+            val port = voms.attribute("vomses_port").get.text
+            s"$host:$port"
+          }
+
+        Some(hosts)
       }
     }
 
