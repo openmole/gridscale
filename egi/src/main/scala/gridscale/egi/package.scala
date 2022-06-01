@@ -134,6 +134,28 @@ package object egi {
       renew(now)
     }
 
+    def get(vo: String, apiKey: String) = {
+      import xml._
+      val idCard =
+        XML.loadString(
+          http.get(
+            s"https://operations-portal.egi.eu/api/vo-idcard/$vo/xml",
+            headers = Seq(("X-API-Key", apiKey))
+          )
+        )
+
+      val vomses = (idCard \ "Vo" \ "Registries" \ "VoVomsServer")
+
+      for {
+        voms <- vomses
+      } yield {
+
+        val host = (voms \ "hostname").text
+        val port = voms.attribute("vomses_port").get.text
+        s"$host:$port"
+      }
+    }
+
     def proxy(
       voms: String,
       p12: P12Authentication,

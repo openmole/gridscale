@@ -53,9 +53,9 @@ package object http {
     }
   }
 
-  def get[T](url: String) = {
+  def get[T](url: String, headers: Headers = Seq.empty) = {
     implicit val interpreter = HTTP()
-    read(buildServer(url), "")
+    read(buildServer(url), "", method = Get(headers))
   }
 
   def getStream[T](url: String)(f: InputStream ⇒ T) = {
