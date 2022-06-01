@@ -15,11 +15,13 @@ object TestDIRAC extends App {
 
   def prg(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem], system: Effect[System]) = {
     val service = getService("vo.complex-systems.eu", certificateDirectory)
+    //val service = Service("https://ccdiracli08.in2p3.fr:9178", "complex_user")
     val s = server(service, p12, certificateDirectory)
     val t = token(s)
+    delegate(s, p12, t)
     val j = submit(s, description, t) //.repeat(10)
     //gs ← queryGroupState[M](s, t, "testgroup")
-    val st = waitUntilEnded(() ⇒ state(s, t, j))
+    val st = waitUntilEnded { () ⇒  println(j) ; state(s, t, j) }
     downloadOutputSandbox(s, t, j, "/tmp/output")
     delete(s, t, j)
     j
