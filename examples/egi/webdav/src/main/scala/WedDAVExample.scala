@@ -20,7 +20,7 @@ object WedDAVExample extends App {
 
     println(bdii().webDAVs(bdiiServer, "vo.complex-systems.eu"))
 
-    val webdavInfo = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("sbg")).get
+    val webdavInfo = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("lal")).get
     val webdav = WebDAVSServer(webdavInfo, proxy.factory)
 
     println(list(webdav, "/"))
