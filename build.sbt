@@ -129,7 +129,7 @@ lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) setting
 lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
 
 lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings: _*) dependsOn (gridscale) settings (
-  libraryDependencies += "com.hierynomus" % "sshj" % "0.31.0",
+  libraryDependencies += "com.hierynomus" % "sshj" % "0.33.0",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
@@ -157,7 +157,7 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.68",
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.70",
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.0"
 )
 
