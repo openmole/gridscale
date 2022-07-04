@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2016 Jonathan Passerat-Palmbach
+ *               2022 Juste Raimbault
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +30,7 @@ import squants.time.Time
 
 object SSHClient {
 
-  def connect(ssh: SSHClient) = {
+  def connect(ssh: SSHClient): SSHClient = {
     ssh.disableHostChecking()
     ssh.useCompression()
     ssh.setConnectTimeout(ssh.timeout.millis.toInt)
@@ -91,11 +92,14 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
     }
   }
 
-  def close() = peer.close()
+  def close(): Unit = {
+    peer.close()
+    if (proxyJump.isDefined) proxyJump.get.close()
+  }
 
   def connect(): Unit = {
     if(proxyJump.isDefined) {
-      proxyJump.get.connect()
+      println("Connecting via proxyjump")
       peer.connectVia(proxyJump.get.directConnection(host, port))
     }
     else peer.connect(host, port)
@@ -104,10 +108,10 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
 
   def directConnection(host: String, port: Int): DirectConnection = peer.newDirectConnection(host, port)
 
-  def disconnect() = peer.disconnect()
+  def disconnect(): Unit = peer.disconnect()
 
-  def setConnectTimeout(timeout: Int) = peer.setConnectTimeout(timeout)
-  def setTimeout(timeout: Int) = peer.setTimeout(timeout)
+  def setConnectTimeout(timeout: Int): Unit = peer.setConnectTimeout(timeout)
+  def setTimeout(timeout: Int): Unit = peer.setTimeout(timeout)
   def disableHostChecking() = peer.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
   def useCompression() = peer.useCompression()
 

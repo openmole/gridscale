@@ -18,7 +18,7 @@ object TestSSH extends App {
 
   //val localhost = SSHServer("localhost", port = 2222)(UserPassword("root", "root"))
   //val host = SSHServer("localhost", port = 22)(UserPassword("root", "root"))
-  val host = SSHServer("134.158.74.194", port = 22)(PrivateKey(privateKey = new File(java.lang.System.getenv("HOME")+"/.ssh/id_ed25519"), password = "", user = "ubuntu"))
+  val host = SSHServer("51.210.14.111", port = 22, proxyJumpHost = Some("134.158.74.194"), proxyJumpPort = Some(22))(PrivateKey(privateKey = new File(java.lang.System.getenv("HOME")+"/.ssh/id_ed25519"), password = "", user = "ubuntu"))
 
 
   def prg(implicit system: Effect[System], ssh: Effect[SSH]) = {
@@ -35,7 +35,8 @@ object TestSSH extends App {
   implicit val ssh: Effect[SSH] = SSH()
 
   //println(ssh().launch(host, "ls /home"))
-  val jump = SSH.client(host)
+  //val jumpHost = SSHServer("134.158.74.194", port = 22)(PrivateKey(privateKey = new File(java.lang.System.getenv("HOME")+"/.ssh/id_ed25519"), password = "", user = "ubuntu"))
+  //val jump = SSH.client(jumpHost)
 
   try println(prg)
   finally ssh().close()
