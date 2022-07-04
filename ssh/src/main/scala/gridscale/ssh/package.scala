@@ -45,16 +45,11 @@ package object ssh {
           val jumpClient = if (server.proxyJumpHost.isDefined&&server.proxyJumpPort.isDefined)
            Some(new SSHClient(host = server.proxyJumpHost.get, port = server.proxyJumpPort.get, timeout = server.timeout, keepAlive = server.keepAlive)) else None
           if (jumpClient.isDefined) {
-            println(s"connecting to jump client: ${jumpClient.get.host}:${jumpClient.get.port}")
             SSHClient.connect(jumpClient.get)
-            println(s"connected: ${jumpClient.get.isConnected}")
-            println("authenticating to jump client")
             authenticate(jumpClient.get)
-            println(s"authenticated: ${jumpClient.get.isAuthenticated}")
           }
 
           val ssh = new SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive, proxyJump = jumpClient)
-          println(s"Connecting to target host: ${ssh.host}:${ssh.port}")
           SSHClient.connect(ssh)
         } catch {
           case t: Throwable ⇒ throw ConnectionError(s"Error connecting to $server", t)
@@ -62,7 +57,6 @@ package object ssh {
 
       def authenticate(ssh: SSHClient) =
         try {
-          println("Authenticating to target host")
           server.authenticate(ssh)
           ssh
         } catch {
@@ -166,7 +160,6 @@ package object ssh {
 
   def submit(server: SSHServer, description: SSHJobDescription)(implicit ssh: Effect[SSH], system: Effect[System]) = {
     val (command, jobId) = SSHJobDescription.jobScript(server, description)
-    println(s"Command: ${command} for job id ${jobId}")
     ssh().launch(server, command)
     JobId(jobId, description.workDirectory)
   }

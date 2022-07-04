@@ -98,10 +98,8 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
   }
 
   def connect(): Unit = {
-    if(proxyJump.isDefined) {
-      println("Connecting via proxyjump")
+    if(proxyJump.isDefined)
       peer.connectVia(proxyJump.get.directConnection(host, port))
-    }
     else peer.connect(host, port)
     keepAlive.foreach(k ⇒ peer.getConnection.getKeepAlive().setKeepAliveInterval(k.toSeconds.toInt))
   }
