@@ -18,12 +18,13 @@
 package gridscale.ssh.sshj
 
 import gridscale.authentication._
+
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
-
 import net.schmizz.keepalive.KeepAliveProvider
 import net.schmizz.sshj.DefaultConfig
 import net.schmizz.sshj.common.IOUtils
+import net.schmizz.sshj.connection.channel.direct.DirectConnection
 import squants.time.Time
 
 object SSHClient {
@@ -33,7 +34,7 @@ object SSHClient {
     ssh.useCompression()
     ssh.setConnectTimeout(ssh.timeout.millis.toInt)
     ssh.setTimeout(ssh.timeout.millis.toInt)
-    ssh.connect(ssh.host, ssh.port)
+    ssh.connect()
     ssh
   }
 
@@ -67,7 +68,7 @@ object SSHClient {
   case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
 }
 
-class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None) {
+class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None, val proxyJump: Option[SSHClient] = None) {
 
   import net.schmizz.sshj.transport.verification.PromiscuousVerifier
   import net.schmizz.sshj.{ DefaultConfig, SSHClient ⇒ SSHJSSHClient }
@@ -92,10 +93,16 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
 
   def close() = peer.close()
 
-  def connect(host: String, port: Int) = {
-    peer.connect(host, port)
+  def connect(): Unit = {
+    if(proxyJump.isDefined) {
+      proxyJump.get.connect()
+      peer.connectVia(proxyJump.get.directConnection(host, port))
+    }
+    else peer.connect(host, port)
     keepAlive.foreach(k ⇒ peer.getConnection.getKeepAlive().setKeepAliveInterval(k.toSeconds.toInt))
   }
+
+  def directConnection(host: String, port: Int): DirectConnection = peer.newDirectConnection(host, port)
 
   def disconnect() = peer.disconnect()
 

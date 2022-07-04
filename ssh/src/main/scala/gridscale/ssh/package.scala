@@ -153,6 +153,7 @@ package object ssh {
 
   def submit(server: SSHServer, description: SSHJobDescription)(implicit ssh: Effect[SSH], system: Effect[System]) = {
     val (command, jobId) = SSHJobDescription.jobScript(server, description)
+    println(s"Command: ${command} for job id ${jobId}")
     ssh().launch(server, command)
     JobId(jobId, description.workDirectory)
   }
