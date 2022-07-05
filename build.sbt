@@ -30,6 +30,11 @@ ThisBuild / pomExtra := {
         <name>Jonathan Passerat-Palmbach</name>
         <url>https://github.com/jopasserat/</url>
       </developer>
+      <developer>
+        <id>justeraimbault</id>
+        <name>Juste Raimbault</name>
+        <url>https://github.com/JusteRaimbault/</url>
+      </developer>
     </developers>
 }
 
