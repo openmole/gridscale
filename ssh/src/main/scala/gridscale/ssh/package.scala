@@ -37,16 +37,26 @@ package object ssh {
 
   object SSH {
 
-    def apply(connectionCache: ConnectionCache = SSHCache()) = Effect(new SSH(connectionCache))
+    def apply(connectionCache: ConnectionCache = SSHCache()): Effect[SSH] = Effect(new SSH(connectionCache))
+
+    def authenticate(server: SSHServer, client: SSHClient): SSHClient =
+      try {
+        server.authenticate(client)
+        client
+      } catch {
+        case e: Throwable ⇒
+          util.Try(client.disconnect())
+          throw AuthenticationException(s"Error authenticating to $server", e)
+      }
 
     def client(server: SSHServer): SSHClient = {
-      def ssh =
+      def ssh: SSHClient =
         try {
-          val jumpClient = if (server.proxyJumpHost.isDefined&&server.proxyJumpPort.isDefined)
-           Some(new SSHClient(host = server.proxyJumpHost.get, port = server.proxyJumpPort.get, timeout = server.timeout, keepAlive = server.keepAlive)) else None
+          val jumpClient = if (server.sshProxyServer.isDefined)
+           Some(new SSHClient(host = server.sshProxyServer.get.host, port = server.sshProxyServer.get.port, timeout = server.sshProxyServer.get.timeout, keepAlive = server.sshProxyServer.get.keepAlive)) else None
           if (jumpClient.isDefined) {
             SSHClient.connect(jumpClient.get)
-            authenticate(jumpClient.get)
+            authenticate(server.sshProxyServer.get, jumpClient.get)
           }
 
           val ssh = new SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive, proxyJump = jumpClient)
@@ -55,26 +65,16 @@ package object ssh {
           case t: Throwable ⇒ throw ConnectionError(s"Error connecting to $server", t)
         }
 
-      def authenticate(ssh: SSHClient) =
-        try {
-          server.authenticate(ssh)
-          ssh
-        } catch {
-          case e: Throwable ⇒
-            util.Try(ssh.disconnect())
-            throw AuthenticationException(s"Error authenticating to $server", e)
-        }
-
-      authenticate(ssh)
+      authenticate(server, ssh)
     }
   }
 
   type ConnectionCache = KeyValueCache[SSHServer, SSHClient]
 
   object SSHCache {
-    def apply() = KeyValueCache(s ⇒ SSH.client(s))
+    def apply(): KeyValueCache[SSHServer, SSHClient] = KeyValueCache(s ⇒ SSH.client(s))
 
-    def withCache[T](cache: ConnectionCache, server: SSHServer)(f: SSHClient ⇒ T) = {
+    def withCache[T](cache: ConnectionCache, server: SSHServer)(f: SSHClient ⇒ T): T = {
       val client = cache.getValidOrInvalidate(server, _.isConnected, c ⇒ util.Try(c.close()))
       f(client)
     }
@@ -143,15 +143,65 @@ package object ssh {
   //  }
 
   object SSHServer {
-    def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes, keepAlive: Option[Time] = Some(10 seconds), proxyJumpHost: Option[String]= None, proxyJumpPort: Option[Int] = None)(authentication: A): SSHServer = {
-      val sSHAuthentication = implicitly[SSHAuthentication[A]]
-      new SSHServer(sSHAuthentication.login(authentication), host, port, proxyJumpHost, proxyJumpPort)(timeout, (sshClient: SSHClient) ⇒ sSHAuthentication.authenticate(authentication, sshClient), keepAlive)
+
+
+    def apply[TargetAuthType: SSHAuthentication](
+              host: String,
+              port: Int = 22,
+              timeout: Time = 1 minutes,
+              keepAlive: Option[Time] = Some(10 seconds)
+         )(authentication: TargetAuthType): SSHServer = apply[TargetAuthType, UserPassword](
+      host, port, timeout, keepAlive, None, None
+    )(authentication, UserPassword("",""))
+
+    def apply[TargetAuthType: SSHAuthentication](
+              host: String,
+              port: Int,
+              timeout: Time,
+              keepAlive: Option[Time],
+              proxyJumpHost: String,
+              proxyJumpPort: Int
+      )(authentication: TargetAuthType): SSHServer = apply[TargetAuthType, TargetAuthType](
+      host, port, timeout, keepAlive, Some(proxyJumpHost), Some(proxyJumpPort)
+    )(authentication, authentication)
+
+    def apply[TargetAuthType: SSHAuthentication, ProxyAuthType: SSHAuthentication](
+              host: String,
+              port: Int,
+              timeout: Time,
+              keepAlive: Option[Time],
+              proxyJumpHost: Option[String],
+              proxyJumpPort: Option[Int]
+        )(
+              authentication: TargetAuthType,
+              proxyAuthentication: ProxyAuthType
+        ): SSHServer = {
+      val targetAuthenticator = implicitly[SSHAuthentication[TargetAuthType]]
+      val targetLogin: String = targetAuthenticator.login(authentication)
+      val targetAuthentication = (sshClient: SSHClient) ⇒ targetAuthenticator.authenticate(authentication, sshClient)
+
+      val sshProxyServer = if (proxyJumpHost.isDefined) {
+        val proxyAuthenticator = implicitly[SSHAuthentication[ProxyAuthType]]
+        val proxyLogin = proxyAuthenticator.login(proxyAuthentication)
+        val proxyAuthFun = (sshClient: SSHClient) ⇒ proxyAuthenticator.authenticate(proxyAuthentication, sshClient)
+        Some(new SSHServer(proxyLogin, proxyJumpHost.get, proxyJumpPort.get)(timeout, proxyAuthFun, keepAlive, None))
+      } else None
+
+      new SSHServer(targetLogin, host, port)(timeout, targetAuthentication, keepAlive, sshProxyServer)
     }
   }
 
-  case class SSHServer(login: String, host: String, port: Int, proxyJumpHost: Option[String], proxyJumpPort: Option[Int])(val timeout: Time, val authenticate: SSHClient ⇒ Unit, val keepAlive: Option[Time]) {
+  case class SSHServer(
+       login: String,
+       host: String,
+       port: Int
+  )(
+       val timeout: Time,
+       val authenticate: SSHClient ⇒ Unit,
+       val keepAlive: Option[Time],
+       val sshProxyServer: Option[SSHServer]
+  ){
     override def toString = s"ssh server $host:$port"
-
   }
 
   case class JobId(jobId: String, workDirectory: String)
