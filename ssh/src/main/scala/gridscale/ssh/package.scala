@@ -37,37 +37,49 @@ package object ssh {
 
   object SSH {
 
-    def apply(connectionCache: ConnectionCache = SSHCache()) = Effect(new SSH(connectionCache))
+    def apply(connectionCache: ConnectionCache = SSHCache()): Effect[SSH] = Effect(new SSH(connectionCache))
+
+    def authenticate(server: SSHServer, client: SSHClient): SSHClient =
+      try {
+        server.authenticate(client)
+        client
+      } catch {
+        case e: Throwable ⇒
+          util.Try(client.disconnect())
+          throw AuthenticationException(s"Error authenticating to $server", e)
+      }
 
     def client(server: SSHServer): SSHClient = {
-      def ssh =
+      def ssh: SSHClient =
         try {
-          val ssh = new SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive)
+          val jumpClient =
+            server.sshProxy.map { proxy =>
+              val client = new SSHClient(
+                  host = proxy.host,
+                  port = proxy.port,
+                  timeout = proxy.timeout,
+                  keepAlive = proxy.keepAlive)
+
+              SSHClient.connect(client)
+              authenticate(proxy, client)
+            }
+
+          val ssh = new SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive, proxyJump = jumpClient)
           SSHClient.connect(ssh)
         } catch {
           case t: Throwable ⇒ throw ConnectionError(s"Error connecting to $server", t)
         }
 
-      def authenticate(ssh: SSHClient) =
-        try {
-          server.authenticate(ssh)
-          ssh
-        } catch {
-          case e: Throwable ⇒
-            util.Try(ssh.disconnect())
-            throw AuthenticationException(s"Error authenticating to $server", e)
-        }
-
-      authenticate(ssh)
+      authenticate(server, ssh)
     }
   }
 
   type ConnectionCache = KeyValueCache[SSHServer, SSHClient]
 
   object SSHCache {
-    def apply() = KeyValueCache(s ⇒ SSH.client(s))
+    def apply(): KeyValueCache[SSHServer, SSHClient] = KeyValueCache(s ⇒ SSH.client(s))
 
-    def withCache[T](cache: ConnectionCache, server: SSHServer)(f: SSHClient ⇒ T) = {
+    def withCache[T](cache: ConnectionCache, server: SSHServer)(f: SSHClient ⇒ T): T = {
       val client = cache.getValidOrInvalidate(server, _.isConnected, c ⇒ util.Try(c.close()))
       f(client)
     }
@@ -136,15 +148,36 @@ package object ssh {
   //  }
 
   object SSHServer {
-    def apply[A: SSHAuthentication](host: String, port: Int = 22, timeout: Time = 1 minutes, keepAlive: Option[Time] = Some(10 seconds))(authentication: A): SSHServer = {
+
+    def apply[A: SSHAuthentication](
+      host: String,
+      port: Int = 22,
+      timeout: Time = 1 minutes,
+      keepAlive: Option[Time] = Some(10 seconds),
+      sshProxy: Option[SSHServer] = None)(authentication: A): SSHServer = {
       val sSHAuthentication = implicitly[SSHAuthentication[A]]
-      new SSHServer(sSHAuthentication.login(authentication), host, port)(timeout, (sshClient: SSHClient) ⇒ sSHAuthentication.authenticate(authentication, sshClient), keepAlive)
+      new SSHServer(
+        login = sSHAuthentication.login(authentication),
+        host = host,
+        port = port)(
+        timeout = timeout,
+        authenticate = (sshClient: SSHClient) ⇒ sSHAuthentication.authenticate(authentication, sshClient),
+        keepAlive = keepAlive,
+        sshProxy = sshProxy)
     }
   }
 
-  case class SSHServer(login: String, host: String, port: Int)(val timeout: Time, val authenticate: SSHClient ⇒ Unit, val keepAlive: Option[Time]) {
+  case class SSHServer(
+    login: String,
+    host: String,
+    port: Int
+  )(
+    val timeout: Time,
+    val authenticate: SSHClient ⇒ Unit,
+    val keepAlive: Option[Time],
+    val sshProxy: Option[SSHServer]
+  ) {
     override def toString = s"ssh server $host:$port"
-
   }
 
   case class JobId(jobId: String, workDirectory: String)

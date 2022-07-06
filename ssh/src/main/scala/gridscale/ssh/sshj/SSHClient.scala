@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2016 Jonathan Passerat-Palmbach
+ *               2022 Juste Raimbault
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,22 +19,23 @@
 package gridscale.ssh.sshj
 
 import gridscale.authentication._
+
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
-
 import net.schmizz.keepalive.KeepAliveProvider
 import net.schmizz.sshj.DefaultConfig
 import net.schmizz.sshj.common.IOUtils
+import net.schmizz.sshj.connection.channel.direct.DirectConnection
 import squants.time.Time
 
 object SSHClient {
 
-  def connect(ssh: SSHClient) = {
+  def connect(ssh: SSHClient): SSHClient = {
     ssh.disableHostChecking()
     ssh.useCompression()
     ssh.setConnectTimeout(ssh.timeout.millis.toInt)
     ssh.setTimeout(ssh.timeout.millis.toInt)
-    ssh.connect(ssh.host, ssh.port)
+    ssh.connect()
     ssh
   }
 
@@ -67,7 +69,7 @@ object SSHClient {
   case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
 }
 
-class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None) {
+class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None, val proxyJump: Option[SSHClient] = None) {
 
   import net.schmizz.sshj.transport.verification.PromiscuousVerifier
   import net.schmizz.sshj.{ DefaultConfig, SSHClient ⇒ SSHJSSHClient }
@@ -90,17 +92,24 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
     }
   }
 
-  def close() = peer.close()
+  def close(): Unit = {
+    peer.close()
+    if (proxyJump.isDefined) proxyJump.get.close()
+  }
 
-  def connect(host: String, port: Int) = {
-    peer.connect(host, port)
+  def connect(): Unit = {
+    if(proxyJump.isDefined)
+      peer.connectVia(proxyJump.get.directConnection(host, port))
+    else peer.connect(host, port)
     keepAlive.foreach(k ⇒ peer.getConnection.getKeepAlive().setKeepAliveInterval(k.toSeconds.toInt))
   }
 
-  def disconnect() = peer.disconnect()
+  def directConnection(host: String, port: Int): DirectConnection = peer.newDirectConnection(host, port)
 
-  def setConnectTimeout(timeout: Int) = peer.setConnectTimeout(timeout)
-  def setTimeout(timeout: Int) = peer.setTimeout(timeout)
+  def disconnect(): Unit = peer.disconnect()
+
+  def setConnectTimeout(timeout: Int): Unit = peer.setConnectTimeout(timeout)
+  def setTimeout(timeout: Int): Unit = peer.setTimeout(timeout)
   def disableHostChecking() = peer.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
   def useCompression() = peer.useCompression()
 
