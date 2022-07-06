@@ -106,7 +106,10 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
 
   def directConnection(host: String, port: Int): DirectConnection = peer.newDirectConnection(host, port)
 
-  def disconnect(): Unit = peer.disconnect()
+  def disconnect(): Unit = {
+    peer.disconnect()
+    if (proxyJump.isDefined) proxyJump.get.disconnect()
+  }
 
   def setConnectTimeout(timeout: Int): Unit = peer.setConnectTimeout(timeout)
   def setTimeout(timeout: Int): Unit = peer.setTimeout(timeout)
