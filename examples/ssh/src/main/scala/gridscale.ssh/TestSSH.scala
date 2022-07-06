@@ -15,7 +15,7 @@ object TestSSH extends App {
   def job = SSHJobDescription(command = s"""echo -n greatings `whoami`""", workDirectory = "/tmp/")
 
   //val localhost = SSHServer("localhost", port = 2222)(UserPassword("root", "root"))
-  val localhost = SSHServer("localhost", port = 2222, proxyJumpHost = Some("localhost"), proxyJumpPort = Some(2222))(UserPassword("root", "root"))
+  val localhost = SSHServer("localhost", 2222, 1 minutes, Some(10 seconds), "localhost", 2222)(UserPassword("root", "root"))
 
   def prg(implicit system: Effect[System], ssh: Effect[SSH]): String = {
     val jobId = submit(localhost, job)
