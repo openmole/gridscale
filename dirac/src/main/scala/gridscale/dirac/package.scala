@@ -48,7 +48,8 @@ package object dirac {
         cpuTime.map(s ⇒ "CPUTime" -> JString(s.toSeconds.toString)) ++
         (if (!platforms.isEmpty) Some("Platform" -> platformsArray) else None) ++
         jobGroup.map(s ⇒ "JobGroup" -> JString(s)) ++
-        cores.map(c ⇒ "NumberOfProcessors" -> JString(c.toString))
+        cores.map(c ⇒ "NumberOfProcessors" -> JString(c.toString)) ++
+        site.map(s => "Site" -> JString(s))
 
       pretty(JObject(fields: _*))
     }
@@ -64,7 +65,8 @@ package object dirac {
     outputSandbox: Seq[String] = List.empty,
     platforms: Seq[String] = Seq.empty,
     cpuTime: Option[Time] = None,
-    cores: Option[Int] = None)
+    cores: Option[Int] = None,
+    site: Option[String] = None)
 
   case class Token(token: String, lifetime: Time)
   case class DIRACServer(server: HTTPSServer, service: Service)
