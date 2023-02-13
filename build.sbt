@@ -6,7 +6,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-ThisBuild / scalaVersion := "3.2.1"
+ThisBuild / scalaVersion := "3.2.2"
 //ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
@@ -97,15 +97,15 @@ def defaultSettings =
 
 /* ---------------- Libraries --------------------*/
 
-lazy val httpComponentsVersion = "4.5.10"
+lazy val httpComponentsVersion = "4.5.14"
 lazy val httpComponents = Seq("httpclient", "httpmime").map(
   "org.apache.httpcomponents" % _ % httpComponentsVersion)
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.9" % "test"
 
-lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.8.0" cross(CrossVersion.for3Use2_13)
+lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.9.2" cross(CrossVersion.for3Use2_13)
 
-val circeVersion = "0.14.1"
+val circeVersion = "0.14.3"
 
 lazy val circe = Seq(
   "io.circe" %% "circe-core",
@@ -114,9 +114,9 @@ lazy val circe = Seq(
 ).map(_ % circeVersion)
 
 
-lazy val compress = "org.apache.commons" % "commons-compress" % "1.19"
+lazy val compress = "org.apache.commons" % "commons-compress" % "1.22"
 
-val json4sVersion = "4.0.3"
+val json4sVersion = "4.0.6"
 
 /* -------------- gridscale dsl ------------------ */
 
@@ -134,7 +134,7 @@ lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) setting
 lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
 
 lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings: _*) dependsOn (gridscale) settings (
-  libraryDependencies += "com.hierynomus" % "sshj" % "0.33.0",
+  libraryDependencies += "com.hierynomus" % "sshj" % "0.35.0",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
@@ -149,7 +149,7 @@ lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings: _*)
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.3.0",
+  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.10.0",
   libraryDependencies ++= httpComponents
 )
 
@@ -163,7 +163,7 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk15on" % "1.70",
-  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.0"
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
