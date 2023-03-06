@@ -1,17 +1,18 @@
 package gridscale
 
-import gridscale.webdav.WebDAV._
-import java.io.{ ByteArrayInputStream, IOException, InputStream }
-import java.time.{ LocalDate, LocalDateTime, ZoneOffset }
+import gridscale.webdav.WebDAV.*
 
-import gridscale.effectaside._
-import org.apache.http.{ HttpRequest, HttpResponse, HttpStatus }
+import java.io.{ByteArrayInputStream, IOException, InputStream}
+import java.time.{LocalDate, LocalDateTime, ZoneOffset}
+import gridscale.effectaside.*
+import org.apache.http.{HttpRequest, HttpResponse, HttpStatus}
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.entity.InputStreamEntity
 import org.apache.http.impl.client.DefaultRedirectStrategy
 
 import scala.collection.mutable.ListBuffer
-import scala.language.{ higherKinds, postfixOps }
+import scala.language.{higherKinds, postfixOps}
+import scala.util.control.Breaks
 
 package object webdav {
 
@@ -47,11 +48,11 @@ package object webdav {
 
   def writeStream(server: Server, is: () ⇒ InputStream, path: String, redirect: Boolean = true)(implicit httpEffect: Effect[http.HTTP]): Unit = {
     def redirectedServer =
-      if (!redirect) server
-      else {
+      if !redirect
+      then server
+      else
         val diskURI = httpEffect().request(server, path, WebDAV.getRedirectURI, http.Put(() ⇒ WebDAV.emptyStream(), headers = Seq(http.Headers.expectContinue)))
         http.Server.copy(server)(url = diskURI)
-      }
 
     val s = redirectedServer
     http.read(s, "", http.Put(is))
@@ -94,18 +95,25 @@ package object webdav {
       modified: java.time.LocalDateTime)
 
     def parsePropsResponse(r: InputStream) = {
+      import scala.jdk.CollectionConverters.*
       //import scala.xml.pull._
+      //println(io.Source.fromInputStream(r).mkString)
+
       import javax.xml.stream._
       import javax.xml.stream.events._
       import scala.io._
       val er = XMLInputFactory.newDefaultFactory().createXMLEventReader(r)
-      var props = ListBuffer[Prop]()
+      val props = ListBuffer[Prop]()
 
       def isStartWithName(e: XMLEvent, name: String) = e.isStartElement && e.asStartElement().getName.getLocalPart == name
 
-      while (er.hasNext) {
-        er.nextEvent() match {
 
+
+      while (er.hasNext) {
+        val eventBreak = new Breaks
+        import eventBreak.{break, breakable}
+
+        er.nextEvent() match {
           case e if isStartWithName(e, "prop") ⇒
             def end(x: XMLEvent) = x match {
               case x if x.isEndElement && x.asEndElement().getName.getLocalPart == "prop" ⇒ true
@@ -117,20 +125,33 @@ package object webdav {
             var isCollection: Option[Boolean] = None
             var lastModified: Option[LocalDateTime] = None
 
-            while (end(x).unary_!) {
-              x match {
+
+            //def goToPropEnd =
+
+            while !end(x)
+            do
+              x match
                 case e if isStartWithName(e, "displayname") ⇒ displayName = Some(er.nextEvent().asCharacters().getData)
                 case e if isStartWithName(e, "iscollection") ⇒ isCollection = Some(er.nextEvent().asCharacters().getData == "1")
+                case e if isStartWithName(e, "resourcetype") =>
+                  //println("rt " + er.nextEvent())
+                  val next = er.nextEvent()
+                  if isStartWithName(next, "collection")
+                  then isCollection = Some(true)
+                  else isCollection = Some(false)
                 case e if isStartWithName(e, "getlastmodified") ⇒ lastModified = parseDate(er.nextEvent().asCharacters().getData)
                 case _ ⇒
-              }
               x = er.nextEvent()
-            }
 
-            props += Prop(displayName.get, isCollection.get, lastModified.get)
+            for
+              d <- displayName
+              c <- isCollection
+              m <- lastModified
+            do props += Prop(d, c, m)
           case _ ⇒
         }
       }
+
 
       props.toVector
     }
