@@ -173,7 +173,10 @@ lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: 
 
 /* -------------- examples ------------------ */
 
-def exampleSettings = defaultSettings ++ exportSettings
+def exampleSettings = 
+  defaultSettings ++ exportSettings ++ Seq(
+    publish := false
+  )
 
 lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream")) settings(exampleSettings: _*) dependsOn egi
 lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav")) settings(exampleSettings: _*) dependsOn (egi, webdav)
