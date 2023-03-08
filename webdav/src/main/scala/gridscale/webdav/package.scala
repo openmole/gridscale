@@ -106,7 +106,7 @@ package object webdav {
       val props = ListBuffer[Prop]()
 
       def isStartWithName(e: XMLEvent, name: String) = e.isStartElement && e.asStartElement().getName.getLocalPart == name
-
+      def isEndWithName(x: XMLEvent, name: String) = x.isEndElement && x.asEndElement().getName.getLocalPart == name
 
 
       while (er.hasNext) {
@@ -115,30 +115,24 @@ package object webdav {
 
         er.nextEvent() match {
           case e if isStartWithName(e, "prop") ⇒
-            def end(x: XMLEvent) = x match {
-              case x if x.isEndElement && x.asEndElement().getName.getLocalPart == "prop" ⇒ true
-              case _ ⇒ false
-            }
-
             var x = er.nextEvent()
             var displayName: Option[String] = None
             var isCollection: Option[Boolean] = None
             var lastModified: Option[LocalDateTime] = None
 
-
-            //def goToPropEnd =
-
-            while !end(x)
+            while !isEndWithName(x, "prop")
             do
               x match
                 case e if isStartWithName(e, "displayname") ⇒ displayName = Some(er.nextEvent().asCharacters().getData)
                 case e if isStartWithName(e, "iscollection") ⇒ isCollection = Some(er.nextEvent().asCharacters().getData == "1")
                 case e if isStartWithName(e, "resourcetype") =>
-                  //println("rt " + er.nextEvent())
-                  val next = er.nextEvent()
-                  if isStartWithName(next, "collection")
-                  then isCollection = Some(true)
-                  else isCollection = Some(false)
+                  x = er.nextEvent()
+                  isCollection = Some(false)
+                  while !isEndWithName(x, "resourcetype")
+                  do
+                    if isStartWithName(x, "collection") then isCollection = Some(true)
+                    x = er.nextEvent()
+                    
                 case e if isStartWithName(e, "getlastmodified") ⇒ lastModified = parseDate(er.nextEvent().asCharacters().getData)
                 case _ ⇒
               x = er.nextEvent()
