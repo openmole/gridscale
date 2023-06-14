@@ -28,7 +28,7 @@ import net.schmizz.sshj.common.IOUtils
 import net.schmizz.sshj.connection.channel.direct.DirectConnection
 import squants.time.Time
 
-object SSHClient {
+object SSHClient:
 
   def connect(ssh: SSHClient): SSHClient = {
     ssh.disableHostChecking()
@@ -66,10 +66,11 @@ object SSHClient {
     } finally cmd.close()
   }
 
-  case class NoSuchFileException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
-}
+  case class SFTPException(msg: String, code: Int, cause: Throwable = null) extends Throwable(msg, cause)
 
-class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None, val proxyJump: Option[SSHClient] = None) {
+
+
+class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None, val proxyJump: Option[SSHClient] = None):
 
   import net.schmizz.sshj.transport.verification.PromiscuousVerifier
   import net.schmizz.sshj.{ DefaultConfig, SSHClient ⇒ SSHJSSHClient }
@@ -133,54 +134,59 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
   def isAuthenticated: Boolean = peer.isAuthenticated
   def isConnected: Boolean = peer.isConnected
 
-  def newSFTPClient = new SFTPClient {
-    def wrap[T](f: ⇒ T) =
-      util.Try(f) match {
+  def newSFTPClient = new SFTPClient:
+    def wrap[T](f: ⇒ T, operation: Option[String] = None) =
+      util.Try(f) match
         case s @ util.Success(_) ⇒ s
-        case util.Failure(e: net.schmizz.sshj.sftp.SFTPException) if e.getMessage == "No such file" ⇒
-          util.Failure(new SSHClient.NoSuchFileException(e.getMessage))
-        case e ⇒ e
-      }
+        case util.Failure(e: net.schmizz.sshj.sftp.SFTPException) ⇒
+          def errorMessage =
+            s"""Error message: ${e.getMessage}
+               |Status code: ${e.getStatusCode}""".stripMargin
+
+          def message =
+            Seq(errorMessage) ++ operation.map(o => s"Performing: $o")
+          util.Failure(SSHClient.SFTPException(message.mkString("\n"), e.getStatusCode.getCode))
+        case f ⇒ f
 
     private lazy val peerSFTPClient = wrap(peer.newSFTPClient())
 
-    private def withClient[T](f: net.schmizz.sshj.sftp.SFTPClient ⇒ T) =
+    private def withClient[T](f: net.schmizz.sshj.sftp.SFTPClient ⇒ T, operation: Option[String] = None) =
       for {
         c ← peerSFTPClient
-        r ← wrap(f(c))
+        r ← wrap(f(c), operation)
       } yield r
 
     override def writeFile(is: InputStream, path: String) =
-      withClient { c ⇒ SSHJSFTPClient.fileOutputStream(c)(is, path) }
+      withClient(c ⇒ SSHJSFTPClient.fileOutputStream(c)(is, path), Some(s"writing to remote $path"))
 
     override def rename(oldName: String, newName: String) =
-      withClient { c ⇒ SSHJSFTPClient.rename(c)(oldName, newName) }
+      withClient(c ⇒ SSHJSFTPClient.rename(c)(oldName, newName), Some(s"renaming remote $oldName to $newName"))
 
     override def canonicalize(path: String) =
-      withClient { c ⇒ SSHJSFTPClient.canonicalize(c)(path) }
+      withClient(c ⇒ SSHJSFTPClient.canonicalize(c)(path), Some(s"making remote $path cannonincal"))
 
     override def rmdir(path: String) =
-      withClient { c ⇒ SSHJSFTPClient.rmdir(c)(path) }
+      withClient(c ⇒ SSHJSFTPClient.rmdir(c)(path), Some(s"removing remote path $path"))
 
     override def chmod(path: String, perms: Int) =
-      withClient { c ⇒ SSHJSFTPClient.chmod(c)(path, perms) }
+      withClient(c ⇒ SSHJSFTPClient.chmod(c)(path, perms), Some(s"changing mod of remote path $path to $perms"))
 
     override def readAheadFileInputStream(path: String) =
-      withClient { c ⇒ SSHJSFTPClient.readAheadFileInputStream(c)(path) }
+      withClient(c ⇒ SSHJSFTPClient.readAheadFileInputStream(c)(path), Some(s"reading ahead in remote file $path"))
 
     override def close() =
       withClient { c ⇒ SSHJSFTPClient.close(c) }
 
     override def rm(path: String) =
-      withClient { c ⇒ SSHJSFTPClient.rm(c)(path) }
+      withClient(c ⇒ SSHJSFTPClient.rm(c)(path), Some(s"removing remote $path"))
 
     override def mkdir(path: String) =
-      withClient { c ⇒ SSHJSFTPClient.mkdir(c)(path) }
+      withClient(c ⇒ SSHJSFTPClient.mkdir(c)(path), Some(s"creating remote directory $path"))
 
     override def exists(path: String) =
-      withClient { c ⇒ SSHJSFTPClient.exists(c)(path) }
+      withClient(c ⇒ SSHJSFTPClient.exists(c)(path), Some(s"testing existence of remote directory $path"))
 
     override def ls(path: String)(predicate: String ⇒ Boolean) =
-      withClient { c ⇒ SSHJSFTPClient.ls(c)(path, predicate) }
-  }
-}
+      withClient(c ⇒ SSHJSFTPClient.ls(c)(path, predicate), Some(s"listing remote directory $path"))
+
+
