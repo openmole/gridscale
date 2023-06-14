@@ -89,9 +89,8 @@ package object ssh {
 
     def execute(server: SSHServer, s: String) = SSHCache.withCache(clientCache, server) { c ⇒
       try SSHClient.run(c, s).get
-      catch {
+      catch
         case t: Throwable ⇒ throw ExecutionError(s"Error executing $s on $server", t)
-      }
     }
 
     def launch(server: SSHServer, s: String) = SSHCache.withCache(clientCache, server) { c ⇒
@@ -100,16 +99,15 @@ package object ssh {
 
     def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T = SSHCache.withCache(clientCache, server) { c ⇒
       try SSHClient.withSFTP(c, f)
-      catch {
+      catch
         case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
-      }
     }
 
     def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) = SSHCache.withCache(clientCache, server) { c ⇒
       try SSHClient.withSFTP(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
-      catch {
-        case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
-      }
+      catch
+        case t: SFTPError => throw t
+        case t: Throwable ⇒ throw SFTPError(s"Error while reading $path via sftp on $server", t)
     }
 
     def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String) = {
@@ -119,21 +117,24 @@ package object ssh {
         finally ois.close()
       }
 
-      SSHCache.withCache(clientCache, server) { c ⇒ write(c) }
+      try SSHCache.withCache(clientCache, server) { c ⇒ write(c) }
+      catch
+        case t: SFTPError => throw t
+        case t: Throwable ⇒ throw SFTPError(s"Error while writing to $path via sftp on $server", t)
     }
 
     def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = throw ReturnCodeError(server, command, executionResult)
 
-    def close(): Unit = {
+    def close(): Unit =
       clientCache.values.foreach(c ⇒ util.Try(c.close()))
       clientCache.clear()
-    }
 
   }
 
   case class ConnectionError(message: String, t: Throwable) extends Exception(message, t)
   case class ExecutionError(message: String, t: Throwable) extends Exception(message, t)
   case class SFTPError(message: String, t: Throwable) extends Exception(message, t)
+
   case class ReturnCodeError(server: String, command: String, executionResult: ExecutionResult) extends Exception {
     override def toString = ExecutionResult.error(command, executionResult) + s" on server $server"
   }
