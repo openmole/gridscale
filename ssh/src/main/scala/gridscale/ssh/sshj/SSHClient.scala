@@ -43,7 +43,18 @@ object SSHClient:
     val session = c.startSession()
     try f(session)
     finally session.close()
-  }
+  } match
+    case util.Failure(e: net.schmizz.sshj.common.SSHException) =>
+      def errorMessage = s"Error message: ${e.getMessage}"
+      def message = Seq(errorMessage) ++ disconnectedMessage(e)
+      util.Failure(
+        SSHException(
+          message.mkString("\n"),
+          e.getDisconnectReason.toInt,
+          e
+        )
+      )
+    case o => o
 
   def withSFTP[T](c: SSHClient, f: SFTPClient ⇒ T) = {
     val sftp = c.newSFTPClient
@@ -66,7 +77,13 @@ object SSHClient:
     } finally cmd.close()
   }
 
-  case class SFTPException(msg: String, code: Int, cause: Throwable = null) extends Throwable(msg, cause)
+  case class SSHException(msg: String, disconnectCode: Int, cause: Throwable) extends Throwable(msg, cause)
+  case class SFTPException(msg: String, disconnectCode: Int, sftpCode: Int, cause: Throwable) extends Throwable(msg, cause)
+
+  def disconnectedMessage(e: net.schmizz.sshj.common.SSHException) =
+    e.getDisconnectReason match
+      case net.schmizz.sshj.common.DisconnectReason.UNKNOWN => None
+      case c => Some(s"Disconnected with status code: ${c}")
 
 
 
@@ -139,13 +156,26 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
       util.Try(f) match
         case s @ util.Success(_) ⇒ s
         case util.Failure(e: net.schmizz.sshj.sftp.SFTPException) ⇒
-          def errorMessage =
-            s"""Error message: ${e.getMessage}
-               |Status code: ${e.getStatusCode}""".stripMargin
+          def errorMessage = s"Error message: ${e.getMessage}"
+
+          def statusMessage =
+            e.getStatusCode match
+              case net.schmizz.sshj.sftp.Response.StatusCode.UNKNOWN => None
+              case c => Some(s"Error with status code: ${c}")
 
           def message =
-            Seq(errorMessage) ++ operation.map(o => s"Performing: $o")
-          util.Failure(SSHClient.SFTPException(message.mkString("\n"), e.getStatusCode.getCode))
+            Seq(errorMessage) ++
+              statusMessage ++
+              SSHClient.disconnectedMessage(e) ++
+              operation.map(o => s"Performing: $o")
+
+          util.Failure(
+            SSHClient.SFTPException(
+              message.mkString("\n"),
+              e.getDisconnectReason.toInt,
+              e.getStatusCode.getCode,
+              e)
+          )
         case f ⇒ f
 
     private lazy val peerSFTPClient = wrap(peer.newSFTPClient())
