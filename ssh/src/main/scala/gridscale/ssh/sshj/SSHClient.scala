@@ -33,7 +33,6 @@ object SSHClient:
   def connect(ssh: SSHClient): SSHClient = {
     ssh.disableHostChecking()
     ssh.useCompression()
-    ssh.setConnectTimeout(ssh.timeout.millis.toInt)
     ssh.setTimeout(ssh.timeout.millis.toInt)
     ssh.connect()
     ssh
@@ -100,7 +99,13 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
     config
   }
 
-  private lazy val peer: SSHJSSHClient = new SSHJSSHClient(sshDefaultConfig)
+  private lazy val peer: SSHJSSHClient =
+    val client = new SSHJSSHClient(sshDefaultConfig)
+    client.setTimeout(timeout.millis.toInt)
+    client.setConnectTimeout(timeout.millis.toInt)
+    client.getConnection.setTimeoutMs(timeout.millis.toInt)
+    client.getTransport.setTimeoutMs(timeout.millis.toInt)
+    client
 
   def startSession(): SSHSession = {
     val session = peer.startSession
@@ -129,8 +134,12 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
     if (proxyJump.isDefined) proxyJump.get.disconnect()
   }
 
-  def setConnectTimeout(timeout: Int): Unit = peer.setConnectTimeout(timeout)
-  def setTimeout(timeout: Int): Unit = peer.setTimeout(timeout)
+  def setTimeout(timeout: Int): Unit =
+    peer.setTimeout(timeout)
+    peer.setConnectTimeout(timeout)
+    peer.getConnection.setTimeoutMs(timeout)
+    peer.getTransport.setTimeoutMs(timeout)
+
   def disableHostChecking() = peer.getTransport.addHostKeyVerifier(new PromiscuousVerifier)
   def useCompression() = peer.useCompression()
 
@@ -178,7 +187,11 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
           )
         case f ⇒ f
 
-    private lazy val peerSFTPClient = wrap(peer.newSFTPClient())
+    private lazy val peerSFTPClient = wrap {
+      val client = peer.newSFTPClient()
+      client.getSFTPEngine.setTimeoutMs(timeout.millis.toInt)
+      client
+    }
 
     private def withClient[T](f: net.schmizz.sshj.sftp.SFTPClient ⇒ T, operation: Option[String] = None) =
       for {
