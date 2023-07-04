@@ -71,7 +71,7 @@ package object dirac {
   case class Token(token: String, lifetime: Time)
   case class DIRACServer(server: HTTPSServer, service: Service)
   case class Service(service: String, group: String)
-  case class JobID(id: String, description: JobDescription)
+  case class JobID(id: String, description: Option[JobDescription])
   type GroupId = String
   type UserId = String
 
@@ -181,7 +181,7 @@ package object dirac {
 
     val r = gridscale.http.read(server.server, jobsLocation, Post(files))
     val id = (parse(r) \ "jids")(0).extract[String]
-    JobID(id, jobDescription)
+    JobID(id, Some(jobDescription))
   }
 
   def state(server: DIRACServer, token: Token, jobId: JobID)(implicit http: Effect[HTTP]): JobState = {
