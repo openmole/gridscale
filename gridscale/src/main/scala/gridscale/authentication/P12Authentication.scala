@@ -22,23 +22,24 @@ import java.security.cert.X509Certificate
 import scala.util.Try
 
 object P12Authentication {
-  def loadPKCS12Credentials(a: P12Authentication): Loaded = {
-    val ks = java.security.KeyStore.getInstance("pkcs12")
-    ks.load(new java.io.FileInputStream(a.certificate), a.password.toCharArray)
-
+  def getAlias(ks: java.security.KeyStore) =
     val aliases = ks.aliases
+
+    import java.security.cert._
     import collection.JavaConverters._
 
-    // FIXME GET
-    val alias = aliases.asScala.find(e ⇒ ks.isKeyEntry(e)).get
-    //if (alias == null) throw new VOMSException("No aliases found inside pkcs12 certificate!")
+    aliases.asScala.find(e ⇒ ks.isKeyEntry(e)).getOrElse(throw new RuntimeException("No private key found in the P12 file"))
 
+
+  def loadPKCS12Credentials(a: P12Authentication): Loaded = 
+    val ks = java.security.KeyStore.getInstance("pkcs12")
+    ks.load(new java.io.FileInputStream(a.certificate), a.password.toCharArray)
+    val alias = getAlias(ks)
     val userCert = ks.getCertificate(alias).asInstanceOf[X509Certificate]
     val userKey = ks.getKey(alias, a.password.toCharArray).asInstanceOf[java.security.PrivateKey]
     val userChain = Array[X509Certificate](userCert)
 
     Loaded(userCert, userKey, userChain)
-  }
 
   case class Loaded(certificate: X509Certificate, key: java.security.PrivateKey, chain: Array[X509Certificate])
 

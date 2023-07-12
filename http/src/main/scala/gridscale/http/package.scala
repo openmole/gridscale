@@ -1,15 +1,16 @@
 package gridscale
 
+import gridscale.authentication.P12Authentication
+
 import java.io.ByteArrayInputStream
 import java.net.SocketTimeoutException
 import java.nio.charset.StandardCharsets
-import java.security.KeyStore.{ PasswordProtection, PrivateKeyEntry }
+import java.security.KeyStore.{PasswordProtection, PrivateKeyEntry}
 import java.security.PrivateKey
-import java.security.cert.{ Certificate, CertificateFactory }
-
-import gridscale.effectaside._
+import java.security.cert.{Certificate, CertificateFactory}
+import gridscale.effectaside.*
 import org.apache.commons.codec.binary
-import org.apache.http.{ HttpEntity, client }
+import org.apache.http.{HttpEntity, client}
 import org.apache.http.client.methods
 import org.apache.http.conn.socket.PlainConnectionSocketFactory
 import org.apache.http.entity.InputStreamEntity
@@ -18,7 +19,7 @@ import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
 
 import scala.io.Source
-import scala.language.{ higherKinds, postfixOps }
+import scala.language.{higherKinds, postfixOps}
 
 package object http {
 
@@ -439,14 +440,9 @@ package object http {
           ks
         }
 
-      def extractCertificate(ks: KeyStore) = {
-        val aliases = ks.aliases
-
+      def extractCertificate(ks: KeyStore) =
         import java.security.cert._
-        import collection.JavaConverters._
-
-        // FIXME GET
-        val alias = aliases.asScala.find(e ⇒ ks.isKeyEntry(e)).get
+        val alias = P12Authentication.getAlias(ks)
 
         //if (alias == null) throw new VOMSException("No aliases found inside pkcs12 certificate!")
         val userCert = ks.getCertificate(alias).asInstanceOf[X509Certificate]
@@ -456,7 +452,6 @@ package object http {
         KeyStoreOperations.Credential(userKey, userChain.toVector, password)
 
         // Loaded(userCert, userKey, userChain)
-      }
 
       extractCertificate(keyStore)
     }
