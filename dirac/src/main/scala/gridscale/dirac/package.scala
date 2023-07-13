@@ -124,7 +124,7 @@ package object dirac {
     timeout: Time = 1 minutes,
     directoryURL: String = "https://dirac.france-grilles.fr/defaults/DiracServices.json")(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
 
-    def getService(json: String) = {
+    def getService(json: String) =
       parse(json).children.map {
         s ⇒
           val vo = (s \ "DIRACVOName").extract[String]
@@ -133,10 +133,9 @@ package object dirac {
 
           vo -> Service("https://" + server, group)
       }.toMap
-    }
 
     val certificates = HTTPS.readPEMCertificates(certificatesDirectory)
-    val factory = HTTPS.socketFactory(certificates, "", verifyHostName = false)
+    val factory = HTTPS.socketFactory(certificates, "", verifyHostName = false, forceServerTrust = true)
     val indexServer = HTTPSServer(directoryURL, factory, timeout = timeout)
     getService(read(indexServer, ""))
   }

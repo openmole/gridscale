@@ -301,21 +301,19 @@ package object http {
 
     type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
 
-    def socketFactory(s: Vector[KeyStoreOperations.Storable], password: String, verifyHostName: Boolean = true) =
-      KeyStoreOperations.socketFactory(() ⇒ KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password), verifyHostName)
+    def socketFactory(s: Vector[KeyStoreOperations.Storable], password: String, verifyHostName: Boolean = true, forceServerTrust: Boolean = false) =
+      KeyStoreOperations.socketFactory(() ⇒ KeyStoreOperations.createSSLContext(KeyStoreOperations.createKeyStore(s, password), password, forceServerTrust = forceServerTrust), verifyHostName)
 
     object KeyStoreOperations {
 
-      def createKeyStore(s: Vector[KeyStoreOperations.Storable], password: String) = {
-        val keyStore = {
+      def createKeyStore(s: Vector[KeyStoreOperations.Storable], password: String) =
+        val keyStore =
           val ks = KeyStore.getInstance(KeyStore.getDefaultType)
           ks.load(null, password.toCharArray)
           ks
-        }
 
         s.zipWithIndex.foreach { case (s, i) ⇒ store(keyStore, i.toString, s) }
         keyStore
-      }
 
       def store(ks: KeyStore, name: String, t: Storable) = t match {
         case t: Credential ⇒
@@ -330,24 +328,21 @@ package object http {
       case class Certificate(certificate: java.security.cert.Certificate) extends Storable
       //case class Key(key: java.security.Key, password: String, certificates: Vector[java.security.cert.Certificate], pat) extends Storable
 
-      def createSSLContext(keyStore: KeyStore, password: String): SSLContext = {
-        class TrustManagerDelegate(val mainTrustManager: X509TrustManager, val fallbackTrustManager: X509TrustManager) extends X509TrustManager {
+      def createSSLContext(keyStore: KeyStore, password: String, forceServerTrust: Boolean = false): SSLContext = {
+        class TrustManagerDelegate(val mainTrustManager: X509TrustManager, val fallbackTrustManager: X509TrustManager) extends X509TrustManager:
           override def checkClientTrusted(x509Certificates: Array[java.security.cert.X509Certificate], authType: String) =
-            try {
-              mainTrustManager.checkClientTrusted(x509Certificates, authType)
-            } catch {
+            try mainTrustManager.checkClientTrusted(x509Certificates, authType)
+            catch
               case ignored: CertificateException ⇒ fallbackTrustManager.checkClientTrusted(x509Certificates, authType)
-            }
 
           override def checkServerTrusted(x509Certificates: Array[java.security.cert.X509Certificate], authType: String) =
-            try {
-              mainTrustManager.checkServerTrusted(x509Certificates, authType)
-            } catch {
-              case ignored: CertificateException ⇒ fallbackTrustManager.checkServerTrusted(x509Certificates, authType)
-            }
+            if !forceServerTrust
+            then
+              try mainTrustManager.checkServerTrusted(x509Certificates, authType)
+              catch
+                case ignored: CertificateException ⇒ fallbackTrustManager.checkServerTrusted(x509Certificates, authType)
 
           override def getAcceptedIssuers() = fallbackTrustManager.getAcceptedIssuers()
-        }
 
         val javaDefaultTrustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
         javaDefaultTrustManager.init(null: KeyStore)
