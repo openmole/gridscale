@@ -135,7 +135,7 @@ package object dirac {
       }.toMap
 
     val certificates = HTTPS.readPEMCertificates(certificatesDirectory)
-    val factory = HTTPS.socketFactory(certificates, "", verifyHostName = false, forceServerTrust = true)
+    val factory = HTTPS.socketFactory(certificates, "", verifyHostName = false)
     val indexServer = HTTPSServer(directoryURL, factory, timeout = timeout)
     getService(read(indexServer, ""))
   }
