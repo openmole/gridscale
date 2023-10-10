@@ -105,7 +105,7 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.9" % "test"
 
 lazy val betterFile = "com.github.pathikrit" %% "better-files" % "3.9.2" cross(CrossVersion.for3Use2_13)
 
-val circeVersion = "0.14.3"
+val circeVersion = "0.14.5"
 
 lazy val circe = Seq(
   "io.circe" %% "circe-core",
@@ -147,6 +147,11 @@ lazy val oar = Project(id = "oar", base = file("oar")) settings(dslSettings: _*)
 lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
 
 
+lazy val qarnot = Project(id = "qarnot", base = file("qarnot")) dependsOn(gridscale, http) settings(
+  dslSettings,
+  libraryDependencies ++= circe
+)
+
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.10.0",
@@ -178,18 +183,19 @@ def exampleSettings =
     publish := false
   )
 
-lazy val egiCreamExample  = Project(id = "egicreamexample", base = file("examples/egi/cream")) settings(exampleSettings: _*) dependsOn egi
-lazy val egiWebDAVExample  = Project(id = "egiwebdavexample", base = file("examples/egi/webdav")) settings(exampleSettings: _*) dependsOn (egi, webdav)
-lazy val egiDiracExample  = Project(id = "egidiracexample", base = file("examples/egi/dirac")) settings(exampleSettings: _*) dependsOn (egi, dirac)
-lazy val condorExample = Project(id = "condorexample", base = file("examples/condor")) settings(exampleSettings: _*) dependsOn condor
-lazy val pbsExample  = Project(id = "pbsexample", base = file("examples/pbs")) settings(exampleSettings: _*) dependsOn pbs
-lazy val slurmExample  = Project(id = "slurmexample", base = file("examples/slurm")) settings(exampleSettings: _*) dependsOn slurm
-lazy val sgeExample    = Project(id = "sgeexample", base = file("examples/sge")) settings(exampleSettings: _*) dependsOn sge
-lazy val sshExample  = Project(id = "sshexample", base = file("examples/ssh")) settings(exampleSettings: _*) dependsOn ssh
-lazy val oarExample  = Project(id = "oarexample", base = file("examples/oar")) settings(exampleSettings: _*) dependsOn oar
-lazy val httpExample  = Project(id = "httpexample", base = file("examples/http")) settings(exampleSettings: _*) dependsOn http
-lazy val localExample  = Project(id = "localexample", base = file("examples/local")) settings(exampleSettings: _*) dependsOn (local, cluster)
+lazy val egiCreamExample  = Project(id = "example-egi-cream", base = file("examples/egi/cream")) settings(exampleSettings) dependsOn egi
+lazy val egiWebDAVExample  = Project(id = "example-egi-webdav", base = file("examples/egi/webdav")) settings(exampleSettings) dependsOn (egi, webdav)
+lazy val egiDiracExample  = Project(id = "example-egi-dirac", base = file("examples/egi/dirac")) settings(exampleSettings) dependsOn (egi, dirac)
+lazy val condorExample = Project(id = "example-condor", base = file("examples/condor")) settings(exampleSettings) dependsOn condor
+lazy val pbsExample  = Project(id = "example-pbs", base = file("examples/pbs")) settings(exampleSettings) dependsOn pbs
+lazy val slurmExample  = Project(id = "example-slurm", base = file("examples/slurm")) settings(exampleSettings) dependsOn slurm
+lazy val sgeExample    = Project(id = "example-sge", base = file("examples/sge")) settings(exampleSettings) dependsOn sge
+lazy val sshExample  = Project(id = "example-ssh", base = file("examples/ssh")) settings(exampleSettings) dependsOn ssh
+lazy val oarExample  = Project(id = "example-oar", base = file("examples/oar")) settings(exampleSettings) dependsOn oar
+lazy val qarnotExample  = Project(id = "example-qarnot", base = file("examples/qarnot")) settings(exampleSettings) dependsOn qarnot
+lazy val httpExample  = Project(id = "example-http", base = file("examples/http")) settings(exampleSettings) dependsOn http
+lazy val localExample  = Project(id = "example-local", base = file("examples/local")) settings(exampleSettings) dependsOn (local, cluster)
 
-lazy val ipfsExample  = Project(id = "ipfsexample", base = file("examples/ipfs")) settings(exampleSettings: _*) dependsOn ipfs settings(
+lazy val ipfsExample  = Project(id = "ipfsexample", base = file("examples/ipfs")) settings(exampleSettings) dependsOn ipfs settings(
   libraryDependencies += betterFile
 )

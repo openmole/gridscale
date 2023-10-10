@@ -284,19 +284,16 @@ package object dirac {
     gridscale.http.read(server.server, delegation, Post(entity))
   }
 
-  object DIRAC {
+  object DIRAC:
 
-    class Interpreters {
+    class Interpreters:
       implicit val fileSystemInterpreter: Effect[FileSystem] = FileSystem()
       implicit val systemInterpreter: Effect[System] = System()
       implicit val httpInterpreter: Effect[HTTP] = HTTP()
-    }
 
-    def apply[T](f: Interpreters ⇒ T) = {
+    def apply[T](f: Interpreters ⇒ T) = 
       val interpreters = new Interpreters()
       f(interpreters)
-    }
-
-  }
+  
 
 }

@@ -5,7 +5,7 @@ import gridscale._
 import gridscale.authentication._
 import gridscale.http._
 
-object TestDIRAC extends App {
+object TestDIRAC extends App:
 
   val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
   val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
@@ -32,4 +32,3 @@ object TestDIRAC extends App {
     println(prg)
   }
 
-}

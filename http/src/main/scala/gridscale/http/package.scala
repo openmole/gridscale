@@ -44,7 +44,7 @@ package object http {
   import org.apache.http.conn.socket.ConnectionSocketFactory
   import squants.information.Information
 
-  def buildServer(url: String, timeout: Time = 1 minutes): Server = {
+  def buildServer(url: String, timeout: Time = 1 minutes): Server =
     val scheme = new URI(url).getScheme
 
     scheme match {
@@ -52,22 +52,18 @@ package object http {
       case "http"  ⇒ HTTPServer(url, timeout)
       case _       ⇒ throw new HTTP.ConnectionError(s"Unknown protocol $scheme, in url $url. Only http and https are supported.", null)
     }
-  }
 
-  def get[T](url: String, headers: Headers = Seq.empty) = {
+  def get[T](url: String, headers: Headers = Seq.empty) =
     implicit val interpreter = HTTP()
     read(buildServer(url), "", method = Get(headers))
-  }
 
-  def getStream[T](url: String)(f: InputStream ⇒ T) = {
+  def getStream[T](url: String)(f: InputStream ⇒ T) =
     implicit val interpreter = HTTP()
     readStream[T](buildServer(url), "", f)
-  }
 
-  def getResponse[T](url: String)(f: Response ⇒ T) = {
+  def getResponse[T](url: String)(f: Response ⇒ T) =
     implicit val interpreter = HTTP()
     readResponse[T](buildServer(url), "", f)
-  }
 
   type Headers = Seq[(String, String)]
   case class Response(inputStream: InputStream, headers: Headers)
@@ -103,13 +99,12 @@ package object http {
         .setConnectionRequestTimeout(timeout.toMillis.toInt)
         .build()
 
-    def httpClient(timeout: Time, retry: Int) = {
-      def connectionManager(timeout: Time) = {
+    def httpClient(timeout: Time, retry: Int) =
+      def connectionManager(timeout: Time) =
         val client = new BasicHttpClientConnectionManager()
         val socketConfig = SocketConfig.custom().setSoTimeout(timeout.toMillis.toInt).build()
         client.setSocketConfig(socketConfig)
         client
-      }
 
       def newClient(timeout: Time, retry: Int) =
         HttpClients.custom().
@@ -120,26 +115,31 @@ package object http {
           build()
 
       newClient(timeout, retry)
-    }
 
     def wrapError[T](f: ⇒ T) =
       try f
-      catch {
+      catch
         case t: ConnectionError ⇒ throw t
         case t: HTTPError       ⇒ throw t
         case t: Throwable       ⇒ throw HTTPError(t)
-      }
 
     case class ConnectionError(msg: String, t: Throwable) extends Exception(msg, t)
-    case class HTTPError(t: Throwable) extends Exception(t) {
-      override def toString = "HTTP error: " + t.toString
-    }
+
+    object HTTPError:
+      def apply(p: String | Throwable) =
+        p match
+          case p: String => new HTTPError(message = Some(p))
+          case p: Throwable => new HTTPError(cause = Some(p))
+
+    case class HTTPError(message: Option[String] = None, cause: Option[Throwable] = None) extends Exception(cause.orNull):
+      override def toString = "HTTP error: " + message.orElse(cause.map(_.getMessage)).getOrElse(super.toString)
+
 
   }
 
   class HTTP {
 
-    def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean) = {
+    def withInputStream[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, test: Boolean) =
       def fullURI(path: String) =
         if (path.isEmpty) server.url else new URI(server.url.toString + path)
 
@@ -168,45 +168,48 @@ package object http {
 
       headers.foreach { case (k, v) ⇒ methodInstance.addHeader(k, v) }
 
-      def testResponse(response: HttpResponse) = {
+      def testResponse(response: HttpResponse) =
         def isResponseOk(response: HttpResponse) =
           response.getStatusLine.getStatusCode >= HttpStatus.SC_OK &&
             response.getStatusLine.getStatusCode < HttpStatus.SC_BAD_REQUEST
 
-        if (!isResponseOk(response)) throw new IOException(s"${uri} responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}")
-      }
+        if !isResponseOk(response)
+        then
+          val content = new String(getBytes(response.getEntity.getContent, server.bufferSize.toBytes.toInt))
+          throw HTTP.HTTPError(
+            s""""$uri responded with an error: ${response.getStatusLine.getStatusCode} ${response.getStatusLine.getReasonPhrase}. The content was:
+               |$content""".stripMargin)
 
       import util._
 
       def error(e: Throwable) = new HTTP.ConnectionError(s"Error while connecting to ${uri}, method ${method}", e)
 
-      try {
+      try
         val httpClient = HTTP.client(server)
-        try {
+        try
           val response = httpClient.execute(methodInstance)
-          try {
+          try
             if (test) testResponse(response)
             f(methodInstance, response)
-          } finally response.close()
-        } catch {
+          finally response.close()
+        catch
           case e: org.apache.http.conn.ConnectTimeoutException  ⇒ throw error(e)
           case e: SocketTimeoutException                        ⇒ throw error(e)
           case e: java.net.ConnectException                     ⇒ throw error(e)
           case e: org.apache.http.conn.HttpHostConnectException ⇒ throw error(e)
-        } finally httpClient.close()
-      } finally closeable.foreach(_.close())
-    }
+        finally httpClient.close()
+      finally closeable.foreach(_.close())
 
-    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean = true) = HTTP.wrapError {
-      withInputStream(server, path, f, method, testResponse)
-    }
+    def request[T](server: Server, path: String, f: (HttpRequest, HttpResponse) ⇒ T, method: HTTPMethod, testResponse: Boolean = true) =
+      HTTP.wrapError:
+        withInputStream(server, path, f, method, testResponse)
 
-    def content(server: Server, path: String, method: HTTPMethod = Get()): String = HTTP.wrapError {
+
+    def content(server: Server, path: String, method: HTTPMethod = Get()): String = HTTP.wrapError:
       def getString(is: InputStream) = new String(getBytes(is, server.bufferSize.toBytes.toInt))
       def getContent(r: HttpResponse) = Option(r.getEntity).map(e ⇒ getString(e.getContent)).getOrElse("")
 
       withInputStream(server, path, (_, r) ⇒ getContent(r), method, test = true)
-    }
 
   }
 
