@@ -1,18 +1,19 @@
 package gridscale
 
 import java.io.{BufferedOutputStream, FileOutputStream}
-import gridscale.effectaside._
+import gridscale.effectaside.*
 import gridscale.authentication.P12Authentication
-import gridscale.http._
+import gridscale.dirac.DIRACState
+import gridscale.http.*
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import org.apache.commons.compress.utils.IOUtils
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.mime.MultipartEntityBuilder
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
-import squants._
-import squants.time.TimeConversions._
+import org.json4s.*
+import org.json4s.jackson.JsonMethods.*
+import squants.*
+import squants.time.TimeConversions.*
 
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
@@ -75,44 +76,29 @@ package object dirac {
   type GroupId = String
   type UserId = String
 
-  sealed trait DIRACState
-
-  object DIRACState {
-    val values = Seq(Received, Checking, Staging, Waiting, Matched, Running, Completed, Stalled, Killed, Deleted, Done, Failed)
-
-    lazy val stateIndex = values.map(v ⇒ name(v).toLowerCase -> v).toMap
+  object DIRACState:
+    lazy val stateIndex = DIRACState.values.map(v ⇒ name(v).toLowerCase -> v).toMap
 
     def withName(s: String) = stateIndex.getOrElse(s.toLowerCase, throw new RuntimeException(s"Unmatched state $s"))
 
     def name(s: DIRACState) =
-      s match {
-        case Received  ⇒ "Received"
-        case Checking  ⇒ "Checking"
-        case Staging   ⇒ "Staging"
-        case Waiting   ⇒ "Waiting"
-        case Matched   ⇒ "Matched"
-        case Running   ⇒ "Running"
-        case Completed ⇒ "Completed"
-        case Stalled   ⇒ "Stalled"
-        case Killed    ⇒ "Killed"
-        case Deleted   ⇒ "Deleted"
-        case Done      ⇒ "Done"
-        case Failed    ⇒ "Failed"
-      }
+      s match
+        case Received   ⇒ "Received"
+        case Checking   ⇒ "Checking"
+        case Staging    ⇒ "Staging"
+        case Waiting    ⇒ "Waiting"
+        case Matched    ⇒ "Matched"
+        case Running    ⇒ "Running"
+        case Completing => "Completing"
+        case Completed  ⇒ "Completed"
+        case Stalled    ⇒ "Stalled"
+        case Killed     ⇒ "Killed"
+        case Deleted    ⇒ "Deleted"
+        case Done       ⇒ "Done"
+        case Failed     ⇒ "Failed"
 
-    case object Received extends DIRACState
-    case object Checking extends DIRACState
-    case object Staging extends DIRACState
-    case object Waiting extends DIRACState
-    case object Matched extends DIRACState
-    case object Running extends DIRACState
-    case object Completed extends DIRACState
-    case object Stalled extends DIRACState
-    case object Killed extends DIRACState
-    case object Deleted extends DIRACState
-    case object Done extends DIRACState
-    case object Failed extends DIRACState
-  }
+  enum DIRACState:
+    case Received, Checking, Staging, Waiting, Matched, Running, Completing, Completed, Stalled, Killed, Deleted, Done, Failed
 
   def getService(vo: String, certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
     val services = getServices(certificatesDirectory, timeout)
@@ -195,20 +181,21 @@ package object dirac {
   }
 
   def translateState(s: String): JobState =
-    DIRACState.withName(s) match {
-      case DIRACState.Received  ⇒ JobState.Submitted
-      case DIRACState.Checking  ⇒ JobState.Submitted
-      case DIRACState.Staging   ⇒ JobState.Submitted
-      case DIRACState.Waiting   ⇒ JobState.Submitted
-      case DIRACState.Matched   ⇒ JobState.Submitted
-      case DIRACState.Running   ⇒ JobState.Running
-      case DIRACState.Completed ⇒ JobState.Running
-      case DIRACState.Stalled   ⇒ JobState.Running
-      case DIRACState.Killed    ⇒ JobState.Failed
-      case DIRACState.Deleted   ⇒ JobState.Failed
-      case DIRACState.Done      ⇒ JobState.Done
-      case DIRACState.Failed    ⇒ JobState.Failed
-    }
+    DIRACState.withName(s) match
+      case DIRACState.Received   ⇒ JobState.Submitted
+      case DIRACState.Checking   ⇒ JobState.Submitted
+      case DIRACState.Staging    ⇒ JobState.Submitted
+      case DIRACState.Waiting    ⇒ JobState.Submitted
+      case DIRACState.Matched    ⇒ JobState.Submitted
+      case DIRACState.Running    ⇒ JobState.Running
+      case DIRACState.Completing => JobState.Running
+      case DIRACState.Completed  ⇒ JobState.Running
+      case DIRACState.Stalled    ⇒ JobState.Running
+      case DIRACState.Killed     ⇒ JobState.Failed
+      case DIRACState.Deleted    ⇒ JobState.Failed
+      case DIRACState.Done       ⇒ JobState.Done
+      case DIRACState.Failed     ⇒ JobState.Failed
+
 
   def queryState(
     server: DIRACServer,
