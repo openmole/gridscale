@@ -6,21 +6,21 @@ import gridscale.egi._
 import gridscale.webdav._
 import gridscale.authentication._
 
-object WedDAVExample extends App {
-
+@main def wedDAVExample =
   val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
-  val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/certificate.p12"), password)
+  val p12 = P12Authentication(new java.io.File("/home/reuillon/.globus/geant.p12"), password)
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/persistent/CACertificates/")
   val bdiiServer = BDIIServer("topbdii.grif.fr", 2170)
 
-  EGI { impl ⇒
+  EGI: impl ⇒
     import impl._
 
     val proxy = VOMS.proxy("voms2.hellasgrid.gr:15160", p12, certificateDirectory)
 
     println(bdii().webDAVs(bdiiServer, "vo.complex-systems.eu"))
 
-    val webdavInfo = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("lal")).get
+    //val webdavInfo = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("lal")).get
+    val webdavInfo = "https://eos.grif.fr:11000/eos/grif/complex/"
     val webdav = WebDAVSServer(webdavInfo, proxy.factory)
 
     println(list(webdav, "/"))
@@ -31,5 +31,4 @@ object WedDAVExample extends App {
     val c = read(webdav, "youpi2.txt")
 
     println(c)
-  }
-}
+

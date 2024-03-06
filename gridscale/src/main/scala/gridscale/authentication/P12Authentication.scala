@@ -38,7 +38,6 @@ object P12Authentication {
     val userCert = ks.getCertificate(alias).asInstanceOf[X509Certificate]
     val userKey = ks.getKey(alias, a.password.toCharArray).asInstanceOf[java.security.PrivateKey]
     val userChain = Array[X509Certificate](userCert)
-
     Loaded(userCert, userKey, userChain)
 
   case class Loaded(certificate: X509Certificate, key: java.security.PrivateKey, chain: Array[X509Certificate])

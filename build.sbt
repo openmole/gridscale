@@ -167,7 +167,7 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk18on" % "1.73",
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk18on" % "1.77",
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
 )
 

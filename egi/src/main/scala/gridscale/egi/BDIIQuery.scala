@@ -24,15 +24,13 @@ import javax.naming.directory.{ InitialDirContext, SearchControls }
 import scala.concurrent.duration.Duration
 import collection.JavaConverters._
 
-object BDIIQuery {
+object BDIIQuery:
 
-  def withBDIIQuery[T](host: String, port: Int, timeout: Duration)(f: BDIIQuery ⇒ T) = {
+  def withBDIIQuery[T](host: String, port: Int, timeout: Duration)(f: BDIIQuery ⇒ T) =
     val q = new BDIIQuery(host, port, timeout)
     try f(q)
     finally q.close
-  }
 
-}
 
 class BDIIQuery(val host: String, port: Int, timeOut: Duration) {
 
@@ -53,7 +51,7 @@ class BDIIQuery(val host: String, port: Int, timeOut: Duration) {
    * @param searchPhrase the search phrase
    * @return an array list of SearchResult objects.
    */
-  def query(searchPhrase: String, attributeList: List[String] = List.empty, bindDN: String = "o=grid") = {
+  def query(searchPhrase: String, attributeList: List[String] = List.empty, bindDN: String = "o=grid") =
     //boolean hasError= false;
 
     /* specify search constraints to search subtree */
@@ -62,16 +60,17 @@ class BDIIQuery(val host: String, port: Int, timeOut: Duration) {
     constraints.setSearchScope(SearchControls.SUBTREE_SCOPE)
 
     // specify the elements to return
-    if (attributeList.size > 0)
-      constraints.setReturningAttributes(attributeList.toArray)
+    if attributeList.nonEmpty
+    then constraints.setReturningAttributes(attributeList.toArray)
+
 
     // Perform the search
     val results = dirContext.search(
       bindDN,
       searchPhrase,
       constraints)
+    
     java.util.Collections.list(results).asScala
-  }
 
   def close = dirContext.close
 }

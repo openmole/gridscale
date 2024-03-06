@@ -108,7 +108,7 @@ package object dirac {
   def getServices(
     certificatesDirectory: java.io.File,
     timeout: Time = 1 minutes,
-    directoryURL: String = "https://dirac.france-grilles.fr/defaults/DiracServices.json")(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+    directoryURL: String = "https://dirac.france-grilles.fr/defaults/DiracServices.json")(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = 
 
     def getService(json: String) =
       parse(json).children.map {
@@ -124,18 +124,16 @@ package object dirac {
     val factory = HTTPS.socketFactory(certificates, "", verifyHostName = false)
     val indexServer = HTTPSServer(directoryURL, factory, timeout = timeout)
     getService(read(indexServer, ""))
-  }
 
   def supportedVOs(certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) =
     getServices(certificatesDirectory, timeout).keys
 
-  def server(service: Service, p12: P12Authentication, certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) = {
+  def server(service: Service, p12: P12Authentication, certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) = 
     val userCertificate = HTTPS.readP12(p12.certificate, p12.password)
     val certificates = HTTPS.readPEMCertificates(certificateDirectory)
     val factory = HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password)
     val server = HTTPSServer(service.service, factory)
     DIRACServer(server, service)
-  }
 
   def token(server: DIRACServer, setup: String = "Dirac-Production")(implicit http: Effect[HTTP]) = {
     def auth2Auth = "/oauth2/token"

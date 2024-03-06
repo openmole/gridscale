@@ -7,7 +7,7 @@ import java.net.SocketTimeoutException
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore.{PasswordProtection, PrivateKeyEntry}
 import java.security.PrivateKey
-import java.security.cert.{Certificate, CertificateFactory}
+import java.security.cert.{Certificate, CertificateFactory, X509Certificate}
 import gridscale.effectaside.*
 import org.apache.commons.codec.binary
 import org.apache.http.{HttpEntity, client}
@@ -18,6 +18,7 @@ import org.apache.http.impl.client.DefaultHttpRequestRetryHandler
 import org.apache.http.message.BasicHttpRequest
 import sun.security.provider.X509Factory
 
+import javax.security.auth.x500.X500Principal
 import scala.io.Source
 import scala.language.{higherKinds, postfixOps}
 
@@ -234,17 +235,15 @@ package object http {
     def bufferSize: Information
   }
 
-  object HTTPServer {
+  object HTTPServer:
     def apply(url: String, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes, retry: Int = 0) =
       new HTTPServer(new URI(url), timeout, bufferSize, retry)
-  }
 
   case class HTTPServer(url: URI, timeout: Time, bufferSize: Information, retry: Int) extends Server
 
-  object HTTPSServer {
+  object HTTPSServer:
     def apply(url: String, socketFactory: HTTPS.SSLSocketFactory, timeout: Time = 1 minutes, bufferSize: Information = 64 kilobytes, retry: Int = 0) =
       new HTTPSServer(new URI(url), socketFactory, timeout, bufferSize, retry)
-  }
 
   case class HTTPSServer(url: URI, socketFactory: HTTPS.SSLSocketFactory, timeout: Time, bufferSize: Information, retry: Int) extends Server
 
@@ -292,14 +291,12 @@ package object http {
     import org.apache.http.conn.ssl.{ BrowserCompatHostnameVerifier, SSLConnectionSocketFactory }
 
     object SSLSocketFactory {
-      def default = (timeout: Time) ⇒ {
+      def default = (timeout: Time) ⇒
         new SSLConnectionSocketFactory(org.apache.http.ssl.SSLContexts.createDefault()) {
-          override protected def prepareSocket(socket: SSLSocket) = {
+          override protected def prepareSocket(socket: SSLSocket) =
             super.prepareSocket(socket)
             socket.setSoTimeout(timeout.millis.toInt)
-          }
         }
-      }
     }
 
     type SSLSocketFactory = (Time ⇒ SSLConnectionSocketFactory)
@@ -315,16 +312,18 @@ package object http {
           ks.load(null, password.toCharArray)
           ks
 
-        s.zipWithIndex.foreach { case (s, i) ⇒ store(keyStore, i.toString, s) }
+        s.zipWithIndex.foreach: (s, i) ⇒
+          store(keyStore, i.toString, s)
+
         keyStore
 
-      def store(ks: KeyStore, name: String, t: Storable) = t match {
-        case t: Credential ⇒
-          val entry = new PrivateKeyEntry(t.privateKey, t.certificateChain.toArray)
-          ks.setEntry(name, entry, new PasswordProtection(t.password.toCharArray))
-        case t: Certificate ⇒
-          ks.setCertificateEntry(name, t.certificate)
-      }
+      def store(ks: KeyStore, name: String, t: Storable) =
+        t match
+          case t: Credential ⇒
+            val entry = new PrivateKeyEntry(t.privateKey, t.certificateChain.toArray)
+            ks.setEntry(name, entry, new PasswordProtection(t.password.toCharArray))
+          case t: Certificate ⇒
+            ks.setCertificateEntry(name, t.certificate)
 
       sealed trait Storable
       case class Credential(privateKey: PrivateKey, certificateChain: Vector[java.security.cert.Certificate], password: String) extends Storable
@@ -422,21 +421,19 @@ package object http {
       client.build()
     }
 
-    def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) = {
+    def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) =
       val content = fileSystem().readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
       val stripped = content.replaceAll(X509Factory.BEGIN_CERT, "").replaceAll(X509Factory.END_CERT, "")
       val decoded = new binary.Base64().decode(stripped)
       val certificate = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decoded))
       KeyStoreOperations.Certificate(certificate)
-    }
 
     def readP12(file: java.io.File, password: String)(implicit fileSystem: Effect[FileSystem]) = {
       def keyStore =
-        fileSystem().readStream(file) { is ⇒
+        fileSystem().readStream(file): is ⇒
           val ks = KeyStore.getInstance("pkcs12")
           ks.load(is, password.toCharArray)
           ks
-        }
 
       def extractCertificate(ks: KeyStore) =
         import java.security.cert._
@@ -454,10 +451,13 @@ package object http {
       extractCertificate(keyStore)
     }
 
-    def readPEMCertificates(certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) = {
-      val certificateFiles = fileSystem().list(certificateDirectory)
-      certificateFiles.map(f ⇒ util.Try(HTTPS.readPem(f))).flatMap(_.toOption)
-    }
+    def readPEMCertificates(certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) =
+      val certificateFiles = fileSystem().list(certificateDirectory).sortBy(_.lastModified())
+      certificateFiles.map: f ⇒
+        util.Try:
+          val pem = HTTPS.readPem(f)
+          pem
+      .flatMap(_.toOption)
 
     // case class Loaded(certficate: X509Certificate, key: PrivateKey, chain: Array[X509Certificate])
 

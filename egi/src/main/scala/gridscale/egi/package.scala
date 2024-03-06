@@ -1,11 +1,13 @@
 package gridscale
 
 import java.math.BigInteger
-import java.security.{ KeyPair, KeyPairGenerator, Security }
-import java.util.{ Calendar, GregorianCalendar, TimeZone }
+import java.security.{KeyPair, KeyPairGenerator, Security}
+import java.util.{Calendar, GregorianCalendar, TimeZone}
+import gridscale.effectaside.*
+import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder
+import org.bouncycastle.jce.PrincipalUtil
 
-import gridscale.effectaside._
-import scala.language.{ higherKinds, postfixOps }
+import scala.language.{higherKinds, postfixOps}
 
 package object egi {
 
@@ -30,12 +32,13 @@ package object egi {
     def apply(): Effect[BDII] = Effect(new BDII())
   }
 
-  class BDII() {
-    def webDAVs(server: BDIIServer, vo: String) = {
+  class BDII {
+    def webDAVs(server: BDIIServer, vo: String) =
       val creamCEServiceType = "org.glite.ce.CREAM"
 
       BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
         def searchPhrase = "(GLUE2EndpointInterfaceName=webdav)"
+        //def searchPhrase = "(|(GLUE2EndpointInterfaceName=webdav)(GLUE2EndpointInterfaceName=https))"
 
         val services =
           for {
@@ -52,7 +55,6 @@ package object egi {
           path = pathQuery.getAttributes.get("GlueVOInfoPath").get.toString
         } yield BDII.location(urlObject.getHost, urlObject.getPort, path)
       }.distinct
-    }
 
     def creamCEs(server: BDIIServer, vo: String) = {
       BDIIQuery.withBDIIQuery(server.host, server.port, server.timeout) { q ⇒
@@ -193,7 +195,7 @@ package object egi {
         }
       }
 
-      def credential(proxy: VOMSProxy) = {
+      def credential(proxy: VOMSProxy) =
         import org.bouncycastle.asn1.x500.{ X500Name }
         import org.bouncycastle.asn1.x500.style.RFC4519Style
         import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
@@ -217,36 +219,33 @@ package object egi {
 
         val keys = KeyPairGenerator.getInstance("RSA", "BC")
 
-        proxySize match {
+        proxySize match
           case ProxySize.PS1024 ⇒ keys.initialize(1024)
           case ProxySize.PS2048 ⇒ keys.initialize(2048)
-        }
 
         val pair = keys.genKeyPair
 
         val number = Math.abs(scala.util.Random.nextLong)
         val serial: BigInteger = new BigInteger(String.valueOf(Math.abs(number)))
-        val issuer: X500Name = new X500Name(RFC4519Style.INSTANCE, cred.certificate.getSubjectDN.getName)
+        val issuer: X500Name = new JcaX509CertificateHolder(cred.certificate).getSubject()
 
         // TODO use system monad
         val now = new java.util.Date()
-        val notBefore: Time = {
+        val notBefore: Time =
           val notBeforeDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"))
           notBeforeDate.setGregorianChange(now)
           notBeforeDate.add(Calendar.MINUTE, -5)
           new Time(notBeforeDate.getTime)
-        }
 
-        val (notAfter, notAfterDate) = {
+        val (notAfter, notAfterDate) =
           val notAfterDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"))
           notAfterDate.setGregorianChange(now)
           notAfterDate.add(Calendar.SECOND, lifetime.toSeconds.toInt)
           (new Time(notAfterDate.getTime), notAfterDate.getTime)
-        }
 
         import org.bouncycastle.asn1.x500.X500NameBuilder
+        val subject: X500Name = new JcaX509CertificateHolder(cred.certificate).getSubject()
 
-        val subject = new X500Name(RFC4519Style.INSTANCE, cred.certificate.getSubjectDN.getName)
         val builder = new X500NameBuilder(RFC4519Style.INSTANCE)
         subject.getRDNs.foreach(rdn ⇒ builder.addMultiValuedRDN(rdn.getTypesAndValues))
         builder.addRDN(RFC4519Style.cn, number.toString)
@@ -280,16 +279,19 @@ package object egi {
         certGen.addExtension(new ASN1ObjectIdentifier(PROXY_CERT_INFO_V4_OID).intern(), true, new DERSequence(new DERSequence(proxyTypeVector)))
 
         import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-        val sigGen = new JcaContentSignerBuilder("SHA512WithRSAEncryption").setProvider("BC").build(cred.key)
 
+        val sigGen = new JcaContentSignerBuilder("SHA512WithRSAEncryption").setProvider("BC").build(cred.key)
         val certificateHolder = certGen.build(sigGen)
+
+        val diff = (issuer.getEncoded.toSeq zip cred.certificate.getSubjectX500Principal.getEncoded.toSeq).count((b1, b2) => b1 != b2)
         val generatedCertificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certificateHolder)
 
-        (HTTPS.KeyStoreOperations.Credential(pair.getPrivate, Vector(generatedCertificate) ++ cred.chain.toVector, proxy.p12.password), notAfterDate)
-      }
+        val chain = Vector(generatedCertificate) ++ cred.chain.toVector
 
-      def socketFactory(certificate: HTTPS.KeyStoreOperations.Credential, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate], password: String)(implicit http: Effect[HTTP]) =
-        HTTPS.socketFactory(Vector(certificate) ++ serverCertificates, password)
+        (HTTPS.KeyStoreOperations.Credential(pair.getPrivate, chain, proxy.p12.password), notAfterDate)
+
+      def socketFactory(credential: HTTPS.KeyStoreOperations.Credential, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate], password: String) =
+        HTTPS.socketFactory(serverCertificates ++ Vector(credential), password)
 
       val options =
         List(
@@ -301,10 +303,12 @@ package object egi {
       val userCertificate = HTTPS.readP12(p12.certificate, p12.password)
       val certificates = HTTPS.readPEMCertificates(certificateDirectory)
       val vomsFactory = HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password)
+
       val server = HTTPSServer(s"https://$voms", vomsFactory, timeout)
       val content = http().content(server, location)
       val proxy = parseAC(content, p12, certificates)
       val (cred, notAfter) = credential(proxy)
+
       val factory = socketFactory(cred, certificates, p12.password)
       VOMSCredential(cred, p12, certificates, notAfter, lifetime, factory)
     }
