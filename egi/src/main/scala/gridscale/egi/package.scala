@@ -3,7 +3,6 @@ package gridscale
 import java.math.BigInteger
 import java.security.{KeyPair, KeyPairGenerator, Security}
 import java.util.{Calendar, GregorianCalendar, TimeZone}
-import gridscale.effectaside.*
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder
 import org.bouncycastle.jce.PrincipalUtil
 
@@ -29,10 +28,6 @@ package object egi {
     def location(host: String, port: Int, basePath: String) =
       "https://" + trimSlashes(host) + ":" + port + "/" + trimSlashes(basePath) + "/"
 
-    def apply(): Effect[BDII] = Effect(new BDII())
-  }
-
-  class BDII {
     def webDAVs(server: BDIIServer, vo: String) =
       val creamCEServiceType = "org.glite.ce.CREAM"
 
@@ -92,8 +87,8 @@ package object egi {
 
   }
 
-  def webDAVs(server: BDIIServer, vo: String)(implicit bdii: Effect[BDII]) = bdii().webDAVs(server, vo)
-  def creamCEs(server: BDIIServer, vo: String)(implicit bdii: Effect[BDII]) = bdii().creamCEs(server, vo)
+  def webDAVs(server: BDIIServer, vo: String) = BDII.webDAVs(server, vo)
+  def creamCEs(server: BDIIServer, vo: String) = BDII.creamCEs(server, vo)
 
   object VOMS {
 
@@ -128,15 +123,14 @@ package object egi {
       case object PS2048 extends ProxySize
     }
 
-    def renewProxy(renewOperation: () ⇒ VOMSCredential)(credential: VOMSCredential, margin: Time = 1 hours)(implicit system: Effect[System]) = {
+    def renewProxy(renewOperation: () ⇒ VOMSCredential)(credential: VOMSCredential, margin: Time = 1 hours) = 
       def renew(now: Long): VOMSCredential =
         if (credential.ending.getTime - margin.millis > now) renewOperation() else credential
 
-      val now = system().currentTime()
+      val now = System.currentTimeMillis()
       renew(now)
-    }
 
-    def get(vo: String, apiKey: String) = {
+    def get(vo: String, apiKey: String) = 
       import xml._
       val idCard =
         XML.loadString(
@@ -162,7 +156,6 @@ package object egi {
 
         Some(hosts)
       }
-    }
 
     def proxy(
       voms: String,
@@ -171,7 +164,7 @@ package object egi {
       lifetime: Time = 24 hours,
       fqan: Option[String] = None,
       proxySize: ProxySize = ProxySize.PS2048,
-      timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+      timeout: Time = 1 minutes)(using HTTP) = {
 
       case class VOMSProxy(ac: String, p12: P12Authentication, serverCertificates: Vector[HTTPS.KeyStoreOperations.Certificate])
 
@@ -305,7 +298,7 @@ package object egi {
       val vomsFactory = HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password)
 
       val server = HTTPSServer(s"https://$voms", vomsFactory, timeout)
-      val content = http().content(server, location)
+      val content = summon[HTTP].content(server, location)
       val proxy = parseAC(content, p12, certificates)
       val (cred, notAfter) = credential(proxy)
 

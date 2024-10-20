@@ -17,7 +17,6 @@ package gridscale.qarnot
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import gridscale.effectaside.*
 import gridscale.http
 import io.circe.*
 import io.circe.generic.auto.*
@@ -32,7 +31,7 @@ case class JobDescription(command: String)
 type Token = String
 
 
-def submit(job: JobDescription, token: String)(using Effect[http.HTTP]) =
+def submit(job: JobDescription, token: String)(using http.HTTP) =
 
   object Constant:
     given Conversion[(String, String), Constant] = (k, v) => Constant(k, v)
@@ -91,10 +90,3 @@ object Qarnot:
 
   lazy val url = "api.qarnot.com"
 
-  class Interpreters:
-    implicit val fileSystemInterpreter: Effect[FileSystem] = FileSystem()
-    implicit val httpInterpreter: Effect[http.HTTP] = http.HTTP()
-
-  def apply[T](f: Interpreters ⇒ T) =
-    val interpreters = new Interpreters()
-    f(interpreters)

@@ -125,11 +125,9 @@ def dslSettings = defaultSettings ++ Seq(
   resolvers += "jitpack" at "https://jitpack.io"
 )
 
-lazy val effect = Project(id = "effect", base = file("effect")) settings(dslSettings: _*)
-
 lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) settings(dslSettings: _*) settings(
   libraryDependencies += scalaTest
-) dependsOn(effect)
+)
 
 lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
 

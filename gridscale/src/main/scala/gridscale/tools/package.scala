@@ -168,3 +168,41 @@ def downloadFromStream(file: File)(is: java.io.InputStream) =
 //    }
 
 
+object Effect:
+  def apply[T](effect: ⇒ T) = new Effect(effect)
+
+
+class Effect[T](effect: ⇒ T):
+  inline def apply() = effect
+
+object Random:
+  def apply(seed: Long): Effect[Random] = Effect(new Random(new util.Random(seed)))
+  def apply(random: util.Random): Effect[Random] = Effect(new Random(random))
+
+class Random(val random: util.Random):
+  def nextDouble() = random.nextDouble()
+  def nextInt(n: Int) = random.nextInt(n)
+  def nextBoolean() = random.nextBoolean()
+  def shuffle[A](s: Vector[A]) = random.shuffle(s)
+  def use[T](f: util.Random ⇒ T) = f(random)
+
+
+object FileSystem:
+  def read(file: File): String = readStream(file)(is ⇒ scala.io.Source.fromInputStream(is).mkString)
+
+  def list(p: File) = p.listFiles.toVector
+
+  def readStream[T](file: File)(f: java.io.InputStream ⇒ T): T =
+    import java.io._
+    val is = new BufferedInputStream(new FileInputStream(file))
+    try f(is)
+    finally is.close
+
+  def writeStream[T](file: File)(f: java.io.OutputStream ⇒ T) =
+    import java.io._
+    val is = new BufferedOutputStream(new FileOutputStream(file))
+    try f(is)
+    finally is.close
+
+
+

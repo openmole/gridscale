@@ -1,6 +1,5 @@
 package gridscale.oar
 
-import gridscale.effectaside._
 import gridscale._
 import gridscale.authentication._
 import gridscale.cluster._
@@ -16,17 +15,14 @@ object OARExample extends App {
 
   val jobDescription = OARJobDescription("""echo "hello world from $(hostname)"""", "/data/test_gridscale", wallTime = Some(10 minutes))
 
-  def res(implicit system: Effect[System], sshEffect: Effect[ssh.SSH]) = {
+  def res(using ssh.SSH) =
     val job = submit(localhost, jobDescription)
     val s = waitUntilEnded(() ⇒ state(localhost, job))
     val out = stdOut(localhost, job)
     clean(localhost, job)
     (s, out)
-  }
 
-  SSHCluster { intp ⇒
-    import intp._
+  ssh.SSH.withSSH:
     println(res)
-  }
 
 }

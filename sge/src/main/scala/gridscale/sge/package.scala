@@ -1,6 +1,5 @@
 package gridscale
 
-import gridscale.effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import gridscale.cluster.BatchScheduler.BatchJob
 import gridscale.tools.InformationDecorator
@@ -34,28 +33,26 @@ package object sge {
         |${jobDescription.command}
       """.stripMargin
 
-    def retreiveJobId(out: String) = {
+    def retreiveJobId(out: String) =
       val jobId = out.split(" ").drop(2).head
       if (!jobId.forall(_.isDigit)) throw new RuntimeException("qsub did not return a valid JobID in " + out)
       jobId
-    }
 
     def parseState(executionResult: ExecutionResult) = translateStatus(executionResult.stdOut.dropRight(1))
 
     def translateStatus(status: String) =
-      status match {
+      status match
         case "qw" | "hqw" | "hRwq" | "Rs" | "Rts" | "RS" | "RtS" | "RT" | "RtT" ⇒ JobState.Submitted
         case "r" | "t" | "Rr" | "Rt" | "T" | "tT" | "s" | "ts" | "S" | "tS" ⇒ JobState.Running
         case "" | "dr" | "dt" | "dRr" | "dRt" | "ds" | "dS" | "dT" | "dRs" | "dRS" | "dRT" ⇒ JobState.Done
         case "Eqw" | "Ehqw" | "EhRqw" ⇒ JobState.Failed
         case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
-      }
   }
 
   val scriptSuffix = ".sge"
 
-  def submit[S](server: S, jobDescription: SGEJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
-    BatchScheduler.submit[S](
+  def submit(server: HeadNode, jobDescription: SGEJobDescription): BatchJob =
+    BatchScheduler.submit(
       jobDescription.workDirectory,
       impl.toSGE(jobDescription),
       scriptSuffix,
@@ -63,17 +60,17 @@ package object sge {
       impl.retreiveJobId,
       server)
 
-  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState =
-    BatchScheduler.state[S](
+  def state(server: HeadNode, job: BatchJob): JobState =
+    BatchScheduler.state(
       s"""qstat | sed 's/^  *//g'  |  grep '^${job.jobId} ' | sed 's/  */ /g' | cut -d' ' -f5""",
       (res, _) ⇒ impl.parseState(res))(server, job)
 
-  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
-    BatchScheduler.clean[S](
+  def clean(server: HeadNode, job: BatchJob): Unit =
+    BatchScheduler.clean(
       s"qdel ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + BatchScheduler.output(job.uniqId))
-  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + BatchScheduler.error(job.uniqId))
+  def stdOut(server: HeadNode, job: BatchJob): String = server.read(job.workDirectory + "/" + BatchScheduler.output(job.uniqId))
+  def stdErr(server: HeadNode, job: BatchJob): String = server.read(job.workDirectory + "/" + BatchScheduler.error(job.uniqId))
 
 }

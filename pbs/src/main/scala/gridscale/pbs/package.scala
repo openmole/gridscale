@@ -1,6 +1,5 @@
 package gridscale
 
-import gridscale.effectaside._
 import gridscale.cluster.{BatchScheduler, HeadNode, Requirement}
 import gridscale.tools._
 import squants._
@@ -32,7 +31,7 @@ package object pbs {
         m ⇒ s"${separator}mem=${m.toMBString}mb"
       } getOrElse ""
 
-    def toScript(description: PBSJobDescription)(uniqId: String) = {
+    def toScript(description: PBSJobDescription)(uniqId: String) =
       import description._
 
       val header = "#!/bin/bash\n"
@@ -47,14 +46,13 @@ package object pbs {
         "-lwalltime=" -> wallTime.map(_.toHHmmss),
       )
 
-      val nodeSelection = flavour match {
+      val nodeSelection = flavour match
         case Torque ⇒
           val memoryString = memoryRequirements(",")(memory)
           s"#PBS -l nodes=$nbNodes:ppn=$coresPerNode$memoryString"
         case PBSPro ⇒
           val memoryString = memoryRequirements(":")(memory)
           s"#PBS -l select=$nbNodes:ncpus=$coresPerNode$memoryString"
-      }
 
       s"""$header
          |${requirementsString(core, "#PBS")}
@@ -63,20 +61,18 @@ package object pbs {
          |cd $workDirectory
          |$command
          |""".stripMargin
-    }
 
     def retrieveJobID(out: String) =
       out.split("\n").reverse.map(_.trim).dropWhile(_.isEmpty).head
 
     def translateStatus(retCode: Int, status: String) =
-      status match {
+      status match
         case "R" | "E" | "H" | "S" ⇒ JobState.Running
         case "Q" | "W" | "T"       ⇒ JobState.Submitted
         case "C"                   ⇒ JobState.Done
         case _                     ⇒ throw new RuntimeException("Unrecognized state " + status)
-      }
 
-    def parseState(cmdRet: ExecutionResult, command: String): JobState = {
+    def parseState(cmdRet: ExecutionResult, command: String): JobState =
       val jobStateAttribute = "JOB_STATE"
 
       cmdRet.returnCode match {
@@ -90,14 +86,13 @@ package object pbs {
                 splited(0).trim.toUpperCase -> splited(1).trim
             }.toMap.get(jobStateAttribute)
 
-          state match {
+          state match
             case Some(s) ⇒ translateStatus(cmdRet.returnCode, s)
             case None    ⇒ throw new RuntimeException("State not found in $command output: " + cmdRet.stdOut)
-          }
+
         case _ ⇒ throw new RuntimeException(ExecutionResult.error(command, cmdRet))
       }
 
-    }
 
     def pbsErrorWrapper(command: String, executionResult: ExecutionResult) =
       ExecutionResult.error("You might want to specify a different PBS flavour in your job description? flavour = PBSPro")(command, executionResult)
@@ -108,8 +103,8 @@ package object pbs {
 
   val scriptSuffix = ".pbs"
 
-  def submit[S](server: S, jobDescription: PBSJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
-    BatchScheduler.submit[S](
+  def submit(server: HeadNode, jobDescription: PBSJobDescription): BatchJob =
+    BatchScheduler.submit(
       jobDescription.workDirectory,
       toScript(jobDescription),
       scriptSuffix,
@@ -118,18 +113,17 @@ package object pbs {
       server,
       impl.pbsErrorWrapper)
 
-  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState = {
-    BatchScheduler.state[S](
+  def state(server: HeadNode, job: BatchJob): JobState =
+    BatchScheduler.state(
       s"qstat -f ${job.jobId}",
       parseState)(server, job)
-  }
 
-  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
-    BatchScheduler.clean[S](
+  def clean(server: HeadNode, job: BatchJob): Unit =
+    BatchScheduler.clean(
       s"qdel ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdOut[S](server, job)
-  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdErr[S](server, job)
+  def stdOut(server: HeadNode, job: BatchJob): String = BatchScheduler.stdOut(server, job)
+  def stdErr(server: HeadNode, job: BatchJob): String = BatchScheduler.stdErr(server, job)
 
 }

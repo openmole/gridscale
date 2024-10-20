@@ -1,32 +1,27 @@
 package gridscale.condor
 
-import gridscale.effectaside._
-import gridscale._
+import gridscale.*
 import gridscale.ssh
-import gridscale.authentication._
-import gridscale.cluster.SSHCluster
+import gridscale.authentication.*
+import gridscale.cluster.SSHHeadNode
+import squants.information.InformationConversions.*
 
-import squants.information.InformationConversions._
 import scala.language.postfixOps
 
 object CondorExample extends App {
 
   val authentication = PrivateKey(new java.io.File("/home/jopasserat/.ssh/id_rsa"), "", "jopasserat")
-  val headNode = ssh.SSHServer("myhost.co.uk")(authentication)
-
+  val server = ssh.SSHServer("myhost.co.uk")(authentication)
   val jobDescription = CondorJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/home/foobar/test_gridscale", Some(2000 megabytes))
 
-  def res(implicit system: Effect[System], sshEffect: Effect[ssh.SSH]) = {
-    val job = submit(headNode, jobDescription)
-    val s = waitUntilEnded(() ⇒ state(headNode, job))
-    val out = stdOut(headNode, job)
-    clean(headNode, job)
+  def res(using ssh.SSH) =
+    val job = submit(server, jobDescription)
+    val s = waitUntilEnded(() ⇒ state(server, job))
+    val out = stdOut(server, job)
+    clean(server, job)
     (s, out)
-  }
 
-  SSHCluster { intp ⇒
-    import intp._
+  ssh.SSH.withSSH:
     println(res)
-  }
 
 }

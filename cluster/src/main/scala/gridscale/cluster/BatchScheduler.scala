@@ -17,14 +17,14 @@
 
 package gridscale.cluster
 
-import gridscale.effectaside._
 import gridscale.JobState
 import gridscale.ExecutionResult
 
+import java.util.UUID
 import scala.language.higherKinds
 
 /** Generic functions to be used as building blocks to implement batch schedulers */
-object BatchScheduler {
+object BatchScheduler:
 
   type BatchJobID = String
   case class BatchJob(uniqId: String, jobId: BatchJobID, workDirectory: String)
@@ -36,49 +36,44 @@ object BatchScheduler {
   // FIXME fragile => order of params
   def scriptPath(workDirectory: String, suffix: String)(uniqId: String): String = s"$workDirectory/${scriptName(suffix)(uniqId)}"
 
-  def submit[S](
+  def submit(
     workDirectory: String,
     buildScript: String ⇒ String,
     scriptSuffix: String,
     submitCommand: (String, String) ⇒ String,
     retrieveJobID: String ⇒ BatchJobID,
-    server: S,
-    errorWrapper: ((String, ExecutionResult) ⇒ String) = ExecutionResult.error)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob = {
+    server: HeadNode,
+    errorWrapper: (String, ExecutionResult) ⇒ String = ExecutionResult.error): BatchJob =
 
-    hn.execute(server, s"mkdir -p $workDirectory")
-    val uniqId = s"job-${system().randomUUID().toString}"
+    server.execute(s"mkdir -p $workDirectory")
+    val uniqId = s"job-${UUID.randomUUID().toString}"
     val script = buildScript(uniqId)
     val sName = scriptName(scriptSuffix)(uniqId)
     val sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)
-    hn.write(server, script.getBytes, sPath)
-    hn.execute(server, s"chmod +x $sPath")
+    server.write(script.getBytes, sPath)
+    server.execute(s"chmod +x $sPath")
     val command = s"cd $workDirectory && ${submitCommand(sName, uniqId)}"
-    val cmdRet = hn.execute(server, command)
+    val cmdRet = server.execute(command)
     val ExecutionResult(ret, out, error) = cmdRet
     if (ret != 0) throw new RuntimeException(errorWrapper(command, cmdRet))
     if (out == null) throw new RuntimeException(s"$submitCommand did not return a JobID")
     val jobId = retrieveJobID(out)
     BatchJob(uniqId, jobId, workDirectory)
-  }
 
-  def state[S](
+  def state(
     stateCommand: String,
-    parseState: (ExecutionResult, String) ⇒ JobState)(server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState = {
+    parseState: (ExecutionResult, String) ⇒ JobState)(server: HeadNode, job: BatchJob): JobState =
 
-    val cmdRet = hn.execute(server, stateCommand)
+    val cmdRet = server.execute(stateCommand)
     parseState(cmdRet, stateCommand)
-  }
 
-  def clean[S](
+  def clean(
     cancelCommand: String,
-    scriptSuffix: String)(server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit = {
-    hn.execute(server, cancelCommand)
-    hn.rmFile(server, scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
-    hn.rmFile(server, job.workDirectory + "/" + output(job.uniqId))
-    hn.rmFile(server, job.workDirectory + "/" + error(job.uniqId))
-  }
+    scriptSuffix: String)(server: HeadNode, job: BatchJob): Unit =
+    server.execute(cancelCommand)
+    server.rmFile(scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
+    server.rmFile(job.workDirectory + "/" + output(job.uniqId))
+    server.rmFile(job.workDirectory + "/" + error(job.uniqId))
 
-  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + output(job.uniqId))
-  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = hn.read(server, job.workDirectory + "/" + error(job.uniqId))
-
-}
+  def stdOut(server: HeadNode, job: BatchJob): String = server.read(job.workDirectory + "/" + output(job.uniqId))
+  def stdErr(server: HeadNode, job: BatchJob): String = server.read(job.workDirectory + "/" + error(job.uniqId))

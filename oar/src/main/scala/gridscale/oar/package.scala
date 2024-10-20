@@ -17,7 +17,6 @@
 
 package gridscale
 
-import gridscale.effectaside._
 import gridscale.cluster.{ BatchScheduler, HeadNode }
 import squants._
 import gridscale.tools._
@@ -42,20 +41,18 @@ package object oar {
          |${description.command}
        """.stripMargin
 
-    def submissionCommand(description: OARJobDescription)(scriptName: String, uniqId: String) = {
-      def commandLineResources(description: OARJobDescription) = {
+    def submissionCommand(description: OARJobDescription)(scriptName: String, uniqId: String) =
+      def commandLineResources(description: OARJobDescription) =
         val attributes =
-          List(description.cpu.map(c ⇒ s"cpu=$c"), description.core.map(c ⇒ s"core=$c")).flatten match {
+          List(description.cpu.map(c ⇒ s"cpu=$c"), description.core.map(c ⇒ s"core=$c")).flatten match
             case Nil ⇒ ""
             case l   ⇒ "/" + l.mkString("/") + ","
-          }
-        attributes + description.wallTime.map(wt ⇒ s"walltime=" + wt.toHHmmss).getOrElse("")
-      }
 
-      def ressources = {
+        attributes + description.wallTime.map(wt ⇒ s"walltime=" + wt.toHHmmss).getOrElse("")
+
+      def ressources =
         val l = commandLineResources(description)
         if (!l.isEmpty) s"-l $l " else ""
-      }
 
       s"oarsub -O${BatchScheduler.output(uniqId)} -E${BatchScheduler.error(uniqId)} " +
         s"${if (description.bestEffort) "-t besteffort " else ""}" +
@@ -63,39 +60,35 @@ package object oar {
         s"-d ${description.workDirectory} " +
         ressources +
         s"./${scriptName}"
-    }
 
-    def retrieveJobId(output: String) = {
+    def retrieveJobId(output: String) =
       val oarJobId = "OAR_JOB_ID"
       val jobIdLine = output.split("\n").find(_.startsWith(oarJobId)).headOption.getOrElse(throw new RuntimeException("oarsub did not return a valid JobID in " + output))
       jobIdLine.split("=")(1)
-    }
 
     def translateStatus(status: String) =
-      status match {
+      status match
         case "Waiting" | "toLaunch" | "Launching" | "toAckReservation" ⇒ JobState.Submitted
         case "Hold" | "Running" | "Finishing" | "Suspended" | "Resuming" ⇒ JobState.Running
         case "Terminated" ⇒ JobState.Done
         case "Error" | "toError" ⇒ JobState.Failed
         case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
-      }
 
-    def parseState(executionResult: ExecutionResult, command: String): JobState = {
-      executionResult.returnCode match {
+    def parseState(executionResult: ExecutionResult, command: String): JobState =
+      executionResult.returnCode match
         case 0 ⇒
           val status = executionResult.stdOut.split("\n").head.split(" ")(1)
           translateStatus(status)
         case r ⇒ throw new RuntimeException(ExecutionResult.error(command, executionResult))
-      }
-    }
+
   }
 
   import BatchScheduler._
 
   val scriptSuffix = ".oar"
 
-  def submit[S](server: S, jobDescription: OARJobDescription)(implicit hn: HeadNode[S], system: Effect[System]): BatchJob =
-    BatchScheduler.submit[S](
+  def submit(server: HeadNode, jobDescription: OARJobDescription): BatchJob =
+    BatchScheduler.submit(
       jobDescription.workDirectory,
       _ ⇒ impl.toOAR(jobDescription),
       scriptSuffix,
@@ -103,17 +96,17 @@ package object oar {
       impl.retrieveJobId,
       server)
 
-  def state[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): JobState =
-    BatchScheduler.state[S](
+  def state(server: HeadNode, job: BatchJob): JobState =
+    BatchScheduler.state(
       s"""oarstat -j ${job.jobId} -s""",
       impl.parseState)(server, job)
 
-  def clean[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): Unit =
-    BatchScheduler.clean[S](
+  def clean(server: HeadNode, job: BatchJob): Unit =
+    BatchScheduler.clean(
       s"oardel ${job.jobId}",
       scriptSuffix)(server, job)
 
-  def stdOut[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdOut[S](server, job)
-  def stdErr[S](server: S, job: BatchJob)(implicit hn: HeadNode[S]): String = BatchScheduler.stdErr[S](server, job)
+  def stdOut(server: HeadNode, job: BatchJob): String = BatchScheduler.stdOut(server, job)
+  def stdErr(server: HeadNode, job: BatchJob): String = BatchScheduler.stdErr(server, job)
 
 }

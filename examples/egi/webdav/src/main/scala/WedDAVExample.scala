@@ -1,10 +1,10 @@
 package gridscale.egi
 
 import java.io.ByteArrayInputStream
-
-import gridscale.egi._
-import gridscale.webdav._
-import gridscale.authentication._
+import gridscale.egi.*
+import gridscale.webdav.*
+import gridscale.authentication.*
+import gridscale.http.HTTP
 
 @main def wedDAVExample =
   val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
@@ -12,12 +12,11 @@ import gridscale.authentication._
   val certificateDirectory = new java.io.File("/home/reuillon/.openmole/simplet/persistent/CACertificates/")
   val bdiiServer = BDIIServer("topbdii.grif.fr", 2170)
 
-  EGI: impl ⇒
-    import impl._
 
+  HTTP.withHTTP:
     val proxy = VOMS.proxy("voms2.hellasgrid.gr:15160", p12, certificateDirectory)
 
-    println(bdii().webDAVs(bdiiServer, "vo.complex-systems.eu"))
+    println(BDII.webDAVs(bdiiServer, "vo.complex-systems.eu"))
 
     //val webdavInfo = bdii().webDAVs(bdiiServer, "vo.complex-systems.eu").find(_.contains("lal")).get
     val webdavInfo = "https://eos.grif.fr:11000/eos/grif/complex/"
@@ -25,10 +24,13 @@ import gridscale.authentication._
 
     println(list(webdav, "/"))
 
-    if (exists(webdav, "youpi2.txt")) rmFile(webdav, "youpi2.txt")
+    for
+      i <- 0 to 10000
+    do
+      if (exists(webdav, "youpi2.txt")) rmFile(webdav, "youpi2.txt")
 
-    writeStream(webdav, () ⇒ new ByteArrayInputStream("youpi doky".getBytes), "youpi2.txt")
-    val c = read(webdav, "youpi2.txt")
+      writeStream(webdav, () ⇒ new ByteArrayInputStream("youpi doky".getBytes), "youpi2.txt")
+      val c = read(webdav, "youpi2.txt")
 
-    println(c)
+      println(c)
 

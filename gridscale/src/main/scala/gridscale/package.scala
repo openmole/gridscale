@@ -24,7 +24,6 @@ package object gridscale {
     def isFinal(s: JobState): Boolean = s == Done || s == Failed
   }
 
-  import gridscale.effectaside._
   import squants._
   import squants.time.TimeConversions._
 
@@ -66,18 +65,17 @@ package object gridscale {
   //
   //  }
 
-  def waitUntilEnded(f: () ⇒ JobState, wait: Time = 10 seconds)(implicit system: Effect[System]): JobState = {
-    def pull: JobState = {
+  def waitUntilEnded(f: () ⇒ JobState, wait: Time = 10 seconds): JobState =
+    def pull: JobState =
       val s = f()
       val continue = !JobState.isFinal(s)
-      if (continue) {
-        system().sleep(wait)
+      if continue
+      then
+        Thread.sleep(wait.toMillis)
         pull
-      } else s
-    }
+      else s
 
     pull
-  }
 
   case class ExecutionResult(returnCode: Int, stdOut: String, stdErr: String)
 

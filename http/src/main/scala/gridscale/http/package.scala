@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets
 import java.security.KeyStore.{PasswordProtection, PrivateKeyEntry}
 import java.security.PrivateKey
 import java.security.cert.{Certificate, CertificateFactory, X509Certificate}
-import gridscale.effectaside.*
 import org.apache.commons.codec.binary
 import org.apache.http.{HttpEntity, client}
 import org.apache.http.client.methods
@@ -55,23 +54,23 @@ package object http {
     }
 
   def get[T](url: String, headers: Headers = Seq.empty) =
-    implicit val interpreter = HTTP()
-    read(buildServer(url), "", method = Get(headers))
+    HTTP.withHTTP:
+      read(buildServer(url), "", method = Get(headers))
 
   def getStream[T](url: String)(f: InputStream ⇒ T) =
-    implicit val interpreter = HTTP()
-    readStream[T](buildServer(url), "", f)
+    HTTP.withHTTP:
+      readStream[T](buildServer(url), "", f)
 
   def getResponse[T](url: String)(f: Response ⇒ T) =
-    implicit val interpreter = HTTP()
-    readResponse[T](buildServer(url), "", f)
+    HTTP.withHTTP:
+      readResponse[T](buildServer(url), "", f)
 
   type Headers = Seq[(String, String)]
   case class Response(inputStream: InputStream, headers: Headers)
 
-  object Headers {
+  object Headers:
     def expectContinue = (org.apache.http.protocol.HTTP.EXPECT_DIRECTIVE, org.apache.http.protocol.HTTP.EXPECT_CONTINUE)
-  }
+
 
   sealed trait HTTPMethod
   case class Get(headers: Headers = Seq.empty) extends HTTPMethod
@@ -85,7 +84,7 @@ package object http {
 
   object HTTP {
 
-    def apply() = Effect(new HTTP())
+    def withHTTP[T](f: HTTP ?=> T) = f(using new HTTP())
 
     def client(server: Server) =
       server match {
@@ -268,18 +267,17 @@ package object http {
     }.toVector
   }
 
-  def list(server: Server, path: String)(implicit http: Effect[HTTP]) = parseHTMLListing(http().content(server, path))
-  def read(server: Server, path: String, method: HTTPMethod = Get())(implicit http: Effect[HTTP]) = http().content(server, path, method)
+  def list(server: Server, path: String)(using http: HTTP) = parseHTMLListing(http.content(server, path))
+  def read(server: Server, path: String, method: HTTPMethod = Get())(using http: HTTP) = http.content(server, path, method)
 
-  def readStream[T](server: Server, path: String, f: InputStream ⇒ T, method: HTTPMethod = Get())(implicit http: Effect[HTTP]): T =
-    http().request(server, path, (_, r) ⇒ f(r.getEntity.getContent), method)
+  def readStream[T](server: Server, path: String, f: InputStream ⇒ T, method: HTTPMethod = Get())(using http: HTTP): T =
+    http.request(server, path, (_, r) ⇒ f(r.getEntity.getContent), method)
 
-  def readResponse[T](server: Server, path: String, f: Response ⇒ T, method: HTTPMethod = Get())(implicit http: Effect[HTTP]): T = {
+  def readResponse[T](server: Server, path: String, f: Response ⇒ T, method: HTTPMethod = Get())(using http: HTTP): T =
     def toResponse(response: HttpResponse) =
       Response(response.getEntity.getContent, response.getAllHeaders.toSeq.map(h ⇒ h.getName -> h.getValue))
 
-    http().request(server, path, (_, r) ⇒ f(toResponse(r)), method)
-  }
+    http.request(server, path, (_, r) ⇒ f(toResponse(r)), method)
 
   object HTTPS {
 
@@ -421,16 +419,16 @@ package object http {
       client.build()
     }
 
-    def readPem(pem: java.io.File)(implicit fileSystem: Effect[FileSystem]) =
-      val content = fileSystem().readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
+    def readPem(pem: java.io.File) =
+      val content = FileSystem.readStream(pem)(is ⇒ Source.fromInputStream(is).mkString)
       val stripped = content.replaceAll(X509Factory.BEGIN_CERT, "").replaceAll(X509Factory.END_CERT, "")
       val decoded = new binary.Base64().decode(stripped)
       val certificate = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decoded))
       KeyStoreOperations.Certificate(certificate)
 
-    def readP12(file: java.io.File, password: String)(implicit fileSystem: Effect[FileSystem]) = {
+    def readP12(file: java.io.File, password: String) =
       def keyStore =
-        fileSystem().readStream(file): is ⇒
+        FileSystem.readStream(file): is ⇒
           val ks = KeyStore.getInstance("pkcs12")
           ks.load(is, password.toCharArray)
           ks
@@ -449,10 +447,9 @@ package object http {
         // Loaded(userCert, userKey, userChain)
 
       extractCertificate(keyStore)
-    }
 
-    def readPEMCertificates(certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) =
-      val certificateFiles = fileSystem().list(certificateDirectory).sortBy(_.lastModified())
+    def readPEMCertificates(certificateDirectory: java.io.File) =
+      val certificateFiles = FileSystem.list(certificateDirectory).sortBy(_.lastModified())
       certificateFiles.map: f ⇒
         util.Try:
           val pem = HTTPS.readPem(f)

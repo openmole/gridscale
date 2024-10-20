@@ -1,10 +1,10 @@
 package gridscale
 
-import java.io.{BufferedOutputStream, FileOutputStream}
-import gridscale.effectaside.*
+import java.io.{BufferedOutputStream, File, FileOutputStream}
 import gridscale.authentication.P12Authentication
 import gridscale.dirac.DIRACState
 import gridscale.http.*
+import gridscale.tools.FileSystem
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import org.apache.commons.compress.utils.IOUtils
@@ -100,15 +100,14 @@ package object dirac {
   enum DIRACState:
     case Received, Checking, Staging, Waiting, Matched, Running, Completing, Completed, Stalled, Killed, Deleted, Done, Failed
 
-  def getService(vo: String, certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+  def getService(vo: String, certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(using HTTP) = 
     val services = getServices(certificatesDirectory, timeout)
     services.getOrElse(vo, throw new RuntimeException(s"Service not fond for the vo $vo in the DIRAC service directory"))
-  }
 
   def getServices(
     certificatesDirectory: java.io.File,
     timeout: Time = 1 minutes,
-    directoryURL: String = "https://dirac.france-grilles.fr/defaults/DiracServices.json")(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = 
+    directoryURL: String = "https://dirac.france-grilles.fr/defaults/DiracServices.json")(using http: HTTP) = 
 
     def getService(json: String) =
       parse(json).children.map {
@@ -125,17 +124,17 @@ package object dirac {
     val indexServer = HTTPSServer(directoryURL, factory, timeout = timeout)
     getService(read(indexServer, ""))
 
-  def supportedVOs(certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) =
+  def supportedVOs(certificatesDirectory: java.io.File, timeout: Time = 1 minutes)(using HTTP) =
     getServices(certificatesDirectory, timeout).keys
 
-  def server(service: Service, p12: P12Authentication, certificateDirectory: java.io.File)(implicit fileSystem: Effect[FileSystem], http: Effect[HTTP]) = 
+  def server(service: Service, p12: P12Authentication, certificateDirectory: java.io.File)(using HTTP) = 
     val userCertificate = HTTPS.readP12(p12.certificate, p12.password)
     val certificates = HTTPS.readPEMCertificates(certificateDirectory)
     val factory = HTTPS.socketFactory(certificates ++ Vector(userCertificate), p12.password)
     val server = HTTPSServer(service.service, factory)
     DIRACServer(server, service)
 
-  def token(server: DIRACServer, setup: String = "Dirac-Production")(implicit http: Effect[HTTP]) = {
+  def token(server: DIRACServer, setup: String = "Dirac-Production")(using HTTP) = 
     def auth2Auth = "/oauth2/token"
 
     val uri = new URIBuilder()
@@ -147,11 +146,10 @@ package object dirac {
     val r = gridscale.http.read(server.server, auth2Auth + "?" + uri.getQuery)
     val parsed = parse(r.trim)
     Token((parsed \ "token").extract[String], (parsed \ "expires_in").extract[Long] seconds)
-  }
 
   def jobsLocation = "/jobs"
 
-  def submit(server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String] = None)(implicit http: Effect[HTTP]): JobID = {
+  def submit(server: DIRACServer, jobDescription: JobDescription, token: Token, jobGroup: Option[String] = None)(using HTTP): JobID = 
     def files() = {
       val builder = MultipartEntityBuilder.create()
       jobDescription.inputSandbox.foreach {
@@ -165,9 +163,8 @@ package object dirac {
     val r = gridscale.http.read(server.server, jobsLocation, Post(files))
     val id = (parse(r) \ "jids")(0).extract[String]
     JobID(id, Some(jobDescription))
-  }
 
-  def state(server: DIRACServer, token: Token, jobId: JobID)(implicit http: Effect[HTTP]): JobState = {
+  def state(server: DIRACServer, token: Token, jobId: JobID)(using HTTP): JobState = 
     val uri =
       new URIBuilder()
         .setParameter("access_token", token.token)
@@ -176,7 +173,6 @@ package object dirac {
     val r = gridscale.http.read(server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}")
     val s = (parse(r) \ "status").extract[String]
     translateState(s)
-  }
 
   def translateState(s: String): JobState =
     DIRACState.withName(s) match
@@ -200,7 +196,7 @@ package object dirac {
     token: Token,
     groupId: Option[GroupId] = None,
     userId: Option[UserId] = None,
-    states: Seq[DIRACState] = DIRACState.values.filter(s ⇒ s != DIRACState.Killed && s != DIRACState.Deleted))(implicit hTTP: Effect[HTTP]): Vector[(String, JobState)] = {
+    states: Seq[DIRACState] = DIRACState.values.filter(s ⇒ s != DIRACState.Killed && s != DIRACState.Deleted))(using HTTP): Vector[(String, JobState)] = 
 
     val uri = {
       val uri = new URIBuilder(server.server.url)
@@ -221,64 +217,47 @@ package object dirac {
       val status = (j \ "status").extract[String]
       (j \ "jid").extract[String] -> translateState(status)
     }.toVector
-  }
 
-  def delete(server: DIRACServer, token: Token, jobId: JobID)(implicit http: Effect[HTTP]) = {
+  def delete(server: DIRACServer, token: Token, jobId: JobID)(using HTTP) = 
     val uri =
       new URIBuilder()
         .setParameter("access_token", token.token)
         .build
 
     gridscale.http.read(server.server, s"$jobsLocation/${jobId.id}?${uri.getQuery}", Delete()).map { _ ⇒ () }
-  }
 
-  def downloadOutputSandbox(server: DIRACServer, token: Token, jobId: JobID, outputDirectory: Path)(implicit http: Effect[HTTP], fileSystem: Effect[FileSystem]) = {
+  def downloadOutputSandbox(server: DIRACServer, token: Token, jobId: JobID, outputDirectory: File)(using HTTP) = 
     val uri =
       new URIBuilder()
         .setParameter("access_token", token.token)
         .build
 
-    def extract(str: java.io.InputStream, outputDirectory: java.io.File) = {
+    def extract(str: java.io.InputStream, outputDirectory: java.io.File) = 
       outputDirectory.mkdirs()
 
       val is = new TarArchiveInputStream(new BZip2CompressorInputStream(str))
 
       try Iterator.continually(is.getNextEntry).takeWhile(_ != null).foreach {
         e ⇒
-          fileSystem().writeStream(new java.io.File(outputDirectory, e.getName)) { os ⇒
+          FileSystem.writeStream(new java.io.File(outputDirectory, e.getName)) { os ⇒
             IOUtils.copy(is, os)
           }
       }
       finally is.close
-    }
 
-    gridscale.http.readStream(server.server, s"$jobsLocation/${jobId.id}/outputsandbox?${uri.getQuery}", is ⇒ extract(is, outputDirectory.path))
-  }
+    gridscale.http.readStream(server.server, s"$jobsLocation/${jobId.id}/outputsandbox?${uri.getQuery}", is ⇒ extract(is, outputDirectory))
 
-  def delegate(server: DIRACServer, p12: P12Authentication, token: Token)(implicit http: Effect[HTTP]): Unit = {
-    def entity() = {
+  def delegate(server: DIRACServer, p12: P12Authentication, token: Token)(using HTTP): Unit = 
+    def entity() = 
       val entity = MultipartEntityBuilder.create()
       entity.addBinaryBody("p12", p12.certificate)
       entity.addTextBody("Password", p12.password)
       entity.addTextBody("access_token", token.token)
       entity.build()
-    }
 
     def delegation = s"/proxy/unknown/${server.service.group}"
 
     gridscale.http.read(server.server, delegation, Post(entity))
-  }
-
-  object DIRAC:
-
-    class Interpreters:
-      implicit val fileSystemInterpreter: Effect[FileSystem] = FileSystem()
-      implicit val systemInterpreter: Effect[System] = System()
-      implicit val httpInterpreter: Effect[HTTP] = HTTP()
-
-    def apply[T](f: Interpreters ⇒ T) = 
-      val interpreters = new Interpreters()
-      f(interpreters)
   
 
 }

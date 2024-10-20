@@ -1,5 +1,7 @@
 package gridscale.qarnot
 
+
+import gridscale.http
 /*
  * Copyright (C) 2023 Romain Reuillon
  *
@@ -23,6 +25,5 @@ object QarnotExample:
 
     val job = JobDescription("echo gridscale")
 
-    Qarnot: intp =>
-      import intp.*
+    http.HTTP.withHTTP:
       println(submit(job, apiKey))

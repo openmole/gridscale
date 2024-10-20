@@ -1,6 +1,5 @@
 package gridscale.pbs
 
-import gridscale.effectaside._
 import gridscale._
 import gridscale.authentication._
 import gridscale.ssh
@@ -18,17 +17,14 @@ object PBSExample extends App {
   // by default flavour = Torque, there's no need to specify it
   val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/foobar/test_gridscale", wallTime = Some(10 minutes), memory = Some(2 gigabytes), flavour = PBSPro)
 
-  def res(implicit system: Effect[System], sshEffect: Effect[ssh.SSH]) = {
+  def res(using ssh.SSH) = 
     val job = submit(localhost, jobDescription)
     val s = waitUntilEnded(() ⇒ state(localhost, job))
     val out = stdOut(localhost, job)
-    clean[ssh.SSHServer](localhost, job)
+    clean(localhost, job)
     (s, out)
-  }
 
-  SSHCluster { intp ⇒
-    import intp._
+  ssh.SSH.withSSH:
     println(res)
-  }
 
 }
