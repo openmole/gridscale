@@ -112,20 +112,18 @@ object Local:
     case e: Throwable ⇒ throw LocalIOError(s"Could not move $from to $to on local host", e)
   }
 
-  def link(target: String, link: String, defaultOnCopy: Boolean) = {
+  def link(target: String, link: String, defaultOnCopy: Boolean = false) =
 
-    def createLink(target: JPath, link: JPath): JPath = {
+    def createLink(target: JPath, link: JPath): JPath =
       def getParentFileSafe(file: File): File =
-        file.getParentFile() match {
+        file.getParentFile() match
           case null ⇒ if (file.isAbsolute) file else new File(".")
           case f    ⇒ f
-        }
 
-      def unsupported = {
+      def unsupported =
         val fullTargetPath = if (target.isAbsolute) target else JPaths.get(getParentFileSafe(link.toFile).getPath, target.toFile.getPath)
         Files.copy(fullTargetPath, link, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING)
         link
-      }
 
       try Files.createSymbolicLink(link, target)
       catch {
@@ -134,10 +132,8 @@ object Local:
         case e: FileSystemException           ⇒ if (defaultOnCopy) unsupported else throw e
         case e: IOException                   ⇒ throw e
       }
-    }
 
     createLink(JPaths.get(target), JPaths.get(link))
-  }
 
 
 case class LocalExecutionError(message: String, t: Throwable) extends Exception(message, t)
