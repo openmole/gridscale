@@ -41,7 +41,7 @@ package object webdav {
   def mkDirectory(server: Server, path: String)(using http.HTTP): Unit = http.read(server, path, http.MkCol())
   def mv(server: Server, from: String, to: String)(using http.HTTP): Unit = http.read(server, from, http.Move(to))
 
-  def writeStream(server: Server, is: () ⇒ InputStream, path: String, redirect: Boolean = true)(using http.HTTP): Unit = 
+  def writeStream(server: Server, is: () ⇒ InputStream, path: String, redirect: Boolean = true)(using http.HTTP): Unit =
     def redirectedServer =
       if !redirect
       then server

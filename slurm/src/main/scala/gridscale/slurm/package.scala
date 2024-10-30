@@ -84,28 +84,38 @@ package object slurm {
 
     def retrieveJobID(submissionOutput: String) = submissionOutput.trim.reverse.takeWhile(_ != ' ').reverse
 
-    def translateStatus(retCode: Int, status: String, command: String): JobState =
+    def translateStatus(retCode: Int, status: String, reason: Option[String], command: String): JobState =
       import JobState._
       status match
         case "COMPLETED" ⇒ Done
-        case "COMPLETED?" if 1 == retCode ⇒ Done
-        case "COMPLETED?" if 1 != retCode ⇒ Failed
-        case "RUNNING" | "COMPLETING" ⇒ Running
-        case "CONFIGURING" | "PENDING" | "SUSPENDED" ⇒ Submitted
-        case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" ⇒ Failed
-        case _ ⇒ throw new RuntimeException(s"Unrecognized state $status returned by $command")
+        case "COMPLETED?" if 1 == retCode => Done
+        case "COMPLETED?" if 1 != retCode => Failed
+        case "RUNNING" | "COMPLETING" => Running
+        case "CONFIGURING" | "SUSPENDED" => Submitted
+        case "PENDING" =>
+          val failedReasons = Set("launch_failed_requeued_held")
+          if reason.exists(failedReasons.contains)
+          then Failed
+          else Submitted
+        case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" => Failed
+        case _ => throw new RuntimeException(s"Unrecognized state $status returned by $command")
 
     def parseState(cmdRet: ExecutionResult, command: String): JobState =
       val jobStateAttribute = "JobState"
+      val reasonAttribute = "Reason"
+
       val lines = cmdRet.stdOut.split("\n").map(_.trim)
-      val state = lines.filter(_.matches(".*JobState=.*")).map {
-        prop ⇒
-          val splits = prop.split('=')
-          splits(0).trim -> splits(1).trim.split(' ')(0)
-        // consider job COMPLETED when scontrol returns 1: "Invalid job id specified"
-        /** @see translateStatus(retCode: Int, status: String) */
-      }.toMap.getOrElse(jobStateAttribute, "COMPLETED?")
-      translateStatus(cmdRet.returnCode, state, command)
+
+      val (state, reason) =
+        lines.filter(_.matches(s".*$jobStateAttribute=.*")).map: prop =>
+          val parts = prop.trim.split(" ").map(_.split("=")).map(a => a(0) -> a(1)).toMap
+          (parts(jobStateAttribute), parts.get(reasonAttribute))
+          // consider job COMPLETED when scontrol returns 1: "Invalid job id specified"
+          /** @see translateStatus(retCode: Int, status: String) */
+        .headOption
+        .getOrElse(("COMPLETED?", None))
+
+      translateStatus(cmdRet.returnCode, state, reason, command)
 
     // compiles thanks to a divine intervention
     def processCancel(cancelRet: ExecutionResult, job: BatchJob) = cancelRet match
