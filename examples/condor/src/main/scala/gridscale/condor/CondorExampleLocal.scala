@@ -21,24 +21,17 @@ import gridscale._
 import gridscale.cluster._
 import gridscale.local._
 
-object CondorExampleLocal extends App {
+object CondorExampleLocal extends App:
 
   import scala.language.reflectiveCalls
   import gridscale.condor._
 
-  val headNode = LocalHeadNode()
-
   val jobDescription = CondorJobDescription(executable = "/bin/echo", arguments = "hello from $(hostname)", workDirectory = "/homes/jpassera/test_gridscale")
 
-  def res =
-    val job = submit(headNode, jobDescription)
-    val s = waitUntilEnded(() ⇒ state(headNode, job))
-    val out = stdOut(headNode, job)
-    clean(headNode, job)
-    (s, out)
+  val job = submit(HeadNode.local, jobDescription)
+  val s = waitUntilEnded(() ⇒ state(HeadNode.local, job))
+  val out = stdOut(HeadNode.local, job)
+  clean(HeadNode.local, job)
+  println((s, out))
 
 
-  println(res)
-
-
-}

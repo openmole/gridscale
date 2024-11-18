@@ -18,13 +18,13 @@ object PBSExample extends App {
   val jobDescription = PBSJobDescription("""echo "hello world from $(hostname)"""", "/work/foobar/test_gridscale", wallTime = Some(10 minutes), memory = Some(2 gigabytes), flavour = PBSPro)
 
   def res(using ssh.SSH) = 
-    val job = submit(localhost, jobDescription)
-    val s = waitUntilEnded(() ⇒ state(localhost, job))
-    val out = stdOut(localhost, job)
-    clean(localhost, job)
+    val job = submit(HeadNode.ssh, jobDescription)
+    val s = waitUntilEnded(() ⇒ state(HeadNode.ssh, job))
+    val out = stdOut(HeadNode.ssh, job)
+    clean(HeadNode.ssh, job)
     (s, out)
 
-  ssh.SSH.withSSH:
+  ssh.SSH.withSSH(localhost):
     println(res)
 
 }

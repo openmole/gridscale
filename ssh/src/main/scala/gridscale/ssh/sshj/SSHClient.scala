@@ -30,51 +30,50 @@ import squants.time.Time
 
 object SSHClient:
 
-  def connect(ssh: SSHClient): SSHClient = {
+  def connect(ssh: SSHClient): SSHClient =
     ssh.disableHostChecking()
     ssh.useCompression()
     ssh.setTimeout(ssh.timeout.millis.toInt)
     ssh.connect()
     ssh
-  }
 
-  def withSession[T](c: SSHClient)(f: SSHSession ⇒ T): util.Try[T] = util.Try {
-    val session = c.startSession()
-    try f(session)
-    finally session.close()
-  } match
-    case util.Failure(e: net.schmizz.sshj.common.SSHException) =>
-      def errorMessage = s"Error message: ${e.getMessage}"
-      def message = Seq(errorMessage) ++ disconnectedMessage(e)
-      util.Failure(
-        SSHException(
-          message.mkString("\n"),
-          e.getDisconnectReason.toInt,
-          e
+  def withSession[T](c: SSHClient)(f: SSHSession ⇒ T): util.Try[T] =
+    util.Try:
+      val session = c.startSession()
+      try f(session)
+      finally session.close()
+    match
+      case util.Failure(e: net.schmizz.sshj.common.SSHException) =>
+        def errorMessage = s"Error message: ${e.getMessage}"
+        def message = Seq(errorMessage) ++ disconnectedMessage(e)
+        util.Failure(
+          SSHException(
+            message.mkString("\n"),
+            e.getDisconnectReason.toInt,
+            e
+          )
         )
-      )
-    case o => o
+      case o => o
 
-  def withSFTP[T](c: SSHClient, f: SFTPClient ⇒ T) = {
+  def withSFTP[T](c: SSHClient, f: SFTPClient ⇒ T) =
     val sftp = c.newSFTPClient
     try f(sftp)
     finally sftp.close()
-  }
 
-  def launchInBackground(client: SSHClient, cde: String): Unit = withSession(client) { session ⇒
-    val cmd = session.exec(s"$cde")
-    cmd.close()
-  }
+  def launchInBackground(client: SSHClient, cde: String): Unit =
+    withSession(client): session =>
+      val cmd = session.exec(s"$cde")
+      cmd.close()
 
-  def run(client: SSHClient, cde: String) = withSession(client) { session ⇒
-    val cmd = session.exec(cde.toString)
-    try {
-      cmd.join()
-      val output = IOUtils.readFully(cmd.getInputStream()).toString
-      val error = IOUtils.readFully(cmd.getErrorStream()).toString
-      gridscale.ExecutionResult(cmd.getExitStatus(), output, error)
-    } finally cmd.close()
-  }
+  def run(client: SSHClient, cde: String) =
+    withSession(client): session ⇒
+      val cmd = session.exec(cde)
+      try
+        cmd.join()
+        val output = IOUtils.readFully(cmd.getInputStream()).toString
+        val error = IOUtils.readFully(cmd.getErrorStream()).toString
+        gridscale.ExecutionResult(cmd.getExitStatus(), output, error)
+      finally cmd.close()
 
   case class SSHException(msg: String, disconnectCode: Int, cause: Throwable) extends Throwable(msg, cause)
   case class SFTPException(msg: String, disconnectCode: Int, sftpCode: Int, cause: Throwable) extends Throwable(msg, cause)
@@ -85,19 +84,17 @@ object SSHClient:
       case c => Some(s"Disconnected with status code: ${c}")
 
 
-
-class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time] = None, val proxyJump: Option[SSHClient] = None):
+class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAlive: Option[Time], val proxyJump: Option[SSHClient]):
 
   import net.schmizz.sshj.transport.verification.PromiscuousVerifier
   import net.schmizz.sshj.{ DefaultConfig, SSHClient ⇒ SSHJSSHClient }
 
   // instantiated only once and not for each sshj SSHClient
   // see https://groups.google.com/d/msg/sshj-users/p-cjao1MiHg/nFZ99-WEf6IJ
-  private lazy val sshDefaultConfig = {
+  private lazy val sshDefaultConfig =
     val config = new DefaultConfig()
     if (keepAlive.isDefined) config.setKeepAliveProvider(KeepAliveProvider.KEEP_ALIVE)
     config
-  }
 
   private lazy val peer: SSHJSSHClient =
     val client = new SSHJSSHClient(sshDefaultConfig)
@@ -107,32 +104,27 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
     client.getTransport.setTimeoutMs(timeout.millis.toInt)
     client
 
-  def startSession(): SSHSession = {
+  def startSession(): SSHSession =
     val session = peer.startSession
-    new SSHSession {
+    new SSHSession:
       override def close() = SSHJSession.close(session)
       override def exec(command: String) = SSHJSession.exec(session, command)
-    }
-  }
 
-  def close(): Unit = {
+  def close(): Unit =
     peer.close()
-    if (proxyJump.isDefined) proxyJump.get.close()
-  }
+    if proxyJump.isDefined then proxyJump.get.close()
 
-  def connect(): Unit = {
-    if(proxyJump.isDefined)
-      peer.connectVia(proxyJump.get.directConnection(host, port))
+  def connect(): Unit =
+    if proxyJump.isDefined
+    then peer.connectVia(proxyJump.get.directConnection(host, port))
     else peer.connect(host, port)
     keepAlive.foreach(k ⇒ peer.getConnection.getKeepAlive().setKeepAliveInterval(k.toSeconds.toInt))
-  }
 
   def directConnection(host: String, port: Int): DirectConnection = peer.newDirectConnection(host, port)
 
-  def disconnect(): Unit = {
+  def disconnect(): Unit =
     peer.disconnect()
     if (proxyJump.isDefined) proxyJump.get.disconnect()
-  }
 
   def setTimeout(timeout: Int): Unit =
     peer.setTimeout(timeout)
@@ -145,17 +137,15 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
 
   def authPassword(username: String, password: String): Unit =
     try peer.authPassword(username, password)
-    catch {
+    catch
       case e: Throwable ⇒ throw AuthenticationException("Error during ssh login/password authentication", e)
-    }
 
   def authPrivateKey(privateKey: PrivateKey): Unit =
-    try {
+    try
       val kp = peer.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)
       peer.authPublickey(privateKey.user, kp)
-    } catch {
+    catch
       case e: Throwable ⇒ throw AuthenticationException("Error during ssh key authentication", e)
-    }
 
   def isAuthenticated: Boolean = peer.isAuthenticated
   def isConnected: Boolean = peer.isConnected

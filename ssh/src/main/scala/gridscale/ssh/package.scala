@@ -2,6 +2,7 @@ package gridscale.ssh
 
 import java.io.ByteArrayInputStream
 import gridscale.*
+import gridscale.tools.*
 import gridscale.tools.shell.BashShell
 
 import scala.language.{higherKinds, postfixOps}
@@ -12,36 +13,40 @@ import time.TimeConversions.*
 import gridscale.tools.cache.*
 
 import java.util.UUID
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.locks.{Lock, ReentrantLock}
 
-object SSHAuthentication {
+object SSHAuthentication:
 
-  implicit def userPassword: SSHAuthentication[UserPassword] = new SSHAuthentication[UserPassword] {
+  implicit def userPassword: SSHAuthentication[UserPassword] = new SSHAuthentication[UserPassword]:
     override def login(t: UserPassword) = t.user
     override def authenticate(t: UserPassword, sshClient: SSHClient): Unit =
       sshClient.authPassword(t.user, t.password)
-  }
 
-  implicit def key: SSHAuthentication[PrivateKey]  = new SSHAuthentication[PrivateKey] {
+  implicit def key: SSHAuthentication[PrivateKey]  = new SSHAuthentication[PrivateKey]:
     override def login(t: PrivateKey) = t.user
     override def authenticate(t: PrivateKey, sshClient: SSHClient): Unit =
       sshClient.authPrivateKey(t)
-  }
 
-}
 
-trait SSHAuthentication[T] {
+trait SSHAuthentication[T]:
   def login(t: T): String
   def authenticate(t: T, sshClient: SSHClient): Unit
-}
 
-object SSH {
+object SSH:
 
-  def withSSH[T](f: SSH ?=> T): T =
-    val ssh = SSH()
+  def withSSH[T](server: SSHServer, reconnect: Option[Time] = None)(f: SSH ?=> T): T =
+    val ssh = SSH(server, reconnect)
     try f(using ssh)
     finally ssh.close()
 
-  def apply(connectionCache: ConnectionCache = SSHCache()): SSH = new SSH(connectionCache)
+  def apply(server: SSHServer, reconnect: Option[Time] = None): SSH =
+    val clientCache: ConnectionCache =
+      reconnect match
+        case None => ConnectionCache.FixedConnection(SSH.client(server))
+        case Some(t) => ConnectionCache.Reconnect(() => SSH.client(server), t)
+
+    new SSH(server, clientCache)
 
   def authenticate(server: SSHServer, client: SSHClient): SSHClient =
     try
@@ -54,84 +59,122 @@ object SSH {
 
   def client(server: SSHServer): SSHClient =
     def ssh: SSHClient =
-      try {
+      try
         val jumpClient =
-          server.sshProxy.map { proxy =>
-            val client = new SSHClient(
+          server.proxy.map: proxy =>
+            val client = SSHClient(
                 host = proxy.host,
                 port = proxy.port,
                 timeout = proxy.timeout,
-                keepAlive = proxy.keepAlive)
+                keepAlive = proxy.keepAlive,
+                proxyJump =  None)
 
             SSHClient.connect(client)
             authenticate(proxy, client)
-          }
 
-        val ssh = new SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive, proxyJump = jumpClient)
+        val ssh = SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive, proxyJump = jumpClient)
         SSHClient.connect(ssh)
-      } catch {
+      catch
         case t: Throwable ⇒ throw ConnectionError(s"Error connecting to $server", t)
-      }
 
     authenticate(server, ssh)
-}
 
-type ConnectionCache = KeyValueCache[SSHServer, SSHClient]
 
-object SSHCache {
-  def apply(): KeyValueCache[SSHServer, SSHClient] = KeyValueCache(s ⇒ SSH.client(s))
+  object ConnectionCache:
+    case class FixedConnection(client: SSHClient) extends ConnectionCache
 
-  def withCache[T](cache: ConnectionCache, server: SSHServer)(f: SSHClient ⇒ T): T = {
-    val client = cache.getValidOrInvalidate(server, _.isConnected, c ⇒ util.Try(c.close()))
-    f(client)
-  }
-}
+    object Reconnect:
+      def apply(connect: () => SSHClient, interval: Time) =
+        new Reconnect(connect, interval, Connection(Lazy(connect())))
 
-class SSH(val clientCache: ConnectionCache) extends AutoCloseable {
+      case class Connection(client: Lazy[SSHClient], created: Long = System.currentTimeMillis(), var used: Int = 0)
 
-  def execute(server: SSHServer, s: String) = SSHCache.withCache(clientCache, server) { c ⇒
-    try SSHClient.run(c, s).get
-    catch
-      case t: Throwable ⇒ throw ExecutionError(s"Error executing $s on $server", t)
-  }
+      def close(r: Reconnect) = r.connection.client().close()
 
-  def launch(server: SSHServer, s: String) = SSHCache.withCache(clientCache, server) { c ⇒
-    SSHClient.launchInBackground(c, s)
-  }
+      def use[T](r: Reconnect)(f: SSHClient => T): T =
+        def expired(c: Connection, duration: Time): Boolean =
+          (c.created + duration.millis) < System.currentTimeMillis()
 
-  def withSFTP[T](server: SSHServer, f: SFTPClient ⇒ T): T = SSHCache.withCache(clientCache, server) { c ⇒
-    try SSHClient.withSFTP(c, f)
-    catch
-      case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
-  }
+        val (connection, old) =
+          r.synchronized:
+            val current = r.connection
+            if expired(current, r.duration)
+            then
+              val newConnection = Connection(Lazy(r.connect()))
+              r.connection = newConnection
+              newConnection.used += 1
+              (newConnection, Some(current))
+            else
+              current.used += 1
+              (current, None)
 
-  def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T) = SSHCache.withCache(clientCache, server) { c ⇒
-    try SSHClient.withSFTP(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
-    catch
-      case t: SFTPError => throw t
-      case t: Throwable ⇒ throw SFTPError(s"Error while reading $path via sftp on $server", t)
-  }
+        try f(connection.client())
+        finally
+          r.synchronized(connection.used -= 1)
+          old.foreach: old =>
+            if r.synchronized(old.used == 0)
+            then old.client().close()
 
-  def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String) = {
-    def write(client: SSHClient) = {
+
+    case class Reconnect(connect: () => SSHClient, duration: Time, var connection: Reconnect.Connection) extends ConnectionCache
+
+  sealed trait ConnectionCache
+
+  object SSHCache:
+    def withCache[T](cache: ConnectionCache)(f: SSHClient ⇒ T): T =
+      cache match
+        case ConnectionCache.FixedConnection(cache) => f(cache)
+        case c: ConnectionCache.Reconnect => ConnectionCache.Reconnect.use(c)(f)
+
+    def close(cache: ConnectionCache) =
+      cache match
+        case ConnectionCache.FixedConnection(cache) => cache.close()
+        case c: ConnectionCache.Reconnect => ConnectionCache.Reconnect.close(c)
+
+class SSH(val server: SSHServer, clientCache: SSH.ConnectionCache) extends AutoCloseable:
+
+  import SSH.*
+
+  def execute(s: String) =
+    SSHCache.withCache(clientCache): c =>
+      try SSHClient.run(c, s).get
+      catch
+        case t: Throwable ⇒ throw ExecutionError(s"Error executing $s on $server", t)
+
+  def launch(s: String) =
+    SSHCache.withCache(clientCache): c =>
+      SSHClient.launchInBackground(c, s)
+
+  def withSFTP[T](f: SFTPClient ⇒ T): T =
+    SSHCache.withCache(clientCache): c =>
+      try SSHClient.withSFTP(c, f)
+      catch
+        case t: Throwable ⇒ throw SFTPError(s"Error in sftp transfer on $server", t)
+
+  def readFile[T](path: String, f: java.io.InputStream ⇒ T) =
+    SSHCache.withCache(clientCache): c =>
+      try SSHClient.withSFTP(c, s ⇒ s.readAheadFileInputStream(path).map(f)).get
+      catch
+        case t: SFTPError => throw t
+        case t: Throwable ⇒ throw SFTPError(s"Error while reading $path via sftp on $server", t)
+
+  def writeFile(is: () ⇒ java.io.InputStream, path: String) =
+    def write(client: SSHClient) =
       val ois = is()
       try SSHClient.withSFTP(client, _.writeFile(ois, path)).get
       finally ois.close()
-    }
 
-    try SSHCache.withCache(clientCache, server) { c ⇒ write(c) }
-    catch
-      case t: SFTPError => throw t
-      case t: Throwable ⇒ throw SFTPError(s"Error while writing to $path via sftp on $server", t)
-  }
+    SSHCache.withCache(clientCache): c =>
+      try write(c)
+      catch
+        case t: SFTPError => throw t
+        case t: Throwable ⇒ throw SFTPError(s"Error while writing to $path via sftp on $server", t)
 
   def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult) = throw ReturnCodeError(server, command, executionResult)
 
   def close(): Unit =
-    clientCache.values.foreach(c ⇒ util.Try(c.close()))
-    clientCache.clear()
+    SSHCache.close(clientCache)
 
-}
 
 case class ConnectionError(message: String, t: Throwable) extends Exception(message, t)
 case class ExecutionError(message: String, t: Throwable) extends Exception(message, t)
@@ -150,14 +193,14 @@ case class ReturnCodeError(server: String, command: String, executionResult: Exe
 //    def wrongReturnCode(server: String, command: String, executionResult: ExecutionResult): FS[Unit]
 //  }
 
-object SSHServer {
+object SSHServer:
 
   def apply[A: SSHAuthentication](
     host: String,
     port: Int = 22,
     timeout: Time = 1 minutes,
     keepAlive: Option[Time] = Some(10 seconds),
-    sshProxy: Option[SSHServer] = None)(authentication: A): SSHServer = {
+    sshProxy: Option[SSHServer] = None)(authentication: A): SSHServer =
     val sSHAuthentication = implicitly[SSHAuthentication[A]]
     new SSHServer(
       login = sSHAuthentication.login(authentication),
@@ -166,9 +209,8 @@ object SSHServer {
       timeout = timeout,
       authenticate = (sshClient: SSHClient) ⇒ sSHAuthentication.authenticate(authentication, sshClient),
       keepAlive = keepAlive,
-      sshProxy = sshProxy)
-  }
-}
+      proxy = sshProxy)
+
 
 case class SSHServer(
   login: String,
@@ -178,71 +220,65 @@ case class SSHServer(
   val timeout: Time,
   val authenticate: SSHClient ⇒ Unit,
   val keepAlive: Option[Time],
-  val sshProxy: Option[SSHServer]
-) {
+  val proxy: Option[SSHServer]
+):
   override def toString = s"ssh server $host:$port"
-}
 
 case class JobId(jobId: String, workDirectory: String)
 
 /* ----------------------- Job management --------------------- */
 
-def submit(server: SSHServer, description: SSHJobDescription)(using ssh: SSH) =
-  val (command, jobId) = SSHJobDescription.jobScript(server, description)
-  ssh.launch(server, command)
+def submit(description: SSHJobDescription)(using ssh: SSH) =
+  val (command, jobId) = SSHJobDescription.jobScript(description)
+  ssh.launch(command)
   JobId(jobId, description.workDirectory)
 
-def run(server: SSHServer, command: String, verbose: Boolean = false)(using ssh: SSH) =
-  ssh.execute(server, SSHJobDescription.commandLine(server, command, verbose))
+def run(command: String, verbose: Boolean = false)(using ssh: SSH) =
+  ssh.execute(SSHJobDescription.commandLine(command, verbose))
 
-def stdOut(server: SSHServer, jobId: JobId)(using ssh: SSH) =
+def stdOut(jobId: JobId)(using ssh: SSH) =
   readFile(
-    server,
     SSHJobDescription.outFile(jobId.workDirectory, jobId.jobId),
     scala.io.Source.fromInputStream(_).mkString)
 
-def stdErr(server: SSHServer, jobId: JobId)(using ssh: SSH) =
+def stdErr(jobId: JobId)(using ssh: SSH) =
   readFile(
-    server,
     SSHJobDescription.errFile(jobId.workDirectory, jobId.jobId),
     scala.io.Source.fromInputStream(_).mkString)
 
-def state(server: SSHServer, jobId: JobId)(using ssh: SSH) =
-  SSHJobDescription.jobIsRunning(server, jobId) match {
+def state(jobId: JobId)(using ssh: SSH) =
+  SSHJobDescription.jobIsRunning(jobId) match
     case true ⇒ JobState.Running: JobState
     case false ⇒
-      exists(server, SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)) match {
+      exists(SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId)) match
         case true ⇒
           // FIXME Limit the size of the read
           val content = ssh.readFile(
-            server,
             SSHJobDescription.endCodeFile(jobId.workDirectory, jobId.jobId),
             is ⇒ scala.io.Source.fromInputStream(is).mkString)
           val exitCode = content.takeWhile(_.isDigit).toInt
           SSHJobDescription.translateState(exitCode)
         case false ⇒ JobState.Failed: JobState
-      }
-  }
 
-def clean(server: SSHServer, job: JobId)(using ssh: SSH) =
+
+def clean(job: JobId)(using ssh: SSH) =
   val kill = s"pid=`cat ${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}` ; kill -9 $$pid `ps --ppid $$pid -o pid=`"
   val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
 
-  val k = ssh.execute(server, kill)
-  ssh.execute(server, rm)
-  k.returnCode match {
+  val k = ssh.execute(kill)
+  ssh.execute(rm)
+  k.returnCode match
     case 0 | 1 ⇒ ()
-    case _     ⇒ ssh.wrongReturnCode(server.toString, kill, k)
-  }
+    case _     ⇒ ssh.wrongReturnCode(ssh.server.toString, kill, k)
 
 case class SSHJobDescription(command: String, workDirectory: String, timeout: Option[Time] = None)
 
-object SSHJobDescription {
+object SSHJobDescription:
 
-  def jobIsRunning(server: SSHServer, job: JobId)(using ssh: SSH) =
+  def jobIsRunning(job: JobId)(using ssh: SSH) =
     val cde = s"kill -0 `cat ${pidFile(job.workDirectory, job.jobId)}`"
-    val r = ssh.execute(server, cde)
-    (r.returnCode == 0)
+    val r = ssh.execute(cde)
+    r.returnCode == 0
 
   def translateState(retCode: Int): JobState =
     retCode match
@@ -256,7 +292,7 @@ object SSHJobDescription {
   def errFile(dir: String, jobId: String) = file(dir, jobId, "err")
   def scriptFile(dir: String, jobId: String) = file(dir, jobId, "sh")
 
-  def commandLine(server: SSHServer, command: String, verbose: Boolean = false) =
+  def commandLine(command: String, verbose: Boolean = false) =
     s"""
            |env -i bash ${if (verbose) "-x" else ""} <<EOF
            |${BashShell.source}
@@ -264,13 +300,12 @@ object SSHJobDescription {
            |EOF
            |""".stripMargin
 
-  def jobScript(server: SSHServer, description: SSHJobDescription)(using ssh: SSH) =
-    def script(jobId: String) = {
+  def jobScript(description: SSHJobDescription)(using ssh: SSH) =
+    def script(jobId: String) =
       def jobCommand =
-        description.timeout match {
+        description.timeout match
           case None => description.command
           case Some(t) => s"""timeout --signal=KILL ${t.toSeconds.toInt}s ${description.command}"""
-        }
 
       s"""
          |mkdir -p ${description.workDirectory}
@@ -285,7 +320,6 @@ object SSHJobDescription {
          |echo $$pid >${pidFile(description.workDirectory, jobId)}
          |
          |""".stripMargin
-    }
 
     //      def run(jobId: String) =
     //        s"""
@@ -300,13 +334,13 @@ object SSHJobDescription {
 
     val jobId = UUID.randomUUID().toString
     val file = scriptFile(description.workDirectory, jobId)
-    writeFile(server, () ⇒ new ByteArrayInputStream(script(jobId).getBytes), file)
+    writeFile(() ⇒ new ByteArrayInputStream(script(jobId).getBytes), file)
     (s"""/bin/bash $file""", jobId)
-}
+
 
 /* ------------------------ sftp ---------------------------- */
 
-object FilePermission {
+object FilePermission:
 
   sealed abstract class FilePermission
   case object USR_RWX extends FilePermission
@@ -326,40 +360,38 @@ object FilePermission {
         case OTH_RWX ⇒ SSHJFilePermission.OTH_RWX
       .asJava
     )
-}
 
 //  def writeBytes[M[_]](bytes: Array[Byte], path: String)(implicit local: Local[M]) = local.writeBytes(bytes, path)
 //  def writeFile[M[_]](file: File, path: String, streamModifier: Option[OutputStream ⇒ OutputStream] = None)(implicit local: Local[M]) = local.writeFile(file, path, streamModifier)
 //  def readFile[M[_], T](path: String, f: java.io.InputStream ⇒ T)(implicit local: Local[M]) = local.readFile(path, f)
 
-def readFile[T](server: SSHServer, path: String, f: java.io.InputStream ⇒ T)(using ssh: SSH) = ssh.readFile(server, path, f)
-def writeFile(server: SSHServer, is: () ⇒ java.io.InputStream, path: String)(using ssh: SSH): Unit = ssh.writeFile(server, is, path)
+def readFile[T](path: String, f: java.io.InputStream ⇒ T)(using ssh: SSH) = ssh.readFile(path, f)
+def writeFile(is: () ⇒ java.io.InputStream, path: String)(using ssh: SSH): Unit = ssh.writeFile(is, path)
 
-def home(server: SSHServer)(using ssh: SSH) = ssh.withSFTP(server, _.canonicalize(".").get)
-def exists(server: SSHServer, path: String)(using ssh: SSH) = ssh.withSFTP(server, _.exists(path).get)
-def chmod(server: SSHServer, path: String, perms: FilePermission.FilePermission*)(using ssh: SSH) =
-  ssh.withSFTP(server, _.chmod(path, FilePermission.toMask(perms.toSet[FilePermission.FilePermission])))
+def home()(using ssh: SSH) = ssh.withSFTP(_.canonicalize(".").get)
+def exists(path: String)(using ssh: SSH) = ssh.withSFTP(_.exists(path).get)
+def chmod(path: String, perms: FilePermission.FilePermission*)(using ssh: SSH) =
+  ssh.withSFTP(_.chmod(path, FilePermission.toMask(perms.toSet[FilePermission.FilePermission])))
 
-def list(server: SSHServer, path: String)(using ssh: SSH) = ssh.withSFTP(server, _.ls(path)(e ⇒ e != "." || e != "..")).get
+def list(path: String)(using ssh: SSH) = ssh.withSFTP(_.ls(path)(e ⇒ e != "." || e != "..")).get
 
-def makeDir(server: SSHServer, path: String)(using ssh: SSH) = ssh.withSFTP(server, _.mkdir(path))
+def makeDir(path: String)(using ssh: SSH) = ssh.withSFTP(_.mkdir(path))
 
-def rmDir(server: SSHServer, path: String)(using ssh: SSH): Unit = {
+def rmDir(path: String)(using ssh: SSH): Unit =
   def remove(entry: ListEntry): Unit =
     import FileType._
     val child = path + "/" + entry.name
     entry.`type` match
-      case File      ⇒ rmFile(server, child)
-      case Link      ⇒ rmFile(server, child)
-      case Directory ⇒ rmDir(server, child)
-      case Unknown   ⇒ rmFile(server, child)
+      case File      ⇒ rmFile(child)
+      case Link      ⇒ rmFile(child)
+      case Directory ⇒ rmDir(child)
+      case Unknown   ⇒ rmFile(child)
 
-  list(server, path).foreach(remove)
-  ssh.withSFTP(server, _.rmdir(path))
-}
+  list(path).foreach(remove)
+  ssh.withSFTP(_.rmdir(path))
 
-def rmFile(server: SSHServer, path: String)(using ssh: SSH) = ssh.withSFTP(server, _.rm(path)).get
-def mv(server: SSHServer, from: String, to: String)(using ssh: SSH) = ssh.withSFTP(server, _.rename(from, to)).get
+def rmFile(path: String)(using ssh: SSH) = ssh.withSFTP(_.rm(path)).get
+def mv(from: String, to: String)(using ssh: SSH) = ssh.withSFTP(_.rename(from, to)).get
 
 
 

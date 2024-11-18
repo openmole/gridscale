@@ -1,6 +1,7 @@
 package gridscale.slurm
 
 import gridscale._
+import gridscale.cluster.*
 import gridscale.authentication._
 import gridscale.ssh
 import squants.information.InformationConversions._
@@ -27,15 +28,11 @@ object SlurmExample extends App {
   val jobDescription = SLURMJobDescription(command = """/bin/echo hello from $(hostname)""",
     workDirectory = "/home/ubuntu", partition = Some("main"), memory = Some(500 megabytes))
 
-  def res(using ssh.SSH) =
-    val job = submit(headNode, jobDescription)
-    val s = waitUntilEnded { () ⇒ state(headNode, job) }
-    val out = stdOut(headNode, job)
-    clean(headNode, job)
+  ssh.SSH.withSSH(headNode):
+    val job = submit(HeadNode.ssh, jobDescription)
+    val s = waitUntilEnded { () ⇒ state(HeadNode.ssh, job) }
+    val out = stdOut(HeadNode.ssh, job)
+    clean(HeadNode.ssh, job)
     (s, out)
-
-
-  ssh.SSH.withSSH:
-    println(res)
 
 }

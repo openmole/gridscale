@@ -7,47 +7,53 @@ import scala.collection.mutable.HashMap
 
 package object cache {
 
-  case class DisposableCache[T](f: () ⇒ T) {
+  case class DisposableCache[T](f: () => T):
     private var cached: Option[T] = None
 
-    def get: T = synchronized {
-      cached match {
+    def get: T = synchronized:
+      cached match
         case None ⇒
           val res = f()
           cached = Some(res)
           res
         case Some(t) ⇒ t
-      }
-    }
 
     def map[A](f: T ⇒ A): Option[A] = synchronized(cached.map(f))
     def foreach[A](f: T ⇒ A): Unit = synchronized(cached.foreach[A](f))
     def dispose: Unit = synchronized { cached = None }
-  }
 
-  case class KeyValueCache[K, V](f: K ⇒ V) {
+  object KeyValueCache:
+    extension[K, V] (cache: KeyValueCache[K, V])
+//      def getValidOrInvalidate(k: K, valid: V ⇒ Boolean, clean: V ⇒ Unit = (_: V) ⇒ ()): V =
+//        cache.locks.withLock(k):
+//          cache.value(k) match
+//            case Some(v) =>
+//              if valid(v)
+//              then v
+//              else
+//                clean(v)
+//                cache.remove(k)
+//                cache.insert(k, cache.f(k))
+//
+//            case None ⇒ cache.insert(k, cache.f(k))
+//
+//
+//      def invalidate(k: K) =
+//        cache.locks.withLock(k):
+//          cache.remove(k)
+
+      def execWith[T](k: K)(f: V => T): T =
+        val v =
+          cache.locks.withLock(k):
+            cache.value(k) match
+              case Some(v) ⇒ v
+              case None ⇒ cache.insert(k, cache.f(k))
+        f(v)
+
+
+  case class KeyValueCache[K, V](f: K ⇒ V):
     val locks = new LockRepository[K]()
     val cached = new collection.mutable.HashMap[K, V]()
-
-    def get(k: K): V = locks.withLock(k) {
-      value(k) match {
-        case Some(v) ⇒ v
-        case None    ⇒ insert(k, f(k))
-      }
-    }
-
-    def getValidOrInvalidate(k: K, valid: V ⇒ Boolean, clean: V ⇒ Unit = _ ⇒ ()): V = locks.withLock(k) {
-      value(k) match {
-        case Some(v) ⇒
-          if (valid(v)) v
-          else {
-            clean(v)
-            remove(k)
-            insert(k, f(k))
-          }
-        case None ⇒ insert(k, f(k))
-      }
-    }
 
     def values: Vector[V] = cached.synchronized(cached.values.toVector)
 
@@ -56,20 +62,18 @@ package object cache {
     private def contains(k: K) = cached.synchronized(cached.contains(k))
     private def remove(k: K) = cached.synchronized { cached.remove(k) }
 
-    def clear(): Unit = {
+    def clear(): Unit =
       locks.clear()
       cached.clear()
-    }
-  }
+
 
   class LockRepository[T] {
     val locks = new HashMap[T, (Lock, AtomicInteger)]
 
     def clear() = locks.clear
 
-    def nbLocked(k: T): Int = synchronized(locks.get(k).map {
-      _._2.get
-    }.getOrElse(0))
+    def nbLocked(k: T): Int =
+      synchronized(locks.get(k).map { _._2.get }.getOrElse(0))
 
     private def lock(obj: T) = synchronized {
       val lock = locks.getOrElseUpdate(obj, (new ReentrantLock, new AtomicInteger(0)))
@@ -85,11 +89,10 @@ package object cache {
       }
     }
 
-    def withLock[A](obj: T)(op: ⇒ A): A = {
+    def withLock[A](obj: T)(op: ⇒ A): A =
       lock(obj)
       try op
       finally unlock(obj)
-    }
   }
 
 }

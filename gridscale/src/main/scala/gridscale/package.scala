@@ -65,7 +65,7 @@ package object gridscale {
   //
   //  }
 
-  def waitUntilEnded(f: () ⇒ JobState, wait: Time = 10 seconds): JobState =
+  def waitUntilEnded(f: () => JobState, wait: Time = 10 seconds): JobState =
     def pull: JobState =
       val s = f()
       val continue = !JobState.isFinal(s)

@@ -196,13 +196,22 @@ object FileSystem:
     import java.io._
     val is = new BufferedInputStream(new FileInputStream(file))
     try f(is)
-    finally is.close
+    finally is.close()
 
   def writeStream[T](file: File)(f: java.io.OutputStream ⇒ T) =
     import java.io._
     val is = new BufferedOutputStream(new FileOutputStream(file))
     try f(is)
-    finally is.close
+    finally is.close()
 
 
+class Lazy[+T](t: => T) extends (() ⇒ T):
+  lazy val value: T = t
+  def apply(): T = value
 
+
+extension (lock: java.util.concurrent.locks.Lock)
+  def apply[T](block: ⇒ T): T =
+    lock.lock()
+    try block
+    finally lock.unlock()

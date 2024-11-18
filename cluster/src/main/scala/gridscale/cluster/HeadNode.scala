@@ -7,7 +7,9 @@ import ssh._
 import local._
 
 object HeadNode:
-  given (using SSH): Conversion[SSHServer, HeadNode] = SSHHeadNode.apply
+  given (using SSH): SSHHeadNode = SSHHeadNode()
+  def local = LocalHeadNode()
+  def ssh(using SSH) = SSHHeadNode()
 
 sealed trait HeadNode:
   def execute(cmd: String): ExecutionResult
@@ -15,11 +17,11 @@ sealed trait HeadNode:
   def read(path: String): String
   def rmFile(path: String): Unit
 
-case class SSHHeadNode(server: SSHServer)(using SSH) extends HeadNode:
-  override def execute(cmd: String) = gridscale.ssh.run(server, cmd)
-  override def write(bytes: Array[Byte], path: String) = ssh.writeFile(server, () ⇒ new ByteArrayInputStream(bytes), path)
-  override def read(path: String) = ssh.readFile(server, path, scala.io.Source.fromInputStream(_).mkString)
-  override def rmFile(path: String): Unit = ssh.rmFile(server, path)
+case class SSHHeadNode()(using SSH) extends HeadNode:
+  override def execute(cmd: String) = gridscale.ssh.run(cmd)
+  override def write(bytes: Array[Byte], path: String) = ssh.writeFile(() ⇒ new ByteArrayInputStream(bytes), path)
+  override def read(path: String) = ssh.readFile(path, scala.io.Source.fromInputStream(_).mkString)
+  override def rmFile(path: String): Unit = ssh.rmFile(path)
 
 case class LocalHeadNode() extends HeadNode:
   override def execute(cmd: String) = Local.execute(cmd)
