@@ -1,15 +1,15 @@
 package gridscale.slurm
 
-import gridscale._
+import gridscale.*
 import gridscale.cluster.*
-import gridscale.authentication._
+import gridscale.authentication.*
 import gridscale.ssh
-import squants.information.InformationConversions._
-import squants.time.TimeConversions._
+import squants.information.InformationConversions.*
+import squants.time.TimeConversions.*
 
 import scala.language.postfixOps
 
-object SlurmExample extends App {
+object SlurmExample extends App:
 
   //val password = scala.io.Source.fromFile("/home/reuillon/.globus/password").getLines().next().trim
 
@@ -35,4 +35,3 @@ object SlurmExample extends App {
     clean(HeadNode.ssh, job)
     (s, out)
 
-}

@@ -1,4 +1,4 @@
-package gridscale.slum
+package gridscale.slurm
 
 import gridscale.*
 import gridscale.cluster.*
