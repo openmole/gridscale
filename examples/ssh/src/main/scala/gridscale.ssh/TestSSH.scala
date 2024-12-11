@@ -15,9 +15,9 @@ object TestSSH extends App:
 
   //val localhost = SSHServer("localhost", port = 2222)(UserPassword("root", "root"))
   val proxyServer = SSHServer("localhost", 2222)(UserPassword("root", "root"))
-  val localhost = SSHServer("localhost", 22, 1 minutes, Some(10 seconds), sshProxy = Some(proxyServer))(UserPassword("root", "root"))
+  //val localhost = SSHServer("localhost", 22, 1 minutes, Some(10 seconds), sshProxy = Some(proxyServer))(UserPassword("root", "root"))
 
-  SSH.withSSH(localhost):
+  SSH.withSSH(proxyServer):
     val jobId = submit(job)
 
     waitUntilEnded: () =>

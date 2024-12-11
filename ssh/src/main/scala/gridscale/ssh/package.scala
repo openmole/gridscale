@@ -43,7 +43,7 @@ object SSH:
   def apply(server: SSHServer, reconnect: Option[Time] = None): SSH =
     val clientCache: ConnectionCache =
       reconnect match
-        case None => ConnectionCache.FixedConnection(SSH.client(server))
+        case None => ConnectionCache.FixedConnection(() => SSH.client(server))
         case Some(t) => ConnectionCache.Reconnect(() => SSH.client(server), t)
 
     new SSH(server, clientCache)
@@ -81,7 +81,32 @@ object SSH:
 
 
   object ConnectionCache:
-    case class FixedConnection(client: SSHClient) extends ConnectionCache
+    def use[T](cache: ConnectionCache)(f: SSHClient => T): T =
+      cache match
+        case c: FixedConnection => FixedConnection.use(c)(f)
+        case c: Reconnect => Reconnect.use(c)(f)
+
+    def close(cache: ConnectionCache) =
+      cache match
+        case c: FixedConnection => FixedConnection.close(c)
+        case c: Reconnect => Reconnect.close(c)
+
+    object FixedConnection:
+      def apply(connect: () => SSHClient) =
+        new FixedConnection(connect, connect())
+
+      def use[T](c: FixedConnection)(f: SSHClient => T): T =
+        val client =
+          c.synchronized:
+            if !c.client.isConnected then c.client = c.connect()
+            c.client
+
+        f(client)
+
+      def close(c: FixedConnection) = c.client.close()
+
+
+    case class FixedConnection(connect: () => SSHClient, var client: SSHClient) extends ConnectionCache
 
     object Reconnect:
       def apply(connect: () => SSHClient, interval: Time) =
@@ -121,15 +146,8 @@ object SSH:
   sealed trait ConnectionCache
 
   object SSHCache:
-    def withCache[T](cache: ConnectionCache)(f: SSHClient ⇒ T): T =
-      cache match
-        case ConnectionCache.FixedConnection(cache) => f(cache)
-        case c: ConnectionCache.Reconnect => ConnectionCache.Reconnect.use(c)(f)
-
-    def close(cache: ConnectionCache) =
-      cache match
-        case ConnectionCache.FixedConnection(cache) => cache.close()
-        case c: ConnectionCache.Reconnect => ConnectionCache.Reconnect.close(c)
+    def withCache[T](cache: ConnectionCache)(f: SSHClient ⇒ T): T = ConnectionCache.use(cache)(f)
+    def close(cache: ConnectionCache) = ConnectionCache.close(cache)
 
 class SSH(val server: SSHServer, clientCache: SSH.ConnectionCache) extends AutoCloseable:
 
