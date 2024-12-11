@@ -98,7 +98,11 @@ object SSH:
       def use[T](c: FixedConnection)(f: SSHClient => T): T =
         val client =
           c.synchronized:
-            if !c.client.isConnected then c.client = c.connect()
+            if !c.client.isConnected
+            then
+              util.Try(c.client.close())
+              c.client = c.connect()
+
             c.client
 
         f(client)
