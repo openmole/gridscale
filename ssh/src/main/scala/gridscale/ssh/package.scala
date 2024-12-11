@@ -18,12 +18,12 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
 
 object SSHAuthentication:
 
-  implicit def userPassword: SSHAuthentication[UserPassword] = new SSHAuthentication[UserPassword]:
+  given SSHAuthentication[UserPassword] with
     override def login(t: UserPassword) = t.user
     override def authenticate(t: UserPassword, sshClient: SSHClient): Unit =
       sshClient.authPassword(t.user, t.password)
 
-  implicit def key: SSHAuthentication[PrivateKey]  = new SSHAuthentication[PrivateKey]:
+  given SSHAuthentication[PrivateKey] with
     override def login(t: PrivateKey) = t.user
     override def authenticate(t: PrivateKey, sshClient: SSHClient): Unit =
       sshClient.authPrivateKey(t)
