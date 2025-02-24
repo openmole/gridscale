@@ -70,10 +70,18 @@ object BatchScheduler:
   def clean(
     cancelCommand: String,
     scriptSuffix: String)(server: HeadNode, job: BatchJob): Unit =
+
+    def paths =
+      Seq[String](
+        scriptPath(job.workDirectory, scriptSuffix)(job.uniqId),
+        job.workDirectory + "/" + output(job.uniqId),
+        job.workDirectory + "/" + error(job.uniqId)
+      )
+
+    def rmCommand = s"rm -f ${paths.mkString(" ")}"
+
     server.execute(cancelCommand)
-    server.rmFile(scriptPath(job.workDirectory, scriptSuffix)(job.uniqId))
-    server.rmFile(job.workDirectory + "/" + output(job.uniqId))
-    server.rmFile(job.workDirectory + "/" + error(job.uniqId))
+    server.execute(rmCommand)
 
   def stdOut(server: HeadNode, job: BatchJob): String = server.read(job.workDirectory + "/" + output(job.uniqId))
   def stdErr(server: HeadNode, job: BatchJob): String = server.read(job.workDirectory + "/" + error(job.uniqId))
