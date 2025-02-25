@@ -33,7 +33,6 @@ object BatchScheduler:
   def error(uniqId: String): String = uniqId + ".err"
 
   def scriptName(suffix: String)(uniqId: String): String = uniqId + suffix
-  // FIXME fragile => order of params
   def scriptPath(workDirectory: String, suffix: String)(uniqId: String): String = s"$workDirectory/${scriptName(suffix)(uniqId)}"
 
   def submit(
@@ -45,20 +44,20 @@ object BatchScheduler:
     server: HeadNode,
     errorWrapper: (String, ExecutionResult) ⇒ String = ExecutionResult.error): BatchJob =
 
-    server.execute(s"mkdir -p $workDirectory")
-    val uniqId = s"job-${UUID.randomUUID().toString}"
-    val script = buildScript(uniqId)
-    val sName = scriptName(scriptSuffix)(uniqId)
-    val sPath = scriptPath(workDirectory, scriptSuffix)(uniqId)
+    server.execute(s"mkdir -p '$workDirectory'")
+    val uniqueId = s"job-${UUID.randomUUID().toString}"
+    val script = buildScript(uniqueId)
+    val sName = scriptName(scriptSuffix)(uniqueId)
+    val sPath = scriptPath(workDirectory, scriptSuffix)(uniqueId)
     server.write(script.getBytes, sPath)
-    server.execute(s"chmod +x $sPath")
-    val command = s"cd $workDirectory && ${submitCommand(sName, uniqId)}"
+    server.execute(s"chmod +x '$sPath'")
+    val command = s"cd '$workDirectory' && ${submitCommand(sName, uniqueId)}"
     val cmdRet = server.execute(command)
     val ExecutionResult(ret, out, error) = cmdRet
     if (ret != 0) throw new RuntimeException(errorWrapper(command, cmdRet))
     if (out == null) throw new RuntimeException(s"$submitCommand did not return a JobID")
     val jobId = retrieveJobID(out)
-    BatchJob(uniqId, jobId, workDirectory)
+    BatchJob(uniqueId, jobId, workDirectory)
 
   def state(
     stateCommand: String,
@@ -78,7 +77,7 @@ object BatchScheduler:
         job.workDirectory + "/" + error(job.uniqId)
       )
 
-    def rmCommand = s"rm -f ${paths.mkString(" ")}"
+    def rmCommand = s"rm -f ${paths.map(p => s"'$p'").mkString(" ")}"
 
     server.execute(cancelCommand)
     server.execute(rmCommand)

@@ -284,8 +284,8 @@ def state(jobId: JobId)(using ssh: SSH) =
 
 
 def clean(job: JobId)(using ssh: SSH) =
-  val kill = s"pid=`cat ${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}` ; kill -9 $$pid `ps --ppid $$pid -o pid=`"
-  val rm = s"rm -rf ${job.workDirectory}/${job.jobId}*"
+  val kill = s"pid=`cat '${SSHJobDescription.pidFile(job.workDirectory, job.jobId)}'` ; kill -9 $$pid `ps --ppid $$pid -o pid=`"
+  val rm = s"rm -rf '${job.workDirectory}/${job.jobId}'*"
 
   val k = ssh.execute(kill)
   ssh.execute(rm)
@@ -298,7 +298,7 @@ case class SSHJobDescription(command: String, workDirectory: String, timeout: Op
 object SSHJobDescription:
 
   def jobIsRunning(job: JobId)(using ssh: SSH) =
-    val cde = s"kill -0 `cat ${pidFile(job.workDirectory, job.jobId)}`"
+    val cde = s"kill -0 `cat '${pidFile(job.workDirectory, job.jobId)}'`"
     val r = ssh.execute(cde)
     r.returnCode == 0
 
@@ -316,7 +316,7 @@ object SSHJobDescription:
 
   def commandLine(command: String, verbose: Boolean = false) =
     s"""
-           |env -i bash ${if (verbose) "-x" else ""} <<EOF
+           |env -i bash ${if verbose then "-x" else ""} <<EOF
            |${BashShell.source}
            |${command}
            |EOF
@@ -330,16 +330,16 @@ object SSHJobDescription:
           case Some(t) => s"""timeout --signal=KILL ${t.toSeconds.toInt}s ${description.command}"""
 
       s"""
-         |mkdir -p ${description.workDirectory}
-         |cd ${description.workDirectory}
+         |mkdir -p '${description.workDirectory}'
+         |cd '${description.workDirectory}'
          |${BashShell.source}
          |
          |{
-         |  ${jobCommand} >${outFile(description.workDirectory, jobId)} 2>${errFile(description.workDirectory, jobId)}
-         |  echo $$? >${endCodeFile(description.workDirectory, jobId)}
+         |  ${jobCommand} >'${outFile(description.workDirectory, jobId)}' 2>'${errFile(description.workDirectory, jobId)}'
+         |  echo $$? >'${endCodeFile(description.workDirectory, jobId)}'
          |} & pid=$$!
          |
-         |echo $$pid >${pidFile(description.workDirectory, jobId)}
+         |echo $$pid >'${pidFile(description.workDirectory, jobId)}'
          |
          |""".stripMargin
 
@@ -356,8 +356,8 @@ object SSHJobDescription:
 
     val jobId = UUID.randomUUID().toString
     val file = scriptFile(description.workDirectory, jobId)
-    writeFile(() ⇒ new ByteArrayInputStream(script(jobId).getBytes), file)
-    (s"""/bin/bash $file""", jobId)
+    writeFile(() => new ByteArrayInputStream(script(jobId).getBytes), file)
+    (s"""/bin/bash '$file'""", jobId)
 
 
 /* ------------------------ sftp ---------------------------- */
