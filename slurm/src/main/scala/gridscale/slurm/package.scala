@@ -6,10 +6,8 @@ import gridscale.tools.*
 import squants.*
 import squants.information.*
 
-case class Gres(gresName: String, gresValue: Int):
-  override def toString = gresName + ":" + gresValue.toString
-
 object SLURMJobDescription:
+  type GRES = (String, String)
   type Exclusive = "user" | "mcs" | "topo"
 
 case class SLURMJobDescription(
@@ -22,7 +20,7 @@ case class SLURMJobDescription(
   ntasks: Option[Int] = None,
   cpuPerTask: Option[Int] = Some(1),
   qos: Option[String] = None,
-  gres: List[Gres] = List(),
+  gres: List[SLURMJobDescription.GRES] = List(),
   constraints: List[String] = List(),
   reservation: Option[String] = None,
   wckey: Option[String] = None,
@@ -54,9 +52,10 @@ object impl:
       "--exclusive=" -> exclusive)
 
     // must handle empty list separately since it is not done in mkString
-    val gresList = gres match
-      case List() ⇒ ""
-      case _      ⇒ gres.mkString("#SBATCH --gres=", "--gres=", "")
+    val gresList =
+      if gres.isEmpty
+      then ""
+      else gres.map((name, value) => s"$name:$value").mkString("#SBATCH --gres=", "--gres=", "")
 
     val constraintsList = constraints match
       case List() ⇒ ""
