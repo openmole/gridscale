@@ -6,7 +6,6 @@ import gridscale.tools.*
 import squants.*
 import squants.information.*
 
-
 case class Gres(gresName: String, gresValue: Int):
   override def toString = gresName + ":" + gresValue.toString
 
@@ -23,7 +22,8 @@ case class SLURMJobDescription(
   gres: List[Gres] = List(),
   constraints: List[String] = List(),
   reservation: Option[String] = None,
-  wckey: Option[String] = None)
+  wckey: Option[String] = None,
+  exclusive: Option["user" | "mcs" | "topo"] = None)
 
 object impl:
 
@@ -47,7 +47,8 @@ object impl:
       "--qos=" -> qos,
       "-D " -> Some(workDirectory),
       "--reservation=" -> reservation,
-      "--wckey" -> wckey)
+      "--wckey" -> wckey,
+      "--exclusive=" -> exclusive)
 
     // must handle empty list separately since it is not done in mkString
     val gresList = gres match
