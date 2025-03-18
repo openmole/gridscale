@@ -9,6 +9,9 @@ import squants.information.*
 case class Gres(gresName: String, gresValue: Int):
   override def toString = gresName + ":" + gresValue.toString
 
+object SLURMJobDescription:
+  type Exclusive = "user" | "mcs" | "topo"
+
 case class SLURMJobDescription(
   command: String,
   workDirectory: String,
@@ -23,7 +26,7 @@ case class SLURMJobDescription(
   constraints: List[String] = List(),
   reservation: Option[String] = None,
   wckey: Option[String] = None,
-  exclusive: Option["user" | "mcs" | "topo"] = None)
+  exclusive: Option[SLURMJobDescription.Exclusive] = None)
 
 object impl:
 
