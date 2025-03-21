@@ -7,7 +7,6 @@ import squants.*
 import squants.information.*
 
 object SLURMJobDescription:
-  type GRES = (String, String)
   type Exclusive = "user" | "mcs" | "topo"
 
 case class SLURMJobDescription(
@@ -20,7 +19,7 @@ case class SLURMJobDescription(
   ntasks: Option[Int] = None,
   cpuPerTask: Option[Int] = Some(1),
   qos: Option[String] = None,
-  gres: List[SLURMJobDescription.GRES] = List(),
+  gres: Seq[String] = List(),
   constraints: List[String] = List(),
   reservation: Option[String] = None,
   wckey: Option[String] = None,
@@ -55,7 +54,7 @@ object impl:
     val gresList =
       if gres.isEmpty
       then ""
-      else gres.map((name, value) => s"$name:$value").mkString("#SBATCH --gres=", "--gres=", "")
+      else gres.mkString("#SBATCH --gres=", "--gres=", "")
 
     val constraintsList = constraints match
       case List() ⇒ ""
