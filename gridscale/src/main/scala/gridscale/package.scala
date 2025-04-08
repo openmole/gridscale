@@ -2,27 +2,17 @@
 
 package object gridscale {
 
-  sealed trait FileType
-
-  object FileType {
-    case object Directory extends FileType
-    case object File extends FileType
-    case object Link extends FileType
-    case object Unknown extends FileType
-  }
+  enum FileType:
+    case Directory, File, Link, Unknown
 
   case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Long] = None)
 
-  sealed trait JobState
-
-  object JobState {
-    case object Submitted extends JobState
-    case object Running extends JobState
-    case object Done extends JobState
-    case object Failed extends JobState
-
-    def isFinal(s: JobState): Boolean = s == Done || s == Failed
-  }
+  object JobState:
+    extension (s: JobState)
+      def isFinal: Boolean = s == Done || s == Failed
+      
+  enum JobState:
+    case Submitted, Running, Done, Failed
 
   import squants._
   import squants.time.TimeConversions._

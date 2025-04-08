@@ -6,7 +6,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-ThisBuild / scalaVersion := "3.3.1"
+ThisBuild / scalaVersion := "3.3.5"
 //ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
@@ -150,6 +150,10 @@ lazy val qarnot = Project(id = "qarnot", base = file("qarnot")) dependsOn(gridsc
   libraryDependencies ++= circe
 )
 
+lazy val miniclust = Project(id = "miniclust", base = file("miniclust")) settings(dslSettings) dependsOn(gridscale) settings(
+  libraryDependencies += "org.openmole.miniclust" %% "submit" % "1.0-SNAPSHOT"  changing()
+)
+
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.10.0",
@@ -193,6 +197,8 @@ lazy val oarExample  = Project(id = "example-oar", base = file("examples/oar")) 
 lazy val qarnotExample  = Project(id = "example-qarnot", base = file("examples/qarnot")) settings(exampleSettings) dependsOn qarnot
 lazy val httpExample  = Project(id = "example-http", base = file("examples/http")) settings(exampleSettings) dependsOn http
 lazy val localExample  = Project(id = "example-local", base = file("examples/local")) settings(exampleSettings) dependsOn (local, cluster)
+lazy val miniclustExample  = Project(id = "example-miniclust", base = file("examples/miniclust")) settings(exampleSettings) dependsOn miniclust
+
 
 lazy val ipfsExample  = Project(id = "ipfsexample", base = file("examples/ipfs")) settings(exampleSettings) dependsOn ipfs settings(
   libraryDependencies += betterFile

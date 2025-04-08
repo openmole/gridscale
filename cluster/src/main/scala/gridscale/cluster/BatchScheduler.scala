@@ -37,7 +37,7 @@ object BatchScheduler:
 
   def submit(
     workDirectory: String,
-    buildScript: String ⇒ String,
+    buildScript: String => String,
     scriptSuffix: String,
     submitCommand: (String, String) ⇒ String,
     retrieveJobID: String ⇒ BatchJobID,
