@@ -55,21 +55,11 @@ object Miniclust:
 case class Miniclust(bucket: _root_.miniclust.message.Minio.Bucket)
 
 def submit(job: MinclustJobDescription)(using m: Miniclust) =
-  import _root_.miniclust.message.OutputFile
-  val outputFile =
-    val outs = job.stdOut ++ job.stdErr
-    val outNames = job.outputFile.map(_.local)
-    val completed =
-      outs.flatMap: o =>
-        if !outNames.contains(o) then Some(OutputFile(o, o)) else None
-
-    job.outputFile ++ completed
-
   val s = _root_.miniclust.message.Message.Submitted(
     account = _root_.miniclust.message.Account(m.bucket.name),
     command = job.command,
     inputFile = job.inputFile,
-    outputFile = outputFile,
+    outputFile = job.outputFile,
     stdOut = job.stdOut,
     stdErr = job.stdErr,
     noise = job.noise
@@ -97,14 +87,20 @@ def stdErr(job: Miniclust.Job)(using m: Miniclust): Option[String] =
 def clean(job: Miniclust.Job)(using m: Miniclust) =
   _root_.miniclust.submit.clean(m.bucket, job.id)
 
+def cancel(job: Miniclust.Job)(using m: Miniclust) =
+  _root_.miniclust.submit.cancel(m.bucket, job.id)
+
 def upload(local: java.io.File, remote: String)(using m: Miniclust) =
   _root_.miniclust.message.Minio.upload(m.bucket, local, remote)
 
 def download(remote: String, local: java.io.File)(using m: Miniclust) =
   _root_.miniclust.message.Minio.download(m.bucket, remote, local)
 
-def rmFile(remote: String, path: String*)(using m: Miniclust) =
+def rmFile(path: String*)(using m: Miniclust) =
   _root_.miniclust.message.Minio.delete(m.bucket, path*)
 
-def rmDir(remote: String, path: String)(using m: Miniclust) =
+def rmDir(path: String)(using m: Miniclust) =
   _root_.miniclust.message.Minio.deleteRecursive(m.bucket, path)
+
+def exists(path: String)(using m: Miniclust) =
+  _root_.miniclust.message.Minio.exists(m.bucket, path)
