@@ -27,7 +27,7 @@ case class MiniclustServer(url: String, authentication: UserPassword, insecure: 
 case class MinclustJobDescription(
    command: String,
    inputFile: Seq[MiniclustInputFile] = Seq(),
-   outputFile: _root_.scala.Seq[MiniclustOutputFile] = Seq(),
+   outputFile: Seq[MiniclustOutputFile] = Seq(),
    stdOut: Option[String] = None,
    stdErr: Option[String] = None,
    noise: String = "")
