@@ -76,19 +76,18 @@ object Local:
       case e: Throwable ⇒ throw LocalIOError(s"Could not test if $path exists on local host", e)
     }
 
-  def list(path: String) = try {
-    new File(path).listFiles.map {
-      f ⇒
+  def list(path: String) = try
+    import squants.time.*
+    new File(path).listFiles.toSeq.map: f =>
         val ftype =
           if (Files.isSymbolicLink(f.toPath)) FileType.Link
           else if (f.isDirectory) FileType.Directory
           else FileType.File
 
-        ListEntry(name = f.getName, `type` = ftype, modificationTime = Some(f.lastModified()))
-    }.toList
-  } catch {
+        ListEntry(name = f.getName, `type` = ftype, modificationTime = Some(Milliseconds(f.lastModified())))
+  catch
     case e: Throwable ⇒ throw LocalIOError(s"Could not list directory $path on local host", e)
-  }
+
 
   def makeDir(path: String) =
     try { new File(path).mkdirs: Unit }
@@ -97,10 +96,9 @@ object Local:
     }
 
   def rmDir(path: String) = try {
-    def delete(f: File): Unit = {
+    def delete(f: File): Unit = 
       if (f.isDirectory) f.listFiles.foreach(delete)
       f.delete
-    }
     delete(new File(path))
   } catch {
     case e: Throwable ⇒ throw LocalIOError(s"Could not removet directory $path on local host", e)

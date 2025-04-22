@@ -23,8 +23,9 @@ package object webdav {
     http.readStream(server, path, parsePropsResponse, http.PropFind())
 
   def list(server: http.Server, path: String)(using http.HTTP) =
+    import squants.time.*
     val properties = listProperties(server, path)
-    properties.drop(1).map { p ⇒ ListEntry(p.displayName, if (p.isCollection) FileType.Directory else FileType.File, Some(p.modified.toEpochSecond(ZoneOffset.UTC) * 1000)) }
+    properties.drop(1).map { p ⇒ ListEntry(p.displayName, if (p.isCollection) FileType.Directory else FileType.File, Some(Seconds(p.modified.toEpochSecond(ZoneOffset.UTC)))) }
 
   def exists(server: http.Server, path: String)(using http.HTTP): Boolean =
     def readResponse(response: HttpResponse) =

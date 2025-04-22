@@ -1,11 +1,12 @@
 
+import squants.time.*
 
 package object gridscale {
 
   enum FileType:
     case Directory, File, Link, Unknown
 
-  case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Long] = None)
+  case class ListEntry(name: String, `type`: FileType, modificationTime: Option[Time] = None)
 
   object JobState:
     extension (s: JobState)

@@ -29,6 +29,7 @@ object SSHJSFTPClient {
   import collection.JavaConverters._
 
   def ls(sshjSFTPClient: sftp.SFTPClient)(path: String, accept: String ⇒ Boolean): Vector[ListEntry] =
+    import squants.*
     sshjSFTPClient.ls(path).asScala.filter { e ⇒ accept(e.getName) }.map {
       e ⇒
         val t =
@@ -37,7 +38,7 @@ object SSHJSFTPClient {
             case sftp.FileMode.Type.SYMLINK   ⇒ FileType.Link
             case _                            ⇒ FileType.File
           }
-        ListEntry(e.getName, t, Some(e.getAttributes.getMtime))
+        ListEntry(e.getName, t, Some(Seconds(e.getAttributes.getMtime)))
     }.toVector
 
   def chmod(sshjSFTPClient: sftp.SFTPClient)(path: String, perms: Int) = sshjSFTPClient.chmod(path, perms)

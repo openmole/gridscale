@@ -104,3 +104,13 @@ def rmDir(path: String)(using m: Miniclust) =
 
 def exists(path: String)(using m: Miniclust) =
   _root_.miniclust.message.Minio.exists(m.bucket, path)
+
+def list(path: String)(using m: Miniclust): Seq[ListEntry] =
+  import squants.time.*
+  val prefix = if !path.endsWith("/") then s"$path/" else path
+  _root_.miniclust.message.Minio.listObjects(m.bucket, path).map: o =>
+    val tpe =
+      if path.endsWith("/")
+      then FileType.Directory
+      else FileType.File
+    ListEntry(o.objectName().drop(prefix.length), tpe, Option(o.lastModified()).map(s => Seconds(s.toEpochSecond)))
