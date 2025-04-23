@@ -31,6 +31,7 @@ case class MinclustJobDescription(
    outputFile: Seq[MiniclustOutputFile] = Seq(),
    stdOut: Option[String] = None,
    stdErr: Option[String] = None,
+   resource: Seq[Resource] = Seq(),
    noise: String = "")
 
 object Miniclust:
@@ -63,6 +64,7 @@ def submit(job: MinclustJobDescription)(using m: Miniclust) =
     outputFile = job.outputFile,
     stdOut = job.stdOut,
     stdErr = job.stdErr,
+    resource = job.resource,
     noise = job.noise
   )
 
