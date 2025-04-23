@@ -22,6 +22,7 @@ import gridscale.authentication.*
 
 export _root_.miniclust.message.{InputFile as MiniclustInputFile}
 export _root_.miniclust.message.{OutputFile as MiniclustOutputFile}
+export _root_.miniclust.message.Resource
 
 case class MiniclustServer(url: String, authentication: UserPassword, insecure: Boolean = false)
 case class MinclustJobDescription(
