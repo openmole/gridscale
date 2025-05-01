@@ -40,7 +40,8 @@ object Miniclust:
 
   def withMiniclust[T](server: MiniclustServer)(f: Miniclust ?=> T): T =
     val miniclust = Miniclust(server)
-    f(using miniclust)
+    try f(using miniclust)
+    finally miniclust.close()
 
   def apply(server: MiniclustServer) =
     val s =
@@ -51,10 +52,17 @@ object Miniclust:
         insecure = server.insecure
       )
 
-    val bucket = _root_.miniclust.message.Minio.userBucket(s, server.authentication.user)
-    new Miniclust(bucket)
+    val minio = _root_.miniclust.message.Minio(s)
+    try
+      val bucket = _root_.miniclust.message.Minio.userBucket(minio, server.authentication.user)
+      new Miniclust(bucket, minio)
+    catch
+      case t: Throwable =>
+        minio.close()
+        throw t
 
-case class Miniclust(bucket: _root_.miniclust.message.Minio.Bucket)
+case class Miniclust(bucket: _root_.miniclust.message.Minio.Bucket, minio: _root_.miniclust.message.Minio):
+  def close() = minio.close()
 
 def submit(job: MinclustJobDescription)(using m: Miniclust) =
   val s = _root_.miniclust.message.Message.Submitted(
@@ -68,11 +76,11 @@ def submit(job: MinclustJobDescription)(using m: Miniclust) =
     noise = job.noise
   )
 
-  Miniclust.Job(_root_.miniclust.submit.submit(m.bucket, s), job.stdOut, job.stdErr)
+  Miniclust.Job(_root_.miniclust.submit.submit(m.minio, m.bucket, s), job.stdOut, job.stdErr)
 
 def state(job: Miniclust.Job)(using m: Miniclust): JobState =
   import _root_.miniclust.message.Message
-  _root_.miniclust.submit.status(m.bucket, job.id) match
+  _root_.miniclust.submit.status(m.minio, m.bucket, job.id) match
     case s: Message.Submitted => JobState.Submitted
     case s: Message.Running => JobState.Running
     case s: Message.Canceled => JobState.Failed
@@ -81,37 +89,37 @@ def state(job: Miniclust.Job)(using m: Miniclust): JobState =
 
 def stdOut(job: Miniclust.Job)(using m: Miniclust): Option[String] =
   job.out.map: o =>
-    _root_.miniclust.message.Minio.content(m.bucket,  _root_.miniclust.message.MiniClust.User.jobOutputPath(job.id, o))
+    _root_.miniclust.message.Minio.content(m.minio, m.bucket,  _root_.miniclust.message.MiniClust.User.jobOutputPath(job.id, o))
 
 def stdErr(job: Miniclust.Job)(using m: Miniclust): Option[String] =
   job.err.map: o =>
-    _root_.miniclust.message.Minio.content(m.bucket,  _root_.miniclust.message.MiniClust.User.jobOutputPath(job.id, o))
+    _root_.miniclust.message.Minio.content(m.minio, m.bucket,  _root_.miniclust.message.MiniClust.User.jobOutputPath(job.id, o))
 
 def clean(job: Miniclust.Job)(using m: Miniclust) =
-  _root_.miniclust.submit.clean(m.bucket, job.id)
+  _root_.miniclust.submit.clean(m.minio, m.bucket, job.id)
 
 def cancel(job: Miniclust.Job)(using m: Miniclust) =
-  _root_.miniclust.submit.cancel(m.bucket, job.id)
+  _root_.miniclust.submit.cancel(m.minio, m.bucket, job.id)
 
 def upload(local: java.io.File, remote: String)(using m: Miniclust) =
-  _root_.miniclust.message.Minio.upload(m.bucket, local, remote)
+  _root_.miniclust.message.Minio.upload(m.minio, m.bucket, local, remote)
 
 def download(remote: String, local: java.io.File)(using m: Miniclust) =
-  _root_.miniclust.message.Minio.download(m.bucket, remote, local)
+  _root_.miniclust.message.Minio.download(m.minio, m.bucket, remote, local)
 
 def rmFile(path: String*)(using m: Miniclust) =
-  _root_.miniclust.message.Minio.delete(m.bucket, path*)
+  _root_.miniclust.message.Minio.deleteAll(m.minio, m.bucket, path*)
 
 def rmDir(path: String)(using m: Miniclust) =
-  _root_.miniclust.message.Minio.deleteRecursive(m.bucket, path)
+  _root_.miniclust.message.Minio.deleteRecursive(m.minio, m.bucket, path)
 
 def exists(path: String)(using m: Miniclust) =
-  _root_.miniclust.message.Minio.exists(m.bucket, path)
+  _root_.miniclust.message.Minio.exists(m.minio, m.bucket, path)
 
 def list(path: String)(using m: Miniclust): Seq[ListEntry] =
   import squants.time.*
   val prefix = if !path.endsWith("/") then s"$path/" else path
-  _root_.miniclust.message.Minio.listObjects(m.bucket, path).map: o =>
+  _root_.miniclust.message.Minio.listObjects(m.minio, m.bucket, path).map: o =>
     val tpe =
       if path.endsWith("/")
       then FileType.Directory
