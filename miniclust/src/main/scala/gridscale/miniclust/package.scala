@@ -108,7 +108,7 @@ def download(remote: String, local: java.io.File)(using m: Miniclust) =
   _root_.miniclust.message.Minio.download(m.minio, m.bucket, remote, local)
 
 def rmFile(path: String*)(using m: Miniclust) =
-  _root_.miniclust.message.Minio.deleteAll(m.minio, m.bucket, path*)
+  _root_.miniclust.message.Minio.delete(m.minio, m.bucket, path*)
 
 def rmDir(path: String)(using m: Miniclust) =
   _root_.miniclust.message.Minio.deleteRecursive(m.minio, m.bucket, path)
@@ -124,4 +124,4 @@ def list(path: String)(using m: Miniclust): Seq[ListEntry] =
       if path.endsWith("/")
       then FileType.Directory
       else FileType.File
-    ListEntry(o.objectName().drop(prefix.length), tpe, Option(o.lastModified()).map(s => Seconds(s.toEpochSecond)))
+    ListEntry(o.name.drop(prefix.length), tpe, o.lastModified.map(s => Seconds(s)))
