@@ -71,7 +71,7 @@ package object oar {
         case "Waiting" | "toLaunch" | "Launching" | "toAckReservation" ⇒ JobState.Submitted
         case "Hold" | "Running" | "Finishing" | "Suspended" | "Resuming" ⇒ JobState.Running
         case "Terminated" ⇒ JobState.Done
-        case "Error" | "toError" ⇒ JobState.Failed
+        case "Error" | "toError" ⇒ JobState.Failed()
         case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
 
     def parseState(executionResult: ExecutionResult, command: String): JobState =

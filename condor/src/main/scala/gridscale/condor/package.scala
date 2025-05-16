@@ -87,7 +87,7 @@ object impl {
       case "2"             ⇒ JobState.Running
       // choice was made to characterize held jobs (status=5) as submitted instead of Running
       case "0" | "1" | "5" ⇒ JobState.Submitted
-      case "6"             ⇒ JobState.Failed
+      case "6"             ⇒ JobState.Failed()
       case _               ⇒ throw new RuntimeException(s"Unrecognized state $status retrieved from $command")
     }
 

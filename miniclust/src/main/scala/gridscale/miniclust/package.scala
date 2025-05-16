@@ -83,9 +83,9 @@ def state(job: Miniclust.Job)(using m: Miniclust): JobState =
   _root_.miniclust.submit.status(m.minio, m.bucket, job.id) match
     case s: Message.Submitted => JobState.Submitted
     case s: Message.Running => JobState.Running
-    case s: Message.Canceled => JobState.Failed
+    case s: Message.Canceled => JobState.Failed("Job was canceled")
     case s: Message.Completed => JobState.Done
-    case s: Message.Failed => JobState.Failed
+    case s: Message.Failed => JobState.Failed(s.message)
 
 def stdOut(job: Miniclust.Job)(using m: Miniclust): Option[String] =
   job.out.map: o =>

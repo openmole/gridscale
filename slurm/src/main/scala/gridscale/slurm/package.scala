@@ -87,16 +87,20 @@ object impl:
     import JobState._
     status match
       case "COMPLETED" ⇒ Done
-      case "COMPLETED?" if 1 == retCode => Done
-      case "COMPLETED?" if 1 != retCode => Failed
+      case "COMPLETED?" if retCode == 1 => Done
+      case "COMPLETED?" if retCode != 1 => Failed(s"Return code of scontrol was $retCode")
       case "RUNNING" | "COMPLETING" => Running
       case "CONFIGURING" | "SUSPENDED" => Submitted
       case "PENDING" =>
         val failedReasons = Set("launch_failed_requeued_held")
-        if reason.exists(failedReasons.contains)
-        then Failed
-        else Submitted
-      case "CANCELLED" | "FAILED" | "NODE_FAIL" | "PREEMPTED" | "TIMEOUT" => Failed
+        reason match
+          case Some(r) if failedReasons.contains(r) => Failed(s"Launch failed: $r.")
+          case _ => Submitted
+      case "CANCELLED" => Failed("Job was canceled")
+      case  "FAILED" => Failed("Job has failed")
+      case "NODE_FAIL" => Failed("The node running the job has failed")
+      case  "PREEMPTED" => Failed("Job was preempted")
+      case "TIMEOUT" => Failed("Job exceeded its allocated time")
       case _ => throw new RuntimeException(s"Unrecognized state $status returned by $command")
 
   def parseState(cmdRet: ExecutionResult, command: String): JobState =

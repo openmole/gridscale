@@ -45,7 +45,7 @@ package object sge {
         case "qw" | "hqw" | "hRwq" | "Rs" | "Rts" | "RS" | "RtS" | "RT" | "RtT" ⇒ JobState.Submitted
         case "r" | "t" | "Rr" | "Rt" | "T" | "tT" | "s" | "ts" | "S" | "tS" ⇒ JobState.Running
         case "" | "dr" | "dt" | "dRr" | "dRt" | "ds" | "dS" | "dT" | "dRs" | "dRS" | "dRT" ⇒ JobState.Done
-        case "Eqw" | "Ehqw" | "EhRqw" ⇒ JobState.Failed
+        case "Eqw" | "Ehqw" | "EhRqw" ⇒ JobState.Failed()
         case _ ⇒ throw new RuntimeException("Unrecognized state " + status)
   }
 

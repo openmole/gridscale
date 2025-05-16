@@ -185,10 +185,10 @@ package object dirac {
       case DIRACState.Completing => JobState.Running
       case DIRACState.Completed  ⇒ JobState.Running
       case DIRACState.Stalled    ⇒ JobState.Running
-      case DIRACState.Killed     ⇒ JobState.Failed
-      case DIRACState.Deleted    ⇒ JobState.Failed
+      case DIRACState.Killed     ⇒ JobState.Failed("Job was killed")
+      case DIRACState.Deleted    ⇒ JobState.Failed("Job was deleted")
       case DIRACState.Done       ⇒ JobState.Done
-      case DIRACState.Failed     ⇒ JobState.Failed
+      case DIRACState.Failed     ⇒ JobState.Failed()
 
 
   def queryState(

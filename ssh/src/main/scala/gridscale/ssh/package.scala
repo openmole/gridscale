@@ -280,7 +280,7 @@ def state(jobId: JobId)(using ssh: SSH) =
             is ⇒ scala.io.Source.fromInputStream(is).mkString)
           val exitCode = content.takeWhile(_.isDigit).toInt
           SSHJobDescription.translateState(exitCode)
-        case false ⇒ JobState.Failed: JobState
+        case false ⇒ JobState.Failed("Job is not running and has no end code file"): JobState
 
 
 def clean(job: JobId)(using ssh: SSH) =
@@ -305,7 +305,7 @@ object SSHJobDescription:
   def translateState(retCode: Int): JobState =
     retCode match
       case 0 ⇒ JobState.Done
-      case _ ⇒ JobState.Failed
+      case r ⇒ JobState.Failed(s"Return code of command checking the state was ${r}")
 
   def file(dir: String, jobId: String, suffix: String) = dir + "/" + jobId + "." + suffix
   def pidFile(dir: String, jobId: String) = file(dir, jobId, "pid")

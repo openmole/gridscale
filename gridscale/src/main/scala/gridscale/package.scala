@@ -10,10 +10,14 @@ package object gridscale {
 
   object JobState:
     extension (s: JobState)
-      def isFinal: Boolean = s == Done || s == Failed
+      def isFinal: Boolean =
+        s match
+          case Done | _: Failed =>  true
+          case _ => false
       
   enum JobState:
-    case Submitted, Running, Done, Failed
+    case Submitted, Running, Done
+    case Failed(reason: String = "")
 
   import squants._
   import squants.time.TimeConversions._
