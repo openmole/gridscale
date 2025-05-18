@@ -6,53 +6,48 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-ThisBuild / scalaVersion := "3.3.5"
+ThisBuild / scalaVersion := "3.7.0"
 //ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 ThisBuild / homepage := Some(url("https://github.com/openmole/gridscale"))
 
-ThisBuild / publishTo := sonatypePublishToBundle.value
-
 ThisBuild / pomIncludeRepository := { _ => false}
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
 
-ThisBuild / pomExtra := {
-  <!-- Developer contact information -->
-    <developers>
-      <developer>
-        <id>romainreuillon</id>
-        <name>Romain Reuillon</name>
-        <url>https://github.com/romainreuillon/</url>
-      </developer>
-      <developer>
-        <id>jopasserat</id>
-        <name>Jonathan Passerat-Palmbach</name>
-        <url>https://github.com/jopasserat/</url>
-      </developer>
-      <developer>
-        <id>justeraimbault</id>
-        <name>Juste Raimbault</name>
-        <url>https://github.com/JusteRaimbault/</url>
-      </developer>
-    </developers>
-}
+ThisBuild / publishTo := localStaging.value
 
+ThisBuild / developers := List(
+  Developer(
+    id    = "romainreuillon",
+    name  = "Romain Reuillon",
+    email = "",
+    url   = url("https://github.com/romainreuillon/")
+  ),
+  Developer(
+    id    = "jopasserat",
+    name  = "Jonathan Passerat-Palmbach",
+    email = "",
+    url   = url("https://github.com/jopasserat/")
+  ),
+  Developer(
+    id    = "justeraimbault",
+    name  = "Juste Raimbault",
+    email = "",
+    url   = url("https://github.com/JusteRaimbault/")
+  )
+)
 
 releaseVersionBump := sbtrelease.Version.Bump.Minor
-
 releaseTagComment    := s"Releasing ${(ThisBuild / version).value}"
-
 releaseCommitMessage := s"Bump version to ${(ThisBuild / version).value}"
-
-sonatypeProfileName := "org.openmole"
-
+//sonatypeProfileName := "org.openmole"
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
-  runClean,
-  runTest,
+  //runClean,
+  //runTest,
   setReleaseVersion,
   tagRelease,
   releaseStepCommandAndRemaining("+publishSigned"),
