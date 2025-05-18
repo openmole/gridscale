@@ -32,7 +32,7 @@ case class MinclustJobDescription(
    stdOut: Option[String] = None,
    stdErr: Option[String] = None,
    resource: Seq[Resource] = Seq(),
-   noise: String = "")
+   noise: Option[String] = None)
 
 object Miniclust:
 
