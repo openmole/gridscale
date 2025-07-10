@@ -87,10 +87,9 @@ package object http {
     def withHTTP[T](f: HTTP ?=> T) = f(using new HTTP())
 
     def client(server: Server) =
-      server match {
+      server match
         case s: HTTPServer  ⇒ httpClient(s.timeout, s.retry)
         case s: HTTPSServer ⇒ HTTPS.newClient(s.socketFactory, s.timeout, s.retry)
-      }
 
     def requestConfig(timeout: Time) =
       RequestConfig.custom()
