@@ -46,7 +46,7 @@ releaseCommitMessage := s"Bump version to ${(ThisBuild / version).value}"
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
-  //runClean,
+  runClean,
   //runTest,
   setReleaseVersion,
   tagRelease,
