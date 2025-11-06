@@ -6,7 +6,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-ThisBuild / scalaVersion := "3.7.0"
+ThisBuild / scalaVersion := "3.7.2"
 //ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
@@ -58,16 +58,9 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
-def is2_13(scalaVersion: String): Boolean =
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, minor)) => true
-    case _                => false
-  }
-
 def settings = Seq (
   resolvers += Resolver.sonatypeRepo("snapshots"),
-  scalacOptions ++= 
-    (if(is2_13(scalaVersion.value)) Seq("-Ytasty-reader", "-language:implicitConversions", "-language:postfixOps") else Seq("-Xtarget:11", "-language:postfixOps"))
+  scalacOptions ++= Seq("-Xtarget:11", "-language:postfixOps")
 )
 
 
@@ -78,17 +71,11 @@ lazy val publishIpfs = taskKey[Unit]("Publish to IPFS")
 
 def defaultSettings =
   settings ++
-    /*scalariformSettings(autoformat = true) ++ Seq(
-  ScalariformKeys.preferences :=
-    ScalariformKeys.preferences.value
-      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(RewriteArrowSymbols, true),*/
-  Seq(
-    shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-  )
-
-
+    Seq(
+      shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+      javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+      resolvers += "jitpack" at "https://jitpack.io"
+    )
 
 /* ---------------- Libraries --------------------*/
 
@@ -109,9 +96,9 @@ lazy val circe = Seq(
 ).map(_ % circeVersion)
 
 
-lazy val compress = "org.apache.commons" % "commons-compress" % "1.22"
+lazy val compress = "org.apache.commons" % "commons-compress" % "1.28.0"
 
-val json4sVersion = "4.0.6"
+val json4sVersion = "4.0.7"
 
 /* -------------- gridscale dsl ------------------ */
 
@@ -127,7 +114,7 @@ lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) setting
 lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
 
 lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings: _*) dependsOn (gridscale) settings (
-  libraryDependencies += "com.hierynomus" % "sshj" % "0.38.0",
+  libraryDependencies += "com.hierynomus" % "sshj" % "0.40.0",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
@@ -146,12 +133,12 @@ lazy val qarnot = Project(id = "qarnot", base = file("qarnot")) dependsOn(gridsc
 )
 
 lazy val miniclust = Project(id = "miniclust", base = file("miniclust")) settings(dslSettings) dependsOn(gridscale) settings(
-  libraryDependencies += "org.openmole.miniclust" %% "submit" % "1.1"
+  libraryDependencies += "com.github.openmole.miniclust" % "submit_3" % "28e2a76751fc5da0739f5e36c97172ba4dd71296",
 )
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
-  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.10.0",
+  libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "5.3.0",
   libraryDependencies ++= httpComponents
 )
 
@@ -164,8 +151,8 @@ lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettin
 
 lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
-  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk18on" % "1.77",
-  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
+  libraryDependencies += "org.bouncycastle" % "bcpkix-jdk18on" % "1.82",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.4.0"
 )
 
 lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
