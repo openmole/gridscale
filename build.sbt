@@ -6,7 +6,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-ThisBuild / scalaVersion := "3.7.3"
+ThisBuild / scalaVersion := "3.7.2"
 //ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
@@ -60,7 +60,7 @@ releaseProcess := Seq[ReleaseStep](
 
 def settings = Seq (
   resolvers += Resolver.sonatypeCentralSnapshots,
-  scalacOptions ++= Seq("-Xtarget:11", "-language:postfixOps")
+  scalacOptions ++= Seq("-Xtarget:21", "-language:postfixOps")
 )
 
 
