@@ -59,7 +59,7 @@ releaseProcess := Seq[ReleaseStep](
 )
 
 def settings = Seq (
-  resolvers += Resolver.sonatypeRepo("snapshots"),
+  resolvers += Resolver.sonatypeCentralSnapshots,
   scalacOptions ++= Seq("-Xtarget:11", "-language:postfixOps")
 )
 
