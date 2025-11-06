@@ -59,8 +59,12 @@ releaseProcess := Seq[ReleaseStep](
 )
 
 def settings = Seq (
+  scalaVersion := "3.7.2",
   resolvers += Resolver.sonatypeCentralSnapshots,
-  scalacOptions ++= Seq("-Xtarget:21", "-language:postfixOps")
+  resolvers += "jitpack" at "https://jitpack.io",
+  javacOptions ++= Seq("-source", "11", "-target", "11"),
+  scalacOptions ++= Seq("-Xtarget:11", "-language:higherKinds"),
+  scalacOptions ++= Seq("-language:postfixOps", "-source:3.7")
 )
 
 
@@ -72,9 +76,7 @@ lazy val publishIpfs = taskKey[Unit]("Publish to IPFS")
 def defaultSettings =
   settings ++
     Seq(
-      shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
-      javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-      resolvers += "jitpack" at "https://jitpack.io"
+      shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
 /* ---------------- Libraries --------------------*/
