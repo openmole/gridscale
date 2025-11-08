@@ -125,13 +125,13 @@ lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings) dep
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
 
-lazy val cluster = Project(id = "cluster", base = file("cluster")) settings(dslSettings: _*) dependsOn (ssh, local)
+lazy val cluster = Project(id = "cluster", base = file("cluster")) settings(dslSettings) dependsOn (ssh, local)
 
-lazy val pbs = Project(id = "pbs", base = file("pbs")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
-lazy val slurm = Project(id = "slurm", base = file("slurm")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
-lazy val condor = Project(id = "condor", base = file("condor")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
-lazy val oar = Project(id = "oar", base = file("oar")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
-lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings: _*) dependsOn(gridscale, cluster)
+lazy val pbs = Project(id = "pbs", base = file("pbs")) settings(dslSettings) dependsOn(gridscale, cluster)
+lazy val slurm = Project(id = "slurm", base = file("slurm")) settings(dslSettings) dependsOn(gridscale, cluster)
+lazy val condor = Project(id = "condor", base = file("condor")) settings(dslSettings) dependsOn(gridscale, cluster)
+lazy val oar = Project(id = "oar", base = file("oar")) settings(dslSettings) dependsOn(gridscale, cluster)
+lazy val sge = Project(id = "sge", base = file("sge")) settings(dslSettings) dependsOn(gridscale, cluster)
 
 
 lazy val qarnot = Project(id = "qarnot", base = file("qarnot")) dependsOn(gridscale, http) settings(
@@ -143,26 +143,26 @@ lazy val miniclust = Project(id = "miniclust", base = file("miniclust")) setting
   libraryDependencies += "com.github.openmole.miniclust" %% "submit" % "28e2a76751fc5da0739f5e36c97172ba4dd71296",
 )
 
-lazy val http = Project(id = "http", base = file("http")) settings(dslSettings: _*) dependsOn(gridscale) settings (
+lazy val http = Project(id = "http", base = file("http")) settings(dslSettings) dependsOn(gridscale) settings (
   libraryDependencies += "org.htmlparser" % "htmlparser" % "2.1",
   libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "5.3.0",
   libraryDependencies ++= httpComponents
 )
 
-lazy val webdav = Project(id = "webdav", base = file("webdav")) settings(dslSettings: _*) dependsOn(gridscale, http)
+lazy val webdav = Project(id = "webdav", base = file("webdav")) settings(dslSettings) dependsOn(gridscale, http)
 
-lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
+lazy val dirac =  Project(id = "dirac", base = file("dirac")) settings(dslSettings) dependsOn(gridscale, http) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
   libraryDependencies += compress
 )
 
-lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings: _*) dependsOn(gridscale, http, webdav) settings (
+lazy val egi = Project(id = "egi", base = file("egi")) settings(dslSettings) dependsOn(gridscale, http, webdav) settings (
   libraryDependencies += "org.json4s" %% "json4s-jackson" % json4sVersion,
   libraryDependencies += "org.bouncycastle" % "bcpkix-jdk18on" % "1.82",
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.4.0"
 )
 
-lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings: _*) dependsOn(gridscale, http) settings (
+lazy val ipfs = Project(id = "ipfs", base = file("ipfs")) settings(dslSettings) dependsOn(gridscale, http) settings (
   libraryDependencies ++= circe,
   libraryDependencies += compress)
 
