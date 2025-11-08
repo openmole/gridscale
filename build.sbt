@@ -6,7 +6,9 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-ThisBuild / scalaVersion := "3.7.2"
+def scalaVersionValue = "3.7.2"
+
+ThisBuild / scalaVersion := scalaVersionValue
 //ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
@@ -16,6 +18,10 @@ ThisBuild / pomIncludeRepository := { _ => false}
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
 
 ThisBuild / publishTo := localStaging.value
+
+lazy val root = (project in file(".")).settings (
+  publishArtifact := false
+)
 
 ThisBuild / developers := List(
   Developer(
@@ -59,7 +65,6 @@ releaseProcess := Seq[ReleaseStep](
 )
 
 def settings = Seq (
-  scalaVersion := "3.7.2",
   resolvers += Resolver.sonatypeCentralSnapshots,
   resolvers += "jitpack" at "https://jitpack.io",
   javacOptions ++= Seq("-source", "11", "-target", "11"),
@@ -76,6 +81,7 @@ lazy val publishIpfs = taskKey[Unit]("Publish to IPFS")
 def defaultSettings =
   settings ++
     Seq(
+      scalaVersion := scalaVersionValue,
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
@@ -105,17 +111,16 @@ val json4sVersion = "4.0.7"
 /* -------------- gridscale dsl ------------------ */
 
 def dslSettings = defaultSettings ++ Seq(
-  libraryDependencies += "org.typelevel"  %% "squants"  % "1.8.3",
-  resolvers += "jitpack" at "https://jitpack.io"
+  libraryDependencies += "org.typelevel"  %% "squants"  % "1.8.3"
 )
 
-lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) settings(dslSettings: _*) settings(
+lazy val gridscale = Project(id = "gridscale", base = file("gridscale")) settings(dslSettings) settings(
   libraryDependencies += scalaTest
 )
 
-lazy val local = Project(id = "local", base = file("local")) settings(dslSettings: _*) dependsOn (gridscale)
+lazy val local = Project(id = "local", base = file("local")) settings(dslSettings) dependsOn (gridscale)
 
-lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings: _*) dependsOn (gridscale) settings (
+lazy val ssh = Project(id = "ssh", base = file("ssh")) settings(dslSettings) dependsOn (gridscale) settings (
   libraryDependencies += "com.hierynomus" % "sshj" % "0.40.0",
   libraryDependencies += "com.jcraft" % "jzlib" % "1.1.3"
 )
