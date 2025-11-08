@@ -1,6 +1,8 @@
 GridScale
 =========
 
+[![](https://jitci.com/gh/openmole/gridscale/svg)](https://jitci.com/gh/openmole/gridscale)
+
 GridScale is a scala library for accessing various file and batch systems. For the time being it supports:
 * Remote SSH servers,
 * PBS clusters,
