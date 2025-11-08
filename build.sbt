@@ -19,9 +19,9 @@ ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.g
 
 ThisBuild / publishTo := localStaging.value
 
-lazy val root = (project in file(".")).settings (
+/*lazy val root = (project in file(".")).settings (
   publishArtifact := false
-)
+)*/
 
 ThisBuild / developers := List(
   Developer(
