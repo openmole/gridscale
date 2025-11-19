@@ -23,8 +23,10 @@ import gridscale.authentication.*
 export _root_.miniclust.message.{InputFile as MiniclustInputFile}
 export _root_.miniclust.message.{OutputFile as MiniclustOutputFile}
 export _root_.miniclust.message.Resource
+import squants.*
+import squants.time.*
 
-case class MiniclustServer(url: String, authentication: UserPassword, insecure: Boolean = false)
+case class MiniclustServer(url: String, authentication: UserPassword, timeout: Time = Minutes(1), retry: Int = 3, insecure: Boolean = false)
 case class MinclustJobDescription(
    command: String,
    inputFile: Seq[MiniclustInputFile] = Seq(),
@@ -49,7 +51,9 @@ object Miniclust:
         url = server.url,
         user = server.authentication.user,
         password = server.authentication.password,
-        insecure = server.insecure
+        insecure = server.insecure,
+        timeout = server.timeout.toSeconds.toInt,
+        retry = server.retry
       )
 
     val minio = _root_.miniclust.message.Minio(s)
