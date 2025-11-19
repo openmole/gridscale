@@ -140,7 +140,7 @@ lazy val qarnot = Project(id = "qarnot", base = file("qarnot")) dependsOn(gridsc
 )
 
 lazy val miniclust = Project(id = "miniclust", base = file("miniclust")) settings(dslSettings) dependsOn(gridscale) settings(
-  libraryDependencies += "com.github.openmole.miniclust" %% "submit" % "2942f72fd6",
+  libraryDependencies += "com.github.openmole.miniclust" %% "submit" % "07d3a97c51",
 )
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings) dependsOn(gridscale) settings (
