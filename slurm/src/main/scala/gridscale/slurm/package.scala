@@ -22,6 +22,7 @@ case class SLURMJobDescription(
   gres: Seq[String] = List(),
   constraints: List[String] = List(),
   reservation: Option[String] = None,
+  account: Option[String] = None,
   wckey: Option[String] = None,
   exclusive: Option[SLURMJobDescription.Exclusive] = None)
 
@@ -47,7 +48,8 @@ object impl:
       "--qos=" -> qos,
       "-D " -> Some(workDirectory),
       "--reservation=" -> reservation,
-      "--wckey" -> wckey,
+      "--account=" -> account,
+      "--wckey=" -> wckey,
       "--exclusive=" -> exclusive)
 
     // must handle empty list separately since it is not done in mkString
