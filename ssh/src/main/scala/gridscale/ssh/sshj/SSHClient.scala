@@ -18,7 +18,7 @@
 
 package gridscale.ssh.sshj
 
-import gridscale.authentication._
+import gridscale.authentication.*
 
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
@@ -26,6 +26,7 @@ import net.schmizz.keepalive.KeepAliveProvider
 import net.schmizz.sshj.DefaultConfig
 import net.schmizz.sshj.common.IOUtils
 import net.schmizz.sshj.connection.channel.direct.DirectConnection
+import net.schmizz.sshj.userauth.password.{PasswordFinder, PasswordUtils, Resource}
 import squants.time.Time
 
 object SSHClient:
@@ -142,7 +143,15 @@ class SSHClient(val host: String, val port: Int, val timeout: Time, val keepAliv
 
   def authPrivateKey(privateKey: PrivateKey): Unit =
     try
-      val kp = peer.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)
+      val kp =
+        privateKey.publicKey match
+          case None => peer.loadKeys(privateKey.privateKey.getAbsolutePath, privateKey.password)
+          case Some(k) =>
+            val pf = PasswordUtils.createOneOff(privateKey.password.toCharArray)
+            val prk = java.nio.file.Files.readString(privateKey.privateKey.toPath)
+            val pbk = java.nio.file.Files.readString(k.toPath)
+
+            peer.loadKeys(prk, pbk, pf)
       peer.authPublickey(privateKey.user, kp)
     catch
       case e: Throwable ⇒ throw AuthenticationException("Error during ssh key authentication", e)

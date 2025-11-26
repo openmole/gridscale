@@ -9,7 +9,6 @@ name := "gridscale"
 def scalaVersionValue = "3.7.2"
 
 ThisBuild / scalaVersion := scalaVersionValue
-//ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 ThisBuild / homepage := Some(url("https://github.com/openmole/gridscale"))
