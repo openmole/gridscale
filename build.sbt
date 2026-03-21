@@ -6,7 +6,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-def scalaVersionValue = "3.7.2"
+def scalaVersionValue = "3.8.2"
 
 ThisBuild / scalaVersion := scalaVersionValue
 
@@ -66,9 +66,9 @@ releaseProcess := Seq[ReleaseStep](
 def settings = Seq (
   resolvers += Resolver.sonatypeCentralSnapshots,
   resolvers += "jitpack" at "https://jitpack.io",
-  javacOptions ++= Seq("-source", "11", "-target", "11"),
-  scalacOptions ++= Seq("-Xtarget:11", "-language:higherKinds"),
-  scalacOptions ++= Seq("-language:postfixOps", "-source:3.7")
+  javacOptions ++= Seq("-source", "17", "-target", "17"),
+  scalacOptions ++= Seq("-Xtarget:17"),
+  scalacOptions ++= Seq("-language:postfixOps")
 )
 
 
@@ -139,7 +139,7 @@ lazy val qarnot = Project(id = "qarnot", base = file("qarnot")) dependsOn(gridsc
 )
 
 lazy val miniclust = Project(id = "miniclust", base = file("miniclust")) settings(dslSettings) dependsOn(gridscale) settings(
-  libraryDependencies += "com.github.openmole.miniclust" %% "submit" % "6f7adc0377",
+  libraryDependencies += "com.github.openmole.miniclust" %% "submit" % "fbaf8062d8",
 )
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings) dependsOn(gridscale) settings (
