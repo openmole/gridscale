@@ -47,11 +47,10 @@ package object http {
   def buildServer(url: String, timeout: Time = 1 minutes): Server =
     val scheme = new URI(url).getScheme
 
-    scheme match {
+    scheme match
       case "https" ⇒ HTTPSServer(url, HTTPS.SSLSocketFactory.default, timeout)
       case "http"  ⇒ HTTPServer(url, timeout)
       case _       ⇒ throw new HTTP.ConnectionError(s"Unknown protocol $scheme, in url $url. Only http and https are supported.", null)
-    }
 
   def get[T](url: String, headers: Headers = Seq.empty) =
     HTTP.withHTTP:
@@ -82,7 +81,7 @@ package object http {
   case class Head(headers: Headers = Seq.empty) extends HTTPMethod
   case class Move(to: String, headers: Headers = Seq.empty) extends HTTPMethod
 
-  object HTTP {
+  object HTTP:
 
     def withHTTP[T](f: HTTP ?=> T) = f(using new HTTP())
 
@@ -133,8 +132,6 @@ package object http {
     case class HTTPError(message: Option[String] = None, cause: Option[Throwable] = None) extends Exception(cause.orNull):
       override def toString = "HTTP error: " + message.orElse(cause.map(_.getMessage)).getOrElse(super.toString)
 
-
-  }
 
   class HTTP {
 
