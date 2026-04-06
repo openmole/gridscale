@@ -48,6 +48,7 @@ object SSH:
 
     new SSH(server, clientCache)
 
+
   def authenticate(server: SSHServer, client: SSHClient): SSHClient =
     try
       server.authenticate(client)
@@ -60,25 +61,17 @@ object SSH:
   def client(server: SSHServer): SSHClient =
     def ssh: SSHClient =
       try
-        val jumpClient =
-          server.proxy.map: proxy =>
-            val client = SSHClient(
-                host = proxy.host,
-                port = proxy.port,
-                timeout = proxy.timeout,
-                keepAlive = proxy.keepAlive,
-                proxyJump =  None)
-
-            SSHClient.connect(client)
-            authenticate(proxy, client)
-
-        val ssh = SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive, proxyJump = jumpClient)
+        def jumpClient(proxy: Option[SSHServer]) = proxy.map(client)
+        val ssh = SSHClient(host = server.host, port = server.port, timeout = server.timeout, keepAlive = server.keepAlive, proxyJump = jumpClient(server.proxy))
         SSHClient.connect(ssh)
       catch
         case t: Throwable ⇒ throw ConnectionError(s"Error connecting to $server", t)
 
     authenticate(server, ssh)
 
+  def closeClient(client: SSHClient): Unit =
+    try client.close()
+    finally client.proxyJump.foreach(closeClient)
 
   object ConnectionCache:
     def use[T](cache: ConnectionCache)(f: SSHClient => T): T =
@@ -107,8 +100,7 @@ object SSH:
 
         f(client)
 
-      def close(c: FixedConnection) = c.client.close()
-
+      def close(c: FixedConnection) = closeClient(c.client)
 
     case class FixedConnection(connect: () => SSHClient, var client: SSHClient) extends ConnectionCache
 
@@ -118,7 +110,7 @@ object SSH:
 
       case class Connection(client: Lazy[SSHClient], created: Long = System.currentTimeMillis(), var used: Int = 0)
 
-      def close(r: Reconnect) = r.connection.client().close()
+      def close(r: Reconnect) = closeClient(r.connection.client())
 
       def use[T](r: Reconnect)(f: SSHClient => T): T =
         def expired(c: Connection, duration: Time): Boolean =
@@ -142,8 +134,7 @@ object SSH:
           r.synchronized(connection.used -= 1)
           old.foreach: old =>
             if r.synchronized(old.used == 0)
-            then old.client().close()
-
+            then closeClient(old.client())
 
     case class Reconnect(connect: () => SSHClient, duration: Time, var connection: Reconnect.Connection) extends ConnectionCache
 
