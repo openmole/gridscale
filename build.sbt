@@ -6,7 +6,7 @@ import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 ThisBuild / organization := "org.openmole.gridscale"
 name := "gridscale"
 
-def scalaVersionValue = "3.8.2"
+def scalaVersionValue = "3.8.4"
 
 ThisBuild / scalaVersion := scalaVersionValue
 
@@ -139,7 +139,7 @@ lazy val qarnot = Project(id = "qarnot", base = file("qarnot")) dependsOn(gridsc
 )
 
 lazy val miniclust = Project(id = "miniclust", base = file("miniclust")) settings(dslSettings) dependsOn(gridscale) settings(
-  libraryDependencies += "com.github.openmole.miniclust" %% "submit" % "32dc1a92da",
+  libraryDependencies += "com.github.openmole.miniclust" %% "submit" % "98aab63815",
 )
 
 lazy val http = Project(id = "http", base = file("http")) settings(dslSettings) dependsOn(gridscale) settings (
