@@ -1,26 +1,21 @@
 
-import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
+//import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 //import scalariform.formatter.preferences._
 //import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
-ThisBuild / organization := "org.openmole.gridscale"
-name := "gridscale"
+organization := "org.openmole.gridscale"
 
 def scalaVersionValue = "3.8.4"
 
-ThisBuild / scalaVersion := scalaVersionValue
+scalaVersion := scalaVersionValue
 
-ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
+/*ThisBuild / licenses := Seq("Affero GPLv3" -> url("http://www.gnu.org/licenses/"))
 ThisBuild / homepage := Some(url("https://github.com/openmole/gridscale"))
 
 ThisBuild / pomIncludeRepository := { _ => false}
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/openmole/gridscale.git"), "scm:git:git@github.com:openmole/gridscale.git"))
 
 ThisBuild / publishTo := localStaging.value
-
-/*lazy val root = (project in file(".")).settings (
-  publishArtifact := false
-)*/
 
 ThisBuild / developers := List(
   Developer(
@@ -62,6 +57,7 @@ releaseProcess := Seq[ReleaseStep](
   //releaseStepCommand("sonatypeReleaseAll"),
   pushChanges
 )
+*/
 
 def settings = Seq (
   resolvers += Resolver.sonatypeCentralSnapshots,

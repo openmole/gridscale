@@ -1,3 +1,11 @@
 jdk:
   - openjdk21
 
+before_install:
+  - sdk update
+  - sdk install sbt 2.0.6
+  - sdk use sbt 2.0.6
+
+install:
+  - sbt --jvm-client publishM2
+
